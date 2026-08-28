@@ -352,6 +352,46 @@ test.describe('Monitoring — live backend', () => {
     expect(report.pairs).toEqual([]);
   });
 
+  test('a long area name never pushes the row actions out of reach', async ({ page }) => {
+    // Reported on "Kawasan Manukan Balongsari S.D Manukan": the name button grew
+    // to fit its text and shoved the hide and detail buttons off the row. A flex
+    // item defaults to `min-width: auto`, so `truncate` on the name alone did
+    // nothing — every element between the row and the name has to be allowed to
+    // shrink.
+    //
+    // Measured in a real browser because jsdom does no layout: the unit test can
+    // only assert the classes are present, not that they work.
+    await loginAndOpenMonitoring(page);
+    await page.waitForTimeout(3000);
+    await page.getByRole('button', { name: /daftar area dan petugas/i }).click();
+    await page.waitForTimeout(2000);
+
+    const report = await page.evaluate(() => {
+      const rows = Array.from(document.querySelectorAll('li')).filter(
+        (li) => li.querySelectorAll('button').length >= 2
+      );
+      let overflowing = 0;
+      let clipped = 0;
+      for (const li of rows) {
+        if (li.scrollWidth > li.clientWidth + 1) overflowing++;
+        const btns = Array.from(li.querySelectorAll('button'));
+        const last = btns[btns.length - 1];
+        if (last && last.getBoundingClientRect().right > li.getBoundingClientRect().right + 1) {
+          clipped++;
+        }
+      }
+      return { rows: rows.length, overflowing, clipped };
+    });
+
+    console.log(
+      `[panel] rows=${report.rows} overflowing=${report.overflowing} clippedActions=${report.clipped}`
+    );
+    expect(report.rows).toBeGreaterThan(0);
+    // No row scrolls sideways, and no row's last action sits past its edge.
+    expect(report.overflowing).toBe(0);
+    expect(report.clipped).toBe(0);
+  });
+
   test('viewport mode tells the operator what the dots are', async ({ page }) => {
     // A field of unexplained dots reads as broken data. The hint is what makes
     // it read as "more detail is waiting".

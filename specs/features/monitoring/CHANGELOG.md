@@ -2,6 +2,12 @@
 
 Newest first. Feature overview + current design live in [README.md](./README.md).
 
+- **2026-08-28** — A long area name no longer pushes the hide and detail buttons off its row: the name
+  had `truncate` but nothing in the chain above it could shrink (a flex item defaults to
+  `min-width: auto`), so the row grew instead of ellipsising. The list panel is also **resizable**
+  (drag its right edge, double-click to reset), persisted per browser in `monitoring.panelWidth.v1` and
+  clamped to 300–720 px; desktop only, since below `sm` the panel is full-bleed.
+
 - **2026-08-28** — The Wilayah list is one level deep in **every** mode. Zoom and viewport listed the
   whole flattened subtree (370 rows at city scope), which made the tab unusable for what it is for:
   the map shows everything, the list navigates. Tapping a row drills and the mode survives the drill.

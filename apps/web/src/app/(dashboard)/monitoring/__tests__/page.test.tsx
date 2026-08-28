@@ -295,6 +295,33 @@ describe('MonitoringPage', () => {
     expect(window.localStorage.getItem('monitoring.mode.v1')).toBe('zoom');
   });
 
+  it('lets the operator resize the list panel, and remembers it', () => {
+    // A fixed 384px is right for "Rayon Pusat" and cramped for "Kawasan Manukan
+    // Balongsari S.D Manukan" — which of those an operator lives in is not
+    // something a stylesheet can know, so the width is theirs.
+    window.localStorage.setItem('monitoring.panelWidth.v1', '560');
+    render(<MonitoringPage />, { wrapper: createWrapper() });
+    fireEvent.click(screen.getByRole('button', { name: /daftar area dan petugas/i }));
+
+    const handle = screen.getByRole('separator', { name: /ubah lebar panel/i });
+    expect(handle).toBeInTheDocument();
+    // The stored width drives the panel through a CSS variable, so it can be
+    // scoped to `sm:` — below that the panel is full-bleed and has no width.
+    const panel = handle.parentElement!;
+    expect(panel.getAttribute('style')).toContain('560px');
+  });
+
+  it('clamps a stored width that would collapse the panel', () => {
+    // localStorage is hand-editable and survives downgrades; a bad value must
+    // not leave the operator with a panel they cannot see or grab.
+    window.localStorage.setItem('monitoring.panelWidth.v1', '5');
+    render(<MonitoringPage />, { wrapper: createWrapper() });
+    fireEvent.click(screen.getByRole('button', { name: /daftar area dan petugas/i }));
+
+    const panel = screen.getByRole('separator', { name: /ubah lebar panel/i }).parentElement!;
+    expect(panel.getAttribute('style')).toContain('300px');
+  });
+
   it('opens the filter panel from the top bar', () => {
     render(<MonitoringPage />, { wrapper: createWrapper() });
     fireEvent.click(screen.getByRole('button', { name: /^filter$/i }));

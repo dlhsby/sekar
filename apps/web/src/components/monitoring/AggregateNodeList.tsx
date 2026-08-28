@@ -117,7 +117,13 @@ export function AggregateNodeList({
               type="button"
               onClick={() => onDrill(node)}
               className={cn(
-                'flex flex-1 items-center gap-3 py-2.5 pr-3 text-left transition-colors hover:bg-nb-gray-50',
+                // `min-w-0` is load-bearing, not decoration. A flex item defaults
+                // to `min-width: auto`, so without it this button refuses to
+                // shrink below its content — a long name ("Kawasan Manukan
+                // Balongsari S.D Manukan") pushed the hide and detail buttons
+                // clean off the row instead of ellipsising. The chain has to be
+                // unbroken from here down to the name itself.
+                'flex min-w-0 flex-1 items-center gap-3 py-2.5 pr-3 text-left transition-colors hover:bg-nb-gray-50',
                 dimmed && 'opacity-40',
                 !showTier && 'pl-3',
                 showTier && node.type === 'district' && 'pl-3',
@@ -126,13 +132,18 @@ export function AggregateNodeList({
               )}
             >
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5">
+                <div className="flex min-w-0 items-center gap-1.5">
                   {showTier && (
                     <span className="shrink-0 rounded-nb-sm border border-nb-gray-300 bg-nb-gray-50 px-1 text-[10px] font-bold uppercase text-nb-gray-500">
                       {t(`monitoring:hierarchy.${node.type === 'location' ? 'area' : node.type}`)}
                     </span>
                   )}
-                  <span className="truncate text-sm font-bold text-nb-black">{node.name}</span>
+                  <span
+                    className="min-w-0 truncate text-sm font-bold text-nb-black"
+                    title={node.name}
+                  >
+                    {node.name}
+                  </span>
                   {node.is_understaffed && (
                     <AlertTriangle
                       className="h-3.5 w-3.5 shrink-0 text-nb-danger-dark"

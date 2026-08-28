@@ -102,3 +102,45 @@ describe('AggregateNodeList — row-level hide', () => {
     expect(onDrill).toHaveBeenCalledWith(expect.objectContaining({ id: 'b' }));
   });
 });
+
+describe('a long name must not push the row actions off screen', () => {
+  const LONG = 'Kawasan Manukan Balongsari S.D Manukan Tengah Jaya Raya';
+
+  it('keeps the hide and detail buttons reachable', () => {
+    // The reported defect: the name button grew to fit its text and shoved both
+    // actions out of the row. A flex item defaults to `min-width: auto`, so
+    // `truncate` on the name alone did nothing — the whole chain from the row
+    // button down to the name has to be allowed to shrink.
+    render(
+      <AggregateNodeList
+        nodes={[node({ name: LONG })]}
+        onDrill={jest.fn()}
+        onDetail={jest.fn()}
+        onToggleHidden={jest.fn()}
+      />
+    );
+    expect(screen.getByLabelText(`Sembunyikan ${LONG}`)).toBeInTheDocument();
+    expect(screen.getByLabelText(`Detail ${LONG}`)).toBeInTheDocument();
+  });
+
+  it('lets every element in the shrink chain shrink', () => {
+    // Asserted structurally because the failure is invisible to jsdom, which
+    // does no layout: one missing `min-w-0` and the ellipsis silently stops
+    // working in the browser while every behavioural test still passes.
+    const { container } = render(
+      <AggregateNodeList nodes={[node({ name: LONG })]} onDrill={jest.fn()} />
+    );
+    const name = screen.getByText(LONG);
+    expect(name.className).toMatch(/truncate/);
+    expect(name.className).toMatch(/min-w-0/);
+    expect(name.parentElement!.className).toMatch(/min-w-0/);
+    // The row button itself, two levels up from the name's flex row.
+    const rowButton = container.querySelector('li > button')!;
+    expect(rowButton.className).toMatch(/min-w-0/);
+  });
+
+  it('exposes the full name on hover, since the visible text is cut', () => {
+    render(<AggregateNodeList nodes={[node({ name: LONG })]} onDrill={jest.fn()} />);
+    expect(screen.getByText(LONG)).toHaveAttribute('title', LONG);
+  });
+});

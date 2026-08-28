@@ -20,7 +20,8 @@
     "closePanelLabel": "Close filter",
     "listLabel": "Areas & Workers",
     "closeListLabel": "Close list",
-    "backLabel": "Back"
+    "backLabel": "Back",
+    "resizeLabel": "Resize panel"
   },
   "aggregate": {
     "understaffed": "Understaffed",

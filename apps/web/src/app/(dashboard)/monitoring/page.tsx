@@ -10,7 +10,7 @@
  */
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -46,6 +46,7 @@ import {
 } from '@/components/monitoring/MonitoringFilters';
 import { MonitoringSidebar } from '@/components/monitoring/MonitoringSidebar';
 import { MonitoringBreadcrumb } from '@/components/monitoring/MonitoringBreadcrumb';
+import { usePanelWidth } from '@/lib/monitoring/panelWidth';
 import { UserDetailPanel } from '@/components/monitoring/UserDetailPanel';
 import { AreaDetailPanel } from '@/components/monitoring/AreaDetailPanel';
 import { useAreaPlants, useNotablePlants } from '@/lib/api/plants';
@@ -1115,6 +1116,39 @@ export default function MonitoringPage() {
    * now both modes list one level, so keying it off the mode would badge
    * identical content in one and not the other.
    */
+  // Panel width is the operator's, and persists — see `panelWidth.ts`.
+  const panel = usePanelWidth();
+  const panelRef = useRef<HTMLDivElement | null>(null);
+
+  /**
+   * Drag the panel's right edge.
+   *
+   * Pointer capture rather than window listeners: the handle keeps receiving
+   * events even when the cursor outruns it, which it will, and the browser
+   * cancels the capture for us on release or interruption. Width is measured
+   * from the panel's own left edge so it never drifts from where the pointer is.
+   */
+  const startResize = useCallback(
+    (e: ReactPointerEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      const left = panelRef.current?.getBoundingClientRect().left ?? 0;
+      const handle = e.currentTarget;
+      handle.setPointerCapture(e.pointerId);
+
+      const move = (ev: PointerEvent) => panel.setWidth(ev.clientX - left);
+      const end = () => {
+        handle.removeEventListener('pointermove', move);
+        handle.removeEventListener('pointerup', end);
+        handle.removeEventListener('pointercancel', end);
+        panel.commit();
+      };
+      handle.addEventListener('pointermove', move);
+      handle.addEventListener('pointerup', end);
+      handle.addEventListener('pointercancel', end);
+    },
+    [panel]
+  );
+
   const showNodeTier = useMemo(
     () => new Set(filteredNodes.map((n) => n.type)).size > 1,
     [filteredNodes]
@@ -1462,7 +1496,14 @@ export default function MonitoringPage() {
 
       {/* Worker/area/node sheet */}
       {listOpen ? (
-        <div className="absolute inset-x-3 bottom-3 z-20 flex h-[45vh] max-h-[60%] flex-col sm:inset-x-auto sm:left-3 sm:w-96">
+        <div
+          ref={panelRef}
+          // The width rides a CSS variable rather than an inline `width`, so it
+          // can be scoped to `sm:` — below that the panel spans the viewport and
+          // there is no width to give it.
+          style={{ '--panel-w': `${panel.width}px` } as CSSProperties}
+          className="absolute inset-x-3 bottom-3 z-20 flex h-[45vh] max-h-[60%] flex-col sm:inset-x-auto sm:left-3 sm:w-[var(--panel-w)]"
+        >
           {/* The header carries the BREADCRUMB, not a title. The button that
               opened this panel already names it, and the tabs below name its two
               halves — so the scarce width goes to the thing that changes as you
@@ -1491,6 +1532,23 @@ export default function MonitoringPage() {
           {/* One sidebar at every level: Wilayah (child nodes, drillable) + Petugas
               (workers). At lokasi scope there are no child nodes, so only Petugas
               shows. */}
+          {/* Resize handle on the panel's right edge. Desktop only: below `sm`
+              the panel is full-bleed and has no width to give. Double-click
+              restores the default, so a drag can never strand the operator with
+              a panel they cannot get back. */}
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            aria-label={t('monitoring:page.resizeLabel')}
+            onPointerDown={startResize}
+            onDoubleClick={panel.reset}
+            className="absolute inset-y-0 -right-1 z-30 hidden w-2 cursor-col-resize touch-none sm:block"
+          >
+            {/* The hit area is 8px wide; the ink is 2px, and only on hover — a
+                permanent line here would read as a border of the panel. */}
+            <div className="mx-auto h-full w-0.5 rounded-full bg-transparent transition-colors hover:bg-nb-black/30" />
+          </div>
+
           <MonitoringSidebar
             workers={listScopedWorkers}
             nodes={filteredNodes}

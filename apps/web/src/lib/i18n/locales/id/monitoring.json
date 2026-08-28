@@ -20,7 +20,8 @@
     "closePanelLabel": "Tutup filter",
     "listLabel": "Daftar Area dan Petugas",
     "closeListLabel": "Tutup daftar",
-    "backLabel": "Kembali"
+    "backLabel": "Kembali",
+    "resizeLabel": "Ubah lebar panel"
   },
   "aggregate": {
     "understaffed": "Kekurangan personel",
