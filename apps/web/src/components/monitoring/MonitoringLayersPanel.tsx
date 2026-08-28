@@ -12,8 +12,8 @@
  */
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
-import { cn } from '@/lib/utils/cn';
-import { LAYER_ROWS, allFacets, toggleFacet, type MonitoringLayers } from '@/lib/monitoring/layers';
+import { LAYER_ROWS, type MonitoringLayers } from '@/lib/monitoring/layers';
+import { MultiSelect } from '@/components/ui';
 import { MODE_OPTIONS, type MonitoringMode } from '@/lib/monitoring/mapMode';
 
 export interface MonitoringLayersPanelProps {
@@ -77,63 +77,29 @@ export function MonitoringLayersPanel({
       <ul className="flex flex-col gap-3">
         {LAYER_ROWS.map(({ key, labelKey, facets }) => {
           const selected = layers[key] as readonly string[];
-          const every = allFacets(key);
-          const isAll = selected.length === every.length;
-          const isNone = selected.length === 0;
           return (
-            <li key={key} className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-medium text-nb-black">{t(labelKey)}</span>
-                {/* Shortcuts, not options: they write the same set the chips do,
-                    so the two can never disagree. Disabled once already applied,
-                    which doubles as the "you are here" indicator. */}
-                <span className="flex gap-1">
-                  <button
-                    type="button"
-                    onClick={() => onSetLayer(key, every)}
-                    disabled={isAll}
-                    className="rounded-nb-sm px-1.5 py-0.5 text-xs font-bold text-nb-gray-500 underline-offset-2 hover:text-nb-black hover:underline disabled:cursor-default disabled:text-nb-gray-300 disabled:no-underline"
-                  >
-                    {t('monitoring:layers.option.all')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onSetLayer(key, [])}
-                    disabled={isNone}
-                    className="rounded-nb-sm px-1.5 py-0.5 text-xs font-bold text-nb-gray-500 underline-offset-2 hover:text-nb-black hover:underline disabled:cursor-default disabled:text-nb-gray-300 disabled:no-underline"
-                  >
-                    {t('monitoring:layers.option.none')}
-                  </button>
-                </span>
-              </div>
-              <div
-                role="group"
-                aria-label={t(labelKey)}
-                className="flex flex-wrap gap-1.5"
-              >
-                {facets.map((f) => {
-                  const on = selected.includes(f.value);
-                  return (
-                    <label
-                      key={f.value}
-                      className={cn(
-                        'flex cursor-pointer select-none items-center gap-1.5 rounded-nb-sm border-2 border-nb-black px-2 py-1 text-xs font-bold',
-                        on
-                          ? 'bg-nb-primary text-nb-black'
-                          : 'bg-nb-white text-nb-gray-500 hover:bg-nb-gray-50'
-                      )}
-                    >
-                      <input
-                        type="checkbox"
-                        className="h-3.5 w-3.5 accent-nb-black"
-                        checked={on}
-                        onChange={() => onSetLayer(key, toggleFacet(key, selected, f.value))}
-                      />
-                      {t(f.labelKey)}
-                    </label>
-                  );
-                })}
-              </div>
+            <li key={key} className="flex items-center justify-between gap-3">
+              <span className="shrink-0 text-sm font-medium text-nb-black">{t(labelKey)}</span>
+              {/* One control per row instead of a wrapping chip field. The chips
+                  were fine for one tier and became a wall across four: this
+                  panel is a settings surface, and its rows should read as
+                  label + value like every other setting.
+
+                  The options are unchanged — the same independent facets, with
+                  Semua/Sembunyikan folded into the list's own all-row, which
+                  writes exactly the set the boxes do. */}
+              <MultiSelect
+                // Fixed, not max-width: the four controls then share a left AND
+                // right edge, so the panel reads as a column of settings rather
+                // than four independently sized rows.
+                className="w-44 shrink-0"
+                ariaLabel={t(labelKey)}
+                options={facets.map((f) => ({ value: f.value, label: t(f.labelKey) }))}
+                values={[...selected]}
+                onChange={(next) => onSetLayer(key, next as MonitoringLayers[typeof key])}
+                allLabel={t('monitoring:layers.option.all')}
+                noneLabel={t('monitoring:layers.option.none')}
+              />
             </li>
           );
         })}

@@ -2,6 +2,13 @@
 
 Newest first. Feature overview + current design live in [README.md](./README.md).
 
+- **2026-08-28** — The layer rows in Pengaturan are a **multi-select dropdown** each (label + control),
+  replacing the wrapping field of checkbox chips that ran four tiers deep. Same independent facets;
+  `Semua` / `Sembunyikan` are now the dropdown's own all-row, which shows *mixed* on a partial
+  selection. The closed control names what is on ("Batas, Marker"), so a tier's state is readable
+  without opening it. New shared primitive `ui/MultiSelect` — the lean sibling of `FormMultiCombobox`,
+  with no search, chips, or form-field chrome.
+
 - **2026-08-28** — A long area name no longer pushes the hide and detail buttons off its row: the name
   had `truncate` but nothing in the chain above it could shrink (a flex item defaults to
   `min-width: auto`), so the row grew instead of ellipsising. The list panel is also **resizable**

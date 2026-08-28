@@ -62,6 +62,7 @@ export { DateTimePicker, type DateTimePickerProps } from './date-time-picker';
 
 // Popover
 export { Popover, PopoverTrigger, PopoverAnchor, PopoverContent } from './popover';
+export { MultiSelect, type MultiSelectProps, type MultiSelectOption } from './multi-select';
 
 // Tooltip
 export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from './tooltip';

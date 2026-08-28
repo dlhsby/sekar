@@ -48,13 +48,16 @@ test.describe('Monitoring — live backend', () => {
     await expect(page.getByLabel(/mode monitoring/i)).toHaveValue('drill');
 
     for (const label of [/^rayon$/i, /^kawasan$/i, /^lokasi$/i, /petugas & tim/i]) {
-      await expect(page.getByRole('group', { name: label })).toBeVisible();
+      await expect(page.getByRole('combobox', { name: label })).toBeVisible();
     }
     // Outline, fill, marker and name label are independent — the fill was not
     // separately expressible under the four-way select this replaced, and the
     // label was split off the marker so a dense tier can show pins without names.
-    const rayon = page.getByRole('group', { name: /^rayon$/i });
-    await expect(rayon.getByRole('checkbox')).toHaveCount(4);
+    // Five boxes: the four facets plus the list's own all-row.
+    await page.getByRole('combobox', { name: /^rayon$/i }).click();
+    await expect(page.getByRole('listbox', { name: /^rayon$/i }).getByRole('checkbox')).toHaveCount(
+      5
+    );
   });
 
   test('zoom mode draws more of the hierarchy than drill at city scope', async ({ page }) => {
@@ -152,7 +155,12 @@ test.describe('Monitoring — live backend', () => {
     const before = await page.locator('gmp-advanced-marker, [role="button"][title]').count();
 
     await openSettings(page);
-    await page.getByRole('group', { name: /^rayon$/i }).getByLabel(/marker/i).uncheck();
+    await page.getByRole('combobox', { name: /^rayon$/i }).click();
+    // Click the LABEL, not the input: the NB checkbox keeps its native input
+    // `sr-only` for semantics and paints the box as a sibling, so the input has
+    // no hit area of its own and `uncheck()` cannot reach it.
+    await page.getByRole('listbox', { name: /^rayon$/i }).getByText(/^Marker$/).click();
+    await page.keyboard.press('Escape');
     await page.waitForTimeout(1500);
     const after = await page.locator('gmp-advanced-marker, [role="button"][title]').count();
 
