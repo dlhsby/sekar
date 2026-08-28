@@ -141,7 +141,10 @@ export class AggregateNodeDto {
   @ApiPropertyOptional({ description: 'Number of locations (region nodes only)', example: 8 })
   location_count?: number;
 
-  @ApiPropertyOptional({ description: 'District id (area nodes only)', example: 'district-uuid' })
+  @ApiPropertyOptional({
+    description: 'Parent district id (location and region nodes)',
+    example: 'district-uuid',
+  })
   district_id?: string | null;
 
   @ApiPropertyOptional({ description: 'Region id (area nodes only)', example: 'region-uuid' })

@@ -852,6 +852,10 @@ export class MonitoringStatsService {
         id: region.id,
         name: region.name,
         type: 'region',
+        // Every region here was fetched by `district_id: districtId`, so the
+        // parameter is authoritative; the column is read first only so the node
+        // stays correct if this ever gains another caller.
+        district_id: region.district_id ?? districtId,
         center_lat: this.toNum(region.center_lat),
         marker_icon: (region as any).marker_icon ?? null,
         fill_color: (region as any).fill_color ?? null,
@@ -1094,7 +1098,17 @@ export class MonitoringStatsService {
       fill_opacity: input.fill_opacity ?? null,
       ...(input.type === 'district' ? { area_count: input.area_count ?? 0 } : {}),
       ...(input.type === 'region' ? { location_count: input.location_count ?? 0 } : {}),
-      ...(input.type === 'location' ? { district_id: input.district_id ?? null } : {}),
+      // Parent ids: a location carries both, a region carries its district.
+      //
+      // Regions used to carry neither, which made them unattachable in any
+      // response that mixes tiers. `scope=all` returns every tier at once for
+      // the client to rebuild the tree from, and with no `district_id` on a
+      // kawasan there was nothing to rebuild it FROM: the client could not tell
+      // which rayon a kawasan belonged to, so kawasan never appeared under their
+      // rayon and the 590 lokasi sitting under one were unreachable.
+      ...(input.type === 'location' || input.type === 'region'
+        ? { district_id: input.district_id ?? null }
+        : {}),
       ...(input.type === 'location' ? { region_id: input.region_id ?? null } : {}),
     };
   }

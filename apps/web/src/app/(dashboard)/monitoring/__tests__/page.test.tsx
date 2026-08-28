@@ -16,12 +16,16 @@ const mockUseAuth = jest.fn();
 jest.mock('@/lib/auth/hooks', () => ({ useAuth: () => mockUseAuth() }));
 
 const mockSnapshot = jest.fn();
-const mockAggregate = jest.fn(() => ({
-  data: undefined,
-  isLoading: false,
-  isFetching: false,
-  refetch: jest.fn(),
-}));
+// Typed loosely on purpose: tests override `data` with real node fixtures, and
+// inferring the shape from this default would pin it to `undefined`.
+const mockAggregate = jest.fn<{ data?: unknown; isLoading: boolean; isFetching?: boolean; refetch: () => void }, []>(
+  () => ({
+    data: undefined,
+    isLoading: false,
+    isFetching: false,
+    refetch: jest.fn(),
+  })
+);
 jest.mock('@/lib/api/monitoring-v2', () => ({
   useMonitoringSnapshot: () => mockSnapshot(),
   useMonitoringAggregate: () => mockAggregate(),
@@ -70,6 +74,26 @@ const worker = (over: Record<string, unknown>) => ({
   ...over,
 });
 
+/** Minimal AggregateNode — only the fields the Wilayah list reads. */
+const aggNode = (over: Record<string, unknown>) => ({
+  id: 'n1',
+  name: 'Node',
+  type: 'district',
+  center_lat: -7.25,
+  center_lng: 112.75,
+  counts_by_status: { active: 0, offline: 0, absent: 0, outside_area: 0 },
+  counts_by_role: {},
+  worker_count: 0,
+  online_count: 0,
+  required: 0,
+  is_understaffed: false,
+  roster: { scheduled: 0, clocked_in: 0, belum_hadir: 0, tidak_hadir: 0 },
+  presence: { aktif: { dalam: 0, luar: 0 }, tidak_aktif: { dalam: 0, luar: 0 } },
+  district_id: null,
+  region_id: null,
+  ...over,
+});
+
 const snapshotData = {
   data: {
     data: {
@@ -104,6 +128,17 @@ const createWrapper = () => {
 describe('MonitoringPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // The map mode is persisted per browser, so a test that sets it would
+    // otherwise change the mode every later test runs under.
+    window.localStorage.clear();
+    // `clearAllMocks` clears calls, not implementations, so a `mockReturnValue`
+    // set inside one test would otherwise be the aggregate every later test sees.
+    mockAggregate.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isFetching: false,
+      refetch: jest.fn(),
+    });
     mockUseAuth.mockReturnValue({ user: adminUser, loading: false });
     mockSnapshot.mockReturnValue(snapshotData);
     mockBoundaries.mockReturnValue({ data: undefined });
@@ -157,6 +192,107 @@ describe('MonitoringPage', () => {
     render(<MonitoringPage />, { wrapper: createWrapper() });
     fireEvent.click(screen.getByRole('button', { name: /daftar area dan petugas/i }));
     expect(screen.getByRole('button', { name: /^andi/i })).toBeInTheDocument();
+  });
+
+  it('lists ONE level in the Wilayah tab in zoom mode, not the whole subtree', async () => {
+    // Zoom and viewport used to list the whole flattened subtree here — 370 rows
+    // at city scope on the real hierarchy, which makes the tab useless for the
+    // thing it is for. The map's job in those modes is to draw everything; the
+    // list's job is to let you go somewhere, so it stays one level deep in every
+    // mode.
+    window.localStorage.setItem('monitoring.mode.v1', 'zoom');
+    mockAggregate.mockReturnValue({
+      data: {
+        nodes: [
+          aggNode({ id: 'r1', name: 'Rayon Pusat', type: 'district' }),
+          aggNode({ id: 'r2', name: 'Rayon Timur', type: 'district' }),
+          aggNode({ id: 'a1', name: 'Taman A', type: 'location', district_id: 'r1' }),
+          aggNode({ id: 'a2', name: 'Taman B', type: 'location', district_id: 'r1' }),
+          aggNode({ id: 'a3', name: 'Taman C', type: 'location', district_id: 'r2' }),
+        ],
+      },
+      isLoading: false,
+      refetch: jest.fn(),
+    });
+
+    render(<MonitoringPage />, { wrapper: createWrapper() });
+    fireEvent.click(screen.getByRole('button', { name: /daftar area dan petugas/i }));
+
+    // The two rayon are listed; their lokasi are not — those appear after you
+    // drill into a rayon.
+    expect(await screen.findByText('Rayon Pusat')).toBeInTheDocument();
+    expect(screen.getByText('Rayon Timur')).toBeInTheDocument();
+    expect(screen.queryByText('Taman A')).toBeNull();
+    expect(screen.queryByText('Taman C')).toBeNull();
+  });
+
+  it('lists a rayon\'s kawasan AND its kawasan-less lokasi as one level', async () => {
+    // Both are children of the rayon, so both belong to this level — the map has
+    // always drawn them together here. The list used to return kawasan alone
+    // whenever there was at least one, so a rayon with both kinds listed half of
+    // what the map showed.
+    //
+    // This also covers the backend fix that makes it possible: a kawasan carries
+    // `district_id` now, so the client can tell which rayon it hangs off. Without
+    // it no kawasan could ever be matched to a rayon.
+    window.localStorage.setItem('monitoring.mode.v1', 'zoom');
+    mockAggregate.mockReturnValue({
+      data: {
+        nodes: [
+          aggNode({ id: 'r1', name: 'Rayon Pusat', type: 'district' }),
+          aggNode({ id: 'k1', name: 'Kawasan Darmo', type: 'region', district_id: 'r1' }),
+          aggNode({ id: 'k2', name: 'Kawasan Lain', type: 'region', district_id: 'r2' }),
+          // Hangs directly off the rayon — no kawasan.
+          aggNode({ id: 'a1', name: 'Taman Bebas', type: 'location', district_id: 'r1' }),
+          // Inside Kawasan Darmo — appears one level deeper, not here.
+          aggNode({
+            id: 'a2',
+            name: 'Taman Dalam',
+            type: 'location',
+            district_id: 'r1',
+            region_id: 'k1',
+          }),
+        ],
+      },
+      isLoading: false,
+      isFetching: false,
+      refetch: jest.fn(),
+    });
+
+    render(<MonitoringPage />, { wrapper: createWrapper() });
+    fireEvent.click(screen.getByRole('button', { name: /daftar area dan petugas/i }));
+    fireEvent.click(await screen.findByText('Rayon Pusat'));
+
+    expect(await screen.findByText('Kawasan Darmo')).toBeInTheDocument();
+    expect(screen.getByText('Taman Bebas')).toBeInTheDocument();
+    // Another rayon's kawasan, and this kawasan's own lokasi, are not this level.
+    expect(screen.queryByText('Kawasan Lain')).toBeNull();
+    expect(screen.queryByText('Taman Dalam')).toBeNull();
+  });
+
+  it('drills from a Wilayah row in zoom mode, and stays in zoom mode', async () => {
+    // Drilling is what the list is for. The mode is a rendering choice and must
+    // survive navigation — dropping back to drill on a tap would silently undo
+    // the operator's setting.
+    window.localStorage.setItem('monitoring.mode.v1', 'zoom');
+    mockAggregate.mockReturnValue({
+      data: {
+        nodes: [
+          aggNode({ id: 'r1', name: 'Rayon Pusat', type: 'district' }),
+          aggNode({ id: 'a1', name: 'Taman A', type: 'location', district_id: 'r1' }),
+        ],
+      },
+      isLoading: false,
+      refetch: jest.fn(),
+    });
+
+    render(<MonitoringPage />, { wrapper: createWrapper() });
+    fireEvent.click(screen.getByRole('button', { name: /daftar area dan petugas/i }));
+    fireEvent.click(await screen.findByText('Rayon Pusat'));
+
+    // Now inside the rayon: its lokasi are the level, and the breadcrumb says so.
+    expect(await screen.findByText('Taman A')).toBeInTheDocument();
+    expect(window.localStorage.getItem('monitoring.mode.v1')).toBe('zoom');
   });
 
   it('opens the filter panel from the top bar', () => {

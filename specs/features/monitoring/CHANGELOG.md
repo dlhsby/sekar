@@ -2,6 +2,14 @@
 
 Newest first. Feature overview + current design live in [README.md](./README.md).
 
+- **2026-08-28** — The Wilayah list is one level deep in **every** mode. Zoom and viewport listed the
+  whole flattened subtree (370 rows at city scope), which made the tab unusable for what it is for:
+  the map shows everything, the list navigates. Tapping a row drills and the mode survives the drill.
+  At rayon scope the level is kawasan **plus** the rayon's kawasan-less lokasi — the set the map has
+  always drawn there, where the list previously returned kawasan alone. Backend: a region node now
+  carries `district_id` (it carried none), without which no kawasan could be attached to its rayon and
+  the 590 lokasi beneath one were unreachable from the list.
+
 - **2026-08-28** — The list panel is "Daftar Area dan Petugas" (it has held both halves since the
   Wilayah tab landed) and its header now carries the drill breadcrumb instead of a static title —
   extracted as `MonitoringBreadcrumb` and shared with the map's bar, so the two cannot disagree about

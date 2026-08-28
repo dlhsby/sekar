@@ -639,49 +639,58 @@ export default function MonitoringPage() {
 
   // Districts list (surabaya + city), regions list (district), or locations list (region or district-without-regions),
   // for the side panel.
+  /**
+   * The Wilayah tab: the children of where you are, ONE level down — in every
+   * mode.
+   *
+   * Zoom and viewport used to list the whole subtree here, flattened and
+   * tier-badged, on the reasoning that the panel should list what the map draws.
+   * On the real hierarchy that is 370 rows at city scope, and it makes the tab
+   * unusable for the thing it is actually for: the list is a NAVIGATION control,
+   * not a second rendering of the map. The map's job in those modes is to show
+   * everything at once; the list's job is to let you go somewhere. Tapping a row
+   * still drills, and the mode is unchanged by drilling, so the map keeps
+   * showing the whole subtree of wherever you land.
+   *
+   * The level itself is defined once and the two modes differ only in which
+   * query they read it from — zoom already holds every tier in `allAgg`, drill
+   * fetches per scope.
+   */
   const listNodes = useMemo<AggregateNode[]>(() => {
+    if (scope === 'location') return [];
+
     if (isZoom) {
-      // The panel lists the SAME set the map draws — the whole subtree, ordered
-      // rayon → its kawasan → its lokasi, so the list reads as the hierarchy
-      // rather than as a flat dump. Anything else and the Wilayah tab would
-      // disagree with the map about what "here" contains.
       const nodes = allAgg.data?.nodes ?? [];
-      if (scope === 'location') return [];
       if (scope === 'region') {
         return nodes.filter((n) => n.type === 'location' && n.region_id === view.id);
       }
-
-      const ordered: AggregateNode[] = [];
-      const districts =
-        scope === 'district'
-          ? nodes.filter((n) => n.type === 'district' && n.id === view.id)
-          : nodes.filter((n) => n.type === 'district');
-      for (const d of districts) {
-        // At district scope the rayon itself is the node you are standing on;
-        // the breadcrumb already names it, so don't repeat it as a row.
-        if (scope !== 'district') ordered.push(d);
-        const kawasan = nodes.filter((n) => n.type === 'region' && n.district_id === d.id);
-        const lokasi = nodes.filter((n) => n.type === 'location' && n.district_id === d.id);
-        for (const k of kawasan) {
-          ordered.push(k);
-          ordered.push(...lokasi.filter((l) => l.region_id === k.id));
-        }
-        // Lokasi with no kawasan sit directly under the rayon.
-        ordered.push(...lokasi.filter((l) => !l.region_id));
+      if (scope === 'district') {
+        return [
+          ...nodes.filter((n) => n.type === 'region' && n.district_id === view.id),
+          // Lokasi with no kawasan hang directly off the rayon, so they are part
+          // of this level too — the map has always drawn them here.
+          ...nodes.filter(
+            (n) => n.type === 'location' && n.district_id === view.id && !n.region_id
+          ),
+        ];
       }
-      return ordered;
+      return nodes.filter((n) => n.type === 'district');
     }
+
     if (scope === 'region') {
       // At region scope: filter the district's location nodes by region_id.
       const areas = regionAreasAgg.data?.nodes ?? [];
       return areas.filter((n) => n.region_id === view.id);
     }
     if (scope === 'district') {
-      // At district scope: show region nodes if available (≥1), otherwise show location nodes (region-less fallback).
-      if (regionAgg.data && regionAgg.data.nodes.length > 0) {
-        return regionAgg.data.nodes;
-      }
-      return districtAgg.data?.nodes ?? [];
+      // Kawasan AND the rayon's region-less lokasi — the same set the map draws
+      // here. This used to return kawasan alone whenever there was at least one,
+      // so a rayon with both kinds of child listed only half of them while the
+      // map showed all of them.
+      return [
+        ...(regionAgg.data?.nodes ?? []),
+        ...(districtAgg.data?.nodes ?? []).filter((n) => !n.region_id),
+      ];
     }
     if (scope === 'city') return cityAgg.data?.nodes ?? [];
     return [];
@@ -1096,6 +1105,21 @@ export default function MonitoringPage() {
     return q ? listNodes.filter((n) => n.name.toLowerCase().includes(q)) : listNodes;
   }, [listNodes, filters.search]);
 
+  /**
+   * Tier badges on the rows, shown only when the level actually MIXES tiers —
+   * which happens at rayon scope, where kawasan and region-less lokasi are
+   * siblings.
+   *
+   * Derived rather than tied to the mode. It used to be `isZoom`, from when zoom
+   * listed the whole flattened subtree and every row needed saying what it was;
+   * now both modes list one level, so keying it off the mode would badge
+   * identical content in one and not the other.
+   */
+  const showNodeTier = useMemo(
+    () => new Set(filteredNodes.map((n) => n.type)).size > 1,
+    [filteredNodes]
+  );
+
   // A worker belongs to the drill level that matches THEIR SCHEDULE SCOPE
   // (`display_scope`): a lokasi-scheduled worker shows only at that lokasi, a
   // district-scheduled worker only at that district, a city-wide/unassigned worker only
@@ -1472,7 +1496,7 @@ export default function MonitoringPage() {
             nodes={filteredNodes}
             onDrillNode={onDrillListNode}
             onNodeDetail={(n) => setDetailNodeId(n.id)}
-            showNodeTier={isZoom}
+            showNodeTier={showNodeTier}
             activeGeoId={activeGeoId}
             isHidden={isHidden}
             onToggleHidden={toggleHidden}
