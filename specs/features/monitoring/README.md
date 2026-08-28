@@ -52,6 +52,11 @@ Real-time supervisor dashboard: live worker positions, five-status tracking, and
 - [scheduling](../scheduling/README.md)
 - [teams](../teams/README.md)
 
+## Parity
+
+Web ⇄ mobile feature inventory, gaps in both directions, and the divergences that are
+deliberate: [PARITY.md](./PARITY.md).
+
 ## Changelog
 
 Moved to [CHANGELOG.md](./CHANGELOG.md) (newest first) to keep this overview short. Add new entries there.
