@@ -365,11 +365,12 @@
     "drillHint": "Ketuk wilayah untuk masuk satu tingkat. Petugas tampil di tingkat jadwalnya.",
     "zoomHint": "Tampilkan semua rayon, kawasan, lokasi, dan petugas sekaligus. Ketuk wilayah untuk membatasi ke wilayah itu.",
     "viewport": "Zoom (layar)",
-    "viewportHint": "Sama seperti Zoom, tetapi hanya memuat area yang terlihat di layar. Geser atau perkecil peta untuk memuat lebih banyak.",
+    "viewportHint": "Sama seperti Zoom, tetapi hanya memuat area yang terlihat di layar dan menampilkan penanda paling penting lebih dulu. Perbesar untuk memunculkan sisanya.",
     "zoomInFor": {
       "region": "Perbesar untuk melihat kawasan",
       "location": "Perbesar untuk melihat lokasi & petugas"
-    }
+    },
+    "revealHint": "Titik kecil = penanda lain. Ketuk, atau perbesar untuk melihat detailnya."
   },
   "lifecycle": {
     "late": "Terlambat",

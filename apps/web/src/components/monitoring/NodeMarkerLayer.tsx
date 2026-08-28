@@ -21,6 +21,7 @@ import {
   HEALTH_COLORS,
   KIND_DEFAULT_GLYPH,
   MARKER_NEUTRAL_OUTLINE,
+  dotElement,
 } from '@/lib/monitoring/markers';
 
 export interface NodeMarker {
@@ -68,6 +69,13 @@ export interface NodeMarkerLayerProps {
    * so this gates the label rather than filtering the node out.
    */
   showLabels?: Partial<Record<NodeMarker['variant'], boolean>>;
+  /**
+   * Progressive reveal (viewport mode). Ids in this set draw as full pins;
+   * everything else draws as a {@link dotElement} — present, positioned and
+   * clickable, but silent. `null` (drill and zoom mode) means every node draws
+   * in full, exactly as before this existed.
+   */
+  promoted?: Set<string> | null;
 }
 
 export function NodeMarkerLayer({
@@ -76,6 +84,7 @@ export function NodeMarkerLayer({
   onDetail,
   activeGeoId,
   showLabels,
+  promoted,
 }: NodeMarkerLayerProps) {
   // `build()` is memoized by signature, so a handler captured inside it would go
   // stale the moment the callback identity changed. The ref is read at CLICK
@@ -104,6 +113,10 @@ export function NodeMarkerLayer({
         // health-tinted so per-node status reads too.
         const health = rosterHealth(node.scheduled, node.clocked_in);
         const big = node.variant === 'district' || node.variant === 'region';
+        // Demoted: this node lost its screen cell to a more salient neighbour,
+        // or fell past the cap. It still renders and still drills on click —
+        // only its detail is deferred until there is room for it.
+        const demoted = promoted != null && !promoted.has(node.id);
         // Geo-filter spotlight: dim the nodes that don't match the selection so the
         // selected one stands out; the name label stays readable either way.
         const dimmed = activeGeoId != null && node.id !== activeGeoId;
@@ -117,13 +130,14 @@ export function NodeMarkerLayer({
           // element for a change that cannot alter a pixel.
           `${node.variant}|${node.marker_icon ?? ''}` +
           `|${node.active}|${node.scheduled}|${node.clocked_in}|${node.name}|${dimmed ? 1 : 0}` +
-          `|${onDetail ? 1 : 0}|${withLabel ? 1 : 0}`;
+          `|${onDetail ? 1 : 0}|${withLabel ? 1 : 0}|${demoted ? 'dot' : 'pin'}`;
         return (
           <AdvancedPinMarker
             key={`node-${node.id}`}
             position={{ lat: node.lat, lng: node.lng }}
             signature={signature}
             build={() => {
+              if (demoted) return dotElement(HEALTH_COLORS[health], dimmed);
               const el = pinElement(
                 node.marker_icon ?? KIND_DEFAULT_GLYPH[node.variant] ?? null,
                 {
@@ -173,7 +187,7 @@ export function NodeMarkerLayer({
             }}
             onClick={() => onDrill?.(node)}
             title={node.name}
-            zIndex={dimmed ? 3 : node.variant === 'surabaya' ? 8 : 5}
+            zIndex={demoted ? 2 : dimmed ? 3 : node.variant === 'surabaya' ? 8 : 5}
           />
         );
       })}

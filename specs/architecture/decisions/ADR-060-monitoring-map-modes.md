@@ -183,6 +183,74 @@ without truncating their labels.
 - Mobile keeps drill mode only until parity work lands, widening a platform gap the client has already
   raised.
 
+## Amendment — progressive reveal in viewport mode (2026-08-28)
+
+The tier thresholds answered *"does this tier fit?"*. On the real dataset that is still the wrong
+question: past zoom 13 every one of the 129 kawasan drew an identical pin, so the one with nobody
+clocked in looked exactly like the ninety that were fine. The client's words, with a screenshot of the
+result: show the notable markers first and reveal the rest as you zoom, the way Google Maps does — for
+worker pins as much as for areas.
+
+**Decision.** Keep the tier thresholds exactly as they are (they still gate which tiers are eligible),
+and rank *within* them against a screen-space budget.
+
+    eligible (tiersAtZoom) → cull to viewport → score → grid declutter → promoted
+
+Four new modules, each pure and independently testable:
+
+| Module | Responsibility |
+|---|---|
+| `lib/monitoring/mercator.ts` | lat/lng → pixels. Collision is a screen question, not a ground one. |
+| `lib/monitoring/salience.ts` | urgency + affinity + tier → one number |
+| `lib/monitoring/affinity.ts` | per-browser "places this operator watches", decayed and bounded |
+| `lib/monitoring/declutter.ts` | 88 px grid, cell winner takes a slot, hard cap 60 |
+
+**Salience is urgency-first.** `3·tidak_hadir + 2·belum_hadir`, plus a flat 1.5 when a rostered area has
+nobody on it at all — without that term a one-person site standing empty scores the same as an
+eight-person site missing one, and small total outages vanish. A calm, fully staffed area scores
+exactly **zero**, which is what makes an empty-looking map a truthful signal rather than an artefact of
+the budget. Workers score the same way: absent 3, outside their area 2.5, stale ping 2, off-schedule 1.
+
+**Affinity is bounded at 3, deliberately.** It is the client's "places you looked at before", summed as
+`2^(−ageDays/7)` over the last 20 visits and pruned to 200 entities / 90 days. The ceiling is the safety
+property: familiarity can break a tie between two quiet areas and can **never** outrank an outage. A map
+that showed an operator their habits instead of their problems would be worse than one with no ranking.
+
+**Nothing is hidden.** A marker that loses its cell renders as a `marker-dot` at its true position, in
+its own status colour, still clickable, still drilling. This is the same rule that removed clustering
+from this map ("it hid people and confused operators") — the dot *is* the marker, at low priority.
+Demoted kawasan and lokasi also drop their polygon **fill** while keeping their outline: the fill is the
+heaviest thing the map paints and the least informative at low priority.
+
+**Viewport mode only.** Drill mode is untouched by definition; zoom mode deliberately draws everything,
+which is the trade the client chose there. `computeReveal` returns nulls when disabled and both modes
+render byte-for-byte as before — asserted directly.
+
+**Measured**, on the live dataset (1089 nodes: 8 rayon / 129 kawasan / 952 lokasi), all tiers in view,
+which is the worst case by construction:
+
+| zoom | eligible | full pins | dots | ranking cost |
+|---|---|---|---|---|
+| 11–12 | 8 | 7 | 1 | 0.2 ms |
+| 13 | 137 | 51 | 86 | 0.4 ms |
+| 14.5+ | 1089 | 60 | 1029 | 1.9 ms |
+
+Ranking is free; the residual cost is the dot elements, which viewport culling cuts further in practice
+(this table deliberately does not cull, so the numbers are the ceiling and not the typical case).
+
+**Bad / accepted**
+
+- `DEFAULT_CELL_PX = 88` and `DEFAULT_CAP = 60` are judgement calls, not derivations. They are named
+  constants in one file precisely so they can be retuned against operator feedback.
+- 1029 dots is still 1029 DOM elements. Cheap ones — one `<div>`, no SVG, no label — but the tail is
+  not free, and a materially larger geography would need a second look.
+- Ranking the *culled* set means panning re-ranks. Intended (the budget is a property of the screen),
+  but it does mean a marker can change form as the camera moves.
+- Drilling into a rayon leaves the camera near zoom 12, below the kawasan threshold, so the drill alone
+  reveals nothing new in viewport mode. Pre-existing tier behaviour, now more visible; worth revisiting
+  with the client.
+- Mobile does not have this yet, widening the platform gap ADR-060 already noted.
+
 ## Verification
 
 - Drill mode's numbers must be **byte-identical** before and after this change: zoom alters what is

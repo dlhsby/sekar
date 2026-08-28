@@ -5,6 +5,7 @@
 import { useEffect } from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { SimpleMonitoringMap, type SimpleWorker } from '../SimpleMonitoringMap';
+import type { NodeMarker } from '../NodeMarkerLayer';
 import type { BoundariesResponse } from '@/lib/api/monitoring-types';
 
 // Native control stack — createLocateControl pushes the My-Location button here.
@@ -78,8 +79,24 @@ jest.mock('@react-google-maps/api', () => ({
 // The node/worker layers + current-node pin now render AdvancedMarker; mock it to
 // a clickable button so the existing marker-count/click assertions still apply.
 jest.mock('@/components/maps/AdvancedMarker', () => ({
-  AdvancedMarker: ({ onClick }: { onClick?: () => void }) => (
-    <button data-testid="marker" onClick={() => onClick?.()} />
+  // `content` is a detached DOM element, so it never reaches the document and
+  // cannot be queried. Surface the two things tests need from it — the title and
+  // whether progressive reveal demoted this marker to a dot — as attributes.
+  AdvancedMarker: ({
+    onClick,
+    content,
+    title,
+  }: {
+    onClick?: () => void;
+    content?: HTMLElement;
+    title?: string;
+  }) => (
+    <button
+      data-testid="marker"
+      title={title}
+      data-dot={content?.classList?.contains('marker-dot') ? '1' : '0'}
+      onClick={() => onClick?.()}
+    />
   ),
 }));
 
@@ -516,5 +533,81 @@ describe('SimpleMonitoringMap', () => {
     const extended = (globalThis as any).__boundsExtended as Array<{ lat: number; lng: number }>;
     expect(extended.length).toBeGreaterThan(0);
     expect(extended.some((p) => p.lng > 100 && p.lng < 110)).toBe(false);
+  });
+});
+
+describe('progressive reveal (viewport mode)', () => {
+  /** Two kawasan at effectively the same spot — guaranteed to share a screen cell at zoom 11. */
+  const stacked = (over: Partial<NodeMarker> = {}): NodeMarker[] => [
+    {
+      id: 'calm',
+      name: 'Kawasan Tenang',
+      variant: 'region',
+      lat: -7.28,
+      lng: 112.74,
+      scheduled: 8,
+      clocked_in: 8,
+      belum_hadir: 0,
+      tidak_hadir: 0,
+      active: 8,
+      active_inside: 8,
+      ...over,
+    },
+    {
+      id: 'outage',
+      name: 'Kawasan Kosong',
+      variant: 'region',
+      lat: -7.28001,
+      lng: 112.74,
+      scheduled: 8,
+      clocked_in: 0,
+      belum_hadir: 0,
+      tidak_hadir: 8,
+      active: 0,
+      active_inside: 0,
+    },
+  ];
+
+  it('promotes the area with nobody clocked in over the calm one beside it', () => {
+    // The client's complaint, asserted: in a crowd, the map must draw the thing
+    // that is wrong, not whichever happened to be first in the array.
+    render(
+      <SimpleMonitoringMap
+        mode="viewport"
+        scope="city"
+        workers={[]}
+        boundaries={boundaries}
+        nodeMarkers={stacked()}
+      />
+    );
+    const dots = screen.getAllByTestId('marker').filter((m) => m.dataset.dot === '1');
+    expect(dots).toHaveLength(1);
+    expect(dots[0].getAttribute('title')).toBe('Kawasan Tenang');
+  });
+
+  it('leaves drill mode completely alone', () => {
+    // The load-bearing regression guard for this whole feature.
+    render(
+      <SimpleMonitoringMap
+        scope="city"
+        workers={[]}
+        boundaries={boundaries}
+        nodeMarkers={stacked()}
+      />
+    );
+    expect(screen.getAllByTestId('marker').filter((m) => m.dataset.dot === '1')).toHaveLength(0);
+  });
+
+  it('leaves zoom mode completely alone', () => {
+    render(
+      <SimpleMonitoringMap
+        mode="zoom"
+        scope="city"
+        workers={[]}
+        boundaries={boundaries}
+        nodeMarkers={stacked()}
+      />
+    );
+    expect(screen.getAllByTestId('marker').filter((m) => m.dataset.dot === '1')).toHaveLength(0);
   });
 });

@@ -1448,9 +1448,15 @@ export default function MonitoringPage() {
       {/* Viewport mode reveals tiers with the camera, so it has to SAY so —
           otherwise a missing kawasan layer reads as broken data rather than as
           "not yet". Disappears once the map is at full depth. */}
-      {isViewport && nextTierAt(mapZoom) && (
+      {/* Once at full depth the tier hint is replaced by the reveal hint: the map
+          is now showing every eligible tier, but only the most salient markers
+          in full (see `useProgressiveReveal`). Without this line the dot field
+          reads as decoration rather than as markers waiting to be opened. */}
+      {isViewport && (
         <div className="pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2 rounded-nb-base border-2 border-nb-black bg-nb-white px-3 py-1.5 text-xs font-bold text-nb-black shadow-nb-xs">
-          {t(`monitoring:mode.zoomInFor.${nextTierAt(mapZoom)}`)}
+          {nextTierAt(mapZoom)
+            ? t(`monitoring:mode.zoomInFor.${nextTierAt(mapZoom)}`)
+            : t('monitoring:mode.revealHint')}
         </div>
       )}
 

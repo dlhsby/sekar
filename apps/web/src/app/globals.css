@@ -576,6 +576,25 @@ body {
     background: var(--color-nb-primary);
   }
 
+  /* Demoted marker (progressive reveal, ADR-060). A marker that did not win a
+     full-pin slot at this zoom draws as this dot: present, positioned and
+     clickable, but silent. Clicking promotes it — that is why it keeps a
+     pointer cursor and a hit area larger than its ink. NEVER used to hide a
+     marker; the dot IS the marker at low priority. */
+  .marker-dot {
+    width: 10px;
+    height: 10px;
+    border: 2px solid var(--color-nb-white);
+    border-radius: 9999px;
+    box-shadow: 0 0 0 1px rgb(0 0 0 / 0.35);
+    cursor: pointer;
+    pointer-events: auto;
+    transition: transform 120ms ease-out;
+  }
+  .marker-dot:hover {
+    transform: scale(1.6);
+  }
+
   /* Worker name under a pin: neutral dark (the pin color already carries
      status) with the same white halo so it reads over any base-map color. */
   .worker-marker-label {

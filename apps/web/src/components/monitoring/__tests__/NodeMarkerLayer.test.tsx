@@ -198,3 +198,74 @@ describe('NodeMarkerLayer unified pin', () => {
     expect(svg()).not.toContain('#FF00FF');
   });
 });
+
+describe('progressive reveal (viewport mode)', () => {
+  it('draws every node in full when no promoted set is given', () => {
+    // Drill and zoom mode. The absence of a set must mean "no budget", never
+    // "budget of zero" — that inversion would blank the map in two modes this
+    // feature is not supposed to touch.
+    render(
+      <NodeMarkerLayer nodes={[makeNode({ id: 'a' }), makeNode({ id: 'b', lat: -7.3 })]} />
+    );
+    expect(markers).toHaveLength(2);
+    markers.forEach((m) => expect(m.content.querySelector('svg')).toBeTruthy());
+  });
+
+  it('renders a demoted node as a dot, not a pin', () => {
+    render(
+      <NodeMarkerLayer
+        nodes={[makeNode({ id: 'winner' }), makeNode({ id: 'loser', lat: -7.3 })]}
+        promoted={new Set(['winner'])}
+      />
+    );
+    const [winner, loser] = markers;
+    expect(winner.content.querySelector('svg')).toBeTruthy();
+    expect(loser.content.classList.contains('marker-dot')).toBe(true);
+    expect(loser.content.querySelector('svg')).toBeNull();
+  });
+
+  it('keeps a demoted node clickable, so nothing is unreachable', () => {
+    // The rule this map runs on: presentation may de-emphasise, never hide. A
+    // dot that could not be opened would be exactly the clustering behaviour
+    // that was removed for hiding people.
+    const onDrill = jest.fn();
+    render(
+      <NodeMarkerLayer nodes={[makeNode({ id: 'dot' })]} promoted={new Set()} onDrill={onDrill} />
+    );
+    markers[0].onClick?.();
+    expect(onDrill).toHaveBeenCalledWith(expect.objectContaining({ id: 'dot' }));
+  });
+
+  it('colours the dot by staffing health, so a red dot still means trouble', () => {
+    render(
+      <NodeMarkerLayer
+        nodes={[makeNode({ id: 'outage', scheduled: 5, clocked_in: 0 })]}
+        promoted={new Set()}
+      />
+    );
+    expect(markers[0].content.style.background).toBeTruthy();
+    // `none` = rostered, nobody clocked in.
+    const expected = HEALTH_COLORS.none.toLowerCase();
+    const actual = markers[0].content.style.background;
+    // jsdom normalises hex to rgb(); compare on the parsed channels.
+    const hex = (c: string) =>
+      `#${c
+        .replace(/[^\d,]/g, '')
+        .split(',')
+        .map((n) => Number(n).toString(16).padStart(2, '0'))
+        .join('')}`;
+    expect(hex(actual)).toBe(expected);
+  });
+
+  it('draws demoted nodes beneath promoted ones', () => {
+    // A dot overlapping a full pin must never take its click target.
+    render(
+      <NodeMarkerLayer
+        nodes={[makeNode({ id: 'up' }), makeNode({ id: 'down', lat: -7.3 })]}
+        promoted={new Set(['up'])}
+      />
+    );
+    const [up, down] = markers;
+    expect(down.zIndex!).toBeLessThan(up.zIndex!);
+  });
+});
