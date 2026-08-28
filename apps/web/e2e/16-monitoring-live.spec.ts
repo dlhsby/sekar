@@ -60,6 +60,42 @@ test.describe('Monitoring — live backend', () => {
     );
   });
 
+  test('the settings panel fits, and its controls are one size', async ({ page }) => {
+    // Two defects in one measurement. The layer rows were a label plus a fixed
+    // 176px control in a 256px panel, so the longest label ("Petugas & Tim")
+    // pushed its control past the edge and the panel grew a horizontal
+    // scrollbar. And the controls were a smaller kind of control than the mode
+    // select sitting directly above them, which read as two different things.
+    //
+    // Measured rather than eyeballed: both are layout facts jsdom cannot see.
+    await loginAndOpenMonitoring(page);
+    await openSettings(page);
+
+    const m = await page.evaluate(() => {
+      const mode = document.querySelector('#monitoring-mode') as HTMLElement;
+      const panel = mode.closest('div') as HTMLElement;
+      const combos = Array.from(document.querySelectorAll('[role="combobox"]')) as HTMLElement[];
+      const box = (el: HTMLElement) => el.getBoundingClientRect();
+      return {
+        overflowX: panel.scrollWidth - panel.clientWidth,
+        modeHeight: Math.round(box(mode).height),
+        heights: combos.map((c) => Math.round(box(c).height)),
+        lefts: combos.map((c) => Math.round(box(c).left)),
+        rights: combos.map((c) => Math.round(box(c).right)),
+      };
+    });
+
+    console.log(`[panel] overflowX=${m.overflowX} modeH=${m.modeHeight} comboH=${m.heights}`);
+    // Nothing spills out of the panel.
+    expect(m.overflowX).toBeLessThanOrEqual(0);
+    // Every layer control is the same height as the mode select above them.
+    expect(m.heights).toHaveLength(4);
+    for (const h of m.heights) expect(h).toBe(m.modeHeight);
+    // And they form a column: one left edge, one right edge.
+    expect(new Set(m.lefts).size).toBe(1);
+    expect(new Set(m.rights).size).toBe(1);
+  });
+
   test('zoom mode draws more of the hierarchy than drill at city scope', async ({ page }) => {
     await loginAndOpenMonitoring(page);
 

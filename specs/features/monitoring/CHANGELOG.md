@@ -7,7 +7,10 @@ Newest first. Feature overview + current design live in [README.md](./README.md)
   `Semua` / `Sembunyikan` are now the dropdown's own all-row, which shows *mixed* on a partial
   selection. The closed control names what is on ("Batas, Marker"), so a tier's state is readable
   without opening it. New shared primitive `ui/MultiSelect` — the lean sibling of `FormMultiCombobox`,
-  with no search, chips, or form-field chrome.
+  with no search, chips, or form-field chrome. Panel layout reworked in the same pass: the layer rows
+  are a two-column grid (labels share a column, controls share the rest) in a wider `w-80` panel, the
+  controls match the mode select's size exactly, and a rule separates the two sections. The old
+  fixed-width control overflowed the panel on the longest label.
 
 - **2026-08-28** — A long area name no longer pushes the hide and detail buttons off its row: the name
   had `truncate` but nothing in the chain above it could shrink (a flex item defaults to

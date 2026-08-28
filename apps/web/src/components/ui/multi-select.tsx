@@ -46,6 +46,8 @@ export interface MultiSelectProps {
   selectAllLabel?: string;
   disabled?: boolean;
   className?: string;
+  /** Extra classes for the dropdown surface (e.g. to widen it past the trigger). */
+  contentClassName?: string;
 }
 
 export function MultiSelect({
@@ -58,6 +60,7 @@ export function MultiSelect({
   selectAllLabel,
   disabled = false,
   className,
+  contentClassName,
 }: MultiSelectProps): React.JSX.Element {
   const [open, setOpen] = React.useState(false);
   const listboxId = React.useId();
@@ -97,8 +100,11 @@ export function MultiSelect({
           aria-label={ariaLabel}
           disabled={disabled}
           onClick={() => setOpen(!open)}
+          // Sized to match a native `<select>` in the same surface: same height,
+          // radius, border and type scale. A control that merely behaves like a
+          // select should not read as a different KIND of control beside one.
           className={cn(
-            'flex w-full items-center justify-between gap-2 rounded-nb-sm border-2 border-nb-black bg-nb-white px-2 py-1.5 text-left text-xs font-bold text-nb-black',
+            'flex min-h-touch w-full items-center justify-between gap-2 rounded-nb-sm border-2 border-nb-black bg-nb-white px-2 py-1 text-left text-sm font-bold text-nb-black',
             'hover:bg-nb-gray-50 disabled:cursor-not-allowed disabled:opacity-50',
             noneOn && 'text-nb-gray-500',
             nbFocusRing,
@@ -112,12 +118,12 @@ export function MultiSelect({
 
       <PopoverContent
         align="start"
-        className="w-[var(--radix-popover-trigger-width)] min-w-40 p-1"
+        className={cn('min-w-[var(--radix-popover-trigger-width)] w-auto p-1', contentClassName)}
       >
         <ul id={listboxId} role="listbox" aria-multiselectable aria-label={ariaLabel}>
           <li role="option" aria-selected={allOn} className="border-b-2 border-nb-gray-100 pb-1">
             <Checkbox
-              className="w-full rounded-nb-sm px-2 py-1.5 text-xs font-bold hover:bg-nb-gray-100"
+              className="w-full rounded-nb-sm px-2 py-1.5 text-sm font-bold hover:bg-nb-gray-100"
               label={selectAllLabel ?? allLabel}
               checked={allOn}
               // Mixed, not unchecked: a partial selection is neither, and
@@ -131,7 +137,7 @@ export function MultiSelect({
             return (
               <li key={option.value} role="option" aria-selected={on}>
                 <Checkbox
-                  className="w-full rounded-nb-sm px-2 py-1.5 text-xs font-bold hover:bg-nb-gray-100"
+                  className="w-full rounded-nb-sm px-2 py-1.5 text-sm font-bold hover:bg-nb-gray-100"
                   label={option.label}
                   checked={on}
                   onChange={() => toggle(option.value)}
