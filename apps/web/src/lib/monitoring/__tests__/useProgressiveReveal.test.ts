@@ -5,7 +5,7 @@
  * zoom mode untouched, layers independent of each other, and the operator's
  * current selection always drawn.
  */
-import { computeReveal, quantiseZoom, REVEAL_OFF, type ProgressiveRevealInput } from '../useProgressiveReveal';
+import { computeReveal, quantiseZoom, type ProgressiveRevealInput } from '../useProgressiveReveal';
 
 const LAT = -7.2575;
 const LNG = 112.7521;
@@ -50,10 +50,35 @@ describe('quantiseZoom', () => {
 });
 
 describe('computeReveal', () => {
-  it('is inert when disabled, so drill and zoom mode are untouched', () => {
-    // The load-bearing regression guard: those two modes must render exactly as
-    // they did before this feature existed.
-    expect(computeReveal(input({ enabled: false, nodes: [node('a', 0)] }))).toEqual(REVEAL_OFF);
+  it('draws every marker when the pin pass is off, in drill and zoom mode', () => {
+    // The load-bearing guard: those two modes must still draw every marker, its
+    // count and its gesture. `promoted*` null is what callers read as "full pin".
+    const r = computeReveal({
+      ...input({ enabled: false, nodes: [node('a', 0)] }),
+      workers: [worker('w', 0)],
+    });
+    expect(r.promotedNodes).toBeNull();
+    expect(r.promotedWorkers).toBeNull();
+  });
+
+  it('still declutters LABELS when the pin pass is off', () => {
+    // Pins are presence; labels are detail. Two names cannot occupy the same
+    // pixels in any mode, and printing them anyway destroys information rather
+    // than adding it — measured in drill mode, 40 labels gave 22 overlapping
+    // pairs and neither name in a pair was readable.
+    const crowd = Array.from({ length: 40 }, (_, i) => node(`n${i}`, i));
+    const r = computeReveal(input({ enabled: false, nodes: crowd, zoom: 12 }));
+    expect(r.labelledNodes).not.toBeNull();
+    expect(r.labelledNodes!.size).toBeLessThan(crowd.length);
+    expect(r.labelledNodes!.size).toBeGreaterThan(0);
+  });
+
+  it('labels from the FULL set when the pin pass is off, not from a promoted subset', () => {
+    // With no pin pass every marker is drawn, so every marker is a label
+    // candidate. Filtering by a promoted set that does not exist would label
+    // nothing at all.
+    const r = computeReveal(input({ enabled: false, nodes: [node('lonely', 0)] }));
+    expect(r.labelledNodes).toEqual(new Set(['lonely']));
   });
 
   it('promotes the troubled area over the calm ones it collides with', () => {
@@ -167,10 +192,28 @@ describe('computeReveal', () => {
     expect(r.promotedNodes!.size).toBeGreaterThan(r.labelledNodes!.size);
   });
 
-  it('leaves labels alone when reveal is off', () => {
-    const off = computeReveal(input({ enabled: false, nodes: [node('a', 0)] }));
-    expect(off.labelledNodes).toBeNull();
-    expect(off.labelledWorkers).toBeNull();
+  it('never demotes the label of whatever the sidebar is describing', () => {
+    // The selected worker and the open node keep their names in every mode, for
+    // the same reason they keep their pins: the card must not describe something
+    // the map has left anonymous.
+    const crowd = Array.from({ length: 40 }, (_, i) => node(`n${i}`, i));
+    const r = computeReveal(
+      input({ enabled: false, nodes: crowd, zoom: 12, exemptNodeIds: ['n39'] })
+    );
+    expect(r.labelledNodes!.has('n39')).toBe(true);
+  });
+
+  it('lets a rayon lose its NAME even though it never loses its pin', () => {
+    // The frame exemption is about presence, not detail. A rayon must always be
+    // drawn — it is how you know where you are — but its name may yield to a
+    // neighbour that needs the space more.
+    const stacked = [
+      node('busy', 0, { clocked_in: 0, tidak_hadir: 9 }),
+      node('rayon', 0, { variant: 'district' as const }),
+    ];
+    const r = computeReveal(input({ nodes: stacked, zoom: 11 }));
+    expect(r.promotedNodes!.has('rayon')).toBe(true); // presence: always
+    expect(r.labelledNodes!.size).toBe(1); // detail: only one name fits
   });
 
   it('never promotes more than the cap', () => {

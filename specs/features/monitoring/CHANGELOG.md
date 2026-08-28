@@ -5,7 +5,10 @@ Newest first. Feature overview + current design live in [README.md](./README.md)
 - **2026-08-28** — The list panel is "Daftar Area dan Petugas" (it has held both halves since the
   Wilayah tab landed) and its header now carries the drill breadcrumb instead of a static title —
   extracted as `MonitoringBreadcrumb` and shared with the map's bar, so the two cannot disagree about
-  where the operator is.
+  where the operator is. Label decluttering now runs in **every** mode, not just viewport: drill is the
+  default map and had 40 labels in 22 overlapping pairs. Pins are presence and labels are detail, so
+  drill and zoom still draw every marker, count and gesture — they just stop printing unreadable names
+  (drill measured after: 26 pins, 0 dots, 6 labels, 0 overlaps).
 
 - **2026-08-28** — Viewport mode now ranks markers instead of drawing every eligible one: salience
   (urgency + per-operator affinity + tier) picks the winners of an 88 px screen grid, capped at 60 per

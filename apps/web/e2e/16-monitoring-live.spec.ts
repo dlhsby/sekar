@@ -270,6 +270,50 @@ test.describe('Monitoring — live backend', () => {
     await expect(page.getByText(/perbesar untuk melihat (kawasan|lokasi)/i)).toHaveCount(0);
   });
 
+  test('no two labels overlap in DRILL mode either — the default map', async ({ page }) => {
+    // Drill is the default, so this is the map most operators actually see, and
+    // it had the worst of it: 40 labels producing 22 overlapping pairs, with
+    // neither name in a pair readable.
+    //
+    // Drill mode still draws every marker, every count and every gesture — only
+    // the label pass applies here. Pins are presence; labels are detail.
+    await loginAndOpenMonitoring(page);
+    await page.waitForTimeout(3000);
+    await page.locator('gmp-advanced-marker[title^="Rayon"]').first().click();
+    await page.waitForTimeout(5000);
+
+    const report = await page.evaluate(() => {
+      const els = Array.from(
+        document.querySelectorAll('.node-marker-label, .worker-marker-label')
+      );
+      const boxes = els
+        .map((e) => ({ t: (e.textContent || '').trim(), r: e.getBoundingClientRect() }))
+        .filter((b) => b.r.width > 0 && b.r.height > 0);
+      const pairs: string[] = [];
+      for (let i = 0; i < boxes.length; i++) {
+        for (let j = i + 1; j < boxes.length; j++) {
+          const a = boxes[i].r;
+          const b = boxes[j].r;
+          if (a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom) {
+            pairs.push(`${boxes[i].t} <> ${boxes[j].t}`);
+          }
+        }
+      }
+      // Markers are NOT reduced in drill mode — that is the invariant this mode
+      // is defined by, so it is asserted alongside.
+      const markers = document.querySelectorAll('gmp-advanced-marker svg').length;
+      const dots = document.querySelectorAll('.marker-dot').length;
+      return { labels: boxes.length, pairs, markers, dots };
+    });
+
+    console.log(
+      `[reveal] DRILL labels=${report.labels} overlapping=${report.pairs.length} pins=${report.markers} dots=${report.dots}`
+    );
+    expect(report.pairs).toEqual([]);
+    // Nothing was demoted to a dot: drill draws every marker in full, as before.
+    expect(report.dots).toBe(0);
+  });
+
   test('no two labels overlap in viewport mode', async ({ page }) => {
     // Measured, not eyeballed. Labels are what actually collide on this map: a
     // pin is ~40px and its name ~150, so decluttering runs twice — pins at 56px,

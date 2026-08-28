@@ -16,11 +16,19 @@
  *
  * Everything not promoted still draws, as a dot. Nothing is hidden.
  *
- * **Viewport mode only.** Drill mode is unchanged by definition, and zoom mode
- * deliberately draws everything at every zoom — that is the trade the client
- * chose there, and quietly ranking it would answer a question she did not ask.
- * When `enabled` is false both sets are `null`, which callers read as "draw
- * every marker in full", so those two modes stay byte-for-byte as they were.
+ * **Pins are presence; labels are detail.** That distinction decides which
+ * modes get which pass:
+ *
+ *  - The **pin** pass runs in viewport mode only. Drill mode is unchanged by
+ *    definition, and zoom mode deliberately draws everything at every zoom —
+ *    that is the trade the client chose there. `promoted*` is `null` in both,
+ *    which callers read as "draw every marker in full".
+ *  - The **label** pass runs in EVERY mode. Two names cannot occupy the same
+ *    pixels in any mode, and printing them anyway does not add information, it
+ *    destroys it: measured in drill mode at kawasan depth, 40 labels produced 22
+ *    overlapping pairs and neither name in a pair could be read. Withholding a
+ *    name costs nothing that was legible in the first place, and — unlike the
+ *    pin pass — it never removes a marker, a count or a gesture.
  */
 import { useMemo } from 'react';
 import {
@@ -47,7 +55,11 @@ export interface RevealWorker extends SalienceWorker {
 }
 
 export interface ProgressiveRevealInput {
-  /** False in drill/zoom mode — both sets come back null and nothing changes. */
+  /**
+   * Gates the PIN pass only (viewport mode). False in drill and zoom mode, where
+   * every marker is still drawn in full — but their LABELS are decluttered in
+   * every mode. See {@link computeReveal}.
+   */
   enabled: boolean;
   zoom: number | undefined;
   nodes: RevealNode[];
@@ -75,13 +87,6 @@ export interface ProgressiveReveal {
   labelledNodes: Set<string> | null;
   labelledWorkers: Set<string> | null;
 }
-
-export const REVEAL_OFF: ProgressiveReveal = {
-  promotedNodes: null,
-  promotedWorkers: null,
-  labelledNodes: null,
-  labelledWorkers: null,
-};
 
 /**
  * Zoom is quantised before it reaches the grid.
@@ -119,8 +124,6 @@ export function computeReveal({
   cellY = DEFAULT_CELL_Y,
   cap = DEFAULT_CAP,
 }: ProgressiveRevealInput): ProgressiveReveal {
-  if (!enabled) return REVEAL_OFF;
-
   const z = quantiseZoom(zoom);
 
   const nodeCandidates: DeclutterCandidate[] = nodes.map((n) => ({
@@ -150,36 +153,52 @@ export function computeReveal({
     score: scoreWorker(w, affinityOf(w.user_id)),
   }));
 
-  // Pass 1 — which markers are drawn at all, at pin separation.
-  const promotedNodes = declutter(nodeCandidates, {
-    zoom: z,
-    cellX: PIN_CELL_X,
-    cellY: PIN_CELL_Y,
-    cap,
-    exempt: [...frameIds, ...defined(exemptNodeIds)],
-  });
-  const promotedWorkers = declutter(workerCandidates, {
-    zoom: z,
-    cellX: PIN_CELL_X,
-    cellY: PIN_CELL_Y,
-    cap,
-    exempt: defined(exemptWorkerIds),
-  });
+  // Pass 1 — which markers are drawn at all, at pin separation. Viewport only.
+  const promotedNodes = enabled
+    ? declutter(nodeCandidates, {
+        zoom: z,
+        cellX: PIN_CELL_X,
+        cellY: PIN_CELL_Y,
+        cap,
+        exempt: [...frameIds, ...defined(exemptNodeIds)],
+      })
+    : null;
+  const promotedWorkers = enabled
+    ? declutter(workerCandidates, {
+        zoom: z,
+        cellX: PIN_CELL_X,
+        cellY: PIN_CELL_Y,
+        cap,
+        exempt: defined(exemptWorkerIds),
+      })
+    : null;
 
-  // Pass 2 — which of those also get their name, at label separation. Run over
-  // the survivors only, so a label can never appear on a marker that is a dot.
-  // No cap: the wider box is its own limit.
-  const labelPass = (candidates: DeclutterCandidate[], promoted: Set<string>) =>
-    declutter(
-      candidates.filter((c) => promoted.has(c.id)),
-      { zoom: z, cellX, cellY, cap: Number.POSITIVE_INFINITY }
-    );
+  // Pass 2 — which of those also get their name, at label separation. Every
+  // mode: see the module docblock. Run over the drawn markers only (all of them
+  // when the pin pass is off), so a label can never appear on a dot. No cap —
+  // the wider box is its own limit.
+  //
+  // The frame exemption deliberately does NOT carry over here. A rayon must
+  // always be DRAWN, because the frame is how you know where you are; its name
+  // is detail, and detail may yield to a neighbour that needs the space more.
+  const labelPass = (
+    candidates: DeclutterCandidate[],
+    promoted: Set<string> | null,
+    exempt: string[]
+  ) =>
+    declutter(promoted ? candidates.filter((c) => promoted.has(c.id)) : candidates, {
+      zoom: z,
+      cellX,
+      cellY,
+      cap: Number.POSITIVE_INFINITY,
+      exempt,
+    });
 
   return {
     promotedNodes,
     promotedWorkers,
-    labelledNodes: labelPass(nodeCandidates, promotedNodes),
-    labelledWorkers: labelPass(workerCandidates, promotedWorkers),
+    labelledNodes: labelPass(nodeCandidates, promotedNodes, defined(exemptNodeIds)),
+    labelledWorkers: labelPass(workerCandidates, promotedWorkers, defined(exemptWorkerIds)),
   };
 }
 

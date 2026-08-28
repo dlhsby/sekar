@@ -222,9 +222,22 @@ from this map ("it hid people and confused operators") — the dot *is* the mark
 Demoted kawasan and lokasi also drop their polygon **fill** while keeping their outline: the fill is the
 heaviest thing the map paints and the least informative at low priority.
 
-**Viewport mode only.** Drill mode is untouched by definition; zoom mode deliberately draws everything,
-which is the trade the client chose there. `computeReveal` returns nulls when disabled and both modes
-render byte-for-byte as before — asserted directly.
+**Pins are presence; labels are detail** — and that decides which modes get which pass.
+
+The **pin** pass is viewport-mode only. Drill is untouched by definition; zoom deliberately draws
+everything, which is the trade the client chose there. `promoted*` comes back null in both, which
+callers read as "draw every marker in full".
+
+The **label** pass runs in **every mode**. Two names cannot occupy the same pixels regardless of mode,
+and printing them anyway does not add information — it destroys it. Measured in drill mode, the default
+map, at kawasan depth: **40 labels produced 22 overlapping pairs**, and neither name in a pair was
+readable. Withholding a name costs nothing that was legible to begin with, and unlike the pin pass it
+never removes a marker, a count or a gesture: drill still draws 26 pins and 0 dots after the change,
+with 6 names and no overlaps.
+
+The frame exemption deliberately does not carry over to labels. A rayon must always be *drawn* — it is
+how you know where you are — but its *name* is detail and may yield to a neighbour that needs the space
+more.
 
 **Measured**, on the live dataset (1089 nodes: 8 rayon / 129 kawasan / 952 lokasi), all tiers in view,
 which is the worst case by construction:
