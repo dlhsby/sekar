@@ -16,7 +16,13 @@
  */
 import { useMemo } from 'react';
 import { AdvancedPinMarker } from './AdvancedPinMarker';
-import { workerPinElement, statusToActivity, teamMarkerElement } from '@/lib/monitoring/markers';
+import {
+  workerPinElement,
+  statusToActivity,
+  teamMarkerElement,
+  dotElement,
+  workerStatusColor,
+} from '@/lib/monitoring/markers';
 import { groupWorkersByTeam, type TeamGroup } from '@/lib/monitoring/teamGrouping';
 import type { SimpleWorker } from './SimpleMonitoringMap';
 
@@ -39,6 +45,18 @@ export interface WorkerClusterLayerProps {
   /** Collapse ≥2-member teams into one team marker. When false, every worker
    *  (team members included) renders as its own pin. */
   teamBubbles?: boolean;
+  /**
+   * Progressive reveal (viewport mode). User ids in this set draw as full pins;
+   * the rest draw as a status-coloured dot — still positioned, still clickable,
+   * still carrying their state in its colour. `null` means draw everyone in
+   * full, which is drill and zoom mode.
+   *
+   * Team markers are never demoted: a team bubble is already a collapse of many
+   * people into one marker, so demoting it would hide a group behind a dot.
+   */
+  promoted?: Set<string> | null;
+  /** Of the promoted workers, the ones whose name is printed. See NodeMarkerLayer. */
+  labelled?: Set<string> | null;
 }
 
 type Renderable = SimpleWorker | TeamGroup;
@@ -51,6 +69,8 @@ export function WorkerClusterLayer({
   onSelect,
   onTeamClick,
   teamBubbles = true,
+  promoted,
+  labelled,
 }: WorkerClusterLayerProps) {
   // Group workers by team when the Tim layer is on. Teams ALWAYS collapse into
   // one marker regardless of zoom (expandZoom = Infinity) — you reveal the members
@@ -95,16 +115,29 @@ export function WorkerClusterLayer({
         // Individual worker pin. `selected` is baked into the signature so selecting
         // a worker rebuilds only that one pin.
         const selected = r.user_id === selectedId;
+        // Demoted: lost its screen cell to a more salient neighbour. Selection
+        // always wins a slot upstream, so a selected worker is never a dot.
+        const demoted = promoted != null && !promoted.has(r.user_id);
+        const withLabel = labelled == null || labelled.has(r.user_id);
         const signature =
           `worker|${r.role}|${r.status}|${r.is_within_area}|${r.is_scheduled}` +
-          `|${r.role_marker_icon ?? ''}|${r.role_marker_color ?? ''}|${selected ? 1 : 0}|${r.full_name}`;
+          `|${r.role_marker_icon ?? ''}|${r.role_marker_color ?? ''}|${selected ? 1 : 0}|${r.full_name}` +
+          `|${demoted ? 'dot' : 'pin'}|${withLabel ? 1 : 0}`;
         return (
           <AdvancedPinMarker
             key={`worker-${r.user_id}`}
             position={{ lat: r.lat, lng: r.lng }}
             signature={signature}
-            build={() =>
-              workerPinElement(
+            build={() => {
+              const presence = {
+                activity: statusToActivity(r.status),
+                outside: !r.is_within_area,
+                adHoc: !r.is_scheduled,
+                lifecycleState: r.lifecycle_state ?? null,
+                leaveReason: r.leave_reason ?? null,
+              } as const;
+              if (demoted) return dotElement(workerStatusColor(presence));
+              return workerPinElement(
                 r.role,
                 {
                   activity: statusToActivity(r.status),
@@ -118,12 +151,14 @@ export function WorkerClusterLayer({
                   lifecycleState: r.lifecycle_state ?? null,
                   leaveReason: r.leave_reason ?? null,
                 },
-                { text: r.full_name, className: 'worker-marker-label', placement: 'top' }
-              )
-            }
+                withLabel
+                  ? { text: r.full_name, className: 'worker-marker-label', placement: 'top' }
+                  : undefined
+              );
+            }}
             onClick={() => onSelect?.(r.user_id)}
             title={r.full_name}
-            zIndex={selected ? 10 : 4}
+            zIndex={selected ? 10 : demoted ? 2 : 4}
           />
         );
       })}

@@ -13,43 +13,62 @@ describe('MonitoringLayersPanel', () => {
 
   beforeEach(() => jest.clearAllMocks());
 
-  it('renders a facet group for every layer', () => {
+  /** Open a row's dropdown and return a scope for its checkboxes. */
+  const openRow = (name: RegExp) => {
+    fireEvent.click(screen.getByRole('combobox', { name }));
+    return within(screen.getByRole('listbox', { name }));
+  };
+
+  it('renders one control per layer', () => {
     render(<MonitoringLayersPanel {...base} />);
-    expect(screen.getByRole('group', { name: /^rayon$/i })).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: /^kawasan$/i })).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: /^lokasi$/i })).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: /petugas & tim/i })).toBeInTheDocument();
+    for (const name of [/^rayon$/i, /^kawasan$/i, /^lokasi$/i, /petugas & tim/i]) {
+      expect(screen.getByRole('combobox', { name })).toBeInTheDocument();
+    }
+  });
+
+  it('states each row\'s selection on the closed control', () => {
+    // The panel is read far more often than it is changed, so a row has to be
+    // legible without opening it. All four facets on collapses to one word.
+    render(
+      <MonitoringLayersPanel
+        {...base}
+        layers={{ ...DEFAULT_LAYERS, district: ['boundary', 'marker'], kawasan: [] }}
+      />
+    );
+    expect(screen.getByRole('combobox', { name: /^rayon$/i })).toHaveTextContent('Batas, Marker');
+    expect(screen.getByRole('combobox', { name: /^kawasan$/i })).toHaveTextContent(/sembunyikan/i);
+    expect(screen.getByRole('combobox', { name: /^lokasi$/i })).toHaveTextContent(/semua/i);
   });
 
   it('offers boundary, fill, marker and label as INDEPENDENT checkboxes on a geo layer', () => {
     render(<MonitoringLayersPanel {...base} />);
-    const group = screen.getByRole('group', { name: /^rayon$/i });
-    const boxes = within(group).getAllByRole('checkbox');
-    expect(boxes).toHaveLength(4);
-    // Fill was never separately expressible under the four-way select.
-    expect(within(group).getByLabelText(/isian/i)).toBeInTheDocument();
-    expect(boxes.every((b) => (b as HTMLInputElement).checked)).toBe(true);
+    const row = openRow(/^rayon$/i);
+    // Four facets plus the all-row.
+    expect(row.getAllByRole('checkbox')).toHaveLength(5);
+    // Fill was never separately expressible under the four-way select this
+    // whole control replaced.
+    expect(row.getByLabelText(/isian/i)).toBeInTheDocument();
   });
 
   it('reports the whole facet set when one checkbox is toggled', () => {
     render(<MonitoringLayersPanel {...base} />);
-    const group = screen.getByRole('group', { name: /^kawasan$/i });
-    fireEvent.click(within(group).getByLabelText(/isian/i));
+    fireEvent.click(openRow(/^kawasan$/i).getByLabelText(/isian/i));
     // The setter takes a SET, not a delta — the caller never has to merge.
     expect(base.onSetLayer).toHaveBeenCalledWith('kawasan', ['boundary', 'marker', 'label']);
   });
 
-  it('Sembunyikan clears the row', () => {
-    // The shortcuts write the same set the checkboxes do, so the two can never
-    // disagree — the usual failure mode of a "select all" box beside checkboxes.
+  it('clears the row from the all-row when it is full', () => {
+    // Semua/Sembunyikan used to be two link buttons beside the chips. They are
+    // now the list's own all-row, which writes exactly the set the boxes do —
+    // so the shortcut and the options can never disagree.
     render(<MonitoringLayersPanel {...base} />);
-    fireEvent.click(screen.getAllByRole('button', { name: /sembunyikan/i })[0]);
+    fireEvent.click(openRow(/^rayon$/i).getByLabelText(/^semua$/i));
     expect(base.onSetLayer).toHaveBeenCalledWith('district', []);
   });
 
-  it('Semua fills the row', () => {
+  it('fills the row from the all-row when it is empty', () => {
     render(<MonitoringLayersPanel {...base} layers={{ ...DEFAULT_LAYERS, district: [] }} />);
-    fireEvent.click(screen.getAllByRole('button', { name: /^semua$/i })[0]);
+    fireEvent.click(openRow(/^rayon$/i).getByLabelText(/^semua$/i));
     expect(base.onSetLayer).toHaveBeenCalledWith('district', [
       'boundary',
       'fill',
@@ -58,16 +77,25 @@ describe('MonitoringLayersPanel', () => {
     ]);
   });
 
+  it('shows the all-row as mixed when a row is partly on', () => {
+    render(
+      <MonitoringLayersPanel {...base} layers={{ ...DEFAULT_LAYERS, district: ['boundary'] }} />
+    );
+    const all = openRow(/^rayon$/i).getByLabelText(/^semua$/i) as HTMLInputElement;
+    expect(all.checked).toBe(false);
+    expect(all.indeterminate).toBe(true);
+  });
+
   it('lets Tim be ticked without Petugas — the map then shows teams only', () => {
     render(<MonitoringLayersPanel {...base} layers={{ ...DEFAULT_LAYERS, personnel: ['tim'] }} />);
-    const group = screen.getByRole('group', { name: /petugas & tim/i });
-    expect((within(group).getByLabelText(/^tim$/i) as HTMLInputElement).checked).toBe(true);
-    expect((within(group).getByLabelText(/^petugas$/i) as HTMLInputElement).checked).toBe(false);
+    const row = openRow(/petugas & tim/i);
+    expect((row.getByLabelText(/^tim$/i) as HTMLInputElement).checked).toBe(true);
+    expect((row.getByLabelText(/^petugas$/i) as HTMLInputElement).checked).toBe(false);
   });
 
   it('has no city row — Surabaya has no boundary polygon to draw', () => {
     render(<MonitoringLayersPanel {...base} />);
-    expect(screen.queryByRole('group', { name: /kota|surabaya/i })).toBeNull();
+    expect(screen.queryByRole('combobox', { name: /kota|surabaya/i })).toBeNull();
   });
 
   it('offers the three monitoring modes in one select, current value shown', () => {

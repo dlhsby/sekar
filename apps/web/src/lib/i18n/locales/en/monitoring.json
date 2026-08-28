@@ -18,9 +18,10 @@
     "overdueButtonLabel": "Plants",
     "filterPanelTitle": "Filter Officers",
     "closePanelLabel": "Close filter",
-    "listLabel": "Officer List",
+    "listLabel": "Areas & Workers",
     "closeListLabel": "Close list",
-    "backLabel": "Back"
+    "backLabel": "Back",
+    "resizeLabel": "Resize panel"
   },
   "aggregate": {
     "understaffed": "Understaffed",
@@ -117,7 +118,8 @@
     "noWorkers": "No officers",
     "noWorkersMatch": "No officers match the filter.",
     "clickToFocus": "Click officer to focus on map",
-    "batteryLabel": "Battery {{level}} percent"
+    "batteryLabel": "Battery {{level}} percent",
+    "noWorkersHere": "No workers in this area yet."
   },
   "reassign": {
     "successMessage": "Worker successfully reassigned",
@@ -365,11 +367,12 @@
     "drillHint": "Tap an area to go one level deeper. Personnel appear at their scheduled level.",
     "zoomHint": "Show every rayon, kawasan, lokasi and worker at once. Tap an area to limit the view to it.",
     "viewport": "Zoom (on screen)",
-    "viewportHint": "Same as Zoom, but only loads what is on screen. Pan or zoom out to load more.",
+    "viewportHint": "Same as Zoom, but only loads what is on screen and shows the most important markers first. Zoom in to reveal the rest.",
     "zoomInFor": {
       "region": "Zoom in to see kawasan",
       "location": "Zoom in to see lokasi & personnel"
-    }
+    },
+    "revealHint": "Small dots are other markers. Tap one, or zoom in to see its detail."
   },
   "lifecycle": {
     "late": "Late",

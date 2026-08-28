@@ -417,19 +417,9 @@ export function workerPinElement(
   label?: PinLabel
 ): HTMLElement {
   const glyphPath = resolveWorkerGlyph(role, opts.markerIcon);
-  // Same standard as `workerPinIcon` — see PRESENCE_PIN_COLORS.
-  const outline = opts.lifecycleState
-    ? PRESENCE_PIN_COLORS[
-        presenceTone({
-          lifecycleState: opts.lifecycleState,
-          leaveReason: opts.leaveReason,
-          isWithinArea: !opts.outside,
-          isAdHoc: opts.adHoc,
-        })
-      ]
-    : opts.adHoc
-      ? ADHOC
-      : ACTIVITY_COLORS[opts.activity];
+  // Same standard as `workerPinIcon` — see PRESENCE_PIN_COLORS. Shared with the
+  // demoted dot so both forms of a worker carry the same status colour.
+  const outline = workerStatusColor(opts);
   return pinElementFromPath(
     glyphPath,
     {
@@ -665,3 +655,55 @@ export function teamBubbleIcon(
   };
 }
  
+
+/**
+ * The ring colour a worker pin would use, without building the pin.
+ *
+ * Shared by {@link workerPinElement} and {@link dotElement} so a demoted worker
+ * keeps the exact status colour they had as a full pin — a red dot still means
+ * absent. Duplicating this logic is how the two forms would drift apart and a
+ * dot would start lying about someone's state.
+ */
+export function workerStatusColor(opts: {
+  activity: 'aktif' | 'tidak_aktif';
+  outside?: boolean;
+  adHoc?: boolean;
+  lifecycleState?: string | null;
+  leaveReason?: 'cuti' | 'sakit' | 'izin' | 'libur' | null;
+}): string {
+  if (opts.lifecycleState) {
+    return PRESENCE_PIN_COLORS[
+      presenceTone({
+        lifecycleState: opts.lifecycleState,
+        leaveReason: opts.leaveReason,
+        isWithinArea: !opts.outside,
+        isAdHoc: opts.adHoc,
+      })
+    ];
+  }
+  return opts.adHoc ? ADHOC : ACTIVITY_COLORS[opts.activity];
+}
+
+/**
+ * The demoted form of any marker — a small coloured dot.
+ *
+ * Progressive reveal (`declutter.ts`) promotes a limited number of markers to
+ * full pins; everything else draws as one of these. It is deliberately still a
+ * real, positioned, clickable element rather than nothing at all: this map's
+ * standing rule is that presentation may de-emphasise, never hide. An operator
+ * scanning a dot field can always see that something is there, click it, and
+ * get the full card.
+ *
+ * Cheap by construction — one `<div>`, no glyph SVG, no label, no badge — which
+ * is what lets the tail of a 953-lokasi dataset render at all.
+ *
+ * @param color  the tier's or role's identity colour; the dot's fill
+ * @param dimmed geo-filter spotlight, matching the full pin's behaviour
+ */
+export function dotElement(color: string, dimmed = false): HTMLElement {
+  const el = document.createElement('div');
+  el.className = 'marker-dot';
+  el.style.background = color;
+  if (dimmed) el.style.opacity = '0.3';
+  return el;
+}

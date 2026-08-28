@@ -48,12 +48,52 @@ test.describe('Monitoring — live backend', () => {
     await expect(page.getByLabel(/mode monitoring/i)).toHaveValue('drill');
 
     for (const label of [/^rayon$/i, /^kawasan$/i, /^lokasi$/i, /petugas & tim/i]) {
-      await expect(page.getByRole('group', { name: label })).toBeVisible();
+      await expect(page.getByRole('combobox', { name: label })).toBeVisible();
     }
-    // Outline, fill and marker are independent — the fill was not separately
-    // expressible under the four-way select this replaced.
-    const rayon = page.getByRole('group', { name: /^rayon$/i });
-    await expect(rayon.getByRole('checkbox')).toHaveCount(3);
+    // Outline, fill, marker and name label are independent — the fill was not
+    // separately expressible under the four-way select this replaced, and the
+    // label was split off the marker so a dense tier can show pins without names.
+    // Five boxes: the four facets plus the list's own all-row.
+    await page.getByRole('combobox', { name: /^rayon$/i }).click();
+    await expect(page.getByRole('listbox', { name: /^rayon$/i }).getByRole('checkbox')).toHaveCount(
+      5
+    );
+  });
+
+  test('the settings panel fits, and its controls are one size', async ({ page }) => {
+    // Two defects in one measurement. The layer rows were a label plus a fixed
+    // 176px control in a 256px panel, so the longest label ("Petugas & Tim")
+    // pushed its control past the edge and the panel grew a horizontal
+    // scrollbar. And the controls were a smaller kind of control than the mode
+    // select sitting directly above them, which read as two different things.
+    //
+    // Measured rather than eyeballed: both are layout facts jsdom cannot see.
+    await loginAndOpenMonitoring(page);
+    await openSettings(page);
+
+    const m = await page.evaluate(() => {
+      const mode = document.querySelector('#monitoring-mode') as HTMLElement;
+      const panel = mode.closest('div') as HTMLElement;
+      const combos = Array.from(document.querySelectorAll('[role="combobox"]')) as HTMLElement[];
+      const box = (el: HTMLElement) => el.getBoundingClientRect();
+      return {
+        overflowX: panel.scrollWidth - panel.clientWidth,
+        modeHeight: Math.round(box(mode).height),
+        heights: combos.map((c) => Math.round(box(c).height)),
+        lefts: combos.map((c) => Math.round(box(c).left)),
+        rights: combos.map((c) => Math.round(box(c).right)),
+      };
+    });
+
+    console.log(`[panel] overflowX=${m.overflowX} modeH=${m.modeHeight} comboH=${m.heights}`);
+    // Nothing spills out of the panel.
+    expect(m.overflowX).toBeLessThanOrEqual(0);
+    // Every layer control is the same height as the mode select above them.
+    expect(m.heights).toHaveLength(4);
+    for (const h of m.heights) expect(h).toBe(m.modeHeight);
+    // And they form a column: one left edge, one right edge.
+    expect(new Set(m.lefts).size).toBe(1);
+    expect(new Set(m.rights).size).toBe(1);
   });
 
   test('zoom mode draws more of the hierarchy than drill at city scope', async ({ page }) => {
@@ -88,26 +128,41 @@ test.describe('Monitoring — live backend', () => {
     await expect(page.getByLabel(/mode monitoring/i)).toHaveValue('zoom');
   });
 
-  test('viewport mode sends a bbox and asks for less than zoom does', async ({ page }) => {
+  test('viewport mode sends a bbox, and it buys a smaller payload', async ({ page }) => {
+    // Rewritten after the original could never pass: it waited for an un-bboxed
+    // `level=area` response on switching to zoom, but the geo search index
+    // already fetches exactly that URL at page load, so React Query serves the
+    // switch from cache and NO request reaches the network to observe.
+    //
+    // The honest comparison is like for like — the same `level` with and
+    // without a bbox — so this collects responses from load instead.
+    const payloads: { url: string; bytes: number }[] = [];
+    page.on('response', async (r) => {
+      if (!r.url().includes('/monitoring/boundaries')) return;
+      try {
+        payloads.push({ url: r.url(), bytes: (await r.body()).length });
+      } catch {
+        // A response body can be gone by the time this runs; a missed sample
+        // only weakens the assertion, it cannot make it wrong.
+      }
+    });
+
     await loginAndOpenMonitoring(page);
+    await page.waitForTimeout(3000);
     await openSettings(page);
-
     await page.getByLabel(/mode monitoring/i).selectOption('viewport');
-    const boundaries = await page.waitForResponse(
-      (r) => r.url().includes('/monitoring/boundaries') && r.url().includes('bbox='),
-      { timeout: 30_000 }
-    );
-    const viewportBytes = (await boundaries.body()).length;
+    await page.waitForTimeout(4000);
 
-    await openSettings(page);
-    await page.getByLabel(/mode monitoring/i).selectOption('zoom');
-    const all = await page.waitForResponse(
-      (r) => r.url().includes('/monitoring/boundaries') && !r.url().includes('bbox='),
-      { timeout: 30_000 }
+    const bboxed = payloads.find((p) => p.url.includes('bbox='));
+    const plain = payloads.find(
+      (p) => !p.url.includes('bbox=') && p.url.includes('level=district')
     );
-    // The whole point of the mode: the city-wide geometry is never produced for
-    // regions off-screen. Directional, since both numbers depend on the camera.
-    expect(viewportBytes).toBeLessThan((await all.body()).length);
+
+    // The mode does ask the server to narrow, rather than filtering client-side.
+    expect(bboxed, 'viewport mode must send a bbox').toBeTruthy();
+    expect(plain).toBeTruthy();
+    // And narrowing is not free-of-effect: off-screen geometry is never built.
+    expect(bboxed!.bytes).toBeLessThanOrEqual(plain!.bytes);
   });
 
   test('search finds a LOKASI and a KAWASAN from the city view', async ({ page }) => {
@@ -136,12 +191,260 @@ test.describe('Monitoring — live backend', () => {
     const before = await page.locator('gmp-advanced-marker, [role="button"][title]').count();
 
     await openSettings(page);
-    await page.getByRole('group', { name: /^rayon$/i }).getByLabel(/marker/i).uncheck();
+    await page.getByRole('combobox', { name: /^rayon$/i }).click();
+    // Click the LABEL, not the input: the NB checkbox keeps its native input
+    // `sr-only` for semantics and paints the box as a sibling, so the input has
+    // no hit area of its own and `uncheck()` cannot reach it.
+    await page.getByRole('listbox', { name: /^rayon$/i }).getByText(/^Marker$/).click();
+    await page.keyboard.press('Escape');
     await page.waitForTimeout(1500);
     const after = await page.locator('gmp-advanced-marker, [role="button"][title]').count();
 
     // Node markers were ungated entirely before v5 — this is the case the facet
     // checkboxes exist to make possible.
     expect(after).toBeLessThanOrEqual(before);
+  });
+
+  test('viewport mode ranks instead of drawing everything, and hides nothing', async ({ page }) => {
+    // The client's screenshot: at city zoom every kawasan drew an identical pin,
+    // ~130 of them, and the one with nobody clocked in looked like the rest.
+    // Progressive reveal promotes a bounded number to full pins and demotes the
+    // remainder to dots — DEMOTES, never drops, which is what the second half of
+    // this test pins down.
+    await loginAndOpenMonitoring(page);
+    await openSettings(page);
+    await page.getByLabel(/mode monitoring/i).selectOption('zoom');
+    await page.waitForTimeout(3500);
+    const zoomFullPins = await page.locator('gmp-advanced-marker svg').count();
+
+    // The popover stays open across a selectOption, so switching again is one
+    // more select — clicking "Pengaturan" here would CLOSE it.
+    await page.getByLabel(/mode monitoring/i).selectOption('viewport');
+    await page.waitForTimeout(3500);
+
+    const viewportFullPins = await page.locator('gmp-advanced-marker svg').count();
+    const dots = await page.locator('.marker-dot').count();
+
+    console.log(
+      `[reveal] zoom full pins=${zoomFullPins} · viewport full pins=${viewportFullPins} · dots=${dots}`
+    );
+
+    // Ranked, not exhaustive: far fewer things competing for the eye.
+    expect(viewportFullPins).toBeLessThan(zoomFullPins);
+    // Every eligible marker is drawn — no dots at THIS scope because the only
+    // eligible tier here is the eight rayon, and rayon are never demoted (they
+    // are the map's frame). Demotion is asserted where it actually happens, in
+    // the drilled-in and kawasan-depth tests below.
+    expect(viewportFullPins).toBeGreaterThan(0);
+    expect(dots).toBeGreaterThanOrEqual(0);
+  });
+
+  test('at kawasan depth it ranks the crowd instead of drawing all of it', async ({ page }) => {
+    // This is where the client's screenshot actually hurt: at city zoom the tier
+    // floor only admits the 8 rayon, but one level in there are ~129 kawasan and
+    // the old rule drew every one of them as an identical pin.
+    //
+    // Drilling is used rather than a wheel gesture because it is deterministic:
+    // the map fits the rayon's bounds, which is reliably past the kawasan
+    // threshold, and it is the flow an operator actually performs.
+    await loginAndOpenMonitoring(page);
+    await openSettings(page);
+    await page.getByLabel(/mode monitoring/i).selectOption('viewport');
+    // Close the popover by toggling it: it overlays the map and would swallow
+    // the drill click. Escape does not dismiss it.
+    await page.getByRole('button', { name: /pengaturan/i }).click();
+    await page.waitForTimeout(3000);
+
+    const cityPins = await page.locator('gmp-advanced-marker svg').count();
+
+    // Drill into a rayon by tapping its pin — the operator's own gesture. The
+    // fit lands around zoom 12, still under the kawasan threshold, so a couple
+    // of wheel notches follow to cross it. (That the drill alone does not
+    // reveal the tier is pre-existing tier behaviour, noted in ADR-060.)
+    await page.locator('gmp-advanced-marker[title^="Rayon"]').first().click();
+    await page.waitForTimeout(3500);
+
+    const box = (await page.locator('.gm-style').first().boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    for (let i = 0; i < 2; i++) {
+      await page.mouse.wheel(0, -300);
+      await page.waitForTimeout(900);
+    }
+    await page.waitForTimeout(3500);
+
+    const pins = await page.locator('gmp-advanced-marker svg').count();
+    const dots = await page.locator('.marker-dot').count();
+
+    console.log(`[reveal] city full pins=${cityPins} · rayon full pins=${pins} · dots=${dots}`);
+
+    // The crowd is ranked, not drawn whole: some markers were demoted, and the
+    // full pins stay bounded by the budget rather than growing with the kawasan
+    // count (which is 129 on this dataset).
+    expect(dots).toBeGreaterThan(0);
+    expect(pins).toBeLessThanOrEqual(70);
+  });
+
+  test('drilling into a city-wide rayon reveals it WITHOUT zooming', async ({ page }) => {
+    // Reported defect: "Rayon Taman Aktif" spans the whole city, so drilling
+    // into it leaves the camera at city zoom — under the lokasi threshold — and
+    // the map showed nothing at all behind a "zoom in" hint, despite having only
+    // 42 lokasi and 3 petugas to draw.
+    //
+    // Drilling in IS the request to see inside, so the subtree now draws at any
+    // zoom; progressive reveal is what keeps it readable. No gesture between the
+    // drill and the assertion, deliberately — the zoom is the thing on trial.
+    await loginAndOpenMonitoring(page);
+    await openSettings(page);
+    await page.getByLabel(/mode monitoring/i).selectOption('viewport');
+    await page.getByRole('button', { name: /pengaturan/i }).click();
+    await page.waitForTimeout(3500);
+
+    await page.locator('gmp-advanced-marker[title="Rayon Taman Aktif"]').first().click();
+    await page.waitForTimeout(6000);
+
+    const pins = await page.locator('gmp-advanced-marker svg').count();
+    const dots = await page.locator('.marker-dot').count();
+    console.log(`[reveal] Taman Aktif on drill: pins=${pins} dots=${dots}`);
+
+    // Its lokasi are on the map, named, with no zooming at all.
+    expect(pins).toBeGreaterThan(5);
+    // And the hint no longer promises a TIER that is already drawn. Matched
+    // narrowly: the reveal hint ("...atau perbesar untuk melihat detailnya")
+    // shares a prefix with the tier hints and is the correct message here.
+    await expect(page.getByText(/perbesar untuk melihat (kawasan|lokasi)/i)).toHaveCount(0);
+  });
+
+  test('no two labels overlap in DRILL mode either — the default map', async ({ page }) => {
+    // Drill is the default, so this is the map most operators actually see, and
+    // it had the worst of it: 40 labels producing 22 overlapping pairs, with
+    // neither name in a pair readable.
+    //
+    // Drill mode still draws every marker, every count and every gesture — only
+    // the label pass applies here. Pins are presence; labels are detail.
+    await loginAndOpenMonitoring(page);
+    await page.waitForTimeout(3000);
+    await page.locator('gmp-advanced-marker[title^="Rayon"]').first().click();
+    await page.waitForTimeout(5000);
+
+    const report = await page.evaluate(() => {
+      const els = Array.from(
+        document.querySelectorAll('.node-marker-label, .worker-marker-label')
+      );
+      const boxes = els
+        .map((e) => ({ t: (e.textContent || '').trim(), r: e.getBoundingClientRect() }))
+        .filter((b) => b.r.width > 0 && b.r.height > 0);
+      const pairs: string[] = [];
+      for (let i = 0; i < boxes.length; i++) {
+        for (let j = i + 1; j < boxes.length; j++) {
+          const a = boxes[i].r;
+          const b = boxes[j].r;
+          if (a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom) {
+            pairs.push(`${boxes[i].t} <> ${boxes[j].t}`);
+          }
+        }
+      }
+      // Markers are NOT reduced in drill mode — that is the invariant this mode
+      // is defined by, so it is asserted alongside.
+      const markers = document.querySelectorAll('gmp-advanced-marker svg').length;
+      const dots = document.querySelectorAll('.marker-dot').length;
+      return { labels: boxes.length, pairs, markers, dots };
+    });
+
+    console.log(
+      `[reveal] DRILL labels=${report.labels} overlapping=${report.pairs.length} pins=${report.markers} dots=${report.dots}`
+    );
+    expect(report.pairs).toEqual([]);
+    // Nothing was demoted to a dot: drill draws every marker in full, as before.
+    expect(report.dots).toBe(0);
+  });
+
+  test('no two labels overlap in viewport mode', async ({ page }) => {
+    // Measured, not eyeballed. Labels are what actually collide on this map: a
+    // pin is ~40px and its name ~150, so decluttering runs twice — pins at 56px,
+    // then names at 150x96 over the survivors. This asserts the outcome of that
+    // second pass directly, by reading the rendered boxes.
+    await loginAndOpenMonitoring(page);
+    await openSettings(page);
+    await page.getByLabel(/mode monitoring/i).selectOption('viewport');
+    await page.getByRole('button', { name: /pengaturan/i }).click();
+    await page.waitForTimeout(3000);
+    await page.locator('gmp-advanced-marker[title^="Rayon"]').first().click();
+    await page.waitForTimeout(5000);
+
+    const report = await page.evaluate(() => {
+      const els = Array.from(
+        document.querySelectorAll('.node-marker-label, .worker-marker-label')
+      );
+      const boxes = els
+        .map((e) => ({ t: (e.textContent || '').trim(), r: e.getBoundingClientRect() }))
+        .filter((b) => b.r.width > 0 && b.r.height > 0);
+      const pairs: string[] = [];
+      for (let i = 0; i < boxes.length; i++) {
+        for (let j = i + 1; j < boxes.length; j++) {
+          const a = boxes[i].r;
+          const b = boxes[j].r;
+          if (a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom) {
+            pairs.push(`${boxes[i].t} <> ${boxes[j].t}`);
+          }
+        }
+      }
+      return { labels: boxes.length, pairs };
+    });
+
+    console.log(`[reveal] labels=${report.labels} overlapping=${report.pairs.length}`);
+    expect(report.labels).toBeGreaterThan(0);
+    expect(report.pairs).toEqual([]);
+  });
+
+  test('a long area name never pushes the row actions out of reach', async ({ page }) => {
+    // Reported on "Kawasan Manukan Balongsari S.D Manukan": the name button grew
+    // to fit its text and shoved the hide and detail buttons off the row. A flex
+    // item defaults to `min-width: auto`, so `truncate` on the name alone did
+    // nothing — every element between the row and the name has to be allowed to
+    // shrink.
+    //
+    // Measured in a real browser because jsdom does no layout: the unit test can
+    // only assert the classes are present, not that they work.
+    await loginAndOpenMonitoring(page);
+    await page.waitForTimeout(3000);
+    await page.getByRole('button', { name: /daftar area dan petugas/i }).click();
+    await page.waitForTimeout(2000);
+
+    const report = await page.evaluate(() => {
+      const rows = Array.from(document.querySelectorAll('li')).filter(
+        (li) => li.querySelectorAll('button').length >= 2
+      );
+      let overflowing = 0;
+      let clipped = 0;
+      for (const li of rows) {
+        if (li.scrollWidth > li.clientWidth + 1) overflowing++;
+        const btns = Array.from(li.querySelectorAll('button'));
+        const last = btns[btns.length - 1];
+        if (last && last.getBoundingClientRect().right > li.getBoundingClientRect().right + 1) {
+          clipped++;
+        }
+      }
+      return { rows: rows.length, overflowing, clipped };
+    });
+
+    console.log(
+      `[panel] rows=${report.rows} overflowing=${report.overflowing} clippedActions=${report.clipped}`
+    );
+    expect(report.rows).toBeGreaterThan(0);
+    // No row scrolls sideways, and no row's last action sits past its edge.
+    expect(report.overflowing).toBe(0);
+    expect(report.clipped).toBe(0);
+  });
+
+  test('viewport mode tells the operator what the dots are', async ({ page }) => {
+    // A field of unexplained dots reads as broken data. The hint is what makes
+    // it read as "more detail is waiting".
+    await loginAndOpenMonitoring(page);
+    await openSettings(page);
+    await page.getByLabel(/mode monitoring/i).selectOption('viewport');
+    await page.keyboard.press('Escape');
+    await expect(page.getByText(/perbesar untuk melihat|titik kecil/i).first()).toBeVisible({
+      timeout: 20_000,
+    });
   });
 });

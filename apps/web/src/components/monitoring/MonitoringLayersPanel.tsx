@@ -5,15 +5,21 @@
  * from the settings button. Chooses what the map draws per layer. State is owned
  * by the page (persisted via useMonitoringLayers).
  *
- * Every row is the same control: independent checkbox chips, one per facet, plus
- * Semua / Sembunyikan shortcuts. A select made the operator translate what they
- * wanted into one of four named states; the chips say it directly, and they can
- * express combinations the select had no word for (see `layers.ts`).
+ * Two sections, deliberately shaped differently because they are different
+ * things. **Mode** is one primary choice that changes what the whole map does,
+ * so it gets a full-width control and a line explaining the trade. **Lapisan
+ * peta** is four peers, so it is a two-column grid — label column, control
+ * column — which reads as a settings table and stays short.
+ *
+ * Every layer row is one {@link MultiSelect}: independent facets, with Semua /
+ * Sembunyikan as the dropdown's own all-row. A single-choice select made the
+ * operator translate what they wanted into one of four named states, and could
+ * not express combinations at all (see `layers.ts`).
  */
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
-import { cn } from '@/lib/utils/cn';
-import { LAYER_ROWS, allFacets, toggleFacet, type MonitoringLayers } from '@/lib/monitoring/layers';
+import { LAYER_ROWS, type MonitoringLayers } from '@/lib/monitoring/layers';
+import { MultiSelect } from '@/components/ui';
 import { MODE_OPTIONS, type MonitoringMode } from '@/lib/monitoring/mapMode';
 
 export interface MonitoringLayersPanelProps {
@@ -34,7 +40,7 @@ export function MonitoringLayersPanel({
   const { t } = useTranslation();
 
   return (
-    <div className="absolute left-3 right-3 top-28 z-30 max-h-[65%] w-auto overflow-y-auto rounded-nb-md border-2 border-nb-black bg-nb-white p-4 shadow-nb-lg sm:right-auto sm:w-72">
+    <div className="absolute left-3 right-3 top-28 z-30 max-h-[65%] w-auto overflow-y-auto rounded-nb-md border-2 border-nb-black bg-nb-white p-4 shadow-nb-lg sm:right-auto sm:w-80">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-bold text-nb-black">{t('monitoring:layers.title')}</h2>
         <button
@@ -61,7 +67,7 @@ export function MonitoringLayersPanel({
         id="monitoring-mode"
         value={mode}
         onChange={(e) => onSetMode(e.target.value as MonitoringMode)}
-        className="mb-2 min-h-touch w-full rounded-nb-sm border-2 border-nb-black bg-nb-white px-2 py-1 text-sm font-bold text-nb-black"
+        className="min-h-touch w-full rounded-nb-sm border-2 border-nb-black bg-nb-white px-2 py-1 text-sm font-bold text-nb-black"
       >
         {MODE_OPTIONS.map((o) => (
           <option key={o.value} value={o.value}>
@@ -69,71 +75,37 @@ export function MonitoringLayersPanel({
           </option>
         ))}
       </select>
-      <p className="mb-4 text-xs text-nb-gray-500">{t(`monitoring:mode.${mode}Hint`)}</p>
+      <p className="mt-1.5 text-xs leading-snug text-nb-gray-500">
+        {t(`monitoring:mode.${mode}Hint`)}
+      </p>
 
-      <span className="mb-1.5 block text-xs font-bold uppercase text-nb-gray-500">
+      {/* A rule, not a gap: the two sections answer different questions, and
+          spacing alone left them reading as one long list of controls. */}
+      <hr className="my-4 border-t-2 border-nb-gray-100" />
+
+      <span className="mb-2 block text-xs font-bold uppercase text-nb-gray-500">
         {t('monitoring:layers.overlays')}
       </span>
-      <ul className="flex flex-col gap-3">
+      {/* Grid, not four independently sized rows: the labels share a column and
+          the controls share the rest, so both edges line up and no row can
+          overflow the panel on a longer label ("Petugas & Tim" did). */}
+      <ul className="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2">
         {LAYER_ROWS.map(({ key, labelKey, facets }) => {
           const selected = layers[key] as readonly string[];
-          const every = allFacets(key);
-          const isAll = selected.length === every.length;
-          const isNone = selected.length === 0;
           return (
-            <li key={key} className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-medium text-nb-black">{t(labelKey)}</span>
-                {/* Shortcuts, not options: they write the same set the chips do,
-                    so the two can never disagree. Disabled once already applied,
-                    which doubles as the "you are here" indicator. */}
-                <span className="flex gap-1">
-                  <button
-                    type="button"
-                    onClick={() => onSetLayer(key, every)}
-                    disabled={isAll}
-                    className="rounded-nb-sm px-1.5 py-0.5 text-xs font-bold text-nb-gray-500 underline-offset-2 hover:text-nb-black hover:underline disabled:cursor-default disabled:text-nb-gray-300 disabled:no-underline"
-                  >
-                    {t('monitoring:layers.option.all')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onSetLayer(key, [])}
-                    disabled={isNone}
-                    className="rounded-nb-sm px-1.5 py-0.5 text-xs font-bold text-nb-gray-500 underline-offset-2 hover:text-nb-black hover:underline disabled:cursor-default disabled:text-nb-gray-300 disabled:no-underline"
-                  >
-                    {t('monitoring:layers.option.none')}
-                  </button>
-                </span>
-              </div>
-              <div
-                role="group"
-                aria-label={t(labelKey)}
-                className="flex flex-wrap gap-1.5"
-              >
-                {facets.map((f) => {
-                  const on = selected.includes(f.value);
-                  return (
-                    <label
-                      key={f.value}
-                      className={cn(
-                        'flex cursor-pointer select-none items-center gap-1.5 rounded-nb-sm border-2 border-nb-black px-2 py-1 text-xs font-bold',
-                        on
-                          ? 'bg-nb-primary text-nb-black'
-                          : 'bg-nb-white text-nb-gray-500 hover:bg-nb-gray-50'
-                      )}
-                    >
-                      <input
-                        type="checkbox"
-                        className="h-3.5 w-3.5 accent-nb-black"
-                        checked={on}
-                        onChange={() => onSetLayer(key, toggleFacet(key, selected, f.value))}
-                      />
-                      {t(f.labelKey)}
-                    </label>
-                  );
-                })}
-              </div>
+            <li key={key} className="contents">
+              <span className="text-sm font-medium text-nb-black">{t(labelKey)}</span>
+              <MultiSelect
+                // The dropdown may outgrow its trigger: the trigger truncates a
+                // long summary, but the options behind it must stay readable.
+                contentClassName="min-w-44"
+                ariaLabel={t(labelKey)}
+                options={facets.map((f) => ({ value: f.value, label: t(f.labelKey) }))}
+                values={[...selected]}
+                onChange={(next) => onSetLayer(key, next as MonitoringLayers[typeof key])}
+                allLabel={t('monitoring:layers.option.all')}
+                noneLabel={t('monitoring:layers.option.none')}
+              />
             </li>
           );
         })}

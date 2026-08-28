@@ -18,9 +18,10 @@
     "overdueButtonLabel": "Tanaman",
     "filterPanelTitle": "Filter Petugas",
     "closePanelLabel": "Tutup filter",
-    "listLabel": "Daftar Petugas",
+    "listLabel": "Daftar Area dan Petugas",
     "closeListLabel": "Tutup daftar",
-    "backLabel": "Kembali"
+    "backLabel": "Kembali",
+    "resizeLabel": "Ubah lebar panel"
   },
   "aggregate": {
     "understaffed": "Kekurangan personel",
@@ -117,7 +118,8 @@
     "noWorkers": "Tidak ada petugas",
     "noWorkersMatch": "Tidak ada petugas yang cocok dengan filter.",
     "clickToFocus": "Klik petugas untuk fokus di peta",
-    "batteryLabel": "Baterai {{level}} persen"
+    "batteryLabel": "Baterai {{level}} persen",
+    "noWorkersHere": "Belum ada petugas di wilayah ini."
   },
   "reassign": {
     "successMessage": "Petugas berhasil dipindahkan",
@@ -365,11 +367,12 @@
     "drillHint": "Ketuk wilayah untuk masuk satu tingkat. Petugas tampil di tingkat jadwalnya.",
     "zoomHint": "Tampilkan semua rayon, kawasan, lokasi, dan petugas sekaligus. Ketuk wilayah untuk membatasi ke wilayah itu.",
     "viewport": "Zoom (layar)",
-    "viewportHint": "Sama seperti Zoom, tetapi hanya memuat area yang terlihat di layar. Geser atau perkecil peta untuk memuat lebih banyak.",
+    "viewportHint": "Sama seperti Zoom, tetapi hanya memuat area yang terlihat di layar dan menampilkan penanda paling penting lebih dulu. Perbesar untuk memunculkan sisanya.",
     "zoomInFor": {
       "region": "Perbesar untuk melihat kawasan",
       "location": "Perbesar untuk melihat lokasi & petugas"
-    }
+    },
+    "revealHint": "Titik kecil = penanda lain. Ketuk, atau perbesar untuk melihat detailnya."
   },
   "lifecycle": {
     "late": "Terlambat",

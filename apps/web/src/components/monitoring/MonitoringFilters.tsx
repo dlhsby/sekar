@@ -28,6 +28,16 @@ const STATUS_ORDER: TrackingStatus[] = ['active', 'offline', 'absent'];
 export interface MonitoringFilterState {
   search: string;
   statuses: Set<TrackingStatus>;
+  /**
+   * Luar jadwal (ad-hoc) — clocked in but not on the current shift's roster.
+   *
+   * Its own field rather than a fourth entry in `statuses`, because it is a
+   * different AXIS of the presence model (ADR-050): a worker is off-schedule
+   * *and* active/inactive, not off-schedule *instead of* them. Folding the two
+   * together is precisely the collapse that made `outside_area` overlap with the
+   * status enum and produced double counts in four places.
+   */
+  scheduled: 'all' | 'scheduled' | 'adhoc';
   districtId: string; // 'all' or a district id
   regionId: string; // 'all' or a kawasan (region) id
   locationId: string; // 'all' or a lokasi (location) id
@@ -122,6 +132,7 @@ export function MonitoringFilters({
   const hasActiveFilters =
     filters.search !== '' ||
     filters.statuses.size > 0 ||
+    filters.scheduled !== 'all' ||
     filters.districtId !== 'all' ||
     filters.regionId !== 'all' ||
     filters.locationId !== 'all' ||
@@ -133,6 +144,7 @@ export function MonitoringFilters({
     onChange({
       search: '',
       statuses: new Set(),
+      scheduled: 'all',
       districtId: 'all',
       regionId: 'all',
       locationId: 'all',
@@ -206,6 +218,35 @@ export function MonitoringFilters({
               </button>
             );
           })}
+          {/* Luar jadwal sits with the status chips because that is where the
+              operator looks for it — the header pills show it alongside the
+              other three — but it toggles its own axis, so it can be combined
+              with any of them rather than replacing them. */}
+          <button
+            type="button"
+            onClick={() =>
+              onChange({
+                ...filters,
+                scheduled: filters.scheduled === 'adhoc' ? 'all' : 'adhoc',
+              })
+            }
+            aria-pressed={filters.scheduled === 'adhoc'}
+            className={cn(
+              'flex items-center gap-1.5 rounded-nb-base border-2 px-2 py-1 text-xs font-semibold transition-colors',
+              'focus:outline-none focus-visible:ring-2 focus-visible:ring-nb-primary',
+              filters.scheduled === 'adhoc'
+                ? 'bg-nb-gray-900 text-nb-white'
+                : 'bg-nb-white text-nb-gray-700 hover:bg-nb-gray-50'
+            )}
+            style={{ borderColor: 'var(--color-status-offline)' }}
+          >
+            <span
+              className="h-2 w-2 flex-shrink-0 rounded-full"
+              style={{ backgroundColor: 'var(--color-status-offline)' }}
+              aria-hidden="true"
+            />
+            {t('monitoring:status.adhoc')}
+          </button>
         </div>
       </fieldset>
 

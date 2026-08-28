@@ -2,6 +2,75 @@
 
 Newest first. Feature overview + current design live in [README.md](./README.md).
 
+- **2026-08-28** — UI pass on the panels. Zero counts in the Wilayah rows are muted (to `gray-500`,
+  4.80:1 — `gray-400` and `gray-300` fail AA), so on a 300-row list the numbers that are actually there
+  carry the signal. The Petugas empty state distinguishes "nobody here" from "nobody matches your
+  filter" instead of always blaming a filter. **Luar jadwal is filterable** — it was the one presence
+  axis visible in the header pills and on the map that could not be isolated; it toggles its own field,
+  not a fourth `statuses` entry, because ad-hoc is orthogonal to active/inactive (ADR-050).
+
+- **2026-08-28** — Review pass on zoom/viewport correctness. **Presence pills now narrow with the
+  drill**: in those modes the snapshot is fetched city-wide and `showWorkers` is true at every level,
+  so the header counted the whole city however far you had drilled (it read "Tidak Aktif 50" beside a
+  Petugas tab reading 3). `regionTotals` likewise summed a query gated `!isZoom`, returning a
+  zero-filled object that suppressed its own fallback — kawasan presence read 0 in zoom mode. Map and
+  list drills now carry the node's own `district_id`/`region_id` instead of falling back to a `view.id`
+  that is undefined at city scope, which had cost the breadcrumb its middle crumbs and sent the
+  boundary query the node's own id as its parent. Breadcrumb names also resolve from the aggregate, not
+  geometry alone, so a crumb no longer reads a generic "Rayon" until polygons load.
+
+- **2026-08-28** — The layer rows in Pengaturan are a **multi-select dropdown** each (label + control),
+  replacing the wrapping field of checkbox chips that ran four tiers deep. Same independent facets;
+  `Semua` / `Sembunyikan` are now the dropdown's own all-row, which shows *mixed* on a partial
+  selection. The closed control names what is on ("Batas, Marker"), so a tier's state is readable
+  without opening it. New shared primitive `ui/MultiSelect` — the lean sibling of `FormMultiCombobox`,
+  with no search, chips, or form-field chrome. Panel layout reworked in the same pass: the layer rows
+  are a two-column grid (labels share a column, controls share the rest) in a wider `w-80` panel, the
+  controls match the mode select's size exactly, and a rule separates the two sections. The old
+  fixed-width control overflowed the panel on the longest label.
+
+- **2026-08-28** — A long area name no longer pushes the hide and detail buttons off its row: the name
+  had `truncate` but nothing in the chain above it could shrink (a flex item defaults to
+  `min-width: auto`), so the row grew instead of ellipsising. The list panel is also **resizable**
+  (drag its right edge, double-click to reset), persisted per browser in `monitoring.panelWidth.v1` and
+  clamped to 300–720 px; desktop only, since below `sm` the panel is full-bleed.
+
+- **2026-08-28** — The Wilayah list is one level deep in **every** mode. Zoom and viewport listed the
+  whole flattened subtree (370 rows at city scope), which made the tab unusable for what it is for:
+  the map shows everything, the list navigates. Tapping a row drills and the mode survives the drill.
+  At rayon scope the level is kawasan **plus** the rayon's kawasan-less lokasi — the set the map has
+  always drawn there, where the list previously returned kawasan alone. Backend: a region node now
+  carries `district_id` (it carried none), without which no kawasan could be attached to its rayon and
+  the 590 lokasi beneath one were unreachable from the list.
+
+- **2026-08-28** — The list panel is "Daftar Area dan Petugas" (it has held both halves since the
+  Wilayah tab landed) and its header now carries the drill breadcrumb instead of a static title —
+  extracted as `MonitoringBreadcrumb` and shared with the map's bar, so the two cannot disagree about
+  where the operator is. The panel shows the CURRENT level only (a trail there could only be scrolled,
+  and a breadcrumb you have to scroll cannot be read at a glance); the map's bar keeps the full
+  clickable trail, with ancestors truncating and the current level taking the leftover width — it used
+  to be capped too, so the level you were reading was the one that got clipped. Label decluttering now runs in **every** mode, not just viewport: drill is the
+  default map and had 40 labels in 22 overlapping pairs. Pins are presence and labels are detail, so
+  drill and zoom still draw every marker, count and gesture — they just stop printing unreadable names
+  (drill measured after: 26 pins, 0 dots, 6 labels, 0 overlaps).
+
+- **2026-08-28** — Viewport mode now ranks markers instead of drawing every eligible one: salience
+  (urgency + per-operator affinity + tier) picks the winners of an 88 px screen grid, capped at 60 per
+  layer; everything else draws as a clickable dot and demoted areas drop their polygon fill. 137 kawasan
+  pins at zoom 13 become 51; 1089 nodes become 60. Drill and zoom modes unchanged (ADR-060 amendment).
+  Also repairs three stale assertions in the live monitoring spec: the rayon facet group has 4
+  checkboxes (not 3) since the label facet split, the settings popover stays open across a
+  `selectOption`, and the bbox test waited on a request the geo-index cache prevents from ever firing.
+  Follow-up from the same review: the mode hint moved into the top overlay stack (it was overlapping the
+  status bar), and the pin's ⓘ detail badge was removed — it covered the active-count badge, which owns
+  that corner and is display-only. Area detail opens from the sidebar row's ⓘ button. Tier admission is
+  now scope-aware: drilling into a rayon reveals its whole subtree at any zoom (a city-wide rayon like
+  Taman Aktif showed an empty map before), with the zoom gate kept at city scope only. Collision rule
+  reworked after looking at it: the box is label-shaped (150×96, not an 88px square), separation is
+  measured against accepted markers rather than by grid cell (the grid leaked in 21 of 30 sweep
+  positions), and pins declutter separately from labels so a marker no longer loses its staffing count
+  because its name would not fit. Rayon are never demoted — they are the map's frame.
+
 - 2026-08-13 — **Worker pins wear their role's colour; the setting had been loaded and thrown away.** `buildRoleMarkerMap` selected `marker_icon` only, so `roles.marker_color` — configurable in role settings since ADR-044 — reached nothing: every worker pin drew white, whatever an operator set. The DTO now carries `role_marker_color` and it **fills the pin body**, while presence keeps the **ring**. That is deliberately the opposite call to the geo tiers made the same day, and for a reason that generalises: a geo pin sits on a boundary that already carries area identity, so its colour was redundant and became noise; a worker pin has nothing else to say WHO this is. Identity on the body, status on the ring — colour never means two things on one marker. Teams were already correct (team category `marker_color` + `marker_opacity` on the bubble). Mobile mirrors it: the pin body takes the role colour and presence keeps the arrow plus the luar-area ring, falling back to the presence colour when a role has none, so a role without a configured colour looks exactly as it did. **The colour was dropped twice, one layer apart:** after `buildRoleMarkerMap` was fixed, pins were still white because `computeSnapshot` rebuilds each worker field-by-field into `SnapshotWorker` and copied `role_marker_icon` without its new sibling — a hand-written projection silently omits a field that a spread would have carried, and the types can't catch it while the target interface is missing the field too. Both now carry `role_marker_color`. be 406 monitoring · mobile 4475 · web 2288 green.
 
 - 2026-08-13 — **Four field-test findings: emulator teleport blocked the punch, the map fitted to an outlier, the trail drew itself, and geo pins wore the wrong colour.** (1) **`Gagal clock out` on an emulator.** The integrity override skipped only the MOCKED rule, on the reasoning that impossible travel is a geometric fact independent of the provider — true, and beside the point: **a mock provider is one you move by typing coordinates**, so a tester who checks Jakarta and then Surabaya has "travelled" 700 km in a minute, and the rule blocked the punch itself. Anything already trusting a self-declared mocked fix has no stricter claim to make about the distance between two of them. `IMPOSSIBLE_TRAVEL` now relaxes with the same dev-only, non-production gate; **null island stays rejected** — (0,0) is a broken fix rather than a movement, and nobody tests there. Production is unchanged and has its own regression test. (2) **The initial fit included worker positions**, so one satgas standing in Jakarta opened the map on the whole of Java with Surabaya an unreadable smudge. The served region is a property of the DATA — which rayon and lokasi the role can see — not of where somebody happens to be standing, and an out-of-area worker is precisely when the city most needs to stay legible. Fit is geography-only; the worker is still reachable via search or the Petugas list, which pan to them. (3) **The trail was a side effect of selection.** Opening a worker from search drew a line from wherever their day started, across the map when that was another city, on top of a card meant to answer "where are they now". It is now opt-in behind **Lihat jejak** (toggling off on a second press, cleared when the selection moves to someone else), which also stops a location-history request firing for every worker merely glanced at — and it gained **start / end markers**, matching mobile: a bare line says where someone went but not which way. (4) **Geo pins are white.** They took each area's `fill_color`, putting the map's loudest colour on its most repeated element, so at zoom the pins competed with the polygons wearing the same colours and a rayon's identity read twice. Boundaries now carry area identity; colour on a geo pin means STATUS (the health badge) alone. **People keep their colours** — role marker and team category — because those are the markers where colour still identifies something. Mobile needed no change here: its node bubbles were already white with a health-coloured border. be 2823+ · web 2285 green, i18n parity ✓.

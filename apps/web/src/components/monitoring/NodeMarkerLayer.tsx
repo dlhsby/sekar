@@ -12,7 +12,7 @@
  * a WebSocket snapshot patch that only moves a node repositions the marker in place
  * instead of rebuilding it (reposition-on-patch; profiled 47× cheaper).
  */
-import { useEffect, useMemo, useRef } from 'react';
+import { useMemo } from 'react';
 import { AdvancedPinMarker } from './AdvancedPinMarker';
 import {
   NODE_LABEL_PLACEMENT,
@@ -21,6 +21,7 @@ import {
   HEALTH_COLORS,
   KIND_DEFAULT_GLYPH,
   MARKER_NEUTRAL_OUTLINE,
+  dotElement,
 } from '@/lib/monitoring/markers';
 
 export interface NodeMarker {
@@ -37,6 +38,17 @@ export interface NodeMarker {
   active: number;
   /** Active (fresh ping) AND inside their area — a detail field (unused on the pin). */
   active_inside: number;
+  /**
+   * Parent ids, carried so a drill from the MAP knows where the node sits.
+   *
+   * Zoom and viewport draw every tier at once, so a kawasan or lokasi pin is
+   * tappable at city scope — where the page's own `view` has no id to fall back
+   * on. Without these the node was entered with no parent, which cost the
+   * breadcrumb its middle crumbs and sent the boundary query a parent id that
+   * was really the node's own.
+   */
+  district_id?: string | null;
+  region_id?: string | null;
   /** Configured marker glyph for this location (e.g. "trees"); null → per-kind default. */
   marker_icon?: string | null;
   /**
@@ -51,12 +63,20 @@ export interface NodeMarkerLayerProps {
   nodes: NodeMarker[];
   onDrill?: (node: NodeMarker) => void;
   /**
-   * Opens the node's detail card. Rendered as a small ⓘ badge on the pin so the
-   * body of the pin keeps its original meaning — tap = drill. Mobile splits the
-   * same two actions across a bubble and a marker; on web one pin carries both,
-   * which avoids drawing two pins per area in zoom mode.
+   * NOTE: there is deliberately no detail affordance ON the pin.
+   *
+   * A ⓘ badge used to sit on the pin's top-right — the same corner the SVG
+   * draws the active-count badge in, so the two overlapped and the staffing
+   * number was covered by a button. That corner belongs to the count: it is the
+   * only live number the marker carries.
+   *
+   * Rather than move the badge, it was removed. A ~16 px tap target is a poor
+   * one at any zoom, and mobile has no equivalent, so keeping it meant a gesture
+   * that worked badly on web and not at all on the other platform. The pin now
+   * has exactly one meaning again — tap = drill — and area detail opens from the
+   * ⓘ button on the node's row in the sidebar, which is full height and
+   * unambiguous.
    */
-  onDetail?: (node: NodeMarker) => void;
   /** Accepted for API compatibility; labels now show at every zoom. */
   zoom?: number;
   /** Geo filter selection (district/kawasan/lokasi id). When set, node bubbles that
@@ -68,22 +88,33 @@ export interface NodeMarkerLayerProps {
    * so this gates the label rather than filtering the node out.
    */
   showLabels?: Partial<Record<NodeMarker['variant'], boolean>>;
+  /**
+   * Progressive reveal (viewport mode). Ids in this set draw as full pins;
+   * everything else draws as a {@link dotElement} — present, positioned and
+   * clickable, but silent. `null` (drill and zoom mode) means every node draws
+   * in full, exactly as before this existed.
+   */
+  promoted?: Set<string> | null;
+  /**
+   * Of the promoted markers, the ones whose NAME is printed. Always a subset of
+   * {@link promoted}. Separate because a pin (~40 px) and its label (~150 px)
+   * collide at different sizes: gating both on the label's box cost a marker its
+   * staffing count merely because its name would not have fit.
+   *
+   * `null` (drill and zoom mode) means the per-tier `showLabels` facet decides
+   * alone, exactly as before.
+   */
+  labelled?: Set<string> | null;
 }
 
 export function NodeMarkerLayer({
   nodes,
   onDrill,
-  onDetail,
   activeGeoId,
   showLabels,
+  promoted,
+  labelled,
 }: NodeMarkerLayerProps) {
-  // `build()` is memoized by signature, so a handler captured inside it would go
-  // stale the moment the callback identity changed. The ref is read at CLICK
-  // time, which keeps the memo intact and the handler current.
-  const onDetailRef = useRef(onDetail);
-  useEffect(() => {
-    onDetailRef.current = onDetail;
-  }, [onDetail]);
   const placed = useMemo(
     () => nodes.filter((n) => Number.isFinite(n.lat) && Number.isFinite(n.lng)),
     [nodes]
@@ -104,26 +135,33 @@ export function NodeMarkerLayer({
         // health-tinted so per-node status reads too.
         const health = rosterHealth(node.scheduled, node.clocked_in);
         const big = node.variant === 'district' || node.variant === 'region';
+        // Demoted: this node lost its screen cell to a more salient neighbour,
+        // or fell past the cap. It still renders and still drills on click —
+        // only its detail is deferred until there is room for it.
+        const demoted = promoted != null && !promoted.has(node.id);
         // Geo-filter spotlight: dim the nodes that don't match the selection so the
         // selected one stands out; the name label stays readable either way.
         const dimmed = activeGeoId != null && node.id !== activeGeoId;
         // Signature = every field the pin/label visual depends on (NOT position —
         // that is synced cheaply by the marker wrapper). Unchanged signature →
         // memoized element → a moved node only repositions.
-        const withLabel = showLabels?.[node.variant] !== false;
+        // Two gates: the operator's per-tier facet, then the label declutter.
+        const withLabel =
+          showLabels?.[node.variant] !== false && (labelled == null || labelled.has(node.id));
         const signature =
           // fill_color/opacity are no longer read for the pin body (white), so
           // they are out of the signature — leaving them in would rebuild the
           // element for a change that cannot alter a pixel.
           `${node.variant}|${node.marker_icon ?? ''}` +
           `|${node.active}|${node.scheduled}|${node.clocked_in}|${node.name}|${dimmed ? 1 : 0}` +
-          `|${onDetail ? 1 : 0}|${withLabel ? 1 : 0}`;
+          `|${withLabel ? 1 : 0}|${demoted ? 'dot' : 'pin'}`;
         return (
           <AdvancedPinMarker
             key={`node-${node.id}`}
             position={{ lat: node.lat, lng: node.lng }}
             signature={signature}
             build={() => {
+              if (demoted) return dotElement(HEALTH_COLORS[health], dimmed);
               const el = pinElement(
                 node.marker_icon ?? KIND_DEFAULT_GLYPH[node.variant] ?? null,
                 {
@@ -155,25 +193,11 @@ export function NodeMarkerLayer({
                   : undefined
               );
               el.style.opacity = dimmed ? '0.3' : '1';
-              if (onDetailRef.current) {
-                const info = document.createElement('button');
-                info.type = 'button';
-                info.className = 'node-info-badge';
-                info.textContent = 'i';
-                info.setAttribute('aria-label', node.name);
-                info.addEventListener('click', (ev) => {
-                  // Without this the marker's own handler fires too and the map
-                  // drills at the same moment the card opens.
-                  ev.stopPropagation();
-                  onDetailRef.current?.(node);
-                });
-                el.appendChild(info);
-              }
               return el;
             }}
             onClick={() => onDrill?.(node)}
             title={node.name}
-            zIndex={dimmed ? 3 : node.variant === 'surabaya' ? 8 : 5}
+            zIndex={demoted ? 2 : dimmed ? 3 : node.variant === 'surabaya' ? 8 : 5}
           />
         );
       })}

@@ -18,7 +18,9 @@ import { POLYGON_STYLES } from '@/lib/constants/monitoring';
 import { geometryToPaths } from '@/lib/maps/geometry';
 import type { BoundariesResponse } from '@/lib/api/monitoring-types';
 import { type MonitoringMode, DEFAULT_MODE, isZoomLike } from '@/lib/monitoring/mapMode';
-import { tiersAtZoom, type TierVisibility } from '@/lib/monitoring/zoomTiers';
+import { tiersFor, type TierVisibility } from '@/lib/monitoring/zoomTiers';
+import { useProgressiveReveal } from '@/lib/monitoring/useProgressiveReveal';
+import { useAffinity } from '@/lib/monitoring/affinity';
 import {
   type MonitoringLayers,
   DEFAULT_LAYERS,
@@ -88,8 +90,6 @@ export interface SimpleMonitoringMapProps {
   /** The current node's own pin (district/location) — opens detail on click, no drill. */
   currentNode?: CurrentNodeMarker | null;
   onNodeDetail?: (node: CurrentNodeMarker) => void;
-  /** Opens a CHILD node's detail from its ⓘ badge (the pin body still drills). */
-  onNodeMarkerDetail?: (node: NodeMarker) => void;
   /** Node whose detail card is open — never culled, so the card and its pin agree. */
   openNodeId?: string | null;
   /** Selected location id — at location scope only its boundary is drawn (on demand). */
@@ -283,7 +283,6 @@ function MonitoringMapInner({
   onDrillNode,
   currentNode,
   onNodeDetail,
-  onNodeMarkerDetail,
   openNodeId,
   areaId,
   regionId,
@@ -346,8 +345,11 @@ function MonitoringMapInner({
   // Tiers now arrive as there is room for them (see `zoomTiers`). Zoom mode is
   // untouched — drawing everything at every zoom is the trade chosen there.
   const tiers = useMemo(
-    () => (mode === 'viewport' ? tiersAtZoom(zoom) : ALL_TIERS),
-    [mode, zoom]
+    // Scope, not just zoom: drilling into a rayon reveals its subtree at any
+    // zoom (see `tiersFor`). A rayon that spans the whole city otherwise leaves
+    // the camera at city zoom and shows nothing at all.
+    () => (mode === 'viewport' ? tiersFor({ zoom, scope }) : ALL_TIERS),
+    [mode, zoom, scope]
   );
 
   const renderWorkers = showsWorkerPins(layers.personnel) && tiers.workers;
@@ -615,6 +617,49 @@ function MonitoringMapInner({
     );
   }, [visibleNodeMarkers, bounds, openNodeId]);
 
+  // ── Progressive reveal (viewport mode only) ────────────────────────────────
+  // Culling decided what is ON SCREEN; this decides which of those earn a full
+  // pin and which draw as a dot. Ranking the DRAWN sets rather than the raw ones
+  // is deliberate: the budget is a property of the screen, so panning to a
+  // quieter part of the city promotes what is there rather than keeping slots
+  // reserved for markers the operator cannot see.
+  const { affinityOf, visit } = useAffinity();
+  const reveal = useProgressiveReveal({
+    enabled: mode === 'viewport',
+    zoom,
+    nodes: drawnNodeMarkers,
+    workers: drawnWorkers,
+    affinityOf,
+    // Whatever the sidebar is currently describing must be drawn in full, or the
+    // card would document something the map is showing as an anonymous dot.
+    exemptNodeIds: [openNodeId, activeGeoId],
+    exemptWorkerIds: [selectedId],
+  });
+
+  // Engaging with something is what makes it familiar (see `affinity.ts`). Each
+  // of these is an explicit operator choice — never a hover, never a pan — so
+  // the history reflects attention rather than mouse travel.
+  const drillNode = useCallback(
+    (node: NodeMarker) => {
+      visit(node.id);
+      onDrillNode?.(node);
+    },
+    [visit, onDrillNode]
+  );
+  const selectWorker = useCallback(
+    (userId: string) => {
+      visit(userId);
+      onSelect?.(userId);
+    },
+    [visit, onSelect]
+  );
+
+  /** Did this node lose its full-pin slot? Gates the heaviest paint on the map. */
+  const nodeDemoted = useCallback(
+    (id: string): boolean => reveal.promotedNodes != null && !reveal.promotedNodes.has(id),
+    [reveal.promotedNodes]
+  );
+
   // At location scope, frame the SELECTED location's boundary once it loads — a reliable
   // "focus in" that beats a fixed zoom (locations vary in size). Runs once per location.
   const fittedAreaRef = useRef<string | null>(null);
@@ -709,9 +754,15 @@ function MonitoringMapInner({
                 strokeWeight: showsBoundary(layers.kawasan) ? 1.5 : 0,
                 strokeOpacity: showsBoundary(layers.kawasan) ? (poly.border_opacity ?? 0.85) : 0,
                 fillColor: poly.fill_color ?? POLYGON_STYLES.district.fill,
-                fillOpacity: showsFill(layers.kawasan)
-                  ? (poly.fill_opacity ?? RAYON_FILL_ALPHA * 0.6)
-                  : 0,
+                // A demoted kawasan keeps its outline and loses its wash. The
+                // fill is the heaviest thing this map paints and the least
+                // informative at low priority, so it is the first thing the
+                // budget takes back — the shape still reads, the colour stops
+                // competing with the pins that won a slot.
+                fillOpacity:
+                  showsFill(layers.kawasan) && !nodeDemoted(poly.id)
+                    ? (poly.fill_opacity ?? RAYON_FILL_ALPHA * 0.6)
+                    : 0,
                 clickable: false,
                 zIndex: 2,
               }}
@@ -730,9 +781,10 @@ function MonitoringMapInner({
                 strokeWeight: showsBoundary(layers.lokasi) ? POLYGON_STYLES.area.strokeWidth : 0,
                 strokeOpacity: showsBoundary(layers.lokasi) ? (area.border_opacity ?? 1) : 0,
                 fillColor: area.fill_color ?? POLYGON_STYLES.area.fill,
-                fillOpacity: showsFill(layers.lokasi)
-                  ? (area.fill_opacity ?? POLYGON_STYLES.area.fillOpacity)
-                  : 0,
+                fillOpacity:
+                  showsFill(layers.lokasi) && !nodeDemoted(area.id)
+                    ? (area.fill_opacity ?? POLYGON_STYLES.area.fillOpacity)
+                    : 0,
                 clickable: false,
                 zIndex: 3,
               }}
@@ -744,11 +796,12 @@ function MonitoringMapInner({
             empty, so nothing renders there. */}
         <NodeMarkerLayer
           nodes={drawnNodeMarkers}
-          onDrill={onDrillNode}
-          onDetail={onNodeMarkerDetail}
+          onDrill={drillNode}
           zoom={zoom}
           activeGeoId={activeGeoId}
           showLabels={nodeLabels}
+          promoted={reveal.promotedNodes}
+          labelled={reveal.labelledNodes}
         />
 
         {/* Movement trail (today) — a dashed path under the pins, drawn only on
@@ -799,9 +852,11 @@ function MonitoringMapInner({
             workers={drawnWorkers}
             zoom={zoom}
             selectedId={selectedId}
-            onSelect={onSelect}
+            onSelect={selectWorker}
             onTeamClick={onTeamClick}
             teamBubbles={showsTeamBubbles(layers.personnel)}
+            promoted={reveal.promotedWorkers}
+            labelled={reveal.labelledWorkers}
           />
         )}
 

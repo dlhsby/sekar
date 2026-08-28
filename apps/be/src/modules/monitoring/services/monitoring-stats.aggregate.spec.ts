@@ -450,6 +450,37 @@ describe('MonitoringStatsService.getAggregate', () => {
     });
   });
 
+  it('region nodes carry their parent district, so a mixed payload can be re-tree-d', async () => {
+    // The defect: `assembleNode` emitted `district_id` for location nodes only,
+    // so a kawasan came back with no link to its rayon. In `scope=all` — every
+    // tier in one payload for the client to rebuild the tree from — there was
+    // then nothing to rebuild it FROM: kawasan could not be attached to a rayon,
+    // so they never listed under one and the lokasi beneath them were
+    // unreachable from the Wilayah list.
+    regionRepo.find.mockResolvedValue([
+      { id: 'region-1', name: 'Kawasan Darmo', center_lat: -7.25, center_lng: 112.75 },
+      // A row whose own column is set proves the column is preferred; the
+      // parameter is the fallback for rows that lack it.
+      {
+        id: 'region-2',
+        name: 'Kawasan Pusat',
+        district_id: 'district-9',
+        center_lat: null,
+        center_lng: null,
+      },
+    ]);
+    locationRepo.find.mockResolvedValue([]);
+    trackingRepo.createQueryBuilder.mockReturnValue(makeQb([[]]));
+    staffRepo.createQueryBuilder.mockReturnValue(makeQb([[]]));
+
+    const res = await service.getAggregate('region', 'district-1');
+
+    expect(res.nodes.map((n) => [n.id, n.district_id])).toEqual([
+      ['region-1', 'district-1'],
+      ['region-2', 'district-9'],
+    ]);
+  });
+
   it('region scope without id throws NotFound', async () => {
     await expect(service.getAggregate('region')).rejects.toBeInstanceOf(NotFoundException);
   });

@@ -1,4 +1,4 @@
-import { tiersAtZoom, needsAreaGeometry, nextTierAt, TIER_ZOOM } from '../zoomTiers';
+import { tiersAtZoom, tiersFor, needsAreaGeometry, nextTierAt, TIER_ZOOM } from '../zoomTiers';
 
 describe('tiersAtZoom', () => {
   it('shows the rayon frame ONLY at city zoom', () => {
@@ -53,5 +53,71 @@ describe('nextTierAt', () => {
 
   it('is null at full depth, so the hint disappears rather than lying', () => {
     expect(nextTierAt(TIER_ZOOM.location)).toBeNull();
+  });
+});
+
+describe('tiersFor — drilling in overrides the zoom gate', () => {
+  it('reveals the whole subtree once the operator has drilled in', () => {
+    // The defect: "Rayon Taman Aktif" spans the whole city, so drilling into it
+    // leaves the camera at city zoom and the gate showed NOTHING — 42 lokasi and
+    // 3 petugas, hidden behind a "zoom in" hint, on a map that had ample room.
+    //
+    // Drilling in IS the request to see inside. Density is no longer the gate's
+    // job either: progressive reveal caps the full pins and draws the rest as
+    // dots, which is a better answer than hiding the tier outright.
+    expect(tiersFor({ zoom: 11, scope: 'district' })).toEqual({
+      district: true,
+      region: true,
+      location: true,
+      workers: true,
+    });
+  });
+
+  it('applies at every drilled scope, not just district', () => {
+    for (const scope of ['district', 'region', 'location'] as const) {
+      expect(tiersFor({ zoom: 10, scope }).location).toBe(true);
+    }
+  });
+
+  it('keeps the zoom gate at city scope, where the subtree is 1089 nodes', () => {
+    // The one place the gate still earns its keep: everything at once here is
+    // every lokasi in Surabaya, which is real DOM even as dots.
+    expect(tiersFor({ zoom: 11, scope: 'city' })).toEqual(tiersAtZoom(11));
+    expect(tiersFor({ zoom: 15, scope: 'city' })).toEqual(tiersAtZoom(15));
+  });
+
+  it('keeps the zoom gate at the Surabaya summary too', () => {
+    expect(tiersFor({ zoom: 11, scope: 'surabaya' }).region).toBe(false);
+  });
+});
+
+describe('needsAreaGeometry with scope', () => {
+  it('fetches full geometry once drilled in, so pins are not drawn shapeless', () => {
+    // Markers and boundaries must agree. Admitting lokasi pins without their
+    // polygons would draw pins floating over an empty rayon outline.
+    expect(needsAreaGeometry(11, 'district')).toBe(true);
+    expect(needsAreaGeometry(11, 'region')).toBe(true);
+  });
+
+  it('still defers the heavy payload at city scope', () => {
+    expect(needsAreaGeometry(11, 'city')).toBe(false);
+    expect(needsAreaGeometry(15, 'city')).toBe(true);
+  });
+
+  it('defaults to the zoom-only rule when no scope is given', () => {
+    expect(needsAreaGeometry(11)).toBe(false);
+    expect(needsAreaGeometry(15)).toBe(true);
+  });
+});
+
+describe('nextTierAt with scope', () => {
+  it('stops promising a tier that drilling has already revealed', () => {
+    // Otherwise the hint reads "zoom in to see lokasi" while the lokasi are
+    // already on screen — the map contradicting its own caption.
+    expect(nextTierAt(11, 'district')).toBeNull();
+  });
+
+  it('still guides the operator at city scope', () => {
+    expect(nextTierAt(11, 'city')).toBe('region');
   });
 });

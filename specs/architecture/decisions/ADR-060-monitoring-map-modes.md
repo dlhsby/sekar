@@ -183,6 +183,162 @@ without truncating their labels.
 - Mobile keeps drill mode only until parity work lands, widening a platform gap the client has already
   raised.
 
+## Amendment — progressive reveal in viewport mode (2026-08-28)
+
+The tier thresholds answered *"does this tier fit?"*. On the real dataset that is still the wrong
+question: past zoom 13 every one of the 129 kawasan drew an identical pin, so the one with nobody
+clocked in looked exactly like the ninety that were fine. The client's words, with a screenshot of the
+result: show the notable markers first and reveal the rest as you zoom, the way Google Maps does — for
+worker pins as much as for areas.
+
+**Decision.** Keep the tier thresholds exactly as they are (they still gate which tiers are eligible),
+and rank *within* them against a screen-space budget.
+
+    eligible (tiersAtZoom) → cull to viewport → score → grid declutter → promoted
+
+Four new modules, each pure and independently testable:
+
+| Module | Responsibility |
+|---|---|
+| `lib/monitoring/mercator.ts` | lat/lng → pixels. Collision is a screen question, not a ground one. |
+| `lib/monitoring/salience.ts` | urgency + affinity + tier → one number |
+| `lib/monitoring/affinity.ts` | per-browser "places this operator watches", decayed and bounded |
+| `lib/monitoring/declutter.ts` | pixel separation, highest score wins its space, hard cap |
+
+**Salience is urgency-first.** `3·tidak_hadir + 2·belum_hadir`, plus a flat 1.5 when a rostered area has
+nobody on it at all — without that term a one-person site standing empty scores the same as an
+eight-person site missing one, and small total outages vanish. A calm, fully staffed area scores
+exactly **zero**, which is what makes an empty-looking map a truthful signal rather than an artefact of
+the budget. Workers score the same way: absent 3, outside their area 2.5, stale ping 2, off-schedule 1.
+
+**Affinity is bounded at 3, deliberately.** It is the client's "places you looked at before", summed as
+`2^(−ageDays/7)` over the last 20 visits and pruned to 200 entities / 90 days. The ceiling is the safety
+property: familiarity can break a tie between two quiet areas and can **never** outrank an outage. A map
+that showed an operator their habits instead of their problems would be worse than one with no ranking.
+
+**Nothing is hidden.** A marker that loses its cell renders as a `marker-dot` at its true position, in
+its own status colour, still clickable, still drilling. This is the same rule that removed clustering
+from this map ("it hid people and confused operators") — the dot *is* the marker, at low priority.
+Demoted kawasan and lokasi also drop their polygon **fill** while keeping their outline: the fill is the
+heaviest thing the map paints and the least informative at low priority.
+
+**Pins are presence; labels are detail** — and that decides which modes get which pass.
+
+The **pin** pass is viewport-mode only. Drill is untouched by definition; zoom deliberately draws
+everything, which is the trade the client chose there. `promoted*` comes back null in both, which
+callers read as "draw every marker in full".
+
+The **label** pass runs in **every mode**. Two names cannot occupy the same pixels regardless of mode,
+and printing them anyway does not add information — it destroys it. Measured in drill mode, the default
+map, at kawasan depth: **40 labels produced 22 overlapping pairs**, and neither name in a pair was
+readable. Withholding a name costs nothing that was legible to begin with, and unlike the pin pass it
+never removes a marker, a count or a gesture: drill still draws 26 pins and 0 dots after the change,
+with 6 names and no overlaps.
+
+The frame exemption deliberately does not carry over to labels. A rayon must always be *drawn* — it is
+how you know where you are — but its *name* is detail and may yield to a neighbour that needs the space
+more.
+
+**Measured**, on the live dataset (1089 nodes: 8 rayon / 129 kawasan / 952 lokasi), all tiers in view,
+which is the worst case by construction:
+
+| zoom | eligible | full pins | dots | ranking cost |
+|---|---|---|---|---|
+| 11–12 | 8 | 8 | 0 | 0.4 ms |
+| 13 | 137 | 28 | 109 | 0.8 ms |
+| 14.5+ | 1089 | 53 | 1036 | 1.6 ms |
+
+Ranking is free; the residual cost is the dot elements, which viewport culling cuts further in practice
+(this table deliberately does not cull, so the numbers are the ceiling and not the typical case).
+
+**Two client corrections, same review round.**
+
+The mode hint was absolutely positioned at `top-3` — the same offset as the overlay stack — so it drew
+straight through the breadcrumb/status bar. It is now a **row inside that stack**, which cannot overlap
+by construction and survives another row being added above it.
+
+The pin's ⓘ detail badge is **removed**, not moved. It sat at `top:-4px; right:-6px`, which is exactly
+where `pinSvg` draws the active-count badge (`cx=39 cy=10`), so a button was covering the only live
+number the marker carries. That corner belongs to the count, and the count is **display only** — no
+handler, no hit area. The badge was not relocated because a ~16 px tap target is a poor one at any zoom
+and mobile has no equivalent, so keeping it meant a gesture that worked badly on one platform and not
+at all on the other. The pin has one meaning again — tap = drill — and area detail opens from the
+full-height ⓘ button on the node's row in the sidebar.
+
+**Bad / accepted**
+
+- The separation constants are judgement calls, not derivations. They are named constants in one file
+  precisely so they can be retuned against operator feedback.
+- 1029 dots is still 1029 DOM elements. Cheap ones — one `<div>`, no SVG, no label — but the tail is
+  not free, and a materially larger geography would need a second look.
+- Ranking the *culled* set means panning re-ranks. Intended (the budget is a property of the screen),
+  but it does mean a marker can change form as the camera moves.
+- ~~Drilling into a rayon leaves the camera below the kawasan threshold, so the drill alone reveals
+  nothing new.~~ **Fixed below** — the client hit this immediately on "Rayon Taman Aktif".
+- Mobile does not have this yet, widening the platform gap ADR-060 already noted.
+
+### Tier admission is scope-aware, not zoom-only
+
+The client drilled into **Rayon Taman Aktif** and got an empty map behind a "Perbesar untuk melihat
+lokasi & petugas" hint. That rayon spans the whole city, so the fit leaves the camera at city zoom —
+under the lokasi threshold — while the rayon holds only 42 lokasi and 3 petugas. Her words: "the scope
+is a whole town, not too crowded, we can display it immediately".
+
+Zoom was always a **proxy for density**, and drilling in is where the proxy breaks: camera altitude
+stops tracking how much there is to draw. Two things follow.
+
+**Drilling in is the request to see inside.** `tiersFor({ zoom, scope })` admits the entire subtree at
+any zoom once `scope` is district / region / location. The zoom gate survives at city scope only, where
+"every tier" means all 1089 nodes in Surabaya — real DOM even as dots, and the one place the gate still
+earns its keep.
+
+**Density is no longer this function's job.** Progressive reveal already caps full pins and draws the
+remainder as dots, which is a strictly better answer than hiding a tier outright. Per rayon:
+
+| rayon | lokasi | drawn on drill |
+|---|---|---|
+| Taman Aktif | 42 | 42 pins, no dots |
+| Barat 2 | 76 | 60 pins, 16 dots |
+| Pusat | 179 | 60 pins, 119 dots |
+
+Measured live on Taman Aktif: **19 full pins + 19 dots**, named, with no gesture between the drill and
+the result. Three call sites move together — the marker tiers, the `needsAreaGeometry` fetch (admitting
+lokasi pins without their polygons would draw pins over an empty outline) and `nextTierAt`, so the hint
+cannot promise a tier that is already on screen.
+
+Note this relaxes the earlier "tiers are a hard floor" decision, with the client's agreement: the floor
+now applies at city scope only.
+
+### Three corrections to the collision rule, all from looking at it
+
+Tuning the density dial turned up three separate defects, each visible on screen before it was visible
+in a number.
+
+**1. The collision box was the wrong shape.** It was an 88 px square, sized to the *pin*. But a pin is
+~40 px across and its printed name runs to ~150, so the axis that actually collides is horizontal —
+labels overlapped with only 19 markers on screen ("Taman Kartika" over "Taman Kombes"). The box is now
+150 × 96: wide enough for a name, no taller than it needs to be, because a label is one line.
+
+**2. Cell membership is not distance.** Bucketing both markers into a fixed grid is the cheap
+approximation, and it leaks: two markers 100 px apart that straddle a cell boundary land in different
+cells and both get promoted. Measured on a sweep across one cell width, the old rule let such a pair
+through in **21 of 30 positions** — a 70 % leak, not an edge case. Separation is now measured against
+the accepted markers themselves; the grid survives only as a spatial *index* over them (a conflict can
+only be in the 3 × 3 neighbouring buckets), which keeps the pass O(n).
+
+**3. Pins and labels must not share a budget.** With one 150 px box gating both, 32 of Taman Aktif's 42
+lokasi were demoted to dots — losing their **staffing count** because their *names* would have
+overlapped. That is the wrong thing to pay for a label. Decluttering now runs twice: pins at 56 px, then
+labels at 150 × 96 over the survivors. Many icons, labels on some — which is what Google's own label
+engine does, and what the client was pointing at.
+
+Live on Taman Aktif, across the three: 10 pins → **21 pins + ~7 labels, zero overlaps**.
+
+**Rayon are never demoted.** `zoomTiers` already holds the tier on at every zoom because it is the map's
+frame; demotion has to follow or the frame develops holes — a label-width box put three of the eight
+rayon in shared space at city zoom and drew them as dots. There are only ever eight, and once drilled in
+only one is on screen, so the exemption costs nothing. It is additive to the cap, not taken out of it.
+
 ## Verification
 
 - Drill mode's numbers must be **byte-identical** before and after this change: zoom alters what is

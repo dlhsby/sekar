@@ -102,3 +102,80 @@ describe('AggregateNodeList — row-level hide', () => {
     expect(onDrill).toHaveBeenCalledWith(expect.objectContaining({ id: 'b' }));
   });
 });
+
+describe('a long name must not push the row actions off screen', () => {
+  const LONG = 'Kawasan Manukan Balongsari S.D Manukan Tengah Jaya Raya';
+
+  it('keeps the hide and detail buttons reachable', () => {
+    // The reported defect: the name button grew to fit its text and shoved both
+    // actions out of the row. A flex item defaults to `min-width: auto`, so
+    // `truncate` on the name alone did nothing — the whole chain from the row
+    // button down to the name has to be allowed to shrink.
+    render(
+      <AggregateNodeList
+        nodes={[node({ name: LONG })]}
+        onDrill={jest.fn()}
+        onDetail={jest.fn()}
+        onToggleHidden={jest.fn()}
+      />
+    );
+    expect(screen.getByLabelText(`Sembunyikan ${LONG}`)).toBeInTheDocument();
+    expect(screen.getByLabelText(`Detail ${LONG}`)).toBeInTheDocument();
+  });
+
+  it('lets every element in the shrink chain shrink', () => {
+    // Asserted structurally because the failure is invisible to jsdom, which
+    // does no layout: one missing `min-w-0` and the ellipsis silently stops
+    // working in the browser while every behavioural test still passes.
+    const { container } = render(
+      <AggregateNodeList nodes={[node({ name: LONG })]} onDrill={jest.fn()} />
+    );
+    const name = screen.getByText(LONG);
+    expect(name.className).toMatch(/truncate/);
+    expect(name.className).toMatch(/min-w-0/);
+    expect(name.parentElement!.className).toMatch(/min-w-0/);
+    // The row button itself, two levels up from the name's flex row.
+    const rowButton = container.querySelector('li > button')!;
+    expect(rowButton.className).toMatch(/min-w-0/);
+  });
+
+  it('exposes the full name on hover, since the visible text is cut', () => {
+    render(<AggregateNodeList nodes={[node({ name: LONG })]} onDrill={jest.fn()} />);
+    expect(screen.getByText(LONG)).toHaveAttribute('title', LONG);
+  });
+});
+
+describe('zero counts recede without becoming unreadable', () => {
+  it('mutes a zero and keeps a real number bold and coloured', () => {
+    // Most numbers on most rows are 0. With every value bold and semantically
+    // coloured, a screen of nothing-to-do looked as loud as a screen of
+    // problems. The signal has to come from the numbers that are actually there.
+    render(
+      <AggregateNodeList
+        nodes={[
+          node({
+            name: 'Kawasan Uji',
+            roster: { scheduled: 7, clocked_in: 0, belum_hadir: 0, tidak_hadir: 0 },
+          }),
+        ]}
+        onDrill={jest.fn()}
+      />
+    );
+    expect(screen.getByText('7').className).toMatch(/font-bold/);
+    // The three zeros are all muted to the same secondary tone.
+    for (const zero of screen.getAllByText('0')) {
+      expect(zero.className).toMatch(/text-nb-gray-500/);
+      expect(zero.className).not.toMatch(/font-bold/);
+    }
+  });
+
+  it('never mutes below the AA contrast floor', () => {
+    // gray-500 is 4.80:1 on white; gray-400 is 2.52:1 and gray-300 is 1.49:1,
+    // both under the 4.5:1 AA needs for body text. A muted number is still a
+    // number the operator may have to read.
+    render(<AggregateNodeList nodes={[node({})]} onDrill={jest.fn()} />);
+    for (const zero of screen.getAllByText('0')) {
+      expect(zero.className).not.toMatch(/text-nb-gray-(100|200|300|400)\b/);
+    }
+  });
+});

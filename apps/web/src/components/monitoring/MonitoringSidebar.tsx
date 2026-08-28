@@ -31,6 +31,8 @@ import type { UserRole } from '@/types/models';
 type SidebarTab = 'wilayah' | 'petugas';
 
 export interface MonitoringSidebarProps {
+  /** True when filters removed someone at this scope — changes the empty-state copy. */
+  workersNarrowedByFilters?: boolean;
   workers: SnapshotWorker[];
   /** The current level's child nodes (empty at lokasi scope → Wilayah tab hidden). */
   nodes: AggregateNode[];
@@ -239,6 +241,7 @@ function WorkerDetail({ worker, onBack }: { worker: SnapshotWorker; onBack: () =
 // ---------------------------------------------------------------------------
 
 export function MonitoringSidebar({
+  workersNarrowedByFilters = false,
   workers,
   nodes,
   onDrillNode,
@@ -272,7 +275,14 @@ export function MonitoringSidebar({
         <EmptyState
           variant="noResults"
           title={t('monitoring:sidebar.noWorkers')}
-          description={t('monitoring:sidebar.noWorkersMatch')}
+          // Two different facts, and the operator's next move differs: clear a
+          // filter, or accept that nobody is here. Saying "no match" when no
+          // filter is set sends them hunting for one that does not exist.
+          description={t(
+            workersNarrowedByFilters
+              ? 'monitoring:sidebar.noWorkersMatch'
+              : 'monitoring:sidebar.noWorkersHere'
+          )}
         />
       </div>
     ) : (

@@ -10,11 +10,11 @@
  */
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { SlidersHorizontal, RefreshCw, X, List, ChevronDown, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
+import { SlidersHorizontal, RefreshCw, X, List, ChevronDown, Settings } from 'lucide-react';
 
 import { useAuth } from '@/lib/auth/hooks';
 import {
@@ -45,6 +45,8 @@ import {
   type DistrictOption,
 } from '@/components/monitoring/MonitoringFilters';
 import { MonitoringSidebar } from '@/components/monitoring/MonitoringSidebar';
+import { MonitoringBreadcrumb } from '@/components/monitoring/MonitoringBreadcrumb';
+import { usePanelWidth } from '@/lib/monitoring/panelWidth';
 import { UserDetailPanel } from '@/components/monitoring/UserDetailPanel';
 import { AreaDetailPanel } from '@/components/monitoring/AreaDetailPanel';
 import { useAreaPlants, useNotablePlants } from '@/lib/api/plants';
@@ -103,6 +105,9 @@ function aggToMarker(n: AggregateNode): NodeMarker | null {
     tidak_hadir: n.roster.tidak_hadir,
     active: n.counts_by_status.active,
     active_inside: n.presence.aktif.dalam,
+    // Carried through so a map drill keeps the hierarchy — see NodeMarker.
+    district_id: n.district_id ?? null,
+    region_id: n.region_id ?? null,
     marker_icon: n.marker_icon ?? null,
     fill_color: n.fill_color ?? null,
     fill_opacity: n.fill_opacity != null ? Number(n.fill_opacity) : null,
@@ -144,6 +149,7 @@ export default function MonitoringPage() {
   const [filters, setFilters] = useState<MonitoringFilterState>({
     search: '',
     statuses: new Set(),
+    scheduled: 'all',
     districtId: 'all',
     regionId: 'all',
     locationId: 'all',
@@ -280,7 +286,9 @@ export default function MonitoringPage() {
   const boundaryLevel: 'district' | 'area' =
     // Viewport mode climbs the tiers with the camera: rayon outlines near the
     // city, full geometry once kawasan are on screen.
-    isViewport && !needsAreaGeometry(mapZoom)
+    // Scope-aware, matching the marker tiers exactly: admitting lokasi pins
+    // without fetching their polygons would draw pins over an empty outline.
+    isViewport && !needsAreaGeometry(mapZoom, scope)
       ? 'district'
       : isZoom || scope !== 'city'
         ? 'area'
@@ -408,17 +416,40 @@ export default function MonitoringPage() {
   };
 
   // Map marker tapped.
+  //
+  // Parents come from the NODE first and the current view only as a fallback.
+  // In zoom and viewport mode every tier is drawn at once, so a kawasan or
+  // lokasi pin is tappable at CITY scope — where the view has no id to lend. The
+  // node has always known where it sits; it just was not being asked.
   const onDrillMarker = (node: NodeMarker) => {
+    const districtId = node.district_id ?? view.districtId ?? view.id;
     if (node.variant === 'district') drillToDistrict(node.id, node.name, node.lat, node.lng);
-    else if (node.variant === 'region') drillToRegion(node.id, node.name, view.id, node.lat, node.lng);
-    else if (scope === 'region')
-      drillToLocation(node.id, node.name, view.districtId, node.lat, node.lng, view.id);
-    else drillToLocation(node.id, node.name, view.id, node.lat, node.lng);
+    else if (node.variant === 'region')
+      drillToRegion(node.id, node.name, districtId, node.lat, node.lng);
+    else
+      drillToLocation(
+        node.id,
+        node.name,
+        districtId,
+        node.lat,
+        node.lng,
+        node.region_id ?? (scope === 'region' ? view.id : undefined)
+      );
   };
   // List row tapped (an AggregateNode).
   const onDrillListNode = (node: AggregateNode) => {
     if (node.type === 'district') drillToDistrict(node.id, node.name, node.center_lat, node.center_lng);
-    else if (node.type === 'region') drillToRegion(node.id, node.name, view.id, node.center_lat, node.center_lng);
+    else if (node.type === 'region')
+      // Same rule as the map: the node knows its rayon, the view is the fallback.
+      // Region nodes only started carrying `district_id` when the aggregate began
+      // emitting it; before that there was nothing here to prefer.
+      drillToRegion(
+        node.id,
+        node.name,
+        node.district_id ?? view.districtId ?? view.id,
+        node.center_lat,
+        node.center_lng
+      );
     else
       drillToLocation(
         node.id,
@@ -515,13 +546,39 @@ export default function MonitoringPage() {
     const district = new Map<string, string>();
     const region = new Map<string, string>();
     const area = new Map<string, string>();
+    // Aggregate nodes FIRST: they carry every tier's name and arrive with the
+    // counts, while boundaries are fetched per scope and lag a drill. Sourcing
+    // names from geometry alone meant the breadcrumb read a generic "Rayon"
+    // until the polygons landed — and never resolved at all for a tier whose
+    // geometry the current scope had no reason to fetch.
+    const aggNodes = [
+      ...(allAgg.data?.nodes ?? []),
+      ...(cityAgg.data?.nodes ?? []),
+      ...(regionAgg.data?.nodes ?? []),
+      ...(districtAgg.data?.nodes ?? []),
+      ...(regionAreasAgg.data?.nodes ?? []),
+    ];
+    for (const n of aggNodes) {
+      if (n.type === 'district') district.set(n.id, n.name);
+      else if (n.type === 'region') region.set(n.id, n.name);
+      else area.set(n.id, n.name);
+    }
+    // Boundaries second, so the authoritative geometry name wins where both
+    // exist — and so a name survives a scope change that drops it from the list.
     for (const r of boundaries?.districts ?? []) {
       district.set(r.id, r.name);
       for (const k of r.regions ?? []) region.set(k.id, k.name);
       for (const a of r.areas ?? []) area.set(a.id, a.name);
     }
     return { district, region, area };
-  }, [boundaries]);
+  }, [
+    boundaries,
+    allAgg.data,
+    cityAgg.data,
+    regionAgg.data,
+    districtAgg.data,
+    regionAreasAgg.data,
+  ]);
 
   // Breadcrumb trail: Surabaya › Rayon › Kawasan › Lokasi. Each ancestor is a
   // button that drills back to that level; the current (last) crumb is static.
@@ -636,49 +693,58 @@ export default function MonitoringPage() {
 
   // Districts list (surabaya + city), regions list (district), or locations list (region or district-without-regions),
   // for the side panel.
+  /**
+   * The Wilayah tab: the children of where you are, ONE level down — in every
+   * mode.
+   *
+   * Zoom and viewport used to list the whole subtree here, flattened and
+   * tier-badged, on the reasoning that the panel should list what the map draws.
+   * On the real hierarchy that is 370 rows at city scope, and it makes the tab
+   * unusable for the thing it is actually for: the list is a NAVIGATION control,
+   * not a second rendering of the map. The map's job in those modes is to show
+   * everything at once; the list's job is to let you go somewhere. Tapping a row
+   * still drills, and the mode is unchanged by drilling, so the map keeps
+   * showing the whole subtree of wherever you land.
+   *
+   * The level itself is defined once and the two modes differ only in which
+   * query they read it from — zoom already holds every tier in `allAgg`, drill
+   * fetches per scope.
+   */
   const listNodes = useMemo<AggregateNode[]>(() => {
+    if (scope === 'location') return [];
+
     if (isZoom) {
-      // The panel lists the SAME set the map draws — the whole subtree, ordered
-      // rayon → its kawasan → its lokasi, so the list reads as the hierarchy
-      // rather than as a flat dump. Anything else and the Wilayah tab would
-      // disagree with the map about what "here" contains.
       const nodes = allAgg.data?.nodes ?? [];
-      if (scope === 'location') return [];
       if (scope === 'region') {
         return nodes.filter((n) => n.type === 'location' && n.region_id === view.id);
       }
-
-      const ordered: AggregateNode[] = [];
-      const districts =
-        scope === 'district'
-          ? nodes.filter((n) => n.type === 'district' && n.id === view.id)
-          : nodes.filter((n) => n.type === 'district');
-      for (const d of districts) {
-        // At district scope the rayon itself is the node you are standing on;
-        // the breadcrumb already names it, so don't repeat it as a row.
-        if (scope !== 'district') ordered.push(d);
-        const kawasan = nodes.filter((n) => n.type === 'region' && n.district_id === d.id);
-        const lokasi = nodes.filter((n) => n.type === 'location' && n.district_id === d.id);
-        for (const k of kawasan) {
-          ordered.push(k);
-          ordered.push(...lokasi.filter((l) => l.region_id === k.id));
-        }
-        // Lokasi with no kawasan sit directly under the rayon.
-        ordered.push(...lokasi.filter((l) => !l.region_id));
+      if (scope === 'district') {
+        return [
+          ...nodes.filter((n) => n.type === 'region' && n.district_id === view.id),
+          // Lokasi with no kawasan hang directly off the rayon, so they are part
+          // of this level too — the map has always drawn them here.
+          ...nodes.filter(
+            (n) => n.type === 'location' && n.district_id === view.id && !n.region_id
+          ),
+        ];
       }
-      return ordered;
+      return nodes.filter((n) => n.type === 'district');
     }
+
     if (scope === 'region') {
       // At region scope: filter the district's location nodes by region_id.
       const areas = regionAreasAgg.data?.nodes ?? [];
       return areas.filter((n) => n.region_id === view.id);
     }
     if (scope === 'district') {
-      // At district scope: show region nodes if available (≥1), otherwise show location nodes (region-less fallback).
-      if (regionAgg.data && regionAgg.data.nodes.length > 0) {
-        return regionAgg.data.nodes;
-      }
-      return districtAgg.data?.nodes ?? [];
+      // Kawasan AND the rayon's region-less lokasi — the same set the map draws
+      // here. This used to return kawasan alone whenever there was at least one,
+      // so a rayon with both kinds of child listed only half of them while the
+      // map showed all of them.
+      return [
+        ...(regionAgg.data?.nodes ?? []),
+        ...(districtAgg.data?.nodes ?? []).filter((n) => !n.region_id),
+      ];
     }
     if (scope === 'city') return cityAgg.data?.nodes ?? [];
     return [];
@@ -758,12 +824,62 @@ export default function MonitoringPage() {
     return toMarkers(listNodes); // city → district markers
   }, [isZoom, allAgg.data, scope, view.id, regionAgg.data, districtAgg.data, regionAreasAgg.data, listNodes]);
 
+  // A worker belongs to the drill level that matches THEIR SCHEDULE SCOPE
+  // (`display_scope`): a lokasi-scheduled worker shows only at that lokasi, a
+  // district-scheduled worker only at that district, a city-wide/unassigned worker only
+  // at the city view — never at the levels above. So each level shows its own
+  // scoped crews (not every worker that happens to sit inside the geography).
+  const scopeMatches = useCallback(
+    (w: { display_scope?: string; display_scope_id?: string | null }): boolean => {
+      const s = w.display_scope ?? 'location';
+      if (scope === 'city') return s === 'city';
+      if (scope === 'district') return s === 'district' && w.display_scope_id === view.id;
+      if (scope === 'region') return s === 'region' && w.display_scope_id === view.id;
+      if (scope === 'location') return s === 'location' && w.display_scope_id === view.id;
+      return true;
+    },
+    [scope, view.id]
+  );
+
+  // Zoom mode asks a DIFFERENT question: not "is this worker's schedule scoped
+  // here" but "is this worker standing anywhere inside what I'm looking at".
+  // That is the client's "show all the workers in that rayon" verbatim, and it
+  // uses the worker's real geography rather than their `display_scope` — so an
+  // ad-hoc clock-in (flat at city scope) appears inside the rayon they are
+  // actually in, still styled as Luar Jadwal.
+  const subtreeMatches = useCallback(
+    (w: { district_id?: string | null; region_id?: string | null; location_id?: string | null }) => {
+      if (scope === 'city') return true;
+      if (scope === 'district') return w.district_id === view.id;
+      if (scope === 'region') return w.region_id === view.id;
+      return w.location_id === view.id;
+    },
+    [scope, view.id]
+  );
+
+  const workerVisible = isZoom ? subtreeMatches : scopeMatches;
+
+  /**
+   * Everyone at this scope, before any filter.
+   *
+   * Two things need it: the presence pills (which summarise the scope, not the
+   * filtered view) and the Petugas empty state, which has to tell the operator
+   * WHY the list is empty — nobody here, or nobody matching.
+   */
+  const scopeWorkers = useMemo(() => workers.filter(workerVisible), [workers, workerVisible]);
+
   // At region (kawasan) scope the aggregate's top-level totals cover the whole
   // parent district; sum just this kawasan's lokasi nodes so the stats pills match
   // the selected kawasan (the roster panel already lists only its lokasi).
   const regionTotals = useMemo(() => {
     if (scope !== 'region') return null;
-    const nodes = (regionAreasAgg.data?.nodes ?? []).filter((n) => n.region_id === view.id);
+    // Source follows the MODE, not just the scope. `regionAreasAgg` is gated on
+    // `!isZoom`, so in zoom and viewport mode it is never fetched — this summed
+    // an empty array and still returned an object, so the `?? activeAgg` fallback
+    // below could not fire and every presence pill read 0 at kawasan scope.
+    // Zoom already holds every tier in `allAgg`; the filter is the same either way.
+    const pool = isZoom ? (allAgg.data?.nodes ?? []) : (regionAreasAgg.data?.nodes ?? []);
+    const nodes = pool.filter((n) => n.type === 'location' && n.region_id === view.id);
     const totals = { active: 0, offline: 0, absent: 0, outside_area: 0 };
     const presence_totals = { aktif: { dalam: 0, luar: 0 }, tidak_aktif: { dalam: 0, luar: 0 } };
     const roster_totals = { scheduled: 0, clocked_in: 0, belum_hadir: 0, tidak_hadir: 0 };
@@ -782,7 +898,7 @@ export default function MonitoringPage() {
       roster_totals.tidak_hadir += n.roster.tidak_hadir;
     }
     return { totals, presence_totals, roster_totals };
-  }, [scope, view.id, regionAreasAgg.data]);
+  }, [scope, view.id, isZoom, allAgg.data, regionAreasAgg.data]);
 
   // Presence-model counts for the top pills. At area scope, derive from the
   // worker list (scheduled → aktif/tidak-aktif; unscheduled → ad-hoc); above
@@ -792,7 +908,15 @@ export default function MonitoringPage() {
       let aktif = 0;
       let tidak_aktif = 0;
       let adhoc = 0;
-      for (const w of workers) {
+      // SCOPED, not the raw snapshot. In zoom and viewport mode the snapshot is
+      // always fetched city-wide and `showWorkers` is true at every level, so
+      // counting `workers` directly left the pills reading the whole city no
+      // matter how far the operator had drilled — the header said "Tidak Aktif
+      // 50" while the Petugas tab beside it said 3.
+      //
+      // Narrowed by SCOPE only, deliberately: these pills summarise the
+      // situation here, where the Petugas tab lists what the filters admit.
+      for (const w of scopeWorkers) {
         if (w.is_scheduled === false) {
           adhoc += 1;
           continue;
@@ -813,7 +937,7 @@ export default function MonitoringPage() {
       adhoc: activeAgg.data?.off_schedule_count ?? 0,
     };
 
-  }, [showWorkers, workers, regionTotals, activeAgg.data]);
+  }, [showWorkers, scopeWorkers, regionTotals, activeAgg.data]);
 
   /**
    * The detail card's props for whichever node is open.
@@ -1061,13 +1185,24 @@ export default function MonitoringPage() {
     const q = filters.search.trim().toLowerCase();
     return workers.filter((w) => {
       if (filters.statuses.size > 0 && !filters.statuses.has(w.status as TrackingStatus)) return false;
+      // Ad-hoc is its own axis (ADR-050), so it narrows independently of status.
+      if (filters.scheduled === 'adhoc' && w.is_scheduled !== false) return false;
+      if (filters.scheduled === 'scheduled' && w.is_scheduled === false) return false;
       if (filters.districtId !== 'all' && w.district_id !== filters.districtId) return false;
       if (filters.regionId !== 'all' && w.region_id !== filters.regionId) return false;
       if (filters.locationId !== 'all' && w.location_id !== filters.locationId) return false;
       if (q && !w.full_name.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [workers, filters.statuses, filters.districtId, filters.regionId, filters.locationId, filters.search]);
+  }, [
+    workers,
+    filters.statuses,
+    filters.scheduled,
+    filters.districtId,
+    filters.regionId,
+    filters.locationId,
+    filters.search,
+  ]);
 
   // LIST view of workers: the Individu/Tim toggle applies HERE ONLY. Individu =
   // individually-assigned (no team) + Peran (role); Tim = team-assigned + team
@@ -1093,40 +1228,58 @@ export default function MonitoringPage() {
     return q ? listNodes.filter((n) => n.name.toLowerCase().includes(q)) : listNodes;
   }, [listNodes, filters.search]);
 
-  // A worker belongs to the drill level that matches THEIR SCHEDULE SCOPE
-  // (`display_scope`): a lokasi-scheduled worker shows only at that lokasi, a
-  // district-scheduled worker only at that district, a city-wide/unassigned worker only
-  // at the city view — never at the levels above. So each level shows its own
-  // scoped crews (not every worker that happens to sit inside the geography).
-  const scopeMatches = useCallback(
-    (w: { display_scope?: string; display_scope_id?: string | null }): boolean => {
-      const s = w.display_scope ?? 'location';
-      if (scope === 'city') return s === 'city';
-      if (scope === 'district') return s === 'district' && w.display_scope_id === view.id;
-      if (scope === 'region') return s === 'region' && w.display_scope_id === view.id;
-      if (scope === 'location') return s === 'location' && w.display_scope_id === view.id;
-      return true;
+  /**
+   * Tier badges on the rows, shown only when the level actually MIXES tiers —
+   * which happens at rayon scope, where kawasan and region-less lokasi are
+   * siblings.
+   *
+   * Derived rather than tied to the mode. It used to be `isZoom`, from when zoom
+   * listed the whole flattened subtree and every row needed saying what it was;
+   * now both modes list one level, so keying it off the mode would badge
+   * identical content in one and not the other.
+   */
+  // Panel width is the operator's, and persists — see `panelWidth.ts`.
+  const panel = usePanelWidth();
+  const panelRef = useRef<HTMLDivElement | null>(null);
+
+  /**
+   * Drag the panel's right edge.
+   *
+   * Pointer capture rather than window listeners: the handle keeps receiving
+   * events even when the cursor outruns it, which it will, and the browser
+   * cancels the capture for us on release or interruption. Width is measured
+   * from the panel's own left edge so it never drifts from where the pointer is.
+   */
+  const startResize = useCallback(
+    (e: ReactPointerEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      const left = panelRef.current?.getBoundingClientRect().left ?? 0;
+      const handle = e.currentTarget;
+      handle.setPointerCapture(e.pointerId);
+
+      const move = (ev: PointerEvent) => panel.setWidth(ev.clientX - left);
+      const end = () => {
+        handle.removeEventListener('pointermove', move);
+        handle.removeEventListener('pointerup', end);
+        handle.removeEventListener('pointercancel', end);
+        panel.commit();
+      };
+      handle.addEventListener('pointermove', move);
+      handle.addEventListener('pointerup', end);
+      handle.addEventListener('pointercancel', end);
     },
-    [scope, view.id]
+    [panel]
   );
 
-  // Zoom mode asks a DIFFERENT question: not "is this worker's schedule scoped
-  // here" but "is this worker standing anywhere inside what I'm looking at".
-  // That is the client's "show all the workers in that rayon" verbatim, and it
-  // uses the worker's real geography rather than their `display_scope` — so an
-  // ad-hoc clock-in (flat at city scope) appears inside the rayon they are
-  // actually in, still styled as Luar Jadwal.
-  const subtreeMatches = useCallback(
-    (w: { district_id?: string | null; region_id?: string | null; location_id?: string | null }) => {
-      if (scope === 'city') return true;
-      if (scope === 'district') return w.district_id === view.id;
-      if (scope === 'region') return w.region_id === view.id;
-      return w.location_id === view.id;
-    },
-    [scope, view.id]
+  /** The tier viewport mode has yet to reveal, or null at full depth. */
+  const nextTier = nextTierAt(mapZoom, scope);
+
+  const showNodeTier = useMemo(
+    () => new Set(filteredNodes.map((n) => n.type)).size > 1,
+    [filteredNodes]
   );
 
-  const workerVisible = isZoom ? subtreeMatches : scopeMatches;
+
 
   // Map source: base filter (no jenis split) so teams + individuals both draw.
   const drillScopedWorkers = useMemo(
@@ -1140,6 +1293,17 @@ export default function MonitoringPage() {
     () => filteredWorkers.filter(workerVisible),
     [filteredWorkers, workerVisible]
   );
+
+  /**
+   * Did filtering actually remove anyone at this scope?
+   *
+   * Derived rather than enumerated: comparing the two counts cannot drift as
+   * filter fields are added, and it answers the only question the empty state
+   * asks — is this list empty because nobody is here, or because the filters
+   * excluded them. It used to say "no petugas match the filter" unconditionally,
+   * blaming a filter that was often not set.
+   */
+  const listNarrowedByFilters = scopeWorkers.length > listScopedWorkers.length;
 
   // Hidden workers leave the MAP as well as the list — the point of hiding a
   // person is not to see their pin. Counts are untouched: they come from the
@@ -1225,7 +1389,6 @@ export default function MonitoringPage() {
         onDrillNode={onDrillMarker}
         currentNode={currentNode}
         onNodeDetail={onNodeDetail}
-        onNodeMarkerDetail={(n) => setDetailNodeId(n.id)}
         openNodeId={detailNodeId}
         areaId={scope === 'location' ? view.id ?? null : null}
         regionId={scope === 'region' ? view.id ?? null : null}
@@ -1245,53 +1408,23 @@ export default function MonitoringPage() {
             (esp. mobile, where the back button used to be an unlabeled icon). Back
             steps up one level; each ancestor crumb jumps straight to that level. */}
         <div className="pointer-events-auto flex items-center gap-2 rounded-nb-base border-2 border-nb-black bg-nb-white/95 px-2 py-1.5 shadow-nb-sm backdrop-blur-sm">
-          {canGoBack && (
-            <button
-              type="button"
-              onClick={goBack}
-              aria-label={t('monitoring:page.backLabel')}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-nb-sm text-nb-black hover:bg-nb-gray-100"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-          )}
-          <nav
-            className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap text-sm"
-            aria-label={t('monitoring:breadcrumb.label')}
-          >
-            {/* Mobile (<sm): current level only — the ‹ back handles going up, so
-                intermediate crumbs (and their truncation) are dropped for space. */}
-            <span className="truncate font-bold text-nb-black sm:hidden" aria-current="page">
-              {crumbs[crumbs.length - 1]?.label}
-            </span>
-            {/* Desktop (≥sm): the full clickable trail. */}
-            <span className="hidden items-center gap-1 sm:flex">
-              {crumbs.map((c, i) => (
-                <span key={c.key} className="flex shrink-0 items-center gap-1">
-                  {i > 0 && <ChevronRight className="h-3.5 w-3.5 text-nb-gray-400" aria-hidden="true" />}
-                  {c.onClick ? (
-                    <button
-                      type="button"
-                      onClick={c.onClick}
-                      className="max-w-[8rem] truncate font-semibold text-nb-gray-600 hover:text-nb-black hover:underline"
-                    >
-                      {c.label}
-                    </button>
-                  ) : (
-                    <span className="max-w-[10rem] truncate font-bold text-nb-black" aria-current="page">
-                      {c.label}
-                    </span>
-                  )}
-                </span>
-              ))}
-            </span>
-          </nav>
+          <MonitoringBreadcrumb
+            crumbs={crumbs}
+            canGoBack={canGoBack}
+            onBack={goBack}
+            className="flex-1"
+          />
           {/* Presence stats, pinned right of the breadcrumb (replaces a whole
               extra row). Desktop (≥md) has room → labels + counts + timestamp
               inline, no tap. Mobile → compact dot+number chips that tap open a
               labeled legend (the only way to read the labels there). */}
           <div
             className="hidden shrink-0 items-center gap-2 border-l-2 border-nb-gray-200 pl-2 md:flex"
+            // A live region with no accessible name announces changes without
+            // saying what changed. The mobile legend below already carries this
+            // label; the desktop pills are the same information.
+            role="status"
+            aria-label={t('monitoring:breadcrumb.statsLegend')}
             aria-live="polite"
           >
             {PRESENCE_PILLS.map((p) => (
@@ -1401,6 +1534,26 @@ export default function MonitoringPage() {
             <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
           </button>
         </div>
+
+        {/* Row 3 — viewport mode's running commentary. It lives IN the stack
+            rather than floating at `top-3` of its own: absolutely positioning a
+            second thing at the same offset put it straight through the
+            breadcrumb bar. As a row it cannot overlap anything, and it stays
+            correct if another row is ever added above it.
+
+            Two messages, one slot. Below full depth it names the tier still to
+            come, so a missing kawasan layer reads as "not yet" and not as broken
+            data. At full depth it explains the dots, which otherwise read as
+            decoration rather than as markers waiting to be opened. */}
+        {isViewport && (
+          <div className="flex justify-center">
+            <span className="pointer-events-none rounded-nb-base border-2 border-nb-black bg-nb-white/95 px-3 py-1.5 text-xs font-bold text-nb-black shadow-nb-xs backdrop-blur-sm">
+              {nextTier
+                ? t(`monitoring:mode.zoomInFor.${nextTier}`)
+                : t('monitoring:mode.revealHint')}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Filter panel */}
@@ -1448,19 +1601,30 @@ export default function MonitoringPage() {
       {/* Viewport mode reveals tiers with the camera, so it has to SAY so —
           otherwise a missing kawasan layer reads as broken data rather than as
           "not yet". Disappears once the map is at full depth. */}
-      {isViewport && nextTierAt(mapZoom) && (
-        <div className="pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2 rounded-nb-base border-2 border-nb-black bg-nb-white px-3 py-1.5 text-xs font-bold text-nb-black shadow-nb-xs">
-          {t(`monitoring:mode.zoomInFor.${nextTierAt(mapZoom)}`)}
-        </div>
-      )}
 
       {/* Worker/area/node sheet */}
       {listOpen ? (
-        <div className="absolute inset-x-3 bottom-3 z-20 flex h-[45vh] max-h-[60%] flex-col sm:inset-x-auto sm:left-3 sm:w-96">
-          <div className="mb-1 flex items-center justify-between">
-            <span className="rounded-nb-base border-2 border-nb-black bg-nb-white px-2.5 py-1 text-xs font-bold text-nb-black shadow-nb-xs">
-              {t('monitoring:page.listLabel')}
-            </span>
+        <div
+          ref={panelRef}
+          // The width rides a CSS variable rather than an inline `width`, so it
+          // can be scoped to `sm:` — below that the panel spans the viewport and
+          // there is no width to give it.
+          style={{ '--panel-w': `${panel.width}px` } as CSSProperties}
+          className="absolute inset-x-3 bottom-3 z-20 flex h-[45vh] max-h-[60%] flex-col sm:inset-x-auto sm:left-3 sm:w-[var(--panel-w)]"
+        >
+          {/* The header carries the BREADCRUMB, not a title. The button that
+              opened this panel already names it, and the tabs below name its two
+              halves — so the scarce width goes to the thing that changes as you
+              drill. Same component as the map's bar, so the two can never
+              disagree about where you are. */}
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <MonitoringBreadcrumb
+              crumbs={crumbs}
+              canGoBack={canGoBack}
+              onBack={goBack}
+              compact
+              className="min-w-0 flex-1 rounded-nb-base border-2 border-nb-black bg-nb-white px-2 py-1 shadow-nb-xs"
+            />
             <button
               type="button"
               onClick={() => {
@@ -1476,12 +1640,30 @@ export default function MonitoringPage() {
           {/* One sidebar at every level: Wilayah (child nodes, drillable) + Petugas
               (workers). At lokasi scope there are no child nodes, so only Petugas
               shows. */}
+          {/* Resize handle on the panel's right edge. Desktop only: below `sm`
+              the panel is full-bleed and has no width to give. Double-click
+              restores the default, so a drag can never strand the operator with
+              a panel they cannot get back. */}
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            aria-label={t('monitoring:page.resizeLabel')}
+            onPointerDown={startResize}
+            onDoubleClick={panel.reset}
+            className="absolute inset-y-0 -right-1 z-30 hidden w-2 cursor-col-resize touch-none sm:block"
+          >
+            {/* The hit area is 8px wide; the ink is 2px, and only on hover — a
+                permanent line here would read as a border of the panel. */}
+            <div className="mx-auto h-full w-0.5 rounded-full bg-transparent transition-colors hover:bg-nb-black/30" />
+          </div>
+
           <MonitoringSidebar
             workers={listScopedWorkers}
             nodes={filteredNodes}
             onDrillNode={onDrillListNode}
             onNodeDetail={(n) => setDetailNodeId(n.id)}
-            showNodeTier={isZoom}
+            showNodeTier={showNodeTier}
+            workersNarrowedByFilters={listNarrowedByFilters}
             activeGeoId={activeGeoId}
             isHidden={isHidden}
             onToggleHidden={toggleHidden}

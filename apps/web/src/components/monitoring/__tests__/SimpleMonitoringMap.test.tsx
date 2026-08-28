@@ -5,15 +5,22 @@
 import { useEffect } from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { SimpleMonitoringMap, type SimpleWorker } from '../SimpleMonitoringMap';
+import type { NodeMarker } from '../NodeMarkerLayer';
 import type { BoundariesResponse } from '@/lib/api/monitoring-types';
 
 // Native control stack — createLocateControl pushes the My-Location button here.
 const controlStack: HTMLElement[] = [];
+/**
+ * The zoom the fake map reports. Mutable because tier admission reads it: a
+ * fixed 16 sits above every threshold, so a test asserting that a tier is
+ * WITHHELD would pass for the wrong reason.
+ */
+let fakeZoom = 16;
 const fakeMap = {
   fitBounds: jest.fn(),
   panTo: jest.fn(),
   setZoom: jest.fn(),
-  getZoom: () => 16,
+  getZoom: () => fakeZoom,
   getCenter: () => ({ lat: () => -7.29, lng: () => 112.75 }),
   controls: { 3: controlStack },
   getBounds: () => ({
@@ -78,8 +85,24 @@ jest.mock('@react-google-maps/api', () => ({
 // The node/worker layers + current-node pin now render AdvancedMarker; mock it to
 // a clickable button so the existing marker-count/click assertions still apply.
 jest.mock('@/components/maps/AdvancedMarker', () => ({
-  AdvancedMarker: ({ onClick }: { onClick?: () => void }) => (
-    <button data-testid="marker" onClick={() => onClick?.()} />
+  // `content` is a detached DOM element, so it never reaches the document and
+  // cannot be queried. Surface the two things tests need from it — the title and
+  // whether progressive reveal demoted this marker to a dot — as attributes.
+  AdvancedMarker: ({
+    onClick,
+    content,
+    title,
+  }: {
+    onClick?: () => void;
+    content?: HTMLElement;
+    title?: string;
+  }) => (
+    <button
+      data-testid="marker"
+      title={title}
+      data-dot={content?.classList?.contains('marker-dot') ? '1' : '0'}
+      onClick={() => onClick?.()}
+    />
   ),
 }));
 
@@ -516,5 +539,152 @@ describe('SimpleMonitoringMap', () => {
     const extended = (globalThis as any).__boundsExtended as Array<{ lat: number; lng: number }>;
     expect(extended.length).toBeGreaterThan(0);
     expect(extended.some((p) => p.lng > 100 && p.lng < 110)).toBe(false);
+  });
+});
+
+describe('progressive reveal (viewport mode)', () => {
+  afterEach(() => {
+    fakeZoom = 16;
+  });
+
+  /** Two kawasan at effectively the same spot — guaranteed to share a screen cell at zoom 11. */
+  const stacked = (over: Partial<NodeMarker> = {}): NodeMarker[] => [
+    {
+      id: 'calm',
+      name: 'Kawasan Tenang',
+      variant: 'region',
+      lat: -7.28,
+      lng: 112.74,
+      scheduled: 8,
+      clocked_in: 8,
+      belum_hadir: 0,
+      tidak_hadir: 0,
+      active: 8,
+      active_inside: 8,
+      ...over,
+    },
+    {
+      id: 'outage',
+      name: 'Kawasan Kosong',
+      variant: 'region',
+      lat: -7.28001,
+      lng: 112.74,
+      scheduled: 8,
+      clocked_in: 0,
+      belum_hadir: 0,
+      tidak_hadir: 8,
+      active: 0,
+      active_inside: 0,
+    },
+  ];
+
+  it('promotes the area with nobody clocked in over the calm one beside it', () => {
+    // The client's complaint, asserted: in a crowd, the map must draw the thing
+    // that is wrong, not whichever happened to be first in the array.
+    render(
+      <SimpleMonitoringMap
+        mode="viewport"
+        scope="city"
+        workers={[]}
+        boundaries={boundaries}
+        nodeMarkers={stacked()}
+      />
+    );
+    const dots = screen.getAllByTestId('marker').filter((m) => m.dataset.dot === '1');
+    expect(dots).toHaveLength(1);
+    expect(dots[0].getAttribute('title')).toBe('Kawasan Tenang');
+  });
+
+  it('draws a drilled rayon\'s lokasi at city zoom, not an empty map', () => {
+    // The reported defect: "Rayon Taman Aktif" spans the whole city, so drilling
+    // into it leaves the camera at zoom 11 — under the lokasi threshold — and
+    // the map showed nothing at all behind a "zoom in" hint, despite having only
+    // 42 lokasi and 3 petugas to draw.
+    fakeZoom = 11; // whole city on screen — under the lokasi threshold
+    const lokasi: NodeMarker[] = [
+      {
+        id: 'lok-1',
+        name: 'Taman Bungkul',
+        variant: 'location',
+        lat: -7.29,
+        lng: 112.74,
+        scheduled: 3,
+        clocked_in: 3,
+        belum_hadir: 0,
+        tidak_hadir: 0,
+        active: 3,
+        active_inside: 3,
+      },
+    ];
+    render(
+      <SimpleMonitoringMap
+        mode="viewport"
+        scope="district"
+        workers={[]}
+        boundaries={boundaries}
+        nodeMarkers={lokasi}
+      />
+    );
+    expect(screen.getAllByTestId('marker').map((m) => m.getAttribute('title'))).toContain(
+      'Taman Bungkul'
+    );
+  });
+
+  it('still withholds lokasi at city scope, where the subtree is the whole city', () => {
+    // The one place the zoom gate still earns its keep.
+    fakeZoom = 11; // whole city on screen — under the lokasi threshold
+    const lokasi: NodeMarker[] = [
+      {
+        id: 'lok-1',
+        name: 'Taman Bungkul',
+        variant: 'location',
+        lat: -7.29,
+        lng: 112.74,
+        scheduled: 3,
+        clocked_in: 3,
+        belum_hadir: 0,
+        tidak_hadir: 0,
+        active: 3,
+        active_inside: 3,
+      },
+    ];
+    render(
+      <SimpleMonitoringMap
+        mode="viewport"
+        scope="city"
+        workers={[]}
+        boundaries={boundaries}
+        nodeMarkers={lokasi}
+      />
+    );
+    expect(screen.queryAllByTestId('marker').map((m) => m.getAttribute('title'))).not.toContain(
+      'Taman Bungkul'
+    );
+  });
+
+  it('leaves drill mode completely alone', () => {
+    // The load-bearing regression guard for this whole feature.
+    render(
+      <SimpleMonitoringMap
+        scope="city"
+        workers={[]}
+        boundaries={boundaries}
+        nodeMarkers={stacked()}
+      />
+    );
+    expect(screen.getAllByTestId('marker').filter((m) => m.dataset.dot === '1')).toHaveLength(0);
+  });
+
+  it('leaves zoom mode completely alone', () => {
+    render(
+      <SimpleMonitoringMap
+        mode="zoom"
+        scope="city"
+        workers={[]}
+        boundaries={boundaries}
+        nodeMarkers={stacked()}
+      />
+    );
+    expect(screen.getAllByTestId('marker').filter((m) => m.dataset.dot === '1')).toHaveLength(0);
   });
 });
