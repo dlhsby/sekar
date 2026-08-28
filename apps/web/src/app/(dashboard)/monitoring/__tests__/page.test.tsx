@@ -3,7 +3,7 @@
  * Full-bleed map with floating overlays: top search, dismissible filter panel,
  * dismissible worker/area sheet. Auth/role gating + client-side filtering.
  */
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import MonitoringPage from '../page';
@@ -46,9 +46,27 @@ jest.mock('@/lib/api/monitoring', () => ({
 
 // The real map needs Google Maps/WebGL — assert we hand it the worker list
 // instead. (The page imports through the lazy next/dynamic wrapper — mock it.)
+//
+// Node markers are surfaced as buttons so a test can DRILL from the map. That
+// path differs from drilling in the sidebar — it is the only way to reach a
+// kawasan from city scope in zoom mode — and it had its own parent-id bug.
 jest.mock('@/components/monitoring/SimpleMonitoringMapLazy', () => ({
-  SimpleMonitoringMap: ({ workers }: { workers: { user_id: string }[] }) => (
-    <div data-testid="map" data-count={workers.length} />
+  SimpleMonitoringMap: ({
+    workers,
+    nodeMarkers,
+    onDrillNode,
+  }: {
+    workers: { user_id: string }[];
+    nodeMarkers?: { id: string; name: string }[];
+    onDrillNode?: (n: unknown) => void;
+  }) => (
+    <div data-testid="map" data-count={workers.length}>
+      {(nodeMarkers ?? []).map((n) => (
+        <button key={n.id} data-testid="map-node" onClick={() => onDrillNode?.(n)}>
+          {`pin:${n.name}`}
+        </button>
+      ))}
+    </div>
   ),
 }));
 
@@ -320,6 +338,157 @@ describe('MonitoringPage', () => {
 
     const panel = screen.getByRole('separator', { name: /ubah lebar panel/i }).parentElement!;
     expect(panel.getAttribute('style')).toContain('300px');
+  });
+
+  it('carries the parent rayon when a kawasan is drilled from the MAP', async () => {
+    // Zoom mode draws every tier, so a kawasan pin is tappable at city scope —
+    // where `view.id` is undefined. The drill handler fell back to it for the
+    // parent district, so the kawasan was entered with no rayon: the breadcrumb
+    // lost its middle crumb, and `boundaryDistrictId` fell back to the KAWASAN's
+    // own id, asking the API for a rayon that does not exist and drawing nothing.
+    window.localStorage.setItem('monitoring.mode.v1', 'zoom');
+    mockAggregate.mockReturnValue({
+      data: {
+        nodes: [
+          aggNode({ id: 'r1', name: 'Rayon Pusat', type: 'district' }),
+          aggNode({ id: 'k1', name: 'Kawasan Darmo', type: 'region', district_id: 'r1' }),
+        ],
+      },
+      isLoading: false,
+      isFetching: false,
+      refetch: jest.fn(),
+    });
+
+    render(<MonitoringPage />, { wrapper: createWrapper() });
+    fireEvent.click(await screen.findByText('pin:Kawasan Darmo'));
+
+    // The rayon is back in the trail, which is only possible if the drill kept it.
+    const nav = screen.getAllByRole('navigation', { name: /navigasi lokasi/i })[0];
+    expect(within(nav).getByText('Rayon Pusat')).toBeInTheDocument();
+    expect(within(nav).getAllByText('Kawasan Darmo').length).toBeGreaterThan(0);
+  });
+
+  it('carries both parents when a lokasi is drilled from the map', async () => {
+    window.localStorage.setItem('monitoring.mode.v1', 'zoom');
+    mockAggregate.mockReturnValue({
+      data: {
+        nodes: [
+          aggNode({ id: 'r1', name: 'Rayon Pusat', type: 'district' }),
+          aggNode({ id: 'k1', name: 'Kawasan Darmo', type: 'region', district_id: 'r1' }),
+          aggNode({
+            id: 'a1',
+            name: 'Taman Bungkul',
+            type: 'location',
+            district_id: 'r1',
+            region_id: 'k1',
+          }),
+        ],
+      },
+      isLoading: false,
+      isFetching: false,
+      refetch: jest.fn(),
+    });
+
+    render(<MonitoringPage />, { wrapper: createWrapper() });
+    fireEvent.click(await screen.findByText('pin:Taman Bungkul'));
+
+    const nav = screen.getAllByRole('navigation', { name: /navigasi lokasi/i })[0];
+    // Both ancestors survive, so going back steps rayon → kawasan → lokasi.
+    expect(within(nav).getByText('Rayon Pusat')).toBeInTheDocument();
+    expect(within(nav).getByText('Kawasan Darmo')).toBeInTheDocument();
+  });
+
+  it('counts presence for the KAWASAN in zoom mode, not zero', async () => {
+    // `regionTotals` summed `regionAreasAgg`, a query gated on `!isZoom`. In zoom
+    // and viewport mode that data is never fetched, so the sum was over an empty
+    // array — and because it still returned an OBJECT, the `?? activeAgg` fallback
+    // never fired and every presence pill read 0 at kawasan scope.
+    window.localStorage.setItem('monitoring.mode.v1', 'zoom');
+    mockAggregate.mockReturnValue({
+      data: {
+        nodes: [
+          aggNode({ id: 'r1', name: 'Rayon Pusat', type: 'district' }),
+          aggNode({ id: 'k1', name: 'Kawasan Darmo', type: 'region', district_id: 'r1' }),
+          aggNode({
+            id: 'a1',
+            name: 'Taman Bungkul',
+            type: 'location',
+            district_id: 'r1',
+            region_id: 'k1',
+            presence: { aktif: { dalam: 3, luar: 1 }, tidak_aktif: { dalam: 2, luar: 0 } },
+            roster: { scheduled: 6, clocked_in: 4, belum_hadir: 1, tidak_hadir: 1 },
+          }),
+          // A lokasi in ANOTHER kawasan must not be counted into this one.
+          aggNode({
+            id: 'a2',
+            name: 'Taman Lain',
+            type: 'location',
+            district_id: 'r1',
+            region_id: 'k9',
+            presence: { aktif: { dalam: 99, luar: 0 }, tidak_aktif: { dalam: 0, luar: 0 } },
+            roster: { scheduled: 99, clocked_in: 99, belum_hadir: 0, tidak_hadir: 0 },
+          }),
+        ],
+        presence_totals: { aktif: { dalam: 102, luar: 1 }, tidak_aktif: { dalam: 2, luar: 0 } },
+        roster_totals: { scheduled: 105, clocked_in: 103, belum_hadir: 1, tidak_hadir: 1 },
+      },
+      isLoading: false,
+      isFetching: false,
+      refetch: jest.fn(),
+    });
+
+    render(<MonitoringPage />, { wrapper: createWrapper() });
+    fireEvent.click(await screen.findByText('pin:Kawasan Darmo'));
+
+    // In zoom mode the pills read the WORKER list (showWorkers is true at every
+    // level there), so they must narrow with the drill. Both seeded workers sit
+    // in Rayon Pusat with no kawasan, so inside Kawasan Darmo the count is 0 —
+    // and, crucially, not the city-wide 2 the raw snapshot would give.
+    const pills = screen.getByRole('status', { name: /ringkasan kehadiran/i });
+    expect(within(pills).queryByText('2')).toBeNull();
+  });
+
+  it('narrows the presence pills as the operator drills, in zoom mode', async () => {
+    // The reported symptom: the header read "Tidak Aktif 50" while the Petugas
+    // tab beside it read 3. In zoom mode the snapshot is always fetched
+    // city-wide and `showWorkers` is true at every level, so the pills counted
+    // the whole city however far you had drilled.
+    window.localStorage.setItem('monitoring.mode.v1', 'zoom');
+    mockSnapshot.mockReturnValue({
+      ...snapshotData,
+      data: {
+        data: {
+          ...snapshotData.data.data,
+          workers: [
+            worker({ user_id: 'w1', full_name: 'Andi', status: 'active', district_id: 'r1' }),
+            worker({ user_id: 'w2', full_name: 'Budi', status: 'active', district_id: 'r1' }),
+            // Elsewhere — must not be counted once we are inside Rayon Pusat.
+            worker({ user_id: 'w3', full_name: 'Cici', status: 'active', district_id: 'r2' }),
+          ],
+        },
+      },
+    });
+    mockAggregate.mockReturnValue({
+      data: {
+        nodes: [
+          aggNode({ id: 'r1', name: 'Rayon Pusat', type: 'district' }),
+          aggNode({ id: 'r2', name: 'Rayon Lain', type: 'district' }),
+        ],
+      },
+      isLoading: false,
+      isFetching: false,
+      refetch: jest.fn(),
+    });
+
+    render(<MonitoringPage />, { wrapper: createWrapper() });
+    const pills = screen.getByRole('status', { name: /ringkasan kehadiran/i });
+    // City scope: all three.
+    expect(within(pills).getByText('3')).toBeInTheDocument();
+
+    fireEvent.click(await screen.findByText('pin:Rayon Pusat'));
+    // Inside the rayon: its two, not the city's three.
+    expect(within(pills).getByText('2')).toBeInTheDocument();
+    expect(within(pills).queryByText('3')).toBeNull();
   });
 
   it('opens the filter panel from the top bar', () => {

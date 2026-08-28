@@ -38,6 +38,17 @@ export interface NodeMarker {
   active: number;
   /** Active (fresh ping) AND inside their area — a detail field (unused on the pin). */
   active_inside: number;
+  /**
+   * Parent ids, carried so a drill from the MAP knows where the node sits.
+   *
+   * Zoom and viewport draw every tier at once, so a kawasan or lokasi pin is
+   * tappable at city scope — where the page's own `view` has no id to fall back
+   * on. Without these the node was entered with no parent, which cost the
+   * breadcrumb its middle crumbs and sent the boundary query a parent id that
+   * was really the node's own.
+   */
+  district_id?: string | null;
+  region_id?: string | null;
   /** Configured marker glyph for this location (e.g. "trees"); null → per-kind default. */
   marker_icon?: string | null;
   /**

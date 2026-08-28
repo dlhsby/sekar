@@ -2,6 +2,16 @@
 
 Newest first. Feature overview + current design live in [README.md](./README.md).
 
+- **2026-08-28** — Review pass on zoom/viewport correctness. **Presence pills now narrow with the
+  drill**: in those modes the snapshot is fetched city-wide and `showWorkers` is true at every level,
+  so the header counted the whole city however far you had drilled (it read "Tidak Aktif 50" beside a
+  Petugas tab reading 3). `regionTotals` likewise summed a query gated `!isZoom`, returning a
+  zero-filled object that suppressed its own fallback — kawasan presence read 0 in zoom mode. Map and
+  list drills now carry the node's own `district_id`/`region_id` instead of falling back to a `view.id`
+  that is undefined at city scope, which had cost the breadcrumb its middle crumbs and sent the
+  boundary query the node's own id as its parent. Breadcrumb names also resolve from the aggregate, not
+  geometry alone, so a crumb no longer reads a generic "Rayon" until polygons load.
+
 - **2026-08-28** — The layer rows in Pengaturan are a **multi-select dropdown** each (label + control),
   replacing the wrapping field of checkbox chips that ran four tiers deep. Same independent facets;
   `Semua` / `Sembunyikan` are now the dropdown's own all-row, which shows *mixed* on a partial

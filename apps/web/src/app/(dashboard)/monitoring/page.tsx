@@ -105,6 +105,9 @@ function aggToMarker(n: AggregateNode): NodeMarker | null {
     tidak_hadir: n.roster.tidak_hadir,
     active: n.counts_by_status.active,
     active_inside: n.presence.aktif.dalam,
+    // Carried through so a map drill keeps the hierarchy — see NodeMarker.
+    district_id: n.district_id ?? null,
+    region_id: n.region_id ?? null,
     marker_icon: n.marker_icon ?? null,
     fill_color: n.fill_color ?? null,
     fill_opacity: n.fill_opacity != null ? Number(n.fill_opacity) : null,
@@ -412,17 +415,40 @@ export default function MonitoringPage() {
   };
 
   // Map marker tapped.
+  //
+  // Parents come from the NODE first and the current view only as a fallback.
+  // In zoom and viewport mode every tier is drawn at once, so a kawasan or
+  // lokasi pin is tappable at CITY scope — where the view has no id to lend. The
+  // node has always known where it sits; it just was not being asked.
   const onDrillMarker = (node: NodeMarker) => {
+    const districtId = node.district_id ?? view.districtId ?? view.id;
     if (node.variant === 'district') drillToDistrict(node.id, node.name, node.lat, node.lng);
-    else if (node.variant === 'region') drillToRegion(node.id, node.name, view.id, node.lat, node.lng);
-    else if (scope === 'region')
-      drillToLocation(node.id, node.name, view.districtId, node.lat, node.lng, view.id);
-    else drillToLocation(node.id, node.name, view.id, node.lat, node.lng);
+    else if (node.variant === 'region')
+      drillToRegion(node.id, node.name, districtId, node.lat, node.lng);
+    else
+      drillToLocation(
+        node.id,
+        node.name,
+        districtId,
+        node.lat,
+        node.lng,
+        node.region_id ?? (scope === 'region' ? view.id : undefined)
+      );
   };
   // List row tapped (an AggregateNode).
   const onDrillListNode = (node: AggregateNode) => {
     if (node.type === 'district') drillToDistrict(node.id, node.name, node.center_lat, node.center_lng);
-    else if (node.type === 'region') drillToRegion(node.id, node.name, view.id, node.center_lat, node.center_lng);
+    else if (node.type === 'region')
+      // Same rule as the map: the node knows its rayon, the view is the fallback.
+      // Region nodes only started carrying `district_id` when the aggregate began
+      // emitting it; before that there was nothing here to prefer.
+      drillToRegion(
+        node.id,
+        node.name,
+        node.district_id ?? view.districtId ?? view.id,
+        node.center_lat,
+        node.center_lng
+      );
     else
       drillToLocation(
         node.id,
@@ -519,13 +545,39 @@ export default function MonitoringPage() {
     const district = new Map<string, string>();
     const region = new Map<string, string>();
     const area = new Map<string, string>();
+    // Aggregate nodes FIRST: they carry every tier's name and arrive with the
+    // counts, while boundaries are fetched per scope and lag a drill. Sourcing
+    // names from geometry alone meant the breadcrumb read a generic "Rayon"
+    // until the polygons landed — and never resolved at all for a tier whose
+    // geometry the current scope had no reason to fetch.
+    const aggNodes = [
+      ...(allAgg.data?.nodes ?? []),
+      ...(cityAgg.data?.nodes ?? []),
+      ...(regionAgg.data?.nodes ?? []),
+      ...(districtAgg.data?.nodes ?? []),
+      ...(regionAreasAgg.data?.nodes ?? []),
+    ];
+    for (const n of aggNodes) {
+      if (n.type === 'district') district.set(n.id, n.name);
+      else if (n.type === 'region') region.set(n.id, n.name);
+      else area.set(n.id, n.name);
+    }
+    // Boundaries second, so the authoritative geometry name wins where both
+    // exist — and so a name survives a scope change that drops it from the list.
     for (const r of boundaries?.districts ?? []) {
       district.set(r.id, r.name);
       for (const k of r.regions ?? []) region.set(k.id, k.name);
       for (const a of r.areas ?? []) area.set(a.id, a.name);
     }
     return { district, region, area };
-  }, [boundaries]);
+  }, [
+    boundaries,
+    allAgg.data,
+    cityAgg.data,
+    regionAgg.data,
+    districtAgg.data,
+    regionAreasAgg.data,
+  ]);
 
   // Breadcrumb trail: Surabaya › Rayon › Kawasan › Lokasi. Each ancestor is a
   // button that drills back to that level; the current (last) crumb is static.
@@ -771,12 +823,53 @@ export default function MonitoringPage() {
     return toMarkers(listNodes); // city → district markers
   }, [isZoom, allAgg.data, scope, view.id, regionAgg.data, districtAgg.data, regionAreasAgg.data, listNodes]);
 
+  // A worker belongs to the drill level that matches THEIR SCHEDULE SCOPE
+  // (`display_scope`): a lokasi-scheduled worker shows only at that lokasi, a
+  // district-scheduled worker only at that district, a city-wide/unassigned worker only
+  // at the city view — never at the levels above. So each level shows its own
+  // scoped crews (not every worker that happens to sit inside the geography).
+  const scopeMatches = useCallback(
+    (w: { display_scope?: string; display_scope_id?: string | null }): boolean => {
+      const s = w.display_scope ?? 'location';
+      if (scope === 'city') return s === 'city';
+      if (scope === 'district') return s === 'district' && w.display_scope_id === view.id;
+      if (scope === 'region') return s === 'region' && w.display_scope_id === view.id;
+      if (scope === 'location') return s === 'location' && w.display_scope_id === view.id;
+      return true;
+    },
+    [scope, view.id]
+  );
+
+  // Zoom mode asks a DIFFERENT question: not "is this worker's schedule scoped
+  // here" but "is this worker standing anywhere inside what I'm looking at".
+  // That is the client's "show all the workers in that rayon" verbatim, and it
+  // uses the worker's real geography rather than their `display_scope` — so an
+  // ad-hoc clock-in (flat at city scope) appears inside the rayon they are
+  // actually in, still styled as Luar Jadwal.
+  const subtreeMatches = useCallback(
+    (w: { district_id?: string | null; region_id?: string | null; location_id?: string | null }) => {
+      if (scope === 'city') return true;
+      if (scope === 'district') return w.district_id === view.id;
+      if (scope === 'region') return w.region_id === view.id;
+      return w.location_id === view.id;
+    },
+    [scope, view.id]
+  );
+
+  const workerVisible = isZoom ? subtreeMatches : scopeMatches;
+
   // At region (kawasan) scope the aggregate's top-level totals cover the whole
   // parent district; sum just this kawasan's lokasi nodes so the stats pills match
   // the selected kawasan (the roster panel already lists only its lokasi).
   const regionTotals = useMemo(() => {
     if (scope !== 'region') return null;
-    const nodes = (regionAreasAgg.data?.nodes ?? []).filter((n) => n.region_id === view.id);
+    // Source follows the MODE, not just the scope. `regionAreasAgg` is gated on
+    // `!isZoom`, so in zoom and viewport mode it is never fetched — this summed
+    // an empty array and still returned an object, so the `?? activeAgg` fallback
+    // below could not fire and every presence pill read 0 at kawasan scope.
+    // Zoom already holds every tier in `allAgg`; the filter is the same either way.
+    const pool = isZoom ? (allAgg.data?.nodes ?? []) : (regionAreasAgg.data?.nodes ?? []);
+    const nodes = pool.filter((n) => n.type === 'location' && n.region_id === view.id);
     const totals = { active: 0, offline: 0, absent: 0, outside_area: 0 };
     const presence_totals = { aktif: { dalam: 0, luar: 0 }, tidak_aktif: { dalam: 0, luar: 0 } };
     const roster_totals = { scheduled: 0, clocked_in: 0, belum_hadir: 0, tidak_hadir: 0 };
@@ -795,7 +888,7 @@ export default function MonitoringPage() {
       roster_totals.tidak_hadir += n.roster.tidak_hadir;
     }
     return { totals, presence_totals, roster_totals };
-  }, [scope, view.id, regionAreasAgg.data]);
+  }, [scope, view.id, isZoom, allAgg.data, regionAreasAgg.data]);
 
   // Presence-model counts for the top pills. At area scope, derive from the
   // worker list (scheduled → aktif/tidak-aktif; unscheduled → ad-hoc); above
@@ -805,7 +898,15 @@ export default function MonitoringPage() {
       let aktif = 0;
       let tidak_aktif = 0;
       let adhoc = 0;
-      for (const w of workers) {
+      // SCOPED, not the raw snapshot. In zoom and viewport mode the snapshot is
+      // always fetched city-wide and `showWorkers` is true at every level, so
+      // counting `workers` directly left the pills reading the whole city no
+      // matter how far the operator had drilled — the header said "Tidak Aktif
+      // 50" while the Petugas tab beside it said 3.
+      //
+      // Narrowed by SCOPE only, deliberately: these pills summarise the
+      // situation here, where the Petugas tab lists what the filters admit.
+      for (const w of workers.filter(workerVisible)) {
         if (w.is_scheduled === false) {
           adhoc += 1;
           continue;
@@ -826,7 +927,7 @@ export default function MonitoringPage() {
       adhoc: activeAgg.data?.off_schedule_count ?? 0,
     };
 
-  }, [showWorkers, workers, regionTotals, activeAgg.data]);
+  }, [showWorkers, workers, workerVisible, regionTotals, activeAgg.data]);
 
   /**
    * The detail card's props for whichever node is open.
@@ -1149,45 +1250,15 @@ export default function MonitoringPage() {
     [panel]
   );
 
+  /** The tier viewport mode has yet to reveal, or null at full depth. */
+  const nextTier = nextTierAt(mapZoom, scope);
+
   const showNodeTier = useMemo(
     () => new Set(filteredNodes.map((n) => n.type)).size > 1,
     [filteredNodes]
   );
 
-  // A worker belongs to the drill level that matches THEIR SCHEDULE SCOPE
-  // (`display_scope`): a lokasi-scheduled worker shows only at that lokasi, a
-  // district-scheduled worker only at that district, a city-wide/unassigned worker only
-  // at the city view — never at the levels above. So each level shows its own
-  // scoped crews (not every worker that happens to sit inside the geography).
-  const scopeMatches = useCallback(
-    (w: { display_scope?: string; display_scope_id?: string | null }): boolean => {
-      const s = w.display_scope ?? 'location';
-      if (scope === 'city') return s === 'city';
-      if (scope === 'district') return s === 'district' && w.display_scope_id === view.id;
-      if (scope === 'region') return s === 'region' && w.display_scope_id === view.id;
-      if (scope === 'location') return s === 'location' && w.display_scope_id === view.id;
-      return true;
-    },
-    [scope, view.id]
-  );
 
-  // Zoom mode asks a DIFFERENT question: not "is this worker's schedule scoped
-  // here" but "is this worker standing anywhere inside what I'm looking at".
-  // That is the client's "show all the workers in that rayon" verbatim, and it
-  // uses the worker's real geography rather than their `display_scope` — so an
-  // ad-hoc clock-in (flat at city scope) appears inside the rayon they are
-  // actually in, still styled as Luar Jadwal.
-  const subtreeMatches = useCallback(
-    (w: { district_id?: string | null; region_id?: string | null; location_id?: string | null }) => {
-      if (scope === 'city') return true;
-      if (scope === 'district') return w.district_id === view.id;
-      if (scope === 'region') return w.region_id === view.id;
-      return w.location_id === view.id;
-    },
-    [scope, view.id]
-  );
-
-  const workerVisible = isZoom ? subtreeMatches : scopeMatches;
 
   // Map source: base filter (no jenis split) so teams + individuals both draw.
   const drillScopedWorkers = useMemo(
@@ -1317,6 +1388,11 @@ export default function MonitoringPage() {
               labeled legend (the only way to read the labels there). */}
           <div
             className="hidden shrink-0 items-center gap-2 border-l-2 border-nb-gray-200 pl-2 md:flex"
+            // A live region with no accessible name announces changes without
+            // saying what changed. The mobile legend below already carries this
+            // label; the desktop pills are the same information.
+            role="status"
+            aria-label={t('monitoring:breadcrumb.statsLegend')}
             aria-live="polite"
           >
             {PRESENCE_PILLS.map((p) => (
@@ -1440,8 +1516,8 @@ export default function MonitoringPage() {
         {isViewport && (
           <div className="flex justify-center">
             <span className="pointer-events-none rounded-nb-base border-2 border-nb-black bg-nb-white/95 px-3 py-1.5 text-xs font-bold text-nb-black shadow-nb-xs backdrop-blur-sm">
-              {nextTierAt(mapZoom, scope)
-                ? t(`monitoring:mode.zoomInFor.${nextTierAt(mapZoom, scope)}`)
+              {nextTier
+                ? t(`monitoring:mode.zoomInFor.${nextTier}`)
                 : t('monitoring:mode.revealHint')}
             </span>
           </div>
