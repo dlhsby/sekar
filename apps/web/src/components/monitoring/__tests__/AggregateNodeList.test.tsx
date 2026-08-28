@@ -144,3 +144,38 @@ describe('a long name must not push the row actions off screen', () => {
     expect(screen.getByText(LONG)).toHaveAttribute('title', LONG);
   });
 });
+
+describe('zero counts recede without becoming unreadable', () => {
+  it('mutes a zero and keeps a real number bold and coloured', () => {
+    // Most numbers on most rows are 0. With every value bold and semantically
+    // coloured, a screen of nothing-to-do looked as loud as a screen of
+    // problems. The signal has to come from the numbers that are actually there.
+    render(
+      <AggregateNodeList
+        nodes={[
+          node({
+            name: 'Kawasan Uji',
+            roster: { scheduled: 7, clocked_in: 0, belum_hadir: 0, tidak_hadir: 0 },
+          }),
+        ]}
+        onDrill={jest.fn()}
+      />
+    );
+    expect(screen.getByText('7').className).toMatch(/font-bold/);
+    // The three zeros are all muted to the same secondary tone.
+    for (const zero of screen.getAllByText('0')) {
+      expect(zero.className).toMatch(/text-nb-gray-500/);
+      expect(zero.className).not.toMatch(/font-bold/);
+    }
+  });
+
+  it('never mutes below the AA contrast floor', () => {
+    // gray-500 is 4.80:1 on white; gray-400 is 2.52:1 and gray-300 is 1.49:1,
+    // both under the 4.5:1 AA needs for body text. A muted number is still a
+    // number the operator may have to read.
+    render(<AggregateNodeList nodes={[node({})]} onDrill={jest.fn()} />);
+    for (const zero of screen.getAllByText('0')) {
+      expect(zero.className).not.toMatch(/text-nb-gray-(100|200|300|400)\b/);
+    }
+  });
+});

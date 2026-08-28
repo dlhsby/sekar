@@ -5,7 +5,7 @@
  * kawasan". The controls are type-to-search comboboxes (trigger = a button that
  * shows the placeholder until something is picked).
  */
-import { render } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import {
   MonitoringFilters,
   type MonitoringFilterState,
@@ -21,6 +21,7 @@ jest.mock('@/lib/constants/roles', () => ({ roleLabel: (r: string) => r }));
 const baseFilters: MonitoringFilterState = {
   search: '',
   statuses: new Set(),
+  scheduled: 'all' as const,
   districtId: 'all',
   regionId: 'all',
   locationId: 'all',
@@ -120,5 +121,43 @@ describe('MonitoringFilters cascade', () => {
     // Team → team control present, role control absent.
     expect(container.querySelector('#mon-team')).not.toBeNull();
     expect(container.querySelector('#mon-role')).toBeNull();
+  });
+});
+
+describe('Luar jadwal is filterable, like every other presence axis', () => {
+  // i18n is mocked to echo keys, so the chip is matched on its key.
+  const chip = () => screen.getByRole('button', { name: 'monitoring:status.adhoc' });
+
+  it('offers an ad-hoc chip beside the three tracking statuses', () => {
+    // The gap this closes: the header pills showed "Luar jadwal N" and the map
+    // styled those workers distinctly, but there was no way to isolate them —
+    // the only presence axis you could see and not filter.
+    renderFilters({});
+    expect(chip()).toBeInTheDocument();
+  });
+
+  it('toggles its OWN axis, leaving the status set untouched', () => {
+    // Ad-hoc is orthogonal to active/inactive (ADR-050): a worker is
+    // off-schedule AND active, never off-schedule INSTEAD of active. Folding it
+    // into `statuses` is the collapse that produced double counts before.
+    const onChange = jest.fn();
+    renderFilters({ onChange });
+    fireEvent.click(chip());
+
+    const next = onChange.mock.calls[0][0];
+    expect(next.scheduled).toBe('adhoc');
+    expect(next.statuses.size).toBe(0);
+  });
+
+  it('untoggles back to all', () => {
+    const onChange = jest.fn();
+    renderFilters({ filters: { ...baseFilters, scheduled: 'adhoc' }, onChange });
+    fireEvent.click(chip());
+    expect(onChange.mock.calls[0][0].scheduled).toBe('all');
+  });
+
+  it('reports itself as pressed when active', () => {
+    renderFilters({ filters: { ...baseFilters, scheduled: 'adhoc' } });
+    expect(chip()).toHaveAttribute('aria-pressed', 'true');
   });
 });

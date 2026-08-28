@@ -118,7 +118,8 @@
     "noWorkers": "No officers",
     "noWorkersMatch": "No officers match the filter.",
     "clickToFocus": "Click officer to focus on map",
-    "batteryLabel": "Battery {{level}} percent"
+    "batteryLabel": "Battery {{level}} percent",
+    "noWorkersHere": "No workers in this area yet."
   },
   "reassign": {
     "successMessage": "Worker successfully reassigned",

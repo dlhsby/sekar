@@ -50,6 +50,33 @@ export interface AggregateNodeListProps {
   className?: string;
 }
 
+/**
+ * A count in a row, muted when it is zero.
+ *
+ * These lists run to hundreds of rows and most numbers on most rows are 0. With
+ * every value bold and semantically coloured, a screen of nothing-to-do looked
+ * exactly as loud as a screen of problems, and the eye had to read each figure
+ * to find out which. Zero is the resting state, so it recedes; a number that is
+ * actually there keeps its colour and its weight.
+ *
+ * Muted to `gray-500` and no lighter. It is still a number the operator may need
+ * to read, so it has to clear WCAG AA — 4.80:1 on white here, where gray-400 is
+ * 2.52:1 and gray-300 only 1.49:1. "De-emphasised" is a contrast budget, not a
+ * licence to make text invisible.
+ */
+function Count({ value, tone }: { value: number; tone: string }): React.JSX.Element {
+  return (
+    <span
+      className={cn(
+        'font-mono tabular-nums',
+        value > 0 ? cn('font-bold', tone) : 'text-nb-gray-500'
+      )}
+    >
+      {value}
+    </span>
+  );
+}
+
 export function AggregateNodeList({
   nodes,
   onDrill,
@@ -153,27 +180,19 @@ export function AggregateNodeList({
                 </div>
                 <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-nb-gray-600">
                   <span className="flex items-baseline gap-1">
-                    <span className="font-mono font-bold tabular-nums text-nb-black">
-                      {node.roster.scheduled}
-                    </span>
+                    <Count value={node.roster.scheduled} tone="text-nb-black" />
                     {t('monitoring:aggregate.scheduledLabel')}
                   </span>
                   <span className="flex items-baseline gap-1">
-                    <span className="font-mono font-bold tabular-nums text-nb-success-dark">
-                      {node.roster.clocked_in}
-                    </span>
+                    <Count value={node.roster.clocked_in} tone="text-nb-success-dark" />
                     {t('monitoring:aggregate.clockedInLabel')}
                   </span>
                   <span className="flex items-baseline gap-1">
-                    <span className="font-mono font-bold tabular-nums text-nb-warning">
-                      {node.roster.belum_hadir}
-                    </span>
+                    <Count value={node.roster.belum_hadir} tone="text-nb-warning" />
                     {t('monitoring:aggregate.belumHadirLabel')}
                   </span>
                   <span className="flex items-baseline gap-1">
-                    <span className="font-mono font-bold tabular-nums text-nb-danger-dark">
-                      {node.roster.tidak_hadir}
-                    </span>
+                    <Count value={node.roster.tidak_hadir} tone="text-nb-danger-dark" />
                     {t('monitoring:aggregate.tidakHadirLabel')}
                   </span>
                 </div>
@@ -183,15 +202,17 @@ export function AggregateNodeList({
                     actually out there", which is the question the map exists for. */}
                 <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-nb-gray-600">
                   <span className="flex items-baseline gap-1">
-                    <span className="font-mono font-bold tabular-nums text-[var(--color-status-active)]">
-                      {node.presence.aktif.dalam + node.presence.aktif.luar}
-                    </span>
+                    <Count
+                      value={node.presence.aktif.dalam + node.presence.aktif.luar}
+                      tone="text-[var(--color-status-active)]"
+                    />
                     {t('monitoring:status.active')}
                   </span>
                   <span className="flex items-baseline gap-1">
-                    <span className="font-mono font-bold tabular-nums text-[var(--color-status-idle)]">
-                      {node.presence.tidak_aktif.dalam + node.presence.tidak_aktif.luar}
-                    </span>
+                    <Count
+                      value={node.presence.tidak_aktif.dalam + node.presence.tidak_aktif.luar}
+                      tone="text-[var(--color-status-idle)]"
+                    />
                     {t('monitoring:status.inactive')}
                   </span>
                   {node.presence.aktif.luar + node.presence.tidak_aktif.luar > 0 && (

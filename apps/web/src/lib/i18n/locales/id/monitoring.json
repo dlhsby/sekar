@@ -118,7 +118,8 @@
     "noWorkers": "Tidak ada petugas",
     "noWorkersMatch": "Tidak ada petugas yang cocok dengan filter.",
     "clickToFocus": "Klik petugas untuk fokus di peta",
-    "batteryLabel": "Baterai {{level}} persen"
+    "batteryLabel": "Baterai {{level}} persen",
+    "noWorkersHere": "Belum ada petugas di wilayah ini."
   },
   "reassign": {
     "successMessage": "Petugas berhasil dipindahkan",

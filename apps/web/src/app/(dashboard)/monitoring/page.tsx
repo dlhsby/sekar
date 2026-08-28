@@ -149,6 +149,7 @@ export default function MonitoringPage() {
   const [filters, setFilters] = useState<MonitoringFilterState>({
     search: '',
     statuses: new Set(),
+    scheduled: 'all',
     districtId: 'all',
     regionId: 'all',
     locationId: 'all',
@@ -858,6 +859,15 @@ export default function MonitoringPage() {
 
   const workerVisible = isZoom ? subtreeMatches : scopeMatches;
 
+  /**
+   * Everyone at this scope, before any filter.
+   *
+   * Two things need it: the presence pills (which summarise the scope, not the
+   * filtered view) and the Petugas empty state, which has to tell the operator
+   * WHY the list is empty — nobody here, or nobody matching.
+   */
+  const scopeWorkers = useMemo(() => workers.filter(workerVisible), [workers, workerVisible]);
+
   // At region (kawasan) scope the aggregate's top-level totals cover the whole
   // parent district; sum just this kawasan's lokasi nodes so the stats pills match
   // the selected kawasan (the roster panel already lists only its lokasi).
@@ -906,7 +916,7 @@ export default function MonitoringPage() {
       //
       // Narrowed by SCOPE only, deliberately: these pills summarise the
       // situation here, where the Petugas tab lists what the filters admit.
-      for (const w of workers.filter(workerVisible)) {
+      for (const w of scopeWorkers) {
         if (w.is_scheduled === false) {
           adhoc += 1;
           continue;
@@ -927,7 +937,7 @@ export default function MonitoringPage() {
       adhoc: activeAgg.data?.off_schedule_count ?? 0,
     };
 
-  }, [showWorkers, workers, workerVisible, regionTotals, activeAgg.data]);
+  }, [showWorkers, scopeWorkers, regionTotals, activeAgg.data]);
 
   /**
    * The detail card's props for whichever node is open.
@@ -1175,13 +1185,24 @@ export default function MonitoringPage() {
     const q = filters.search.trim().toLowerCase();
     return workers.filter((w) => {
       if (filters.statuses.size > 0 && !filters.statuses.has(w.status as TrackingStatus)) return false;
+      // Ad-hoc is its own axis (ADR-050), so it narrows independently of status.
+      if (filters.scheduled === 'adhoc' && w.is_scheduled !== false) return false;
+      if (filters.scheduled === 'scheduled' && w.is_scheduled === false) return false;
       if (filters.districtId !== 'all' && w.district_id !== filters.districtId) return false;
       if (filters.regionId !== 'all' && w.region_id !== filters.regionId) return false;
       if (filters.locationId !== 'all' && w.location_id !== filters.locationId) return false;
       if (q && !w.full_name.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [workers, filters.statuses, filters.districtId, filters.regionId, filters.locationId, filters.search]);
+  }, [
+    workers,
+    filters.statuses,
+    filters.scheduled,
+    filters.districtId,
+    filters.regionId,
+    filters.locationId,
+    filters.search,
+  ]);
 
   // LIST view of workers: the Individu/Tim toggle applies HERE ONLY. Individu =
   // individually-assigned (no team) + Peran (role); Tim = team-assigned + team
@@ -1272,6 +1293,17 @@ export default function MonitoringPage() {
     () => filteredWorkers.filter(workerVisible),
     [filteredWorkers, workerVisible]
   );
+
+  /**
+   * Did filtering actually remove anyone at this scope?
+   *
+   * Derived rather than enumerated: comparing the two counts cannot drift as
+   * filter fields are added, and it answers the only question the empty state
+   * asks — is this list empty because nobody is here, or because the filters
+   * excluded them. It used to say "no petugas match the filter" unconditionally,
+   * blaming a filter that was often not set.
+   */
+  const listNarrowedByFilters = scopeWorkers.length > listScopedWorkers.length;
 
   // Hidden workers leave the MAP as well as the list — the point of hiding a
   // person is not to see their pin. Counts are untouched: they come from the
@@ -1631,6 +1663,7 @@ export default function MonitoringPage() {
             onDrillNode={onDrillListNode}
             onNodeDetail={(n) => setDetailNodeId(n.id)}
             showNodeTier={showNodeTier}
+            workersNarrowedByFilters={listNarrowedByFilters}
             activeGeoId={activeGeoId}
             isHidden={isHidden}
             onToggleHidden={toggleHidden}

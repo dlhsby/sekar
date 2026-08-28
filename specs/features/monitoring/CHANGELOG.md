@@ -2,6 +2,13 @@
 
 Newest first. Feature overview + current design live in [README.md](./README.md).
 
+- **2026-08-28** — UI pass on the panels. Zero counts in the Wilayah rows are muted (to `gray-500`,
+  4.80:1 — `gray-400` and `gray-300` fail AA), so on a 300-row list the numbers that are actually there
+  carry the signal. The Petugas empty state distinguishes "nobody here" from "nobody matches your
+  filter" instead of always blaming a filter. **Luar jadwal is filterable** — it was the one presence
+  axis visible in the header pills and on the map that could not be isolated; it toggles its own field,
+  not a fourth `statuses` entry, because ad-hoc is orthogonal to active/inactive (ADR-050).
+
 - **2026-08-28** — Review pass on zoom/viewport correctness. **Presence pills now narrow with the
   drill**: in those modes the snapshot is fetched city-wide and `showWorkers` is true at every level,
   so the header counted the whole city however far you had drilled (it read "Tidak Aktif 50" beside a
