@@ -55,6 +55,8 @@ export interface WorkerClusterLayerProps {
    * people into one marker, so demoting it would hide a group behind a dot.
    */
   promoted?: Set<string> | null;
+  /** Of the promoted workers, the ones whose name is printed. See NodeMarkerLayer. */
+  labelled?: Set<string> | null;
 }
 
 type Renderable = SimpleWorker | TeamGroup;
@@ -68,6 +70,7 @@ export function WorkerClusterLayer({
   onTeamClick,
   teamBubbles = true,
   promoted,
+  labelled,
 }: WorkerClusterLayerProps) {
   // Group workers by team when the Tim layer is on. Teams ALWAYS collapse into
   // one marker regardless of zoom (expandZoom = Infinity) — you reveal the members
@@ -115,10 +118,11 @@ export function WorkerClusterLayer({
         // Demoted: lost its screen cell to a more salient neighbour. Selection
         // always wins a slot upstream, so a selected worker is never a dot.
         const demoted = promoted != null && !promoted.has(r.user_id);
+        const withLabel = labelled == null || labelled.has(r.user_id);
         const signature =
           `worker|${r.role}|${r.status}|${r.is_within_area}|${r.is_scheduled}` +
           `|${r.role_marker_icon ?? ''}|${r.role_marker_color ?? ''}|${selected ? 1 : 0}|${r.full_name}` +
-          `|${demoted ? 'dot' : 'pin'}`;
+          `|${demoted ? 'dot' : 'pin'}|${withLabel ? 1 : 0}`;
         return (
           <AdvancedPinMarker
             key={`worker-${r.user_id}`}
@@ -147,7 +151,9 @@ export function WorkerClusterLayer({
                   lifecycleState: r.lifecycle_state ?? null,
                   leaveReason: r.leave_reason ?? null,
                 },
-                { text: r.full_name, className: 'worker-marker-label', placement: 'top' }
+                withLabel
+                  ? { text: r.full_name, className: 'worker-marker-label', placement: 'top' }
+                  : undefined
               );
             }}
             onClick={() => onSelect?.(r.user_id)}

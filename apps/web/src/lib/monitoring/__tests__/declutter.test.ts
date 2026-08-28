@@ -5,7 +5,13 @@
  * returns the promoted set; everything else still renders, as a dot. So these
  * tests assert selection, never disappearance.
  */
-import { declutter, DEFAULT_CELL_PX, DEFAULT_CAP, type DeclutterCandidate } from '../declutter';
+import {
+  declutter,
+  DEFAULT_CELL_X,
+  DEFAULT_CELL_Y,
+  DEFAULT_CAP,
+  type DeclutterCandidate,
+} from '../declutter';
 
 const at = (id: string, lat: number, lng: number, score: number): DeclutterCandidate => ({
   id,
@@ -107,6 +113,27 @@ describe('declutter', () => {
     expect(declutter(mixed, { zoom: 14 })).toEqual(new Set(['good']));
   });
 
+  it('separates neighbours that a cell grid would have let through', () => {
+    // The defect that replaced the grid with a real separation test. Two markers
+    // ~50px apart both survived when they happened to straddle a cell boundary,
+    // and their labels overlapped on screen anyway. Cell membership is a proxy
+    // for distance; this measures distance.
+    //
+    // At zoom 14 one pixel is ~8.58e-5 degrees, so the pair below sits ~100px
+    // apart — comfortably inside the 150px separation box, yet far enough that a
+    // 150px cell grid drops them in different cells for most of a sweep.
+    //
+    // The sweep slides the pair across more than a full cell width, so it lands
+    // on every phase including astride a boundary. Under the old grid this
+    // failed on the offsets where the boundary fell between them.
+    const PX = 360 / (256 * 2 ** 14);
+    for (let i = 0; i < 30; i++) {
+      const lng = BASE_LNG + i * 7 * PX;
+      const pair = [at('a', BASE_LAT, lng, 2), at('b', BASE_LAT, lng + 100 * PX, 1)];
+      expect(declutter(pair, { zoom: 14 }).size).toBe(1);
+    }
+  });
+
   it('returns an empty set for no candidates', () => {
     expect(declutter([], { zoom: 14 })).toEqual(new Set());
   });
@@ -119,8 +146,33 @@ describe('declutter', () => {
     expect(input[0].id).toBe('b');
   });
 
-  it('exposes sane defaults', () => {
-    expect(DEFAULT_CELL_PX).toBeGreaterThan(0);
+  it('exposes sane defaults, with a cell wider than it is tall', () => {
+    // Not a stylistic preference: the collision axis for a labelled marker is
+    // horizontal (a ~150px name beside a ~40px pin), while a label is one line
+    // tall. A square cell either lets labels collide or throws away vertical
+    // density. If these ever become equal, that reasoning has been lost.
+    expect(DEFAULT_CELL_Y).toBeGreaterThan(0);
+    expect(DEFAULT_CELL_X).toBeGreaterThan(DEFAULT_CELL_Y);
     expect(DEFAULT_CAP).toBeGreaterThan(0);
+  });
+
+  it('separates markers stacked vertically sooner than side-by-side ones', () => {
+    // The direct consequence of the rectangular cell, and the reason it exists:
+    // two names side by side need more room than two stacked, because only the
+    // horizontal pair can overlap.
+    const zoom = 14;
+    // ~0.0018 deg of longitude and of latitude are a similar pixel distance at
+    // this zoom, so the only thing separating these two cases is the cell shape.
+    const sideBySide = [
+      at('a', BASE_LAT, BASE_LNG, 2),
+      at('b', BASE_LAT, BASE_LNG + 0.0018, 1),
+    ];
+    const stacked = [
+      at('a', BASE_LAT, BASE_LNG, 2),
+      at('b', BASE_LAT + 0.0018, BASE_LNG, 1),
+    ];
+    expect(declutter(stacked, { zoom }).size).toBeGreaterThanOrEqual(
+      declutter(sideBySide, { zoom }).size
+    );
   });
 });

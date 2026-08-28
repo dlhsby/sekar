@@ -84,6 +84,16 @@ export interface NodeMarkerLayerProps {
    * in full, exactly as before this existed.
    */
   promoted?: Set<string> | null;
+  /**
+   * Of the promoted markers, the ones whose NAME is printed. Always a subset of
+   * {@link promoted}. Separate because a pin (~40 px) and its label (~150 px)
+   * collide at different sizes: gating both on the label's box cost a marker its
+   * staffing count merely because its name would not have fit.
+   *
+   * `null` (drill and zoom mode) means the per-tier `showLabels` facet decides
+   * alone, exactly as before.
+   */
+  labelled?: Set<string> | null;
 }
 
 export function NodeMarkerLayer({
@@ -92,6 +102,7 @@ export function NodeMarkerLayer({
   activeGeoId,
   showLabels,
   promoted,
+  labelled,
 }: NodeMarkerLayerProps) {
   const placed = useMemo(
     () => nodes.filter((n) => Number.isFinite(n.lat) && Number.isFinite(n.lng)),
@@ -123,7 +134,9 @@ export function NodeMarkerLayer({
         // Signature = every field the pin/label visual depends on (NOT position —
         // that is synced cheaply by the marker wrapper). Unchanged signature →
         // memoized element → a moved node only repositions.
-        const withLabel = showLabels?.[node.variant] !== false;
+        // Two gates: the operator's per-tier facet, then the label declutter.
+        const withLabel =
+          showLabels?.[node.variant] !== false && (labelled == null || labelled.has(node.id));
         const signature =
           // fill_color/opacity are no longer read for the pin body (white), so
           // they are out of the signature — leaving them in would rebuild the

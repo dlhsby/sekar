@@ -801,6 +801,7 @@ function MonitoringMapInner({
           activeGeoId={activeGeoId}
           showLabels={nodeLabels}
           promoted={reveal.promotedNodes}
+          labelled={reveal.labelledNodes}
         />
 
         {/* Movement trail (today) — a dashed path under the pins, drawn only on
@@ -855,6 +856,7 @@ function MonitoringMapInner({
             onTeamClick={onTeamClick}
             teamBubbles={showsTeamBubbles(layers.personnel)}
             promoted={reveal.promotedWorkers}
+            labelled={reveal.labelledWorkers}
           />
         )}
 

@@ -115,6 +115,64 @@ describe('computeReveal', () => {
     expect(closer).toBeGreaterThan(near);
   });
 
+  it('never demotes a rayon — the frame must not develop holes', () => {
+    // `zoomTiers` holds the rayon tier on at every zoom because it is the map's
+    // frame; demotion follows the same rule. Without this, a label-width grid
+    // put three of the eight rayon into shared cells at city zoom and drew them
+    // as dots, leaving the operator with a partial frame.
+    const rayon = Array.from({ length: 8 }, (_, i) =>
+      // All stacked in ONE cell — the worst case the grid can produce.
+      node(`r${i}`, 0, { variant: 'district' as const })
+    );
+    const { promotedNodes } = computeReveal(input({ nodes: rayon, zoom: 11 }));
+    expect(promotedNodes!.size).toBe(8);
+  });
+
+  it('exempts the Surabaya summary too', () => {
+    const nodes = [
+      node('sby', 0, { variant: 'surabaya' as const }),
+      node('busy', 0, { clocked_in: 0, tidak_hadir: 9 }),
+    ];
+    expect(computeReveal(input({ nodes, zoom: 11 })).promotedNodes!.has('sby')).toBe(true);
+  });
+
+  it('spends the cap on the tiers that actually crowd, not on the frame', () => {
+    // The exemption must not eat the budget: rayon are drawn in addition to the
+    // cap, not out of it, or a dense city would trade kawasan pins for frame.
+    const rayon = Array.from({ length: 8 }, (_, i) =>
+      node(`r${i}`, i * 40, { variant: 'district' as const })
+    );
+    const kawasan = Array.from({ length: 200 }, (_, i) => node(`k${i}`, i * 40));
+    const { promotedNodes } = computeReveal(
+      input({ nodes: [...rayon, ...kawasan], zoom: 20, cap: 10 })
+    );
+    expect(promotedNodes!.size).toBe(18); // 8 frame + 10 capped
+  });
+
+  it('labels a SUBSET of the pins it draws, never a dot', () => {
+    // A name on a marker that is only a dot would be a label pointing at
+    // nothing. The label pass runs over the promoted survivors for that reason.
+    const nodes = Array.from({ length: 60 }, (_, i) => node(`n${i}`, i));
+    const r = computeReveal(input({ nodes, zoom: 15 }));
+    for (const id of r.labelledNodes!) expect(r.promotedNodes!.has(id)).toBe(true);
+    expect(r.labelledNodes!.size).toBeLessThanOrEqual(r.promotedNodes!.size);
+  });
+
+  it('draws more pins than labels in a crowd — the point of the two passes', () => {
+    // A pin is ~40px and its name ~150, so in a dense cluster many markers can
+    // show their staffing count while only some can show their name. Gating both
+    // on the label's box cost the rest their count for nothing.
+    const crowd = Array.from({ length: 60 }, (_, i) => node(`n${i}`, i));
+    const r = computeReveal(input({ nodes: crowd, zoom: 15 }));
+    expect(r.promotedNodes!.size).toBeGreaterThan(r.labelledNodes!.size);
+  });
+
+  it('leaves labels alone when reveal is off', () => {
+    const off = computeReveal(input({ enabled: false, nodes: [node('a', 0)] }));
+    expect(off.labelledNodes).toBeNull();
+    expect(off.labelledWorkers).toBeNull();
+  });
+
   it('never promotes more than the cap', () => {
     const nodes = Array.from({ length: 200 }, (_, i) => node(`n${i}`, i * 20));
     const { promotedNodes } = computeReveal(input({ nodes, zoom: 20, cap: 15 }));

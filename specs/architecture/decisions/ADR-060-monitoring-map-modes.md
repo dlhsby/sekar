@@ -203,7 +203,7 @@ Four new modules, each pure and independently testable:
 | `lib/monitoring/mercator.ts` | lat/lng → pixels. Collision is a screen question, not a ground one. |
 | `lib/monitoring/salience.ts` | urgency + affinity + tier → one number |
 | `lib/monitoring/affinity.ts` | per-browser "places this operator watches", decayed and bounded |
-| `lib/monitoring/declutter.ts` | 88 px grid, cell winner takes a slot, hard cap 60 |
+| `lib/monitoring/declutter.ts` | pixel separation, highest score wins its space, hard cap |
 
 **Salience is urgency-first.** `3·tidak_hadir + 2·belum_hadir`, plus a flat 1.5 when a rostered area has
 nobody on it at all — without that term a one-person site standing empty scores the same as an
@@ -231,9 +231,9 @@ which is the worst case by construction:
 
 | zoom | eligible | full pins | dots | ranking cost |
 |---|---|---|---|---|
-| 11–12 | 8 | 7 | 1 | 0.2 ms |
-| 13 | 137 | 51 | 86 | 0.4 ms |
-| 14.5+ | 1089 | 60 | 1029 | 1.9 ms |
+| 11–12 | 8 | 8 | 0 | 0.4 ms |
+| 13 | 137 | 28 | 109 | 0.8 ms |
+| 14.5+ | 1089 | 53 | 1036 | 1.6 ms |
 
 Ranking is free; the residual cost is the dot elements, which viewport culling cuts further in practice
 (this table deliberately does not cull, so the numbers are the ceiling and not the typical case).
@@ -254,8 +254,8 @@ full-height ⓘ button on the node's row in the sidebar.
 
 **Bad / accepted**
 
-- `DEFAULT_CELL_PX = 88` and `DEFAULT_CAP = 60` are judgement calls, not derivations. They are named
-  constants in one file precisely so they can be retuned against operator feedback.
+- The separation constants are judgement calls, not derivations. They are named constants in one file
+  precisely so they can be retuned against operator feedback.
 - 1029 dots is still 1029 DOM elements. Cheap ones — one `<div>`, no SVG, no label — but the tail is
   not free, and a materially larger geography would need a second look.
 - Ranking the *culled* set means panning re-ranks. Intended (the budget is a property of the screen),
@@ -295,6 +295,36 @@ cannot promise a tier that is already on screen.
 
 Note this relaxes the earlier "tiers are a hard floor" decision, with the client's agreement: the floor
 now applies at city scope only.
+
+### Three corrections to the collision rule, all from looking at it
+
+Tuning the density dial turned up three separate defects, each visible on screen before it was visible
+in a number.
+
+**1. The collision box was the wrong shape.** It was an 88 px square, sized to the *pin*. But a pin is
+~40 px across and its printed name runs to ~150, so the axis that actually collides is horizontal —
+labels overlapped with only 19 markers on screen ("Taman Kartika" over "Taman Kombes"). The box is now
+150 × 96: wide enough for a name, no taller than it needs to be, because a label is one line.
+
+**2. Cell membership is not distance.** Bucketing both markers into a fixed grid is the cheap
+approximation, and it leaks: two markers 100 px apart that straddle a cell boundary land in different
+cells and both get promoted. Measured on a sweep across one cell width, the old rule let such a pair
+through in **21 of 30 positions** — a 70 % leak, not an edge case. Separation is now measured against
+the accepted markers themselves; the grid survives only as a spatial *index* over them (a conflict can
+only be in the 3 × 3 neighbouring buckets), which keeps the pass O(n).
+
+**3. Pins and labels must not share a budget.** With one 150 px box gating both, 32 of Taman Aktif's 42
+lokasi were demoted to dots — losing their **staffing count** because their *names* would have
+overlapped. That is the wrong thing to pay for a label. Decluttering now runs twice: pins at 56 px, then
+labels at 150 × 96 over the survivors. Many icons, labels on some — which is what Google's own label
+engine does, and what the client was pointing at.
+
+Live on Taman Aktif, across the three: 10 pins → **21 pins + ~7 labels, zero overlaps**.
+
+**Rayon are never demoted.** `zoomTiers` already holds the tier on at every zoom because it is the map's
+frame; demotion has to follow or the frame develops holes — a label-width box put three of the eight
+rayon in shared space at city zoom and drew them as dots. There are only ever eight, and once drilled in
+only one is on screen, so the exemption costs nothing. It is additive to the cap, not taken out of it.
 
 ## Verification
 

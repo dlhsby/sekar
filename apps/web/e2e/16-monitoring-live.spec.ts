@@ -187,8 +187,12 @@ test.describe('Monitoring — live backend', () => {
 
     // Ranked, not exhaustive: far fewer things competing for the eye.
     expect(viewportFullPins).toBeLessThan(zoomFullPins);
-    // And nothing vanished — the tail is on the map, as dots.
-    expect(dots).toBeGreaterThan(0);
+    // Every eligible marker is drawn — no dots at THIS scope because the only
+    // eligible tier here is the eight rayon, and rayon are never demoted (they
+    // are the map's frame). Demotion is asserted where it actually happens, in
+    // the drilled-in and kawasan-depth tests below.
+    expect(viewportFullPins).toBeGreaterThan(0);
+    expect(dots).toBeGreaterThanOrEqual(0);
   });
 
   test('at kawasan depth it ranks the crowd instead of drawing all of it', async ({ page }) => {

@@ -23,7 +23,15 @@
  * every marker in full", so those two modes stay byte-for-byte as they were.
  */
 import { useMemo } from 'react';
-import { declutter, DEFAULT_CAP, DEFAULT_CELL_PX, type DeclutterCandidate } from './declutter';
+import {
+  declutter,
+  DEFAULT_CAP,
+  DEFAULT_CELL_X,
+  DEFAULT_CELL_Y,
+  PIN_CELL_X,
+  PIN_CELL_Y,
+  type DeclutterCandidate,
+} from './declutter';
 import { scoreNode, scoreWorker, type SalienceNode, type SalienceWorker } from './salience';
 
 export interface RevealNode extends SalienceNode {
@@ -49,7 +57,8 @@ export interface ProgressiveRevealInput {
   /** Selected / open / searched ids, which are always drawn in full. Nullable for caller convenience. */
   exemptNodeIds?: ReadonlyArray<string | null | undefined>;
   exemptWorkerIds?: ReadonlyArray<string | null | undefined>;
-  cellPx?: number;
+  cellX?: number;
+  cellY?: number;
   cap?: number;
 }
 
@@ -57,9 +66,22 @@ export interface ProgressiveReveal {
   /** Ids to draw as full pins. `null` means reveal is off — draw everything in full. */
   promotedNodes: Set<string> | null;
   promotedWorkers: Set<string> | null;
+  /**
+   * Ids that additionally get their NAME printed — always a subset of the
+   * promoted set. Labels are decluttered separately because they collide at a
+   * different size: a pin is ~40 px, its name ~150. One box for both meant a
+   * marker lost its staffing count merely because its name would not have fit.
+   */
+  labelledNodes: Set<string> | null;
+  labelledWorkers: Set<string> | null;
 }
 
-export const REVEAL_OFF: ProgressiveReveal = { promotedNodes: null, promotedWorkers: null };
+export const REVEAL_OFF: ProgressiveReveal = {
+  promotedNodes: null,
+  promotedWorkers: null,
+  labelledNodes: null,
+  labelledWorkers: null,
+};
 
 /**
  * Zoom is quantised before it reaches the grid.
@@ -93,7 +115,8 @@ export function computeReveal({
   affinityOf,
   exemptNodeIds,
   exemptWorkerIds,
-  cellPx = DEFAULT_CELL_PX,
+  cellX = DEFAULT_CELL_X,
+  cellY = DEFAULT_CELL_Y,
   cap = DEFAULT_CAP,
 }: ProgressiveRevealInput): ProgressiveReveal {
   if (!enabled) return REVEAL_OFF;
@@ -107,6 +130,19 @@ export function computeReveal({
     score: scoreNode(n, affinityOf(n.id)),
   }));
 
+  // The rayon tier is never demoted.
+  //
+  // `zoomTiers` already holds rayon on at every zoom because they are the map's
+  // frame — the thing that tells you WHERE you are before it tells you what is
+  // there. Demotion has to follow the same rule or the frame develops holes: at
+  // city zoom the eight rayon spread over ~700 px, so a label-width grid put
+  // three of them in shared cells and drew them as dots. There are only ever
+  // eight, and once you have drilled in only one is on screen, so exempting
+  // them costs nothing and guarantees the frame is whole.
+  const frameIds = nodes
+    .filter((n) => n.variant === 'district' || n.variant === 'surabaya')
+    .map((n) => n.id);
+
   const workerCandidates: DeclutterCandidate[] = workers.map((w) => ({
     id: w.user_id,
     lat: w.lat,
@@ -114,19 +150,36 @@ export function computeReveal({
     score: scoreWorker(w, affinityOf(w.user_id)),
   }));
 
+  // Pass 1 — which markers are drawn at all, at pin separation.
+  const promotedNodes = declutter(nodeCandidates, {
+    zoom: z,
+    cellX: PIN_CELL_X,
+    cellY: PIN_CELL_Y,
+    cap,
+    exempt: [...frameIds, ...defined(exemptNodeIds)],
+  });
+  const promotedWorkers = declutter(workerCandidates, {
+    zoom: z,
+    cellX: PIN_CELL_X,
+    cellY: PIN_CELL_Y,
+    cap,
+    exempt: defined(exemptWorkerIds),
+  });
+
+  // Pass 2 — which of those also get their name, at label separation. Run over
+  // the survivors only, so a label can never appear on a marker that is a dot.
+  // No cap: the wider box is its own limit.
+  const labelPass = (candidates: DeclutterCandidate[], promoted: Set<string>) =>
+    declutter(
+      candidates.filter((c) => promoted.has(c.id)),
+      { zoom: z, cellX, cellY, cap: Number.POSITIVE_INFINITY }
+    );
+
   return {
-    promotedNodes: declutter(nodeCandidates, {
-      zoom: z,
-      cellPx,
-      cap,
-      exempt: defined(exemptNodeIds),
-    }),
-    promotedWorkers: declutter(workerCandidates, {
-      zoom: z,
-      cellPx,
-      cap,
-      exempt: defined(exemptWorkerIds),
-    }),
+    promotedNodes,
+    promotedWorkers,
+    labelledNodes: labelPass(nodeCandidates, promotedNodes),
+    labelledWorkers: labelPass(workerCandidates, promotedWorkers),
   };
 }
 
