@@ -5,7 +5,10 @@ Newest first. Feature overview + current design live in [README.md](./README.md)
 - **2026-08-28** — The list panel is "Daftar Area dan Petugas" (it has held both halves since the
   Wilayah tab landed) and its header now carries the drill breadcrumb instead of a static title —
   extracted as `MonitoringBreadcrumb` and shared with the map's bar, so the two cannot disagree about
-  where the operator is. Label decluttering now runs in **every** mode, not just viewport: drill is the
+  where the operator is. The panel shows the CURRENT level only (a trail there could only be scrolled,
+  and a breadcrumb you have to scroll cannot be read at a glance); the map's bar keeps the full
+  clickable trail, with ancestors truncating and the current level taking the leftover width — it used
+  to be capped too, so the level you were reading was the one that got clipped. Label decluttering now runs in **every** mode, not just viewport: drill is the
   default map and had 40 labels in 22 overlapping pairs. Pins are presence and labels are detail, so
   drill and zoom still draw every marker, count and gesture — they just stop printing unreadable names
   (drill measured after: 26 pins, 0 dots, 6 labels, 0 overlaps).

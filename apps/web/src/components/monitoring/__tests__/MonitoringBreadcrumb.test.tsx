@@ -52,17 +52,38 @@ describe('MonitoringBreadcrumb', () => {
     expect(screen.queryByRole('button', { name: 'monitoring:page.backLabel' })).toBeNull();
   });
 
-  it('keeps the whole trail in the compact panel variant', () => {
-    // The map's bar can drop intermediate crumbs on a narrow screen because the
-    // ‹ button covers going up. The panel is narrow at EVERY size, so dropping
-    // them there would mean never showing a trail at all — it scrolls instead.
-    const { container } = render(
-      <MonitoringBreadcrumb crumbs={trail()} canGoBack onBack={jest.fn()} compact />
-    );
-    expect(container.querySelector('.sm\\:hidden')).toBeNull();
-    for (const label of ['Surabaya', 'Rayon Barat 2', 'Kawasan Tandes']) {
-      expect(screen.getByText(label)).toBeInTheDocument();
+  it('shows ONLY the current level in the compact panel variant', () => {
+    // The panel is narrow at every size, so a trail there could only be shown by
+    // scrolling it sideways — and a breadcrumb you have to scroll has stopped
+    // answering the question it exists for. Ancestors are reachable from the
+    // map's bar above, and ‹ still goes up one.
+    render(<MonitoringBreadcrumb crumbs={trail()} canGoBack onBack={jest.fn()} compact />);
+    expect(screen.getByText('Kawasan Tandes')).toBeInTheDocument();
+    expect(screen.queryByText('Surabaya')).toBeNull();
+    expect(screen.queryByText('Rayon Barat 2')).toBeNull();
+  });
+
+  it('never scrolls, in either variant', () => {
+    // Scrolling was the old answer to a trail that did not fit. It reads as a
+    // stray scrollbar under the crumbs and hides the level you are on.
+    for (const compact of [true, false]) {
+      const { container, unmount } = render(
+        <MonitoringBreadcrumb crumbs={trail()} canGoBack onBack={jest.fn()} compact={compact} />
+      );
+      expect(container.querySelector('.overflow-x-auto')).toBeNull();
+      unmount();
     }
+  });
+
+  it('gives the current level the leftover width, and caps only the ancestors', () => {
+    // The clipping defect: every crumb had a fixed max width, so the level you
+    // are actually reading was cut ("Jl. Genteng Kali - Reto…") while ancestors
+    // sat comfortably. Ancestors are context and may truncate; the current level
+    // is the answer and truncates last.
+    render(<MonitoringBreadcrumb crumbs={trail()} canGoBack onBack={jest.fn()} />);
+    const current = screen.getAllByText('Kawasan Tandes').at(-1)!;
+    expect(current.className).not.toMatch(/max-w-/);
+    expect(screen.getByText('Surabaya').className).toMatch(/max-w-/);
   });
 
   it('survives an empty trail', () => {
