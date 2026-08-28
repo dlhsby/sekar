@@ -14,7 +14,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { SlidersHorizontal, RefreshCw, X, List, ChevronDown, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
+import { SlidersHorizontal, RefreshCw, X, List, ChevronDown, Settings } from 'lucide-react';
 
 import { useAuth } from '@/lib/auth/hooks';
 import {
@@ -45,6 +45,7 @@ import {
   type DistrictOption,
 } from '@/components/monitoring/MonitoringFilters';
 import { MonitoringSidebar } from '@/components/monitoring/MonitoringSidebar';
+import { MonitoringBreadcrumb } from '@/components/monitoring/MonitoringBreadcrumb';
 import { UserDetailPanel } from '@/components/monitoring/UserDetailPanel';
 import { AreaDetailPanel } from '@/components/monitoring/AreaDetailPanel';
 import { useAreaPlants, useNotablePlants } from '@/lib/api/plants';
@@ -1246,47 +1247,12 @@ export default function MonitoringPage() {
             (esp. mobile, where the back button used to be an unlabeled icon). Back
             steps up one level; each ancestor crumb jumps straight to that level. */}
         <div className="pointer-events-auto flex items-center gap-2 rounded-nb-base border-2 border-nb-black bg-nb-white/95 px-2 py-1.5 shadow-nb-sm backdrop-blur-sm">
-          {canGoBack && (
-            <button
-              type="button"
-              onClick={goBack}
-              aria-label={t('monitoring:page.backLabel')}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-nb-sm text-nb-black hover:bg-nb-gray-100"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-          )}
-          <nav
-            className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap text-sm"
-            aria-label={t('monitoring:breadcrumb.label')}
-          >
-            {/* Mobile (<sm): current level only — the ‹ back handles going up, so
-                intermediate crumbs (and their truncation) are dropped for space. */}
-            <span className="truncate font-bold text-nb-black sm:hidden" aria-current="page">
-              {crumbs[crumbs.length - 1]?.label}
-            </span>
-            {/* Desktop (≥sm): the full clickable trail. */}
-            <span className="hidden items-center gap-1 sm:flex">
-              {crumbs.map((c, i) => (
-                <span key={c.key} className="flex shrink-0 items-center gap-1">
-                  {i > 0 && <ChevronRight className="h-3.5 w-3.5 text-nb-gray-400" aria-hidden="true" />}
-                  {c.onClick ? (
-                    <button
-                      type="button"
-                      onClick={c.onClick}
-                      className="max-w-[8rem] truncate font-semibold text-nb-gray-600 hover:text-nb-black hover:underline"
-                    >
-                      {c.label}
-                    </button>
-                  ) : (
-                    <span className="max-w-[10rem] truncate font-bold text-nb-black" aria-current="page">
-                      {c.label}
-                    </span>
-                  )}
-                </span>
-              ))}
-            </span>
-          </nav>
+          <MonitoringBreadcrumb
+            crumbs={crumbs}
+            canGoBack={canGoBack}
+            onBack={goBack}
+            className="flex-1"
+          />
           {/* Presence stats, pinned right of the breadcrumb (replaces a whole
               extra row). Desktop (≥md) has room → labels + counts + timestamp
               inline, no tap. Mobile → compact dot+number chips that tap open a
@@ -1473,10 +1439,19 @@ export default function MonitoringPage() {
       {/* Worker/area/node sheet */}
       {listOpen ? (
         <div className="absolute inset-x-3 bottom-3 z-20 flex h-[45vh] max-h-[60%] flex-col sm:inset-x-auto sm:left-3 sm:w-96">
-          <div className="mb-1 flex items-center justify-between">
-            <span className="rounded-nb-base border-2 border-nb-black bg-nb-white px-2.5 py-1 text-xs font-bold text-nb-black shadow-nb-xs">
-              {t('monitoring:page.listLabel')}
-            </span>
+          {/* The header carries the BREADCRUMB, not a title. The button that
+              opened this panel already names it, and the tabs below name its two
+              halves — so the scarce width goes to the thing that changes as you
+              drill. Same component as the map's bar, so the two can never
+              disagree about where you are. */}
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <MonitoringBreadcrumb
+              crumbs={crumbs}
+              canGoBack={canGoBack}
+              onBack={goBack}
+              compact
+              className="min-w-0 flex-1 rounded-nb-base border-2 border-nb-black bg-nb-white px-2 py-1 shadow-nb-xs"
+            />
             <button
               type="button"
               onClick={() => {

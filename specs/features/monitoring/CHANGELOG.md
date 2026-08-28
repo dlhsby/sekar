@@ -2,6 +2,11 @@
 
 Newest first. Feature overview + current design live in [README.md](./README.md).
 
+- **2026-08-28** — The list panel is "Daftar Area dan Petugas" (it has held both halves since the
+  Wilayah tab landed) and its header now carries the drill breadcrumb instead of a static title —
+  extracted as `MonitoringBreadcrumb` and shared with the map's bar, so the two cannot disagree about
+  where the operator is.
+
 - **2026-08-28** — Viewport mode now ranks markers instead of drawing every eligible one: salience
   (urgency + per-operator affinity + tier) picks the winners of an 88 px screen grid, capped at 60 per
   layer; everything else draws as a clickable dot and demoted areas drop their polygon fill. 137 kawasan

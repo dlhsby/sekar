@@ -145,7 +145,7 @@ describe('MonitoringPage', () => {
   it('opens the worker sheet and shows detail when a worker is selected', () => {
     // Admin at city scope; the mock workers are city-scheduled so they list here.
     render(<MonitoringPage />, { wrapper: createWrapper() });
-    fireEvent.click(screen.getByRole('button', { name: /daftar petugas/i }));
+    fireEvent.click(screen.getByRole('button', { name: /daftar area dan petugas/i }));
     fireEvent.click(screen.getByRole('button', { name: /^andi,/i }));
     expect(screen.getByRole('button', { name: /kembali ke daftar/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Andi' })).toBeInTheDocument();
@@ -155,7 +155,7 @@ describe('MonitoringPage', () => {
     // The worker list is reachable from the Daftar Petugas at every level now —
     // previously only lokasi scope showed workers.
     render(<MonitoringPage />, { wrapper: createWrapper() });
-    fireEvent.click(screen.getByRole('button', { name: /daftar petugas/i }));
+    fireEvent.click(screen.getByRole('button', { name: /daftar area dan petugas/i }));
     expect(screen.getByRole('button', { name: /^andi/i })).toBeInTheDocument();
   });
 

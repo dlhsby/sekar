@@ -270,6 +270,44 @@ test.describe('Monitoring — live backend', () => {
     await expect(page.getByText(/perbesar untuk melihat (kawasan|lokasi)/i)).toHaveCount(0);
   });
 
+  test('no two labels overlap in viewport mode', async ({ page }) => {
+    // Measured, not eyeballed. Labels are what actually collide on this map: a
+    // pin is ~40px and its name ~150, so decluttering runs twice — pins at 56px,
+    // then names at 150x96 over the survivors. This asserts the outcome of that
+    // second pass directly, by reading the rendered boxes.
+    await loginAndOpenMonitoring(page);
+    await openSettings(page);
+    await page.getByLabel(/mode monitoring/i).selectOption('viewport');
+    await page.getByRole('button', { name: /pengaturan/i }).click();
+    await page.waitForTimeout(3000);
+    await page.locator('gmp-advanced-marker[title^="Rayon"]').first().click();
+    await page.waitForTimeout(5000);
+
+    const report = await page.evaluate(() => {
+      const els = Array.from(
+        document.querySelectorAll('.node-marker-label, .worker-marker-label')
+      );
+      const boxes = els
+        .map((e) => ({ t: (e.textContent || '').trim(), r: e.getBoundingClientRect() }))
+        .filter((b) => b.r.width > 0 && b.r.height > 0);
+      const pairs: string[] = [];
+      for (let i = 0; i < boxes.length; i++) {
+        for (let j = i + 1; j < boxes.length; j++) {
+          const a = boxes[i].r;
+          const b = boxes[j].r;
+          if (a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom) {
+            pairs.push(`${boxes[i].t} <> ${boxes[j].t}`);
+          }
+        }
+      }
+      return { labels: boxes.length, pairs };
+    });
+
+    console.log(`[reveal] labels=${report.labels} overlapping=${report.pairs.length}`);
+    expect(report.labels).toBeGreaterThan(0);
+    expect(report.pairs).toEqual([]);
+  });
+
   test('viewport mode tells the operator what the dots are', async ({ page }) => {
     // A field of unexplained dots reads as broken data. The hint is what makes
     // it read as "more detail is waiting".
