@@ -59,16 +59,24 @@ export class MonitoringAttendanceService {
    * fallback, historical dates would report an empty roster.
    */
   private async findShiftsForDay(dateStr: string, start: Date, end: Date): Promise<Shift[]> {
-    return this.shiftsRepository
-      .createQueryBuilder('shift')
-      .leftJoinAndSelect('shift.user', 'user')
-      .leftJoinAndSelect('shift.location', 'location')
-      .where(
-        '(shift.service_day = :dateStr OR (shift.service_day IS NULL AND shift.clock_in_time >= :start AND shift.clock_in_time < :end))',
-        { dateStr, start, end },
-      )
-      .orderBy('shift.clock_in_time', 'ASC')
-      .getMany();
+    return (
+      this.shiftsRepository
+        .createQueryBuilder('shift')
+        .leftJoinAndSelect('shift.user', 'user')
+        // `shift.area`, NOT `shift.location`: the Area→Location rename moved the
+        // COLUMN to `location_id` but left the entity property as `area`. TypeORM
+        // resolves join paths by property name, so 'shift.location' throws
+        // "Relation with property path location in entity was not found" — a 500
+        // on every call, which unit tests could not see because they mock
+        // createQueryBuilder and the ORM never validates the string.
+        .leftJoinAndSelect('shift.area', 'area')
+        .where(
+          '(shift.service_day = :dateStr OR (shift.service_day IS NULL AND shift.clock_in_time >= :start AND shift.clock_in_time < :end))',
+          { dateStr, start, end },
+        )
+        .orderBy('shift.clock_in_time', 'ASC')
+        .getMany()
+    );
   }
 
   /** Resolve many locations in one query — the old code did one per worker. */
