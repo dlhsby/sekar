@@ -22,7 +22,6 @@ interface FilterAndSearchModalsProps {
   searchModalVisible: boolean;
   setSearchModalVisible: (visible: boolean) => void;
   liveUsers: LiveUser[];
-  districts: DistrictBoundary[] | undefined;
   onSearchSelect: (result: SearchResult) => void;
   boundaryDetailVisible: boolean;
   setBoundaryDetailVisible: (visible: boolean) => void;
@@ -40,7 +39,6 @@ export function FilterAndSearchModals({
   searchModalVisible,
   setSearchModalVisible,
   liveUsers,
-  districts,
   onSearchSelect,
   boundaryDetailVisible,
   setBoundaryDetailVisible,
@@ -74,7 +72,6 @@ export function FilterAndSearchModals({
         visible={searchModalVisible}
         onClose={() => setSearchModalVisible(false)}
         liveUsers={liveUsers}
-        districts={districts}
         onSelect={onSearchSelect}
       />
     </>

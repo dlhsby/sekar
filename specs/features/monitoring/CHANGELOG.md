@@ -2,6 +2,19 @@
 
 Newest first. Feature overview + current design live in [README.md](./README.md).
 
+- **2026-08-29** — **Device verification of the mobile parity slices, and the four defects it found.**
+  Running slices 1–4 on a Pixel 5 caught what neither the unit suite nor `i18n:check` can see:
+  (1) `monitoring:breadcrumb.city` and `layers.workers` were missing from BOTH mobile locales, so the
+  status sheet rendered the raw key — parity checking compares `id` against `en`, and a key absent from
+  both passes, while the test suite mocks `t` to echo keys so a missing one is truthy and invisible;
+  `layers.workers` had been broken since #169. (2) Kawasan search results shipped with no kawasan TAB,
+  reachable only by scrolling the Semua list. (3) The declutter label cell was measured at last
+  (slice-1 Task 8): 110dp was 22dp NARROWER than the 132dp label it bounds, so names 110–131dp apart
+  both promoted and overlapped — the same defect web shipped sizing its box to the icon; now 132×76,
+  derived from `MarkerLabel.slotV` and the marker stack. (4) The search modal's API mock omitted
+  `searchMonitoring`, making that suite pass alone and fail in a full run. Also dropped the dead
+  `districts` prop chain left over when search moved to the geo index.
+
 - **2026-08-29** — **Notable plants are drawn on the map, on both platforms** (parity slice 4, gap W1).
   Web gains a `plants` layer row and a `PlantMarkerLayer`; mobile's `PlantOverlayLayer` stops being a
   stub that returned `null` while its toggle sat in the tools sheet controlling nothing. Lokasi scope
