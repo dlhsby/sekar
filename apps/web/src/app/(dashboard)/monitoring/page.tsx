@@ -52,6 +52,7 @@ import { AreaDetailPanel } from '@/components/monitoring/AreaDetailPanel';
 import { useAreaPlants, useNotablePlants } from '@/lib/api/plants';
 import { MonitoringSearch } from '@/components/monitoring/MonitoringSearch';
 import { MonitoringLayersPanel } from '@/components/monitoring/MonitoringLayersPanel';
+import { BulkReassignModal } from '@/components/monitoring/BulkReassignModal';
 import { AttendanceDetailDialog } from '@/components/monitoring/AttendanceDetailDialog';
 import { SimpleMonitoringMap } from '@/components/monitoring/SimpleMonitoringMapLazy';
 import type { SimpleWorker, CurrentNodeMarker } from '@/components/monitoring/SimpleMonitoringMap';
@@ -167,6 +168,10 @@ export default function MonitoringPage() {
   // detail can now be opened for ANY node (a child's ⓘ badge or Wilayah row),
   // not only the one you have drilled into.
   const [detailNodeId, setDetailNodeId] = useState<string | null>(null);
+  // Reassignment target — the lokasi whose panel opened it. Held separately from
+  // `detailNodeId` so closing the panel behind the modal can't strip the modal's
+  // own target out from under it.
+  const [reassignTarget, setReassignTarget] = useState<{ id: string; name: string } | null>(null);
   const [teamDetail, setTeamDetail] = useState<TeamGroup | null>(null);
   const [statsOpen, setStatsOpen] = useState(false); // tappable stat legend (mobile)
   const [focusTarget, setFocusTarget] = useState<{
@@ -1613,6 +1618,18 @@ export default function MonitoringPage() {
 
       <AttendanceDetailDialog open={attendanceOpen} onOpenChange={setAttendanceOpen} />
 
+      {/* Reassignment. The modal handles 1..N, so it covers the single-worker
+          case too — which is why only this one is surfaced. */}
+      {reassignTarget && (
+        <BulkReassignModal
+          open
+          onOpenChange={(o) => !o && setReassignTarget(null)}
+          targetAreaId={reassignTarget.id}
+          targetAreaName={reassignTarget.name}
+          boundaries={boundaries}
+        />
+      )}
+
       {/* Settings panel (map overlay toggles) */}
       {layersOpen && (
         <MonitoringLayersPanel
@@ -1754,6 +1771,11 @@ export default function MonitoringPage() {
           plantCount={plantAreaId ? (areaPlants.data?.length ?? 0) : null}
           notableCount={plantAreaId ? (notablePlants.data?.length ?? 0) : null}
           onViewPlants={plantAreaId ? () => router.push(`/plants/${plantAreaId}`) : undefined}
+          onReassign={
+            detailProps.variant === 'location' && detailNodeId
+              ? () => setReassignTarget({ id: detailNodeId, name: detailProps.name })
+              : undefined
+          }
           onClose={() => setDetailNodeId(null)}
         />
       )}

@@ -146,7 +146,8 @@
     "reassignButtonDefault": "Pindahkan",
     "successMessage": "{{count}} petugas berhasil dipindahkan",
     "partialErrorMessage": "{{successCount}} petugas berhasil dipindahkan, {{failCount}} gagal",
-    "errorMessage": "Gagal memindahkan petugas"
+    "errorMessage": "Gagal memindahkan petugas",
+    "openLabel": "Pindahkan Petugas"
   },
   "reassignModal": {
     "title": "Pindah Petugas ke {{area}}",

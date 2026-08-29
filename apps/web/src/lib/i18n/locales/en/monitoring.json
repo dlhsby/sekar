@@ -146,7 +146,8 @@
     "reassignButtonDefault": "Reassign",
     "successMessage": "{{count}} officers reassigned successfully",
     "partialErrorMessage": "{{successCount}} officers reassigned, {{failCount}} failed",
-    "errorMessage": "Failed to reassign officers"
+    "errorMessage": "Failed to reassign officers",
+    "openLabel": "Reassign Workers"
   },
   "reassignModal": {
     "title": "Reassign Officer to {{area}}",

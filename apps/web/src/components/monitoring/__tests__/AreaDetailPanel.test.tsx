@@ -87,4 +87,47 @@ describe('AreaDetailPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: /tutup/i }));
     expect(base.onClose).toHaveBeenCalled();
   });
+
+  /**
+   * M9 (parity). The reassign entry point was stripped by the 2026-06-10
+   * "minimal reliable map baseline" rebuild and never layered back on, leaving
+   * BulkReassignModal fully built, fully tested and reachable by nobody.
+   */
+  describe('reassign entry point', () => {
+    it('offers reassign on an understaffed lokasi', () => {
+      const onReassign = jest.fn();
+      render(
+        <AreaDetailPanel {...base} variant="location" isUnderstaffed onReassign={onReassign} />,
+      );
+
+      fireEvent.click(screen.getByTestId('area-detail-reassign'));
+
+      expect(onReassign).toHaveBeenCalledTimes(1);
+    });
+
+    it('hides it on a fully staffed lokasi — the modal pulls workers IN, so there is nothing to fix', () => {
+      render(
+        <AreaDetailPanel
+          {...base}
+          variant="location"
+          isUnderstaffed={false}
+          onReassign={jest.fn()}
+        />,
+      );
+
+      expect(screen.queryByTestId('area-detail-reassign')).not.toBeInTheDocument();
+    });
+
+    it('hides it on a rayon — reassignment targets a lokasi', () => {
+      render(<AreaDetailPanel {...base} variant="district" isUnderstaffed onReassign={jest.fn()} />);
+
+      expect(screen.queryByTestId('area-detail-reassign')).not.toBeInTheDocument();
+    });
+
+    it('hides it when no handler is supplied — the exact state that hid it for 11 weeks', () => {
+      render(<AreaDetailPanel {...base} variant="location" isUnderstaffed />);
+
+      expect(screen.queryByTestId('area-detail-reassign')).not.toBeInTheDocument();
+    });
+  });
 });

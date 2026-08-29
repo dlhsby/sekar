@@ -17,7 +17,7 @@
  * can disagree with itself.
  */
 import { useTranslation } from 'react-i18next';
-import { X, Trees } from 'lucide-react';
+import { X, Trees, ArrowRightLeft } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { ROLE_LABELS } from '@/lib/constants/roles';
 import type { UserRole } from '@/types/models';
@@ -63,6 +63,13 @@ export interface AreaDetailPanelProps {
   notableCount?: number | null;
   /** Opens the lokasi's plant list — omitted when the caller has nowhere to go. */
   onViewPlants?: () => void;
+  /**
+   * Open reassignment for this lokasi. Restores an entry point stripped by the
+   * 2026-06-10 "minimal reliable map baseline" rebuild (49026d85), whose own
+   * message said drawers would be layered back on — filters and boundaries were,
+   * this was not, and the modals have sat unreachable since.
+   */
+  onReassign?: () => void;
   onClose: () => void;
 }
 
@@ -113,6 +120,7 @@ export function AreaDetailPanel({
   plantCount,
   notableCount,
   onViewPlants,
+  onReassign,
   onClose,
 }: AreaDetailPanelProps) {
   const { t } = useTranslation();
@@ -246,6 +254,23 @@ export function AreaDetailPanel({
               count: plantCount,
               notable: notableCount ?? 0,
             })}
+          </span>
+        </button>
+      )}
+
+      {/* Reassign — understaffed lokasi only, matching mobile's long-dormant
+          button. The modal pulls workers INTO this area, so offering it on a
+          fully-staffed lokasi would invite a move with nothing to fix. */}
+      {isLocation && isUnderstaffed && onReassign && (
+        <button
+          type="button"
+          onClick={onReassign}
+          className="mt-2 flex w-full items-center justify-between gap-2 rounded-nb-sm border-2 border-nb-black bg-nb-primary px-2 py-1.5 text-left font-bold text-nb-black shadow-nb-xs transition-colors hover:bg-nb-primary-hover"
+          data-testid="area-detail-reassign"
+        >
+          <span className="flex items-center gap-1.5 text-xs">
+            <ArrowRightLeft className="h-3.5 w-3.5" aria-hidden="true" />
+            {t('monitoring:bulkReassign.openLabel')}
           </span>
         </button>
       )}
