@@ -118,9 +118,6 @@ jest.mock('../../../components/modals/BoundaryDetailModal', () => ({
   BoundaryDetailModal: () => null,
 }));
 // Phase 3 sub-phase 3-5 component mocks
-jest.mock('../../../components/monitoring/ClusteredUserMarkers', () => ({
-  ClusteredUserMarkers: () => null,
-}));
 jest.mock('../../../components/monitoring/AreaStatusOverlay', () => ({
   AreaStatusOverlay: () => null,
 }));

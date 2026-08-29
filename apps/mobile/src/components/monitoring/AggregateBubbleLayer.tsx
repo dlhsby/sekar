@@ -31,6 +31,16 @@ export interface NodeMarker {
   scheduled: number;
   clocked_in: number;
   not_clocked_in: number;
+  /**
+   * The roster split, carried separately as well as summed.
+   *
+   * The bubble displays `not_clocked_in`, but salience weights a no-show more
+   * heavily than someone still inside their grace window (ADR-050). Summing them
+   * at the builder made that distinction unavailable and would have let mobile
+   * rank the same data differently from web.
+   */
+  belum_hadir: number;
+  tidak_hadir: number;
 }
 
 interface AggregateBubbleLayerProps {

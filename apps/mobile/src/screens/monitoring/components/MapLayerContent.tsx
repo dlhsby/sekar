@@ -4,10 +4,9 @@
  * Consolidated from MapDashboardScreen lines 620–715.
  */
 
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
+import { useWindowDimensions } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { featureFlags } from '../../../utils/featureFlags';
-import { ClusteredUserMarkers } from '../../../components/monitoring/ClusteredUserMarkers';
 import { AreaStatusOverlay } from '../../../components/monitoring/AreaStatusOverlay';
 import { PlantOverlayLayer } from '../../../components/monitoring/PlantOverlayLayer';
 import { BoundaryOverlay } from '../../../components/monitoring/BoundaryOverlay';
@@ -17,7 +16,10 @@ import type { TeamGroup } from '../../../utils/teamGrouping';
 import { UserMarker, type LabelMode } from '../../../components/monitoring/UserMarker';
 import type { LiveUser } from '../../../types/models.types';
 import { isZoomLike, type MonitoringMode } from '../../../store/slices/monitoringV2Slice';
-import { tiersAtDelta, ALL_TIERS } from '../../../utils/zoomTiers';
+import { tiersFor, ALL_TIERS } from '../../../utils/zoomTiers';
+import { deltaToZoom } from '../../../utils/mercator';
+import { useProgressiveReveal } from '../../../utils/progressiveReveal';
+import { useAffinity } from '../../../utils/affinity';
 import {
   showsBoundary,
   showsFill,
@@ -32,9 +34,7 @@ interface MapLayerContentProps {
   visibleLayers: MonitoringV2VisibleLayers;
   visibleUsers: LiveUser[];
   selectedUser: LiveUser | null;
-  clusters: any[];
   labelMode: LabelMode;
-  useClustering: boolean;
   currentRegion: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number };
   boundaryKey: number;
   /** Current drill scope — gates which boundary layers + markers show. */
@@ -77,9 +77,7 @@ export function MapLayerContent({
   visibleLayers,
   visibleUsers,
   selectedUser,
-  clusters,
   labelMode,
-  useClustering,
   currentRegion,
   boundaryKey,
   scope,
@@ -122,8 +120,13 @@ export function MapLayerContent({
   // Viewport mode adds DEPTH to the bbox: a box at city height is the whole
   // city, so "only what is on screen" still drew every kawasan and lokasi at
   // once. Tiers now arrive as there is room for them.
+  // Scope, not just camera span: drilling into a rayon reveals its subtree at
+  // any span. A rayon that spans the whole city otherwise leaves the camera wide
+  // after the fit and the gate shows nothing at all inside it.
   const tiers =
-    mode === 'viewport' ? tiersAtDelta(currentRegion.latitudeDelta) : ALL_TIERS;
+    mode === 'viewport'
+      ? tiersFor({ latitudeDelta: currentRegion.latitudeDelta, scope })
+      : ALL_TIERS;
   // Rayon outline follows its toggle from the city view down. Location outlines draw
   // ONLY at location scope (the one selected location) — never all-at-once at district scope.
   // The Surabaya top level was retired (PR2) — district boundaries show at every
@@ -174,6 +177,65 @@ export function MapLayerContent({
             : tiers.location,
       ),
     [nodeMarkers, tiers],
+  );
+
+  // ── Progressive reveal ─────────────────────────────────────────────────────
+  // Ranks what the tiers admitted, so a crowd becomes a handful of full pins and
+  // a field of dots rather than a wall of identical markers. Mirrors web; the
+  // only platform difference is getting to a zoom level, which the camera does
+  // not report directly (see `mercator.deltaToZoom`).
+  const { affinityOf, visit } = useAffinity();
+  // Read per render, not once: the viewport width changes on rotation, and a
+  // stale width would rank against a screen that no longer exists.
+  const { width: viewportWidth } = useWindowDimensions();
+  const zoom = deltaToZoom(currentRegion.longitudeDelta, viewportWidth);
+
+  const revealNodes = useMemo(
+    () =>
+      tierScopedNodes.map(n => ({
+        id: n.id,
+        lat: n.lat,
+        lng: n.lng,
+        variant: n.variant,
+        scheduled: n.scheduled,
+        clocked_in: n.clocked_in,
+        belum_hadir: n.belum_hadir,
+        tidak_hadir: n.tidak_hadir,
+      })),
+    [tierScopedNodes],
+  );
+
+  const revealWorkers = useMemo(
+    () =>
+      visibleUsers.map(u => ({
+        user_id: u.id,
+        lat: u.latitude,
+        lng: u.longitude,
+        status: u.status,
+        is_within_area: u.is_within_area,
+        is_scheduled: u.is_scheduled !== false,
+      })),
+    [visibleUsers],
+  );
+
+  const reveal = useProgressiveReveal({
+    enabled: mode === 'viewport',
+    zoom,
+    nodes: revealNodes,
+    workers: revealWorkers,
+    affinityOf,
+    // Whatever a sheet is describing stays drawn, or the card documents
+    // something the map has left anonymous.
+    exemptWorkerIds: [selectedUser?.id ?? null],
+  });
+
+  /** Engaging with someone is what makes them familiar — see `affinity.ts`. */
+  const pressWorker = useCallback(
+    (user: LiveUser) => {
+      visit(user.id);
+      onMarkerPress(user);
+    },
+    [visit, onMarkerPress],
   );
 
   return (
@@ -246,57 +308,32 @@ export function MapLayerContent({
         <PlantOverlayLayer visible={visibleLayers.plants} />
       )}
 
-      {/* Worker markers only at location scope. */}
+      {/* Worker pins. One marker per person — no clustering.
+          Clustering was removed here for the same reason it was removed from
+          web: it HID PEOPLE, which is not a property of screen size. A merged
+          bubble hides its members on a phone exactly as it did on a desktop.
+          The reveal withholds DETAIL and never withholds a marker: a demoted
+          worker still draws, at their true position, still pressable. */}
       {showWorkers &&
-        (featureFlags.clusterMarkersV2 ? (
-        <ClusteredUserMarkers
-          workers={visibleUsers}
-          zoom={currentRegion.latitudeDelta}
-          clusterZoomThreshold={0.05}
-          labelMode={labelMode}
-          selectedUserId={selectedUser?.id ?? null}
-          onUserPress={userId => {
-            const user = visibleUsers.find(u => u.id === userId);
-            if (user) { onMarkerPress(user); }
-          }}
-          onClusterPress={onClusterPress}
-        />
-      ) : (
-        <>
-          {/* User markers (individual) — legacy Phase 2D path */}
-          {!useClustering && visibleUsers.map(user => (
+        visibleUsers.map(user => {
+          const demoted =
+            reveal.promotedWorkers != null && !reveal.promotedWorkers.has(user.id);
+          // The label pass feeds the EXISTING labelMode rather than a second
+          // switch; two switches for one behaviour would eventually disagree.
+          const userLabelMode: LabelMode =
+            reveal.labelledWorkers != null && !reveal.labelledWorkers.has(user.id)
+              ? 'none'
+              : labelMode;
+          return (
             <UserMarker
-              key={`user-${user.id}-${user.status}-${labelMode}`}
+              key={`user-${user.id}-${user.status}-${userLabelMode}-${demoted ? 'dot' : 'pin'}`}
               user={user}
-              onPress={onMarkerPress}
-              labelMode={labelMode}
+              onPress={pressWorker}
+              labelMode={userLabelMode}
+              demoted={demoted}
             />
-          ))}
-
-          {/* Cluster markers — legacy Phase 2D path */}
-          {useClustering && clusters.map(cluster => {
-            const representative: LiveUser = cluster.workers.length > 0
-              ? {
-                  ...cluster.workers[0],
-                  id: cluster.id,
-                  latitude: cluster.coordinate.latitude,
-                  longitude: cluster.coordinate.longitude,
-                  full_name: t('monitoring:clusterCountAria', { count: cluster.pointCount }),
-                } as unknown as LiveUser
-              : null as unknown as LiveUser;
-            if (!representative) { return null; }
-            return (
-              <UserMarker
-                key={cluster.id}
-                user={representative}
-                onPress={() => onClusterPress(cluster.coordinate)}
-                clusterCount={cluster.pointCount}
-                labelMode={labelMode}
-              />
-            );
-          })}
-        </>
-        ))}
+          );
+        })}
     </>
   );
 }

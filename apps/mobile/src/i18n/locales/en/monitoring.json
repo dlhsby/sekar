@@ -352,6 +352,7 @@
     "drillHint": "Tap an area to go one level deeper. Personnel appear at their scheduled level.",
     "zoomHint": "Show every rayon, kawasan, lokasi and worker at once. Tap an area to limit the view to it.",
     "viewport": "Zoom (on screen)",
-    "viewportHint": "Same as Zoom, but only loads what is on screen. Pan or zoom out to load more."
+    "viewportHint": "Same as Zoom, but only loads what is on screen. Pan or zoom out to load more.",
+    "revealHint": "Small dots are other markers. Tap one, or zoom in to see its detail."
   }
 }

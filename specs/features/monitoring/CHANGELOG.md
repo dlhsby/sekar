@@ -2,6 +2,15 @@
 
 Newest first. Feature overview + current design live in [README.md](./README.md).
 
+- **2026-08-29** — **Mobile map now ranks markers instead of clustering them** (parity slice 1, gaps
+  M1–M3). Ports web's salience / affinity / declutter unchanged — the weights are a product decision
+  already made, so mobile re-deriving them would let the platforms rank the same data differently — and
+  bridges the camera model with `deltaToZoom`, since `react-native-maps` reports a coordinate span
+  where the web SDK reports a zoom level. Clustering is retired: it hid people, which is not a property
+  of screen size. Drilling into a city-spanning rayon now reveals its subtree at any camera span
+  (`tiersFor`). `NodeMarker` carries the roster split unsummed, because `not_clocked_in` discarded the
+  distinction salience weights on. The now-empty `clusterMarkersV2` feature flag goes with it.
+
 - **2026-08-28** — UI pass on the panels. Zero counts in the Wilayah rows are muted (to `gray-500`,
   4.80:1 — `gray-400` and `gray-300` fail AA), so on a 300-row list the numbers that are actually there
   carry the signal. The Petugas empty state distinguishes "nobody here" from "nobody matches your

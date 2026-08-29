@@ -27,6 +27,8 @@ function node(over: Partial<NodeMarker>): NodeMarker {
     scheduled: 6,
     clocked_in: 4,
     not_clocked_in: 2,
+    belum_hadir: 1,
+    tidak_hadir: 1,
     ...over,
   };
 }
