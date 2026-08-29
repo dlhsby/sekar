@@ -9,6 +9,7 @@ import { MonitoringStatusSheet } from '../../../components/monitoring/Monitoring
 import { UserDetailSheet } from '../../../components/monitoring/UserDetailSheet';
 import { LocationTrailModal } from '../../../components/monitoring/LocationTrailModal';
 import type { LiveUser, PresenceActivity, AbsentUser } from '../../../types/models.types';
+import type { NodeMarker } from '../../../components/monitoring/AggregateBubbleLayer';
 import type { AttendanceResponse } from '../../../types/api.types';
 
 interface StatusAndDetailSheetsProps {
@@ -19,6 +20,15 @@ interface StatusAndDetailSheetsProps {
   /** Luar jadwal — its own axis, combinable with any activity (ADR-050). */
   scheduledFilter?: 'all' | 'adhoc';
   onScheduledChange?: (next: 'all' | 'adhoc') => void;
+  /** Wilayah tab: the children of the current level, plus its row actions. */
+  nodes?: NodeMarker[];
+  onDrillNode?: (node: NodeMarker) => void;
+  onNodeDetail?: (node: NodeMarker) => void;
+  isNodeHidden?: (id: string) => boolean;
+  onToggleNodeHidden?: (id: string) => void;
+  onShowAllHiddenNodes?: () => void;
+  breadcrumbLabel?: string;
+  onBreadcrumbBack?: () => void;
   liveUsers: LiveUser[];
   selectedUser: LiveUser | null;
   trailUser: LiveUser | null;
@@ -44,6 +54,14 @@ export function StatusAndDetailSheets({
   onActivityChange,
   scheduledFilter,
   onScheduledChange,
+  nodes,
+  onDrillNode,
+  onNodeDetail,
+  isNodeHidden,
+  onToggleNodeHidden,
+  onShowAllHiddenNodes,
+  breadcrumbLabel,
+  onBreadcrumbBack,
   liveUsers,
   selectedUser,
   trailUser,
@@ -70,6 +88,14 @@ export function StatusAndDetailSheets({
         onActivityChange={onActivityChange}
         scheduledFilter={scheduledFilter}
         onScheduledChange={onScheduledChange}
+        nodes={nodes}
+        onDrillNode={onDrillNode}
+        onNodeDetail={onNodeDetail}
+        isNodeHidden={isNodeHidden}
+        onToggleNodeHidden={onToggleNodeHidden}
+        onShowAllHiddenNodes={onShowAllHiddenNodes}
+        breadcrumbLabel={breadcrumbLabel}
+        onBreadcrumbBack={onBreadcrumbBack}
         liveUsers={liveUsers}
         lastUpdated={lastUpdated}
         totalAreas={totalAreas}

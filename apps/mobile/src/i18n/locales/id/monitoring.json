@@ -5,7 +5,10 @@
   "aggregate": {
     "scheduledLabel": "Terjadwal",
     "clockedInLabel": "Hadir",
-    "notClockedInLabel": "Belum Hadir"
+    "notClockedInLabel": "Belum Hadir",
+    "belumHadirLabel": "Belum Hadir",
+    "tidakHadirLabel": "Tidak Hadir",
+    "detailLabel": "Detail {{name}}"
   },
   "surabaya": {
     "title": "Surabaya",
@@ -355,5 +358,15 @@
     "viewport": "Zoom (layar)",
     "viewportHint": "Sama seperti Zoom, tetapi hanya memuat area yang terlihat di layar. Geser atau perkecil peta untuk memuat lebih banyak.",
     "revealHint": "Titik kecil = penanda lain. Ketuk, atau perbesar untuk melihat detailnya."
+  },
+  "hidden": {
+    "count": "{{count}} disembunyikan",
+    "showAll": "Tampilkan semua",
+    "hideLabel": "Sembunyikan {{name}}"
+  },
+  "sidebar": {
+    "noNodes": "Tidak ada wilayah di tingkat ini.",
+    "tabWilayah": "Wilayah",
+    "tabWorkers": "Petugas"
   }
 }

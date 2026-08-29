@@ -52,6 +52,7 @@ import type {
 import { composeDrillNodes } from '../../utils/monitoringDrillNodes';
 import { regionToBox, regionWithinBox } from '../../utils/viewportBox';
 import { tiersAtDelta } from '../../utils/zoomTiers';
+import { useHiddenEntities } from '../../utils/hiddenEntities';
 import type { NodeMarker } from '../../components/monitoring/AggregateBubbleLayer';
 import type { TeamGroup } from '../../utils/teamGrouping';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -99,6 +100,9 @@ export function MapDashboardScreen(): React.JSX.Element {
   // Luar jadwal is its own axis, so it combines with an activity rather than
   // replacing it (ADR-050) — see `useLiveUsersFiltering`.
   const [scheduledFilter, setScheduledFilter] = useState<'all' | 'adhoc'>('all');
+  // Per-device hide list. Presentation only: it changes what is LISTED, never
+  // what is counted — the counts come from the server over the full scope.
+  const hiddenEntities = useHiddenEntities();
   // Team drill-in (ADR-048): when a team bubble is tapped we show ONLY that team's
   // members (as individual pins) and hide the other workers — keeping boundaries/nodes.
   // The name is kept alongside the id so the exit chip stays labelled even if the
@@ -676,6 +680,13 @@ export function MapDashboardScreen(): React.JSX.Element {
           onActivityChange={setActivityFilter}
           scheduledFilter={scheduledFilter}
           onScheduledChange={setScheduledFilter}
+          nodes={nodeMarkers}
+          onDrillNode={handleNodeDrill}
+          isNodeHidden={id => hiddenEntities.isHidden('nodes', id)}
+          onToggleNodeHidden={id => hiddenEntities.toggle('nodes', id)}
+          onShowAllHiddenNodes={() => hiddenEntities.clear('nodes')}
+          breadcrumbLabel={view.name ?? t('monitoring:breadcrumb.city')}
+          onBreadcrumbBack={canDrillBack ? handleDrillBack : undefined}
           liveUsers={liveUsers ?? []}
           selectedUser={selectedUser}
           trailUser={trailUser}
