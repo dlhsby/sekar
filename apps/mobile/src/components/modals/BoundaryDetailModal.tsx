@@ -239,7 +239,10 @@ export function BoundaryDetailModal({
                   )}
                 </View>
 
-                {/* Reassign — only for understaffed areas with a handler */}
+                {/* Reassign — understaffed lokasi only. The modal pulls workers
+                    INTO this area, so offering it on a fully-staffed one would
+                    invite a move with nothing to fix. The gate was never the
+                    reason this button was invisible: nothing passed `onReassign`. */}
                 {areaData.is_understaffed && onReassign ? (
                   <NBButton
                     variant="primary"

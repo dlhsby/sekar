@@ -2,6 +2,23 @@
 
 Newest first. Feature overview + current design live in [README.md](./README.md).
 
+- **2026-08-29** — **Reassignment is reachable again on both platforms** (parity M9), and **M10 needed
+  nothing**. Verifying M9 before building it turned up the largest audit correction yet: the row said
+  web *has* bulk reassign. Web has the COMPONENT — `BulkReassignModal` fully built and unit-tested,
+  referenced by nothing but its own test. So was web's `ReassignWorkerModal`, and so was mobile's.
+  Mobile's `BoundaryDetailModal` even rendered a reassign button, behind
+  `is_understaffed && onReassign`, with **no caller ever passing `onReassign`** — ESLint had been
+  saying so (*'onReassign' is defined but never used*). `git log -S 'onReassign='` found the cause: a
+  trigger existed and was stripped on 2026-06-10 by `49026d85`, an emergency "just display a map"
+  rebuild whose own message promised *"filters / boundaries / clustering / drawers to be layered back
+  on"*. Filters and boundaries were; **reassignment was dark for ~11 weeks.** Restored on web
+  (`AreaDetailPanel` → `BulkReassignModal`, which handles 1..N so it covers the single case) and on
+  mobile (`FilterAndSearchModals` now supplies `onReassign`). The `is_understaffed` gate is KEPT and
+  now matches on both: the modal pulls workers INTO the target lokasi, so offering it on a fully
+  staffed one would invite a move with nothing to fix — a mid-course correction, having first removed
+  the gate for a reason that turned out to be backwards. M10 is **already done on mobile**:
+  `MonitoringStatusSheet` renders an on-leave section fed end to end from `monitoringSlice`.
+
 - **2026-08-29** — **Low-contrast gray text swept off both platforms, with a lint rule so it stays
   gone.** `nb-gray-400` as a FOREGROUND colour is **2.52:1** on white — under the 4.5:1 AA bar for
   text and under even the 3:1 bar for icons; `gray-300` is **1.49:1**. Measured against every surface
