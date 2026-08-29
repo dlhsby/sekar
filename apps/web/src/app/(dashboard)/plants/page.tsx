@@ -266,7 +266,7 @@ export default function PlantsPage() {
         onOpenChange={(isOpen) => setDeleteDialog({ ...deleteDialog, isOpen })}
         title={t('plants:deleteConfirmTitle')}
         description={t('plants:deleteConfirmDescription', { name: deleteDialog.plant?.nameId })}
-        confirmLabel={t('common:delete')}
+        confirmLabel={t('common:actions.delete')}
         variant="destructive"
         onConfirm={handleDeleteConfirm}
         loading={deleteMutation.isPending}

@@ -32,5 +32,7 @@
   "userRequired": "Pengguna wajib dipilih",
   "startDatetimeRequired": "Waktu mulai wajib diisi",
   "endDatetimeRequired": "Waktu selesai wajib diisi",
-  "descriptionRequired": "Deskripsi wajib diisi"
+  "descriptionRequired": "Deskripsi wajib diisi",
+  "locationTypeRequired": "Tipe lokasi wajib dipilih",
+  "minValue": "Nilai minimal {{min}}"
 }

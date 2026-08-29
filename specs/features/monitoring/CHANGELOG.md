@@ -2,6 +2,18 @@
 
 Newest first. Feature overview + current design live in [README.md](./README.md).
 
+- **2026-08-29** — **`i18n:check` now verifies that keys used in code exist** (invariant 4), closing the
+  gap that let a raw key reach a device. The first three invariants all compare files against each
+  other, so a key missing from BOTH locales satisfies every one of them; unit tests mock `t` to echo
+  keys, so a missing key is a truthy string that renders "fine". The new check scans static
+  `t('ns:key')` call sites and is deliberately conservative — dynamic keys are skipped rather than
+  guessed, `returnObjects: true` may resolve to a subtree, and comments are stripped so docblock
+  examples aren't scanned, because a false positive would train people to ignore the gate. It also
+  flags a key that resolves to an OBJECT without `returnObjects` (renders `[object Object]`). Found 4
+  real web defects on first run: `common:empty.noData` in `data-table` (object, no `returnObjects`),
+  `common:delete` (should be `common:actions.delete`), and the missing
+  `validation:locationTypeRequired` / `validation:minValue`.
+
 - **2026-08-29** — **Device verification of the mobile parity slices, and the four defects it found.**
   Running slices 1–4 on a Pixel 5 caught what neither the unit suite nor `i18n:check` can see:
   (1) `monitoring:breadcrumb.city` and `layers.workers` were missing from BOTH mobile locales, so the
