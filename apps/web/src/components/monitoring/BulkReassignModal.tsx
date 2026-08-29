@@ -1,10 +1,17 @@
 'use client';
 
 /**
- * BulkReassignModal — multi-worker reassignment (Phase 4-4 B1).
- * Same flow as ReassignWorkerModal but with checkbox multi-select and a
- * sequential submit loop against the single-worker endpoint. Partial failures
- * keep the modal open with only the failed workers still selected for retry.
+ * BulkReassignModal — reassignment for a lokasi (Phase 4-4 B1).
+ *
+ * Handles 1..N: checkbox multi-select over a sequential submit loop against the
+ * single-worker endpoint. Partial failures keep the modal open with only the
+ * failed workers still selected for retry.
+ *
+ * This is the ONLY reassignment modal on web. A separate single-worker
+ * `ReassignWorkerModal` existed alongside it, doing the same job with a
+ * one-item selection, and was reachable from nowhere; selecting one checkbox
+ * here is that flow, so it was deleted rather than given a second entry point
+ * for the two to drift apart behind.
  */
 
 import { useState } from 'react';

@@ -48,7 +48,6 @@ describe('API Index Exports', () => {
     expect(monitoringApiModule).toBeDefined();
     expect(monitoringApiModule.getCityMonitoring).toBeDefined();
     expect(monitoringApiModule.getLiveUsers).toBeDefined();
-    expect(monitoringApiModule.getActiveUsers).toBeDefined();
     expect(monitoringApiModule.getAllActivities).toBeDefined();
     expect(monitoringApiModule.getActivityDetails).toBeDefined();
     expect(monitoringApiModule.getAttendance).toBeDefined();

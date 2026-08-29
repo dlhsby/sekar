@@ -81,12 +81,6 @@ export async function getSnapshotWorkers(
   return { ...res, data: workers };
 }
 
-export async function getActiveUsers(): Promise<
-  ApiResponse<{ users: ActiveUserData[] }>
-> {
-  return get('/supervisor/active-users');
-}
-
 export async function getAllActivities(
   filters: ActivitiesFilter = {},
 ): Promise<ApiResponse<Activity[]>> {
@@ -236,7 +230,6 @@ export default {
   getDistrictMonitoring,
   getAreaMonitoring,
   getLiveUsers,
-  getActiveUsers,
   getAllActivities,
   getActivityDetails,
   getAttendance,
