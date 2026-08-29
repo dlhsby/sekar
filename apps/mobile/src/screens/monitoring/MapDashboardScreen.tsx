@@ -581,6 +581,7 @@ export function MapDashboardScreen(): React.JSX.Element {
                 currentRegion={currentRegion}
                 boundaryKey={boundaryKey}
                 scope={scope}
+                viewId={view.id ?? null}
                 districtId={view.districtId ?? view.id}
                 areaId={scope === 'location' ? view.id : null}
                 regionId={scope === 'region' ? view.id : view.regionId}

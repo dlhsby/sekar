@@ -39,6 +39,8 @@ interface MapLayerContentProps {
   boundaryKey: number;
   /** Current drill scope — gates which boundary layers + markers show. */
   scope: 'city' | 'district' | 'region' | 'location';
+  /** The drilled node's id — the plant layer needs it to know which lokasi. */
+  viewId?: string | null;
   /** The district being viewed (district/location scope) — scopes markers to it. */
   districtId: string | null;
   /** The selected location (location scope) — only its boundary is drawn, on demand. */
@@ -81,6 +83,7 @@ export function MapLayerContent({
   currentRegion,
   boundaryKey,
   scope,
+  viewId,
   districtId,
   areaId,
   regionId = null,
@@ -303,9 +306,13 @@ export function MapLayerContent({
         />
       )}
 
-      {/* Phase 3: Plant notable markers */}
+      {/* Notable plants — lokasi scope only, because the endpoint is
+          per-location. Was a stub until now: the toggle controlled nothing. */}
       {mapReady && (
-        <PlantOverlayLayer visible={visibleLayers.plants} />
+        <PlantOverlayLayer
+          visible={visibleLayers.plants}
+          areaId={scope === 'location' ? (viewId ?? null) : null}
+        />
       )}
 
       {/* Worker pins. One marker per person — no clustering.

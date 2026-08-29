@@ -29,7 +29,7 @@ import {
   useReassignmentHistory,
 } from '@/lib/api/monitoring';
 import { useMonitoringSocket } from '@/lib/monitoring/useMonitoringSocket';
-import { useMonitoringLayers } from '@/lib/monitoring/layers';
+import { useMonitoringLayers, showsNodeMarker } from '@/lib/monitoring/layers';
 import { useMonitoringMode, isZoomLike } from '@/lib/monitoring/mapMode';
 import { useGeoIndex } from '@/lib/monitoring/useGeoIndex';
 import { useViewportBox } from '@/lib/monitoring/useViewportBox';
@@ -365,7 +365,15 @@ export default function MonitoringPage() {
   // Plant inventory for the open lokasi detail — mobile shows the same summary
   // in its area sheet. Lazy: only fetched while a LOKASI's card is open, so the
   // rayon/kawasan cards cost nothing.
-  const plantAreaId = detailNodeId && scope === 'location' ? detailNodeId : null;
+  //
+  // Two consumers now: the detail card's summary, and the map's plant pins. The
+  // pins want them whenever the layer is on at lokasi scope, card or no card, so
+  // the gate is the union — one query rather than two racing for the same key.
+  const plantsLayerOn = showsNodeMarker(layers.plants);
+  const plantAreaId =
+    scope === 'location'
+      ? (detailNodeId ?? (plantsLayerOn ? (view.id ?? null) : null))
+      : null;
   const areaPlants = useAreaPlants(plantAreaId);
   const notablePlants = useNotablePlants(plantAreaId);
   const trail = useMemo(
@@ -1386,6 +1394,7 @@ export default function MonitoringPage() {
         mode={mode}
         onBoundsChange={onViewport}
         activeGeoId={activeGeoId}
+        plants={notablePlants.data ?? []}
         onDrillNode={onDrillMarker}
         currentNode={currentNode}
         onNodeDetail={onNodeDetail}

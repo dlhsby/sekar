@@ -54,7 +54,8 @@
       "label": "Label",
       "petugas": "Personnel",
       "tim": "Teams"
-    }
+    },
+    "plants": "Plants"
   },
   "search": {
     "personnelLabel": "Officers",

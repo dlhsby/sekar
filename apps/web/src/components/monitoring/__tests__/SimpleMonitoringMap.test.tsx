@@ -378,6 +378,7 @@ describe('SimpleMonitoringMap', () => {
           kawasan: ['boundary', 'fill', 'marker'],
           lokasi: ['boundary', 'fill', 'marker'],
           personnel: [],
+          plants: [],
         }}
       />
     );
@@ -459,6 +460,7 @@ describe('SimpleMonitoringMap', () => {
           kawasan: ['boundary', 'fill', 'marker'],
           lokasi: ['boundary', 'fill', 'marker'],
           personnel: [],
+          plants: [],
         }}
       />
     );
@@ -480,6 +482,7 @@ describe('SimpleMonitoringMap', () => {
           kawasan: [],
           lokasi: [],
           personnel: [],
+          plants: [],
         }}
       />
     );
@@ -501,6 +504,7 @@ describe('SimpleMonitoringMap', () => {
           kawasan: [],
           lokasi: [],
           personnel: [],
+          plants: [],
         }}
       />
     );
