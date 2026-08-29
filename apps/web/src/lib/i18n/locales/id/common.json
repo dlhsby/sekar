@@ -140,7 +140,10 @@
     "multiCombobox": {
       "selected": "{{count}} dipilih",
       "removeItem": "Hapus {{label}}"
-    }
+    },
+    "photoPreview": "Pratinjau foto",
+    "photoPrevious": "Foto sebelumnya",
+    "photoNext": "Foto berikutnya"
   },
   "app": {
     "install": {

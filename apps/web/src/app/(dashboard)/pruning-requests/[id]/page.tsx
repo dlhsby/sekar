@@ -20,8 +20,6 @@ import { ArrowLeft, ArrowRight, ExternalLink } from 'lucide-react';
 
 import {
   Button,
-  Dialog,
-  DialogContent,
   DatePicker,
   Field as FormField,
   FormSelect,
@@ -30,6 +28,7 @@ import {
   StatusPill,
   Textarea,
 } from '@/components/ui';
+import { PhotoLightbox } from '@/components/ui/photo-lightbox';
 import { useAuth } from '@/lib/auth/hooks';
 import { hasRole } from '@/lib/constants/roles';
 import type { UserRole } from '@/types/models';
@@ -116,8 +115,10 @@ export default function PruningRequestDetailPage() {
   const [scheduledDate, setScheduledDate] = useState('');
   const convertMutation = useConvertPruningRequestToTask(id);
 
-  // Photo lightbox
-  const [lightbox, setLightbox] = useState<string | null>(null);
+  // Photo lightbox — an INDEX now, not a URL, so the shared viewer knows where
+  // the clicked photo sits in the set and can step through the rest. This page
+  // always had several photos and no way to move between them.
+  const [lightbox, setLightbox] = useState<number | null>(null);
 
   if (isLoading) {
     return (
@@ -232,7 +233,7 @@ export default function PruningRequestDetailPage() {
                   <button
                     key={i}
                     type="button"
-                    onClick={() => setLightbox(url)}
+                    onClick={() => setLightbox(i)}
                     className="group relative overflow-hidden rounded-nb-base border-2 border-nb-black focus:outline-none focus-visible:ring-2 focus-visible:ring-nb-primary"
                     aria-label={t('pruning:detail.photoLabel', { index: i + 1 })}
                   >
@@ -390,20 +391,12 @@ export default function PruningRequestDetailPage() {
         </div>
       </div>
 
-      <Dialog open={!!lightbox} onOpenChange={(open) => !open && setLightbox(null)}>
-        <DialogContent className="max-w-2xl p-2">
-          {lightbox && (
-            <Image
-              src={lightbox}
-              alt={t('pruning:detail.photoPreview')}
-              width={1024}
-              height={768}
-              className="h-auto w-full rounded-nb-base object-contain"
-              unoptimized
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      <PhotoLightbox
+        photos={request.photoUrls}
+        index={lightbox}
+        onIndexChange={setLightbox}
+        alt={t('pruning:detail.photoPreview')}
+      />
     </div>
   );
 }

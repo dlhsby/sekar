@@ -7,7 +7,7 @@
 
 import { useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, MapPin, Clock, Navigation, Eye } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, Navigation, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { DatePicker, Checkbox } from '@/components/ui';
 import {
@@ -30,6 +30,19 @@ export interface LocationTimelineProps {
   onPointSelect?: (index: number) => void;
   showOnlyThisUser?: boolean;
   onToggleShowOnly?: (show: boolean) => void;
+}
+
+/**
+ * Shift an ISO date (YYYY-MM-DD) by whole days without touching the clock.
+ *
+ * Parsed as LOCAL parts rather than `new Date(iso)`, which parses a bare date as
+ * UTC midnight and can land on the previous day west of Greenwich.
+ */
+function shiftISODate(iso: string, days: number): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  const dt = new Date(y, m - 1, d + days);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
 }
 
 export function LocationTimeline({
@@ -75,15 +88,41 @@ export function LocationTimeline({
         <p className="text-xs text-nb-gray-500">{t('monitoring:timeline.title')}</p>
       </div>
 
-      {/* Date picker */}
+      {/* Date picker, with day-stepping chevrons.
+          The picker alone could always reach any date; what it could not do is
+          answer "what about yesterday" in one click, which is the common move.
+          Forward is clamped at today because there is no future GPS. */}
       <div className="px-3 py-2 flex-shrink-0 border-b border-nb-gray-200">
         <label className="text-xs font-bold text-nb-gray-600 mb-1 block">
           {t('monitoring:timeline.datePickerLabel')}
         </label>
-        <DatePicker
-          value={selectedDate || undefined}
-          onValueChange={(v) => onDateChange(v ?? '')}
-        />
+        <div className="flex items-stretch gap-1">
+          <button
+            type="button"
+            onClick={() => onDateChange(shiftISODate(selectedDate || todayStr, -1))}
+            className="shrink-0 rounded-nb-base border-2 border-nb-black bg-white px-1.5 text-nb-black shadow-nb-sm transition-colors hover:bg-nb-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nb-primary"
+            aria-label={t('monitoring:timeline.previousDay')}
+            data-testid="timeline-prev-day"
+          >
+            <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+          </button>
+          <div className="min-w-0 flex-1">
+            <DatePicker
+              value={selectedDate || undefined}
+              onValueChange={(v) => onDateChange(v ?? '')}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => onDateChange(shiftISODate(selectedDate || todayStr, 1))}
+            disabled={(selectedDate || todayStr) >= todayStr}
+            className="shrink-0 rounded-nb-base border-2 border-nb-black bg-white px-1.5 text-nb-black shadow-nb-sm transition-colors hover:bg-nb-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nb-primary disabled:cursor-not-allowed disabled:opacity-40"
+            aria-label={t('monitoring:timeline.nextDay')}
+            data-testid="timeline-next-day"
+          >
+            <ChevronRight className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
       </div>
 
       {/* Summary stats */}

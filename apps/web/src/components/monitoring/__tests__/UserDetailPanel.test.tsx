@@ -256,6 +256,34 @@ describe('UserDetailPanel', () => {
       render(<UserDetailPanel {...defaultProps} summary={summary} />);
       expect(screen.queryByText(/aktivitas hari ini/i)).not.toBeInTheDocument();
     });
+
+    /**
+     * W2 (parity). `photo_url` has been on this payload all along and neither
+     * platform rendered it, so an operator could see that a verification photo
+     * existed but never open it.
+     */
+    it('offers no photo button when the activity has none', () => {
+      render(<UserDetailPanel {...defaultProps} />);
+      expect(screen.queryByTestId('activity-photo-act-1')).not.toBeInTheDocument();
+    });
+
+    it('opens the verification photo in the lightbox', async () => {
+      const user = userEvent.setup();
+      const summary = {
+        ...MOCK_SUMMARY,
+        activities_today: [
+          { ...MOCK_SUMMARY.activities_today[0], photo_url: 'https://cdn.test/verify.jpg' },
+        ],
+      };
+      render(<UserDetailPanel {...defaultProps} summary={summary} />);
+
+      expect(screen.queryByRole('img')).not.toBeInTheDocument();
+      await user.click(screen.getByTestId('activity-photo-act-1'));
+
+      expect(screen.getByRole('img')).toHaveAttribute('src', 'https://cdn.test/verify.jpg');
+      // One photo per activity, so the viewer must not offer stepping.
+      expect(screen.queryByTestId('lightbox-next')).not.toBeInTheDocument();
+    });
   });
 
   describe('Tasks today section', () => {

@@ -216,7 +216,9 @@
     "end": "End",
     "pointsListLabel": "Location points history",
     "inArea": "Within Area",
-    "outArea": "Outside Area"
+    "outArea": "Outside Area",
+    "previousDay": "Previous day",
+    "nextDay": "Next day"
   },
   "areaDetail": {
     "district": "District",
@@ -259,7 +261,8 @@
     "areaLabel": "Area:",
     "reassignmentHistory": "Reassignment History",
     "loadingHistory": "Loading history…",
-    "noHistory": "No reassignment history"
+    "noHistory": "No reassignment history",
+    "viewPhoto": "View photo"
   },
   "sidePanel": {
     "title": "Staff",

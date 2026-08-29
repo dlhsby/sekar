@@ -5,10 +5,12 @@
  * Shows shift info, location, activities, tasks, and contact links
  */
 
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { intlLocale } from '@/lib/i18n/date-locale';
-import { ArrowLeft, ArrowLeftRight, Clock, MapPin, Battery, CheckSquare, FileText } from 'lucide-react';
+import { ArrowLeft, ArrowLeftRight, Clock, MapPin, Battery, CheckSquare, FileText, Camera } from 'lucide-react';
 import { Badge } from '@/components/ui';
+import { PhotoLightbox } from '@/components/ui/photo-lightbox';
 import { ROLE_LABELS } from '@/lib/constants/roles';
 import { cn } from '@/lib/utils/cn';
 import { formatRelativeTime, formatDuration, formatTime } from '@/lib/utils/formatters';
@@ -64,6 +66,9 @@ export function UserDetailPanel({
   isReassignmentsLoading,
 }: UserDetailPanelProps) {
   const { t } = useTranslation(['monitoring']);
+  // One photo per activity today (the API sends `photo_urls[0]`), so the
+  // lightbox gets a single-element set and hides its navigation.
+  const [photo, setPhoto] = useState<string | null>(null);
   const statusLabels = getStatusLabels();
 
   if (isLoading) {
@@ -308,7 +313,23 @@ export function UserDetailPanel({
                 <li key={activity.id} className="flex items-center gap-2 text-xs">
                   <span className="h-1.5 w-1.5 rounded-full bg-nb-primary flex-shrink-0" />
                   <span className="text-nb-black font-medium truncate">{activity.title}</span>
-                  <span className="text-nb-gray-400 flex-shrink-0 ml-auto">
+                  {/* The verification photo was on the wire the whole time and
+                      rendered by neither platform. A camera button is enough of
+                      an affordance at this size; the photo opens in the lightbox. */}
+                  {activity.photo_url && (
+                    <button
+                      type="button"
+                      onClick={() => setPhoto(activity.photo_url)}
+                      className="flex-shrink-0 rounded-nb-sm border border-nb-black bg-white p-0.5 text-nb-black transition-colors hover:bg-nb-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nb-primary"
+                      aria-label={t('monitoring:userDetail.viewPhoto')}
+                      data-testid={`activity-photo-${activity.id}`}
+                    >
+                      <Camera className="h-3 w-3" aria-hidden="true" />
+                    </button>
+                  )}
+                  {/* gray-400 on white is 2.52:1 and fails AA for text this size;
+                      gray-500 is 4.80:1. */}
+                  <span className="text-nb-gray-500 flex-shrink-0 ml-auto">
                     {new Date(activity.created_at).toLocaleTimeString(intlLocale(), {
                       hour: '2-digit',
                       minute: '2-digit',
@@ -405,6 +426,13 @@ export function UserDetailPanel({
           </div>
         )}
       </div>
+
+      <PhotoLightbox
+        photos={photo ? [photo] : []}
+        index={photo ? 0 : null}
+        onIndexChange={(i) => i == null && setPhoto(null)}
+        alt={t('monitoring:userDetail.viewPhoto')}
+      />
     </div>
   );
 }

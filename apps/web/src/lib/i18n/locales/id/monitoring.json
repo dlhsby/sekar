@@ -216,7 +216,9 @@
     "end": "Akhir",
     "pointsListLabel": "Riwayat titik lokasi",
     "inArea": "Dalam Area",
-    "outArea": "Di Luar Area"
+    "outArea": "Di Luar Area",
+    "previousDay": "Hari sebelumnya",
+    "nextDay": "Hari berikutnya"
   },
   "areaDetail": {
     "district": "Rayon",
@@ -259,7 +261,8 @@
     "areaLabel": "Area:",
     "reassignmentHistory": "Riwayat Pemindahan",
     "loadingHistory": "Memuat riwayat…",
-    "noHistory": "Belum ada riwayat pemindahan"
+    "noHistory": "Belum ada riwayat pemindahan",
+    "viewPhoto": "Lihat foto"
   },
   "sidePanel": {
     "title": "Petugas",
