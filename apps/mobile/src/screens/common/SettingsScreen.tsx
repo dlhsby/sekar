@@ -317,10 +317,10 @@ export function SettingsScreen(_props: SettingsScreenProps): React.JSX.Element {
         </View>
 
         <View style={styles.appInfo}>
-          <NBText variant="caption" color="gray400" align="center">
+          <NBText variant="caption" color="gray500" align="center">
             {t('settings:screen.tagline')}
           </NBText>
-          <NBText variant="caption" color="gray400" align="center">
+          <NBText variant="caption" color="gray500" align="center">
             {t('settings:screen.org')}
           </NBText>
         </View>

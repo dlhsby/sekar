@@ -82,7 +82,7 @@ export const WorkerTile = React.memo(function WorkerTile({
 
       <View style={styles.right}>
         {lastSeen ? (
-          <NBText variant="mono-sm" color="gray400" style={styles.lastSeen}>
+          <NBText variant="mono-sm" color="gray500" style={styles.lastSeen}>
             {lastSeen}
           </NBText>
         ) : null}

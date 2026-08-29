@@ -33,6 +33,7 @@ const eslintConfig = defineConfig([
       // ...and no t(key, 'English') fallback: i18n:check compares key SETS, so a
       // fallback renders English to id users with the check still green.
       "sekar-design/no-i18n-literal-fallback": "error",
+      "sekar-design/no-low-contrast-text": "error",
     },
   },
   // ClusterLayer — conditional map-canvas shadows must be inline (no utility class equivalent for dynamic values);

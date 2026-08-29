@@ -68,7 +68,7 @@ const BreadcrumbSeparator = ({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<'li'>) => (
-  <li role="presentation" aria-hidden className={cn('text-nb-gray-400', className)} {...props}>
+  <li role="presentation" aria-hidden className={cn('text-nb-gray-500', className)} {...props}>
     {children ?? <ChevronRight className="h-3.5 w-3.5" />}
   </li>
 );

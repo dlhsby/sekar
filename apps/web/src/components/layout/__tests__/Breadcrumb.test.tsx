@@ -48,7 +48,7 @@ describe('Breadcrumb', () => {
     render(<Breadcrumb />);
 
     // ChevronRightIcon is used as separator with specific class
-    const separators = document.querySelectorAll('.text-nb-gray-400');
+    const separators = document.querySelectorAll('.text-nb-gray-500');
     expect(separators.length).toBeGreaterThan(0);
   });
 

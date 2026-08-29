@@ -126,7 +126,7 @@ export function MonthGrid({
                 >
                   {/* Day number */}
                   <div
-                    className={`mb-2 text-right text-sm font-bold ${isTodayDate ? 'text-nb-primary' : isDayInMonth ? 'text-nb-black' : 'text-nb-gray-400'}`}
+                    className={`mb-2 text-right text-sm font-bold ${isTodayDate ? 'text-nb-primary' : isDayInMonth ? 'text-nb-black' : 'text-nb-gray-500'}`}
                   >
                     {day.getDate()}
                   </div>

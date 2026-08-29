@@ -316,7 +316,7 @@ function ExportHistory({ jobs, loading }: { jobs: ExportJob[]; loading: boolean 
               {t('export.downloadLink')}
             </a>
           ) : (
-            <span className="text-nb-gray-400">—</span>
+            <span className="text-nb-gray-500">—</span>
           ),
       },
     ],

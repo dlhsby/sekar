@@ -202,7 +202,7 @@ export function ToolsOverlay({
           );
         })}
       </View>
-      <NBText variant="caption" color="gray400" style={styles.modeHint}>
+      <NBText variant="caption" color="gray500" style={styles.modeHint}>
         {t(`monitoring:mode.${mode}Hint`)}
       </NBText>
 

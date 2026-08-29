@@ -68,7 +68,7 @@ export function Breadcrumb({
               {/* Separator */}
               {index > 0 && (
                 <ChevronRightIcon
-                  className="h-4 w-4 text-nb-gray-400 mx-2 flex-shrink-0"
+                  className="h-4 w-4 text-nb-gray-500 mx-2 flex-shrink-0"
                   aria-hidden="true"
                 />
               )}

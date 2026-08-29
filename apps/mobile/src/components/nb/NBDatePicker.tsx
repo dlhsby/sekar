@@ -480,7 +480,7 @@ const styles = StyleSheet.create({
     color: nbColors.black,
   },
   placeholder: {
-    color: nbColors.gray400,
+    color: nbColors.gray500,
     fontWeight: nbType.body.fontWeight,
   },
   valueDisabled: {
@@ -530,7 +530,7 @@ const styles = StyleSheet.create({
   },
   wheelText: {
     fontSize: nbType.body.fontSize,
-    color: nbColors.gray400,
+    color: nbColors.gray500,
   },
   wheelTextSelected: {
     color: nbColors.black,

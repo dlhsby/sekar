@@ -550,7 +550,7 @@ export function DataTable<TData, TValue>({
                                 <ArrowDown className="h-3.5 w-3.5" aria-hidden />
                               ) : (
                                 <ChevronsUpDown
-                                  className="h-3.5 w-3.5 text-nb-gray-400"
+                                  className="h-3.5 w-3.5 text-nb-gray-500"
                                   aria-hidden
                                 />
                               )}

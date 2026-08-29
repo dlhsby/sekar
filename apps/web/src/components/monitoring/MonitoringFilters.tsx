@@ -173,7 +173,7 @@ export function MonitoringFilters({
         <Field label={t('monitoring:filters.label')} htmlFor="mon-search">
           <div className="relative">
             <Search
-              className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-nb-gray-400"
+              className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-nb-gray-500"
               aria-hidden="true"
             />
             <Input

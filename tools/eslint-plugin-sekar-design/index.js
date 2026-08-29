@@ -10,6 +10,8 @@
  *    t()/i18n.t() with id/en keys (CLAUDE.md §Internationalization).
  *  - no-i18n-literal-fallback: forbid t(key, 'English') — i18n:check compares KEY SETS,
  *    so a fallback renders English to id users with the check still green.
+ *  - no-low-contrast-text: forbid text-nb-gray-300/400 as a foreground colour; both
+ *    fail WCAG AA on every surface this app paints (1.49:1 and 2.52:1 on white).
  *
  * See specs/architecture/decisions/ADR-036-design-tokens-single-source.md
  * and specs/design-system/design-tokens.md §Layer 2 emitter rules.
@@ -22,6 +24,7 @@ const preferNbShadowUtility = require('./rules/prefer-nb-shadow-utility');
 const rnNoShadowRadius = require('./rules/rn-no-shadow-radius');
 const noUntranslatedLiteral = require('./rules/no-untranslated-literal');
 const noI18nLiteralFallback = require('./rules/no-i18n-literal-fallback');
+const noLowContrastText = require('./rules/no-low-contrast-text');
 
 module.exports = {
   meta: {
@@ -35,5 +38,6 @@ module.exports = {
     'rn-no-shadow-radius': rnNoShadowRadius,
     'no-untranslated-literal': noUntranslatedLiteral,
     'no-i18n-literal-fallback': noI18nLiteralFallback,
+    'no-low-contrast-text': noLowContrastText,
   },
 };

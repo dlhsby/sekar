@@ -2,6 +2,20 @@
 
 Newest first. Feature overview + current design live in [README.md](./README.md).
 
+- **2026-08-29** — **Low-contrast gray text swept off both platforms, with a lint rule so it stays
+  gone.** `nb-gray-400` as a FOREGROUND colour is **2.52:1** on white — under the 4.5:1 AA bar for
+  text and under even the 3:1 bar for icons; `gray-300` is **1.49:1**. Measured against every surface
+  the app actually paints (white 4.80, gray-50 4.59, gray-100 4.40) rather than assuming white,
+  `gray-500` clears the bar that applies in each case, so 54 web usages across 29 files plus 21 mobile
+  ones moved to it. Three cases were reasoned about rather than swapped: the single gray-100 is a
+  *hover* background on an icon button (4.40 clears the 3:1 graphics bar), and disabled states keep
+  gray-400/300 because **WCAG 1.4.3 and 1.4.11 exempt inactive controls** — darkening a disabled
+  select would make it look enabled. New ESLint rule `sekar-design/no-low-contrast-text` reads plain
+  strings, template literals and `cn()` arguments including conditional branches (the dominant shape
+  here, which a `className`-only walk misses), ignores decorative `bg-`/`border-` use, and skips
+  `disabled:` variants. **It paid for itself before merging**: it blocked its own commit and surfaced
+  three `text-nb-gray-300` icons the gray-400 sweep had missed entirely.
+
 - **2026-08-29** — **Mobile moved off the superseded `/supervisor/attendance`.** The list was the
   one-line URL swap the shared shape was designed for. The detail was NOT: it deliberately changed
   `shift` → `shifts[]`, because the old single-shift response **hid the second session** of any worker

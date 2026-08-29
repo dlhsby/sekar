@@ -203,13 +203,13 @@ export function LocationTimeline({
           </div>
         ) : !history ? (
           <div className="p-6 text-center text-nb-gray-500">
-            <Navigation className="w-8 h-8 mx-auto mb-2 text-nb-gray-300" />
+            <Navigation className="w-8 h-8 mx-auto mb-2 text-nb-gray-500" />
             <p className="text-sm font-semibold">{t('monitoring:timeline.noHistory')}</p>
             <p className="text-xs mt-1">{t('monitoring:timeline.noHistoryHelper')}</p>
           </div>
         ) : history.points.length === 0 ? (
           <div className="p-6 text-center text-nb-gray-500">
-            <MapPin className="w-8 h-8 mx-auto mb-2 text-nb-gray-300" />
+            <MapPin className="w-8 h-8 mx-auto mb-2 text-nb-gray-500" />
             <p className="text-sm font-semibold">{t('monitoring:timeline.noPoints')}</p>
             <p className="text-xs mt-1">{t('monitoring:timeline.noPointsHelper')}</p>
           </div>
@@ -286,7 +286,7 @@ export function LocationTimeline({
                       <div className="text-xs font-mono text-nb-gray-500 mt-0.5">
                         {point.latitude.toFixed(6)}, {point.longitude.toFixed(6)}
                       </div>
-                      <div className="flex gap-2 mt-0.5 text-[10px] text-nb-gray-400">
+                      <div className="flex gap-2 mt-0.5 text-[10px] text-nb-gray-500">
                         {point.accuracy !== null && <span>±{point.accuracy.toFixed(0)}m</span>}
                         {point.battery_level !== null && (
                           <span

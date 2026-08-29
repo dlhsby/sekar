@@ -111,8 +111,8 @@ function WorkerRow({
           </div>
           <div className="mt-0.5 flex items-center gap-1.5 text-xs text-nb-gray-500">
             <span className="truncate">{worker.location_name ?? '—'}</span>
-            <span className="text-nb-gray-300">·</span>
-            <span className="flex-shrink-0 text-nb-gray-400">
+            <span className="text-nb-gray-500">·</span>
+            <span className="flex-shrink-0 text-nb-gray-500">
               {formatRelativeTime(worker.last_update)}
             </span>
           </div>
@@ -133,7 +133,7 @@ function WorkerRow({
           onClick={onHide}
           aria-label={t('monitoring:hidden.hideLabel', { name: worker.full_name })}
           title={t('monitoring:hidden.hideLabel', { name: worker.full_name })}
-          className="shrink-0 border-l border-nb-gray-200 px-2 text-nb-gray-400 transition-colors hover:bg-nb-gray-50 hover:text-nb-black"
+          className="shrink-0 border-l border-nb-gray-200 px-2 text-nb-gray-500 transition-colors hover:bg-nb-gray-50 hover:text-nb-black"
         >
           <EyeOff className="h-4 w-4" aria-hidden="true" />
         </button>
@@ -208,7 +208,7 @@ function WorkerDetail({ worker, onBack }: { worker: SnapshotWorker; onBack: () =
             <div className="font-mono">
               {worker.lat.toFixed(6)}, {worker.lng.toFixed(6)}
             </div>
-            <div className="text-nb-gray-400">{formatRelativeTime(worker.last_update)}</div>
+            <div className="text-nb-gray-500">{formatRelativeTime(worker.last_update)}</div>
             <div
               className={
                 worker.is_within_area
@@ -369,7 +369,7 @@ export function MonitoringSidebar({
 
       {/* Footer hint */}
       {!selectedWorker && (
-        <div className="flex-shrink-0 border-t-2 border-nb-gray-200 px-3 py-2 text-[11px] text-nb-gray-400">
+        <div className="flex-shrink-0 border-t-2 border-nb-gray-200 px-3 py-2 text-[11px] text-nb-gray-500">
           <Users className="mr-1 inline h-3 w-3" />
           {t('monitoring:sidebar.clickToFocus')}
         </div>

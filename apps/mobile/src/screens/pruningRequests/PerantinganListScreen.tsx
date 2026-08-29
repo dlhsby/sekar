@@ -335,7 +335,7 @@ export function PerantinganListScreen(): React.JSX.Element {
                 ))}
               </ScrollView>
             ) : (
-              <NBText variant="body-sm" color="gray400" style={styles.filterBarPlaceholder}>{t('list.allRequestsLabel')}</NBText>
+              <NBText variant="body-sm" color="gray500" style={styles.filterBarPlaceholder}>{t('list.allRequestsLabel')}</NBText>
             )}
             {activeFilterCount > 0 && (
               <TouchableOpacity
@@ -485,7 +485,7 @@ const styles = StyleSheet.create({
   },
   filterBarPlaceholder: {
     fontStyle: 'italic',
-    // Color/size handled by NBText variant="body-sm" color="gray400"
+    // Color/size handled by NBText variant="body-sm" color="gray500"
   },
   miniChipsContent: {
     flexDirection: 'row',

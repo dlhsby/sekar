@@ -150,7 +150,7 @@ export function WeekGrid({
                           ))}
                         </div>
                       ) : (
-                        <span className="block text-center text-nb-gray-300">–</span>
+                        <span className="block text-center text-nb-gray-500">–</span>
                       )}
                     </td>
                   ))}

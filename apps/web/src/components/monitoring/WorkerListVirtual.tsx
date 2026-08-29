@@ -182,7 +182,7 @@ export function WorkerListVirtual({
                   />
                   {statusLabels[worker.status]}
                 </span>
-                <span className="text-[10px] text-nb-gray-400">
+                <span className="text-[10px] text-nb-gray-500">
                   {formatRelativeTime(worker.last_update)}
                 </span>
               </div>

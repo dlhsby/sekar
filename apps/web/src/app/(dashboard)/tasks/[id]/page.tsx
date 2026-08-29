@@ -479,7 +479,7 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
                     {d.from_user
                       ? `${d.from_user.full_name} (${d.from_user.role})`
                       : 'Sistem'}
-                    <span className="mx-2 text-nb-gray-400">→</span>
+                    <span className="mx-2 text-nb-gray-500">→</span>
                     {d.to_user.full_name} ({d.to_user.role})
                   </div>
                   <div className="text-xs text-nb-gray-600">

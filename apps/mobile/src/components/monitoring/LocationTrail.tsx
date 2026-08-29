@@ -184,20 +184,20 @@ function TrailPointCallout({ title, point }: TrailPointCalloutProps): React.JSX.
         <NBText variant="caption" color="white">
           {formatTimeFull(point.logged_at)}
         </NBText>
-        <NBText variant="caption" color="gray400">
+        <NBText variant="caption" color="gray500">
           {point.latitude.toFixed(5)}, {point.longitude.toFixed(5)}
         </NBText>
         {point.accuracy != null && (
-          <NBText variant="caption" color="gray400">
+          <NBText variant="caption" color="gray500">
             ±{Number(point.accuracy).toFixed(0)} m
           </NBText>
         )}
         {point.battery_level != null && (
-          <NBText variant="caption" color="gray400">
+          <NBText variant="caption" color="gray500">
             {t('monitoring:locationTrail.battery')} {point.battery_level}%
           </NBText>
         )}
-        <NBText variant="caption" color="gray400">
+        <NBText variant="caption" color="gray500">
           {point.is_within_area ? t('monitoring:locationTrail.insideArea') : t('monitoring:locationTrail.outsideArea')}
         </NBText>
       </View>

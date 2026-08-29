@@ -117,7 +117,7 @@ export function YearView({
                 ? heat
                 : inMonth
                   ? 'text-nb-black hover:bg-nb-gray-100'
-                  : 'text-nb-gray-400 hover:bg-nb-gray-50';
+                  : 'text-nb-gray-500 hover:bg-nb-gray-50';
               return (
                 <button
                   key={iso}

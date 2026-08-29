@@ -1445,7 +1445,7 @@ export default function MonitoringPage() {
                 <span className="font-mono tabular-nums text-nb-black">{presenceCounts[p.key]}</span>
               </span>
             ))}
-            <span className="whitespace-nowrap text-[10px] text-nb-gray-400">{updatedLabel}</span>
+            <span className="whitespace-nowrap text-[10px] text-nb-gray-500">{updatedLabel}</span>
           </div>
           <div className="relative shrink-0 md:hidden">
             <button

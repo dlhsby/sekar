@@ -158,7 +158,7 @@ export function ShiftPill({
       })}
       className={`inline-flex items-center gap-1 rounded-full border-2 px-2 py-0.5 text-nb-caption font-bold tabular-nums ${
         empty
-          ? 'border-dashed border-nb-gray-300 text-nb-gray-400'
+          ? 'border-dashed border-nb-gray-300 text-nb-gray-500'
           : 'border-nb-black bg-nb-gray-50 text-nb-gray-600'
       }`}
     >
