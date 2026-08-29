@@ -39,6 +39,9 @@ interface StatusSummaryBarProps {
   /** Active ACTIVITY filter (CP6) — location is filtered via the wrench, not here. */
   activeActivity: PresenceActivity | null;
   onActivityChange: (activity: PresenceActivity | null) => void;
+  /** Luar jadwal — its own axis, combinable with any activity (ADR-050). */
+  scheduledFilter?: 'all' | 'adhoc';
+  onScheduledChange?: (next: 'all' | 'adhoc') => void;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -64,7 +67,15 @@ export function StatusSummaryBar({
   liveUsers,
   activeActivity,
   onActivityChange,
+  scheduledFilter = 'all',
+  onScheduledChange,
 }: StatusSummaryBarProps): React.JSX.Element {
+  const { t } = useTranslation();
+  /** Off-roster clock-ins. Counted separately because it is a separate axis. */
+  const adHocCount = useMemo(
+    () => liveUsers.filter(u => u.is_scheduled === false).length,
+    [liveUsers],
+  );
   // Tally the activity buckets + their dalam/luar split, from the live roster.
   const buckets = useMemo(() => {
     const acc: Record<PresenceActivity, ActivityBucket> = {
@@ -111,6 +122,30 @@ export function StatusSummaryBar({
             onPress={handleChipPress}
           />
         ))}
+        {/* Luar jadwal sits with the activity chips because that is where an
+            operator looks for it, but it toggles its OWN axis — so it combines
+            with Aktif or Tidak aktif rather than replacing them. It was the one
+            presence axis visible on the map and in the list that could not be
+            isolated. */}
+        {onScheduledChange && (
+          <TouchableOpacity
+            testID="chip-adhoc"
+            accessibilityRole="button"
+            accessibilityState={{ selected: scheduledFilter === 'adhoc' }}
+            onPress={() => onScheduledChange(scheduledFilter === 'adhoc' ? 'all' : 'adhoc')}
+            style={[
+              styles.chip,
+              { backgroundColor: scheduledFilter === 'adhoc' ? nbColors.gray600 : nbColors.white },
+            ]}
+          >
+            <NBText
+              variant="caption"
+              color={scheduledFilter === 'adhoc' ? 'white' : 'gray700'}
+            >
+              {`${adHocCount} ${t('monitoring:status.adhoc')}`}
+            </NBText>
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </View>
   );

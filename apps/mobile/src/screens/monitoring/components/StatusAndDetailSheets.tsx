@@ -16,6 +16,9 @@ interface StatusAndDetailSheetsProps {
   onCloseStatusSheet: () => void;
   activityFilter: PresenceActivity | null;
   onActivityChange: (activity: PresenceActivity | null) => void;
+  /** Luar jadwal — its own axis, combinable with any activity (ADR-050). */
+  scheduledFilter?: 'all' | 'adhoc';
+  onScheduledChange?: (next: 'all' | 'adhoc') => void;
   liveUsers: LiveUser[];
   selectedUser: LiveUser | null;
   trailUser: LiveUser | null;
@@ -39,6 +42,8 @@ export function StatusAndDetailSheets({
   onCloseStatusSheet,
   activityFilter,
   onActivityChange,
+  scheduledFilter,
+  onScheduledChange,
   liveUsers,
   selectedUser,
   trailUser,
@@ -63,6 +68,8 @@ export function StatusAndDetailSheets({
         onClose={onCloseStatusSheet}
         activeActivity={activityFilter}
         onActivityChange={onActivityChange}
+        scheduledFilter={scheduledFilter}
+        onScheduledChange={onScheduledChange}
         liveUsers={liveUsers}
         lastUpdated={lastUpdated}
         totalAreas={totalAreas}

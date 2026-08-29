@@ -99,7 +99,8 @@
     "attendance": {
       "clockedIn": "Clocked In",
       "notClockedIn": "Not Clocked In"
-    }
+    },
+    "adhoc": "Off-schedule"
   },
   "userDetail": {
     "location": "Location",

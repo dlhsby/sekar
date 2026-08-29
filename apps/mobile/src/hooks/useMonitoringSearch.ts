@@ -9,9 +9,15 @@
 import { useMemo } from 'react';
 import i18n from '../i18n/config';
 import { ROLE_LABELS } from '../constants/roles';
-import type { LiveUser, DistrictBoundary, UserRole } from '../types/models.types';
+import type { LiveUser, UserRole } from '../types/models.types';
+import type { GeoIndexEntry } from './useGeoIndex';
 
-export type SearchResultType = 'petugas' | 'location' | 'district';
+/**
+ * `region` (kawasan) was missing entirely: the search loop read districts and
+ * their areas and never touched `regions`, so a whole geographic tier was
+ * unfindable in every mode.
+ */
+export type SearchResultType = 'petugas' | 'location' | 'district' | 'region';
 
 export interface SearchResult {
   id: string;
@@ -35,6 +41,7 @@ export interface MonitoringSearchResults {
   petugas: SearchResult[];
   location: SearchResult[];
   district: SearchResult[];
+  region: SearchResult[];
   /** Grouped by type (non-empty sections only) — for the "Semua" tab. */
   semua: SearchSection[];
   total: number;
@@ -46,9 +53,14 @@ function roleLabel(role: string): string {
 
 export function useMonitoringSearch(
   liveUsers: LiveUser[],
-  districts: DistrictBoundary[] | undefined,
+  /**
+   * The geography to search. Prefer the complete index from `useGeoIndex` —
+   * searching the MAP's boundaries couples "what can I find" to "what am I
+   * looking at", and in viewport mode those actively differ.
+   */
+  geo: GeoIndexEntry[] | undefined,
   query: string,
-  labels?: { petugas: string; area: string; district: string },
+  labels?: { petugas: string; area: string; district: string; region: string },
   /**
    * When true, `liveUsers` is already the server's scope-filtered search result
    * (matched on worker name OR lokasi OR team) — so DON'T re-filter petugas by name
@@ -61,7 +73,7 @@ export function useMonitoringSearch(
     const matches = (s?: string | null): boolean => !!s && s.toLowerCase().includes(q);
 
     if (!q) {
-      return { petugas: [], location: [], district: [], semua: [], total: 0 };
+      return { petugas: [], location: [], district: [], region: [], semua: [], total: 0 };
     }
 
     const petugas: SearchResult[] = liveUsers
@@ -78,37 +90,41 @@ export function useMonitoringSearch(
 
     const location: SearchResult[] = [];
     const district: SearchResult[] = [];
-    for (const r of districts ?? []) {
-      if (matches(r.name)) {
-        district.push({
-          id: r.id,
-          type: 'district',
-          name: r.name,
-          subtitle: `${r.area_count} area`,
-          latitude: Number(r.center_lat),
-          longitude: Number(r.center_lng),
-        });
-      }
-      for (const a of r.areas) {
-        if (matches(a.name)) {
-          location.push({
-            id: a.id,
-            type: 'location',
-            name: a.name,
-            subtitle: a.district_name,
-            latitude: Number(a.center_lat),
-            longitude: Number(a.center_lng),
-          });
-        }
-      }
+    const region: SearchResult[] = [];
+    for (const e of geo ?? []) {
+      if (!matches(e.name)) continue;
+      const row: SearchResult = {
+        id: e.id,
+        type: e.type,
+        name: e.name,
+        // A rayon has no parent to name, so it shows its size instead — which
+        // is also how you tell two similarly-named rayon apart.
+        subtitle:
+          e.type === 'district'
+            ? `${e.areaCount ?? 0} ${labels?.area ?? 'area'}`
+            : (e.parentName ?? ''),
+        latitude: e.latitude,
+        longitude: e.longitude,
+      };
+      if (e.type === 'district') district.push(row);
+      else if (e.type === 'region') region.push(row);
+      else location.push(row);
     }
 
     const semua: SearchSection[] = [
       { title: labels?.petugas ?? i18n.t('monitoring:search.personnelLabel'), type: 'petugas' as const, data: petugas },
       { title: labels?.area ?? 'Area', type: 'location' as const, data: location },
+      { title: labels?.region ?? 'Kawasan', type: 'region' as const, data: region },
       { title: labels?.district ?? 'Rayon', type: 'district' as const, data: district },
     ].filter((s) => s.data.length > 0);
 
-    return { petugas, location, district, semua, total: petugas.length + location.length + district.length };
-  }, [liveUsers, districts, query, labels]);
+    return {
+      petugas,
+      location,
+      district,
+      region,
+      semua,
+      total: petugas.length + location.length + district.length + region.length,
+    };
+  }, [liveUsers, geo, query, labels]);
 }
