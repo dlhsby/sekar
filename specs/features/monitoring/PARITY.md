@@ -67,7 +67,7 @@ supervisor tool that is backwards.
 
 Ordered by *client-visible value per unit of risk*, not by size.
 
-1. **M1 + M2 + M3 — the mobile map.** One coherent slice: the reveal is meaningless without the tier
+1. **M1 + M2 + M3 — the mobile map.** — *planned:* [`plans/2026-08-28-slice1-mobile-map-reveal.md`](./plans/2026-08-28-slice1-mobile-map-reveal.md) One coherent slice: the reveal is meaningless without the tier
    rule, and the label pass shares its geometry. Biggest gap, and the phone is where crowding hurts
    most. Retires clustering (see §5).
 2. **M6 + M5 — mobile search and filter.** Small, self-contained, and M6 is a *defect* rather than a
