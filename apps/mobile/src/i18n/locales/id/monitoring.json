@@ -154,7 +154,8 @@
       "medium": "Sedang",
       "high": "Tinggi",
       "urgent": "Mendesak"
-    }
+    },
+    "photosTitle": "Foto Verifikasi"
   },
   "search": {
     "title": "Pencarian",

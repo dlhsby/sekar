@@ -2,6 +2,15 @@
 
 Newest first. Feature overview + current design live in [README.md](./README.md).
 
+- **2026-08-29** — **Mobile can open verification photos too — W2 fully closed.** `PhotoGallery` had
+  shipped in Phase 3 exported, unit-tested and rendered by **no screen**, so a `UserDetailSheet`
+  activity card could display "2 foto" and do nothing at all when tapped. The activity LIST returns
+  `photo_count` with an **empty** `photo_urls` (they load on detail), so a card carrying photos now
+  fetches its detail on tap and hands the URLs to the gallery; a row that already has URLs skips the
+  fetch and opens with no spinner. Cards WITHOUT photos stay unpressable rather than becoming dead
+  targets, and a failed fetch falls back to the gallery's own empty state rather than an error — the
+  right shape for "we could not load these".
+
 - **2026-08-29** — **Attendance drill-down on web, on a new monitoring endpoint** (parity W3). A
   supervisor at a desk can now ask "who is missing today" instead of inferring it from the map: pick a
   service-day, switch between clocked-in and not, open one worker for their sessions (flagging a punch
