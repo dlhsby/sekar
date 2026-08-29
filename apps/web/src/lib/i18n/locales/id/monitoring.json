@@ -417,5 +417,17 @@
   "trail": {
     "start": "Mulai",
     "end": "Terakhir"
+  },
+  "attendance": {
+    "title": "Kehadiran",
+    "clockedIn": "Sudah Clock In",
+    "notClockedIn": "Belum Hadir",
+    "emptySide": "Tidak ada petugas di daftar ini.",
+    "noSessions": "Tidak ada sesi pada tanggal ini.",
+    "stillOpen": "Masih berjalan",
+    "outsideBoundary": "Di luar batas area",
+    "minutes_one": "{{count}} menit",
+    "minutes_other": "{{count}} menit",
+    "openLabel": "Lihat detail kehadiran"
   }
 }

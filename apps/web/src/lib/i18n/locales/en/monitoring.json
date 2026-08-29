@@ -417,5 +417,17 @@
   "trail": {
     "start": "Start",
     "end": "Latest"
+  },
+  "attendance": {
+    "title": "Attendance",
+    "clockedIn": "Clocked In",
+    "notClockedIn": "Not Present",
+    "emptySide": "No workers in this list.",
+    "noSessions": "No sessions on this date.",
+    "stillOpen": "Still open",
+    "outsideBoundary": "Outside area boundary",
+    "minutes_one": "{{count}} minute",
+    "minutes_other": "{{count}} minutes",
+    "openLabel": "View attendance detail"
   }
 }
