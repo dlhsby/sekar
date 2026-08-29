@@ -2,6 +2,14 @@
 
 Newest first. Feature overview + current design live in [README.md](./README.md).
 
+- **2026-08-29** — **Mobile search finds kawasan, and finds anything regardless of the camera** (parity
+  slice 2, gaps M5–M6). Geography now comes from a complete index fetched once (`useGeoIndex`) instead
+  of the map's own boundaries: viewport mode's bbox fetch replaces the stored boundaries, so a lokasi
+  across the city was unfindable. `region` is a search result type for the first time — the loop read
+  districts and their areas and never touched `regions`, so a whole tier was unfindable in every mode.
+  **Luar jadwal is filterable** on mobile, as its own axis rather than a fourth `PresenceActivity`,
+  because ad-hoc is orthogonal to active/inactive (ADR-050).
+
 - **2026-08-29** — **Mobile map now ranks markers instead of clustering them** (parity slice 1, gaps
   M1–M3). Ports web's salience / affinity / declutter unchanged — the weights are a product decision
   already made, so mobile re-deriving them would let the platforms rank the same data differently — and

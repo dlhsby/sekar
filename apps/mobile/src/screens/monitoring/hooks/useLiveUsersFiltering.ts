@@ -36,6 +36,16 @@ interface UseLiveUsersFilteringReturn {
 export function useLiveUsersFiltering(
   liveUsers: LiveUser[],
   activityFilter: PresenceActivity | null,
+  /**
+   * Luar jadwal (ad-hoc) — clocked in but not on the current shift's roster.
+   *
+   * Its OWN parameter rather than a fourth `PresenceActivity`, because it is a
+   * different AXIS of the presence model (ADR-050): a worker is off-schedule
+   * *and* active, not off-schedule *instead of* active. Folding the two together
+   * is the collapse that made `outside_area` overlap the status enum and
+   * produced double counts in four places.
+   */
+  scheduledFilter: 'all' | 'adhoc',
   filters: MonitoringFilters,
   visibleLayers: MonitoringV2VisibleLayers,
   currentRegion: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number },
@@ -64,13 +74,18 @@ export function useLiveUsersFiltering(
     if (activityFilter) {
       users = users.filter(u => userAxes(u).activity === activityFilter);
     }
+    if (scheduledFilter === 'adhoc') {
+      // Narrows independently of activity, so "Luar jadwal AND tidak aktif" is
+      // expressible — which is the combination a supervisor actually chases.
+      users = users.filter(u => u.is_scheduled === false);
+    }
     if (filters.location && filters.location.length > 0) {
       const locs = filters.location;
       users = users.filter(u => locs.includes(userAxes(u).location));
     }
     if (teamOnly) { users = users.filter(u => !!u.team_id); }
     return users;
-  }, [liveUsers, activityFilter, filters.location, visibleLayers.personnel, scope, viewId, mode]);
+  }, [liveUsers, activityFilter, scheduledFilter, filters.location, visibleLayers.personnel, scope, viewId, mode]);
 
   // Collapse ≥2-member teams into team bubbles (ADR-048). With a team selected,
   // show ONLY its members as individual pins and no team bubbles — so `visibleUsers`

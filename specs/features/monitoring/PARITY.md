@@ -41,8 +41,8 @@ how the modes *behave* once selected — which is §2.
 | M2 | **Scope-aware tier admission** (`tiersFor`) | S | **DONE** (slice 1). Drilling into a city-spanning rayon on mobile shows nothing, same defect the client hit on web. |
 | M3 | **Label decluttering** | M | **DONE** (slice 1). Mobile reserves an opposite-side slot per label (Android bitmap clipping) but does not measure collisions. Web measures and withholds. |
 | M4 | **Row hide** (`hidden.ts`, restore banner) | M | No mobile equivalent. |
-| M5 | **Luar jadwal filter** | S | Same presence-model gap web had: visible in the summary, not filterable. |
-| M6 | **Geo search index** (`useGeoIndex`) | M | Mobile search reads "districts always come from the loaded boundaries client-side" — the exact defect web fixed: at city scope no lokasi or kawasan is findable. |
+| M5 | **Luar jadwal filter** | S | **DONE** (slice 2). Same presence-model gap web had: visible in the summary, not filterable. Added as its own axis, not a fourth `PresenceActivity`. |
+| M6 | **Geo search index** (`useGeoIndex`) | M | **DONE** (slice 2). **Audit correction:** the original entry claimed no lokasi was findable at city scope. That was inferred from web's analogous bug and is **wrong** — the boundaries endpoint's default level already returns all 952 areas and 129 regions, verified against the live API. The real defects were different and both confirmed by reading the code: (a) `fetchBoundaries.fulfilled` **replaces** the whole store, so viewport mode's bbox fetch narrowed search to what was on camera; (b) `SearchResultType` had no `region` member and the search loop never read `r.regions`, so **kawasan was unfindable in every mode**. |
 | M7 | **Breadcrumb in the list sheet** + "Daftar Area dan Petugas" naming | S | Mobile has a breadcrumb on the map, none in the sheet. |
 | M8 | **Wilayah / Petugas tabbed list** | M | Mobile's `MonitoringStatusSheet` is attendance-shaped; there is no browsable node list with drill, hide and detail per row. |
 | M9 | Bulk reassign | M | Web has `BulkReassignModal`; mobile reassigns one worker from `UserDetailSheet`. |
@@ -70,8 +70,8 @@ Ordered by *client-visible value per unit of risk*, not by size.
 1. **M1 + M2 + M3 — the mobile map.** — *planned:* [`plans/2026-08-28-slice1-mobile-map-reveal.md`](./plans/2026-08-28-slice1-mobile-map-reveal.md) One coherent slice: the reveal is meaningless without the tier
    rule, and the label pass shares its geometry. Biggest gap, and the phone is where crowding hurts
    most. Retires clustering (see §5).
-2. **M6 + M5 — mobile search and filter.** Small, self-contained, and M6 is a *defect* rather than a
-   missing feature: a search that cannot find a lokasi is broken, not incomplete.
+2. ~~**M6 + M5 — mobile search and filter.**~~ **DONE (slice 2).** M6 was indeed a defect, though not
+   the one this document first described — see its row above for the correction.
 3. **M4 + M7 + M8 — the mobile list sheet.** The largest UI build; benefits from the map slice landing
    first so the two agree on what a node row shows.
 4. **W1–W4 — web catches up.** Independent of everything above; can run in parallel with a different

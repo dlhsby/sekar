@@ -96,6 +96,9 @@ export function MapDashboardScreen(): React.JSX.Element {
   // Local UI state
   const [mapReady, setMapReady] = useState(false);
   const [activityFilter, setActivityFilter] = useState<PresenceActivity | null>(null);
+  // Luar jadwal is its own axis, so it combines with an activity rather than
+  // replacing it (ADR-050) — see `useLiveUsersFiltering`.
+  const [scheduledFilter, setScheduledFilter] = useState<'all' | 'adhoc'>('all');
   // Team drill-in (ADR-048): when a team bubble is tapped we show ONLY that team's
   // members (as individual pins) and hide the other workers — keeping boundaries/nodes.
   // The name is kept alongside the id so the exit chip stays labelled even if the
@@ -133,7 +136,7 @@ export function MapDashboardScreen(): React.JSX.Element {
     useMapOperations(mapRef, currentRegion);
 
   const { visibleUsers, teamBubbles, labelMode, staffedAreas, totalAreas, lastUpdated } =
-    useLiveUsersFiltering(liveUsers, activityFilter, filters, visibleLayers, currentRegion, boundaries, scope, view.id, selectedTeamId, mode);
+    useLiveUsersFiltering(liveUsers, activityFilter, scheduledFilter, filters, visibleLayers, currentRegion, boundaries, scope, view.id, selectedTeamId, mode);
 
 
   // Initialise the unified drill view + floor from the viewer's role.
@@ -671,6 +674,8 @@ export function MapDashboardScreen(): React.JSX.Element {
           onCloseStatusSheet={() => setStatusSheetVisible(false)}
           activityFilter={activityFilter}
           onActivityChange={setActivityFilter}
+          scheduledFilter={scheduledFilter}
+          onScheduledChange={setScheduledFilter}
           liveUsers={liveUsers ?? []}
           selectedUser={selectedUser}
           trailUser={trailUser}

@@ -17,6 +17,39 @@ jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => {
   return (props: any) => React.createElement(Text, { testID: `icon-${props.name}` }, props.name);
 });
 
+// Geography now comes from a COMPLETE index fetched independently of the map,
+// so the modal's search no longer reads the `districts` prop. Mocking the fetch
+// exercises the real path rather than injecting a fake index.
+jest.mock('../../../services/api/monitoringApi', () => ({
+  getBoundaries: jest.fn(() =>
+    Promise.resolve({
+      data: {
+        districts: [
+          {
+            id: 'r1',
+            name: 'Rayon Pusat',
+            center_lat: 3,
+            center_lng: 4,
+            area_count: 1,
+            regions: [
+              { id: 'k1', name: 'Kawasan Darmo', center_lat: 7, center_lng: 8 },
+            ],
+            areas: [
+              {
+                id: 'a1',
+                name: 'Taman Bungkul',
+                center_lat: 5,
+                center_lng: 6,
+                district_name: 'Rayon Pusat',
+              },
+            ],
+          },
+        ],
+      },
+    }),
+  ),
+}));
+
 jest.mock('../../../services/storage/recentSearches', () => ({
   getRecentSearches: jest.fn(() => Promise.resolve([])),
   addRecentSearch: jest.fn(),

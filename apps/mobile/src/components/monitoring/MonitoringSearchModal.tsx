@@ -30,6 +30,7 @@ import {
   type SearchResultType,
 } from '../../hooks/useMonitoringSearch';
 import { useServerMonitoringSearch } from '../../hooks/useServerMonitoringSearch';
+import { useGeoIndex } from '../../hooks/useGeoIndex';
 import { getRecentSearches, clearRecentSearches } from '../../services/storage/recentSearches';
 import type { LiveUser, DistrictBoundary } from '../../types/models.types';
 
@@ -39,6 +40,8 @@ const TYPE_META: Record<SearchResultType, { icon: string; accent: string }> = {
   petugas: { icon: 'account', accent: nbColors.primary },
   location: { icon: 'map-marker', accent: nbColors.warning },
   district: { icon: 'office-building', accent: nbColors.requestUnderReview },
+  // Kawasan sits between rayon and lokasi, and its icon says so.
+  region: { icon: 'shape-outline', accent: nbColors.info },
 };
 
 type Tab = 'semua' | SearchResultType;
@@ -112,19 +115,26 @@ export function MonitoringSearchModal({
       petugas: t('monitoring:layers.workers'),
       area: t('monitoring:layers.areas'),
       district: t('monitoring:layers.districts'),
+      region: t('monitoring:layers.kawasan'),
     }),
     [t],
   );
   // Hybrid petugas search: server (scope-filtered, incl. off-screen + unscheduled
-  // clock-ins) when online, cached in-store liveUsers when offline. Locations +
-  // districts always come from the loaded boundaries client-side.
+  // clock-ins) when online, cached in-store liveUsers when offline.
+  //
+  // Geography comes from a COMPLETE index rather than the map's own boundaries.
+  // Searching what the map has loaded couples "what can I find" to "what am I
+  // looking at", and in viewport mode those actively differ: the bbox fetch
+  // replaces the stored boundaries with only what intersects the camera, so a
+  // lokasi across the city was unfindable. Fetched once, on open.
+  const geo = useGeoIndex(visible);
   const server = useServerMonitoringSearch(query);
   const petugasSource = server.users ?? liveUsers;
   // When petugas come from the server they're already matched (name/lokasi/team) —
   // skip the client name re-filter so lokasi/team matches aren't dropped.
   const results = useMonitoringSearch(
     petugasSource,
-    districts,
+    geo.entries,
     query,
     searchLabels,
     server.users != null,

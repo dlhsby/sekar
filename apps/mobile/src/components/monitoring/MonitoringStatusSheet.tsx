@@ -32,6 +32,9 @@ interface MonitoringStatusSheetProps {
   /** Active ACTIVITY filter (CP6) — the chips filter by activity; location → wrench. */
   activeActivity: PresenceActivity | null;
   onActivityChange: (activity: PresenceActivity | null) => void;
+  /** Luar jadwal — its own axis, combinable with any activity (ADR-050). */
+  scheduledFilter?: 'all' | 'adhoc';
+  onScheduledChange?: (next: 'all' | 'adhoc') => void;
   liveUsers: LiveUser[];
   lastUpdated: string | null;
   totalAreas: number;
@@ -80,6 +83,8 @@ export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
   onClose,
   activeActivity,
   onActivityChange,
+  scheduledFilter,
+  onScheduledChange,
   liveUsers,
   lastUpdated,
   totalAreas,
@@ -145,6 +150,8 @@ export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
         liveUsers={liveUsers}
         activeActivity={activeActivity}
         onActivityChange={onActivityChange}
+        scheduledFilter={scheduledFilter}
+        onScheduledChange={onScheduledChange}
       />
 
       {/* Kehadiran — today's clock-in summary; tap for the detail modal */}

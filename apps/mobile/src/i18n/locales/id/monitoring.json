@@ -99,7 +99,8 @@
     "attendance": {
       "clockedIn": "Sudah Clock In",
       "notClockedIn": "Belum Clock In"
-    }
+    },
+    "adhoc": "Luar jadwal"
   },
   "userDetail": {
     "location": "Lokasi",
