@@ -33,13 +33,14 @@ jest.mock('../../../services/api/usersApi');
 jest.mock('../../../services/api/monitoringApi');
 
 import { getTasks } from '../../../services/api/tasksApi';
-import { getActivities } from '../../../services/api/activitiesApi';
+import { getActivities, getActivityById } from '../../../services/api/activitiesApi';
 import { getOvertimes } from '../../../services/api/overtimeApi';
 import { getUserById } from '../../../services/api/usersApi';
 import { getReassignmentHistory } from '../../../services/api/monitoringApi';
 
 const mockGetTasks = getTasks as jest.MockedFunction<typeof getTasks>;
 const mockGetActivities = getActivities as jest.MockedFunction<typeof getActivities>;
+const mockGetActivityById = getActivityById as jest.MockedFunction<typeof getActivityById>;
 const mockGetOvertimes = getOvertimes as jest.MockedFunction<typeof getOvertimes>;
 const mockGetUserById = getUserById as jest.MockedFunction<typeof getUserById>;
 const mockGetReassignmentHistory = getReassignmentHistory as jest.MockedFunction<typeof getReassignmentHistory>;
@@ -380,6 +381,70 @@ describe('UserDetailSheet (CP1)', () => {
       expect(getByText('Penyiraman')).toBeTruthy();
       expect(getByText('Sirami semua pot depan')).toBeTruthy();
       expect(getByText('2 foto')).toBeTruthy();
+    });
+
+    /**
+     * W2 (parity). `PhotoGallery` shipped in Phase 3 exported, unit-tested and
+     * rendered by NO screen, so the card could show "2 foto" and do nothing when
+     * tapped. The list response carries `photo_count` with an EMPTY `photo_urls`,
+     * so opening them needs a detail fetch.
+     */
+    describe('verification photos', () => {
+      const openActivities = async (activity: Activity) => {
+        mockGetActivities.mockResolvedValueOnce(okList([activity]) as any);
+        const utils = render(<UserDetailSheet {...defaultProps()} />);
+        await flushAll();
+        fireEvent.press(utils.getByText('Aktivitas'));
+        await flushAll();
+        return utils;
+      };
+
+      it('fetches the detail and shows the gallery when a card with photos is tapped', async () => {
+        // The list shape: a count, but no URLs.
+        const listRow = fullActivity({ photo_urls: [], photo_count: 2 } as any);
+        mockGetActivityById.mockResolvedValue({
+          data: fullActivity({ photo_urls: ['a.jpg', 'b.jpg'] }),
+        } as any);
+
+        const { getByTestId } = await openActivities(listRow);
+        fireEvent.press(getByTestId('user-activity-act-1'));
+        await flushAll();
+
+        expect(mockGetActivityById).toHaveBeenCalledWith('act-1');
+        expect(getByTestId('activity-photos')).toBeTruthy();
+        expect(getByTestId('activity-photos-thumbnail-0')).toBeTruthy();
+        expect(getByTestId('activity-photos-thumbnail-1')).toBeTruthy();
+      });
+
+      it('skips the fetch when the row already carries its URLs', async () => {
+        const { getByTestId } = await openActivities(fullActivity());
+        fireEvent.press(getByTestId('user-activity-act-1'));
+        await flushAll();
+
+        expect(mockGetActivityById).not.toHaveBeenCalled();
+        expect(getByTestId('activity-photos')).toBeTruthy();
+      });
+
+      it('does not make a card without photos pressable into a dead end', async () => {
+        const noPhotos = fullActivity({ photo_urls: [], photo_count: 0 } as any);
+        const { getByTestId, queryByTestId } = await openActivities(noPhotos);
+        fireEvent.press(getByTestId('user-activity-act-1'));
+        await flushAll();
+
+        expect(mockGetActivityById).not.toHaveBeenCalled();
+        expect(queryByTestId('activity-photos')).toBeNull();
+      });
+
+      it('falls back to the gallery empty state when the detail fetch fails', async () => {
+        const listRow = fullActivity({ photo_urls: [], photo_count: 2 } as any);
+        mockGetActivityById.mockRejectedValue(new Error('network'));
+
+        const { getByTestId } = await openActivities(listRow);
+        fireEvent.press(getByTestId('user-activity-act-1'));
+        await flushAll();
+
+        expect(getByTestId('activity-photos-empty')).toBeTruthy();
+      });
     });
 
     it('shows empty copy when no activities returned', async () => {

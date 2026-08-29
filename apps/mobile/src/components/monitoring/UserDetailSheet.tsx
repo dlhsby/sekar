@@ -25,12 +25,13 @@ import { StatusPill } from '../home/StatusPill';
 import { HomeStatTile } from '../home/HomeStatTile';
 import { ListItemCard, type ListItemMeta } from '../common';
 import { LocationMapModal } from '../modals/LocationMapModal';
+import { PhotoGallery } from './PhotoGallery';
 import { userAxes, presenceActivityPill, lifecycleFlagPills, lifecycleStatePill, overtimePill, activityPill, formatDate, formatTime as formatTimeShort, formatDateIndonesian } from '../../utils/statusHelpers';
 import { taskPill, isTaskScopedToday } from '../../utils/taskStatus';
 import { ROLE_LABELS } from '../../constants/roles';
 import { getOvertimes } from '../../services/api/overtimeApi';
 import { getTasks } from '../../services/api/tasksApi';
-import { getActivities } from '../../services/api/activitiesApi';
+import { getActivities, getActivityById } from '../../services/api/activitiesApi';
 import { getUserById } from '../../services/api/usersApi';
 import { getReassignmentHistory } from '../../services/api/monitoringApi';
 import type {
@@ -120,6 +121,12 @@ export function UserDetailSheet({
   const [tasksFullLoading, setTasksFullLoading] = useState(false);
   const [activitiesFull, setActivitiesFull] = useState<Activity[]>([]);
   const [activitiesFullLoading, setActivitiesFullLoading] = useState(false);
+  // Verification photos. The activity LIST returns `photo_count` with an EMPTY
+  // `photo_urls` (they load on detail), which is why the card could only ever
+  // show a count — tapping it did nothing at all. One detail fetch per open.
+  const [photoActivityId, setPhotoActivityId] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [photosLoading, setPhotosLoading] = useState(false);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [reassignmentHistory, setReassignmentHistory] = useState<ReassignmentHistory | null>(null);
   const [reassignmentLoading, setReassignmentLoading] = useState(false);
@@ -222,6 +229,38 @@ export function UserDetailSheet({
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
+
+  /**
+   * Open one activity's verification photos.
+   *
+   * Seeds from `photo_urls` when the row already carries them (some callers do)
+   * and otherwise fetches the detail, so a warm row opens with no spinner. The
+   * modal opens IMMEDIATELY either way — waiting on the network before showing
+   * anything reads as a dead tap.
+   */
+  const openPhotos = useCallback(async (activity: Activity) => {
+    setPhotoActivityId(activity.id);
+    const seeded = activity.photo_urls ?? [];
+    setPhotos(seeded);
+    if (seeded.length > 0) { return; }
+
+    setPhotosLoading(true);
+    try {
+      const res = await getActivityById(activity.id);
+      setPhotos(res.data?.photo_urls ?? []);
+    } catch {
+      // Leave the list empty; the gallery renders its own empty state rather
+      // than an error, which is the right shape for "we could not load these".
+      setPhotos([]);
+    } finally {
+      setPhotosLoading(false);
+    }
+  }, []);
+
+  const closePhotos = useCallback(() => {
+    setPhotoActivityId(null);
+    setPhotos([]);
+  }, []);
 
   const handleCall = useCallback(() => {
     if (!user?.phone) { return; }
@@ -612,12 +651,29 @@ export function UserDetailSheet({
                       title={a.activityType?.name ?? t('monitoring:userDetail.activitiesLabel')}
                       description={a.description || undefined}
                       meta={meta.length ? meta : undefined}
-                      onPress={NOOP}
+                      // Only a card that HAS photos is pressable; a dead tap
+                      // target on the others would promise something absent.
+                      onPress={photoCount > 0 ? () => openPhotos(a) : NOOP}
                       testID={`user-activity-${a.id}`}
                     />
                   );
                 })}
               </View>
+            )}
+          </NBModal>
+
+          {/* Verification photos for one activity. PhotoGallery has shipped
+              unused since Phase 3 — exported, unit-tested, rendered by nothing. */}
+          <NBModal
+            visible={photoActivityId != null}
+            onClose={closePhotos}
+            type="sheet"
+            title={t('monitoring:userDetail.photosTitle')}
+          >
+            {photosLoading ? (
+              <NBSkeleton width="100%" height={120} />
+            ) : (
+              <PhotoGallery photos={photos} testID="activity-photos" />
             )}
           </NBModal>
         </>

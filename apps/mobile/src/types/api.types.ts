@@ -340,14 +340,20 @@ export interface UserAttendanceDetail {
     area: AttendanceArea | null;
   };
   clocked_in: boolean;
-  shift: {
+  /**
+   * EVERY session on the day, earliest first — not one.
+   *
+   * The superseded endpoint returned a single `shift`, which silently hid the
+   * second session of any worker who clocked in twice (break, area change).
+   */
+  shifts: {
     id: string;
     clock_in_time: string;
     clock_out_time: string | null;
     duration_minutes: number | null;
     clock_in_outside_boundary: boolean;
     clock_out_outside_boundary: boolean;
-  } | null;
+  }[];
 }
 
 // Master Data API

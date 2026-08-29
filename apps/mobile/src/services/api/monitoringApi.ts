@@ -99,10 +99,20 @@ export async function getActivityDetails(
   return get<Activity>(`/activities/${activityId}`);
 }
 
+/**
+ * Attendance for a WIB service-day.
+ *
+ * Moved off `/supervisor/attendance`: that module is superseded by monitoring,
+ * and its version had a satgas-only roster (linmas invisible), server-local day
+ * bounds (a UTC container reported the PREVIOUS day between 00:00-07:00 WIB),
+ * matched `clock_in_time` instead of `service_day` (night shifts landed on the
+ * wrong day), and emitted one row per SHIFT so a double clock-in counted twice.
+ * The list response shape is unchanged, so this is a URL swap.
+ */
 export async function getAttendance(
   filters: AttendanceFilter = {},
 ): Promise<ApiResponse<AttendanceResponse>> {
-  return get<AttendanceResponse>('/supervisor/attendance', filters);
+  return get<AttendanceResponse>('/monitoring/attendance', filters);
 }
 
 export async function getUserAttendanceDetail(
@@ -110,7 +120,7 @@ export async function getUserAttendanceDetail(
   date?: string,
 ): Promise<ApiResponse<UserAttendanceDetail>> {
   return get<UserAttendanceDetail>(
-    `/supervisor/attendance/${userId}`,
+    `/monitoring/attendance/${userId}`,
     date ? { date } : {},
   );
 }
