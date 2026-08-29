@@ -2,6 +2,23 @@
 
 Newest first. Feature overview + current design live in [README.md](./README.md).
 
+- **2026-08-29** — **Verification photos are openable, and the trail steps by day** (parity W2 + W4, web).
+  Both rows were re-scoped after verifying them. W2 claimed photos were viewable on a phone but not at
+  a desk; they were viewable on neither — mobile's `PhotoGallery` is rendered by no screen, and web
+  received `photo_url` on every activity and drew nothing. Web activity rows now carry a camera button.
+  The only existing viewer (inline in the pruning-request detail page) was extracted to
+  `ui/photo-lightbox`, controlled by an **index** rather than a URL so the caller's click position is
+  the single source of truth; navigation appears only for multi-photo sets, so monitoring keeps a plain
+  dialog while the pruning page — which always had several photos and no way to move between them —
+  gains stepping, wrap-around, arrow keys and a counter. **Mobile's half of W2 remains**: its activity
+  list returns `photo_count` with an empty `photo_urls`, so its gallery needs a per-activity detail
+  fetch. W4 claimed web showed today only; it always had a full `DatePicker`. The real gap was one
+  click, so the picker gains prev/next chevrons clamped forward at today. Dates shift by local parts,
+  not `new Date(iso)`, which parses a bare date as UTC midnight and lands a day early west of
+  Greenwich. Also fixed an AA failure in the rewritten activity row (timestamp `gray-400` = 2.52:1 →
+  `gray-500` = 4.80:1); ~20 further `gray-400` text usages across monitoring are left for a dedicated
+  pass.
+
 - **2026-08-29** — **`i18n:check` now verifies that keys used in code exist** (invariant 4), closing the
   gap that let a raw key reach a device. The first three invariants all compare files against each
   other, so a key missing from BOTH locales satisfies every one of them; unit tests mock `t` to echo
