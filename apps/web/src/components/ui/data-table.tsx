@@ -238,7 +238,7 @@ export function DataTable<TData, TValue>({
   const { t } = useTranslation();
 
   // Use defaults from i18n if not provided
-  const finalEmptyTitle = emptyTitle ?? t('common:empty.noData');
+  const finalEmptyTitle = emptyTitle ?? t('common:empty.noData.title');
   const finalRowActionsLabel = rowActionsLabel ?? t('admin:shared.actions');
 
   // Resolve filter behaviour and append the standardized actions column.

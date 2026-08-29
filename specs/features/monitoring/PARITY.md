@@ -56,9 +56,9 @@ supervisor tool that is backwards.
 | # | Gap | Size | Why it matters |
 |---|---|---|---|
 | W1 | **Plant overlay layer** | M | **DONE** (slice 4). **Audit correction, twice over:** this row claimed mobile had an overlay web lacked. Mobile's `PlantOverlayLayer` was a **stub** — 28 lines returning `null` unconditionally, `TODO sub-phase 3-8` — so its Tanaman toggle controlled nothing; and web already had a `/plants` page, a Tanaman row in `AreaDetailPanel` and a `useNotablePlants` client. The real gap was that **neither platform drew plants on the map**. Built on both, at lokasi scope: the endpoint is per-location, so anything wider would be ~950 requests. |
-| W2 | **Photo gallery** (`PhotoGallery`) | M | Verification photos are viewable on a phone, not at a desk. |
+| W2 | **Photo gallery** (`PhotoGallery`) | M | **Audit correction — the W1 shape, again.** This row claimed photos are viewable on a phone but not at a desk. They are viewable on NEITHER. Mobile's `PhotoGallery` is exported from the barrel and unit-tested but **rendered by no screen**; `UserDetailSheet` shows only a photo *count* ("3 foto") on an activity card whose `onPress` is `NOOP`. Web shows neither count nor photo. The backend already returns `photo_url`/`photo_urls` (`monitoring-user.service.ts:832`), so the data is there and unused on both sides. Real gap: **no operator can open a verification photo anywhere.** |
 | W3 | **Attendance detail modal** (`AttendanceDetailModal`, `UserAttendanceModal`) | M | Per-user attendance drill-down. |
-| W4 | **Trail date stepper** (`TrailDateStepper`, `TrailInfoBar`) | S | Web's `LocationTimeline` shows today only; mobile can step days. |
+| W4 | **Trail date stepper** (`TrailDateStepper`, `TrailInfoBar`) | S | **Audit correction:** web's `LocationTimeline` does NOT show today only — it has a full `DatePicker` bound to `onDateChange` and can already reach any date. The real difference is narrower and purely ergonomic: mobile adds **prev/next chevrons** that step one day at a time (clamped at today, since there is no future GPS), so the common "what about yesterday" needs one tap instead of opening a picker. Scope is a control, not a capability. |
 | W5 | Marker preview (`MarkerPreview`) | S | Long-press preview before committing to a drill. |
 
 ---
@@ -97,9 +97,15 @@ combined branch would be unreviewable and would couple a mobile map rewrite to a
 1. ~~Clustering on mobile~~ — **resolved**, see §5. Mobile adopts the dot field.
 2. ~~Plant overlay on web (W1)~~ — **resolved**: wanted at a desk. Built on both platforms at lokasi
    scope. A city-wide view would need a new bbox endpoint; deferred until someone asks for it.
-3. **Density constants for mobile** — a phone viewport is roughly a quarter of a laptop's, so the
-   separation box and cap need their own values. Deliberately left to be *measured* during slice 1
-   rather than guessed here; web's own constants were retuned twice after seeing them rendered.
+3. ~~**Density constants for mobile**~~ — **resolved 2026-08-29, measured on a Pixel 5.**
+   `DEFAULT_CELL_X/Y = 132×76`, cap 24. The provisional 110×72 was wrong in the predicted direction:
+   110 was 22dp *narrower* than the 132dp label it exists to bound (`MarkerLabel.slotV.width`), so
+   two names 110–131dp apart both promoted and then overlapped — the same defect web shipped when it
+   sized its box to the 88px icon instead of the 150px label. Y = 30 label + 40 ring + 5 arrow = 75.
+   Units are dp throughout (`useWindowDimensions` reports dp; RN styles are dp). The cap is a
+   backstop, not the limit: separation alone already admits only ⌊392/132⌋×⌊851/76⌋ = 22.
+   **The instinct to measure rather than guess was right — the guess was off by exactly the amount
+   that produces visible overlap.**
 
 ---
 
@@ -109,3 +115,10 @@ Inventoried by file presence and symbol search across `apps/{web,mobile}/src/**/
 each candidate gap confirmed by reading the implementation on both sides. Counts and absences in §1–3
 were verified individually, not inferred from filenames — several filename matches ("cluster",
 "trail") turned out to be unrelated substrings.
+
+**That was not enough.** Five rows have since been corrected while building them (M6, W1 twice, W2,
+W4), and they failed the same way: **a symbol existing is not a feature existing.** `PlantOverlayLayer`
+returned `null`. `PhotoGallery` is rendered by no screen. `LocationTimeline` already had the date
+control this document said it lacked. A file-presence inventory cannot tell "implemented" from
+"exported", so before building any remaining row, **read its call sites and confirm something renders
+it** — the check that would have caught all five.

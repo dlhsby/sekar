@@ -32,5 +32,7 @@
   "userRequired": "User is required",
   "startDatetimeRequired": "Start time is required",
   "endDatetimeRequired": "End time is required",
-  "descriptionRequired": "Description is required"
+  "descriptionRequired": "Description is required",
+  "locationTypeRequired": "Location type is required",
+  "minValue": "Minimum value is {{min}}"
 }

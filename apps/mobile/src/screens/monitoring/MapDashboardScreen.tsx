@@ -716,7 +716,6 @@ export function MapDashboardScreen(): React.JSX.Element {
           searchModalVisible={searchModalVisible}
           setSearchModalVisible={setSearchModalVisible}
           liveUsers={liveUsers}
-          districts={boundaries?.districts}
           onSearchSelect={handleSearchSelect}
           boundaryDetailVisible={boundaryDetailVisible}
           setBoundaryDetailVisible={setBoundaryDetailVisible}

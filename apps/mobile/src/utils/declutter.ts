@@ -55,15 +55,23 @@ export interface DeclutterCandidate {
  * ~36pt across; the name printed beside it runs past 100. Sizing the box to the
  * icon fixes nothing that was broken; sizing it to the label does.
  *
- * SMALLER than web's 150×96, because a phone viewport is roughly a third of a
- * laptop's and web's numbers would leave three markers on the screen.
+ * MEASURED, not guessed (Pixel 5, 1080×2340 @2.75 = 392×851dp). `useWindowDimensions`
+ * reports dp and RN styles are dp, so these constants and the label share one unit.
  *
- * **Provisional.** Measure on a device before treating these as settled — web's
- * own pair was retuned twice after being seen rendered, and guessing them from a
- * desk is how that happened.
+ *   X = 132 — `MarkerLabel.slotV.width`, the widest a name is ever drawn.
+ *   Y = 76  — the marker stack: 30 label (2×10pt @1.4 + 2 margin) + 40 ring
+ *             (32 pin + 2×2 padding + 2×2 border) + 5 arrow (6 border − 1 margin).
+ *
+ * The provisional 110 was 22dp NARROWER than the label it was meant to bound, so
+ * any two names 110–131dp apart both promoted and then overlapped on screen —
+ * the same defect web shipped when it sized the box to the 88px icon instead of
+ * the 150px label. Sizing to the icon fixes nothing; sizing to the label does.
+ *
+ * Still smaller than web's 150×96 because the phone label is smaller, not because
+ * the viewport is — the viewport is what the CAP is for.
  */
-export const DEFAULT_CELL_X = 110;
-export const DEFAULT_CELL_Y = 72;
+export const DEFAULT_CELL_X = 132;
+export const DEFAULT_CELL_Y = 76;
 
 /**
  * Separation for the PIN alone, when its name is not drawn.
@@ -82,6 +90,10 @@ export const PIN_CELL_Y = 44;
  * The separation test bounds density but not TOTAL, and every full pin is a
  * native view. Twenty-four is scannable on a phone; the tail below it renders as
  * dots, never dropped.
+ *
+ * Geometry check: a 392×851dp screen holds ⌊392/132⌋×⌊851/76⌋ = 2×11 = 22 fully
+ * separated labels, so at 24 the cap sits just above what separation already
+ * allows — it is a backstop against pathological input, not the primary limit.
  */
 export const DEFAULT_CAP = 24;
 

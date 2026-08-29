@@ -53,7 +53,8 @@
       "label": "Label",
       "petugas": "Personnel",
       "tim": "Teams"
-    }
+    },
+    "workers": "Workers"
   },
   "fab": {
     "status": "Status summary",
@@ -368,5 +369,8 @@
     "noNodes": "No areas at this level.",
     "tabWilayah": "Areas",
     "tabWorkers": "Officers"
+  },
+  "breadcrumb": {
+    "city": "Surabaya"
   }
 }

@@ -53,7 +53,8 @@
       "label": "Nama",
       "petugas": "Petugas",
       "tim": "Tim"
-    }
+    },
+    "workers": "Petugas"
   },
   "fab": {
     "status": "Ringkasan status",
@@ -368,5 +369,8 @@
     "noNodes": "Tidak ada wilayah di tingkat ini.",
     "tabWilayah": "Wilayah",
     "tabWorkers": "Petugas"
+  },
+  "breadcrumb": {
+    "city": "Surabaya"
   }
 }

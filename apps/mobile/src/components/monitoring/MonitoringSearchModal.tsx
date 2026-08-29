@@ -4,7 +4,7 @@
  *
  * - Autofocused search field (typing happens here, not on the map bar).
  * - Empty query → "Terakhir dilihat" recents list + "Hapus semua".
- * - As you type → results in tabs [Semua, Petugas, Location, Rayon]; the Semua tab
+ * - As you type → results in tabs [Semua, Petugas, Lokasi, Kawasan, Rayon]; the Semua tab
  *   groups results by type. Selecting a result bubbles up via onSelect.
  */
 
@@ -32,7 +32,7 @@ import {
 import { useServerMonitoringSearch } from '../../hooks/useServerMonitoringSearch';
 import { useGeoIndex } from '../../hooks/useGeoIndex';
 import { getRecentSearches, clearRecentSearches } from '../../services/storage/recentSearches';
-import type { LiveUser, DistrictBoundary } from '../../types/models.types';
+import type { LiveUser } from '../../types/models.types';
 
 // ─── Type metadata (icon + accent per entity type) ─────────────────────────────
 
@@ -50,7 +50,6 @@ interface MonitoringSearchModalProps {
   visible: boolean;
   onClose: () => void;
   liveUsers: LiveUser[];
-  districts: DistrictBoundary[] | undefined;
   onSelect: (result: SearchResult) => void;
 }
 
@@ -102,7 +101,6 @@ export function MonitoringSearchModal({
   visible,
   onClose,
   liveUsers,
-  districts,
   onSelect,
 }: MonitoringSearchModalProps): React.JSX.Element {
   const { t } = useTranslation();
@@ -164,6 +162,10 @@ export function MonitoringSearchModal({
       { key: 'semua', label: t('monitoring:search.all'), count: results.total },
       { key: 'petugas', label: t('monitoring:layers.workers'), count: results.petugas.length },
       { key: 'location', label: t('monitoring:layers.areas'), count: results.location.length },
+      // Kawasan needs its own tab, not just a section in "Semua": the tier sits
+      // between lokasi and rayon in the drill hierarchy, and without a tab its
+      // matches are only reachable by scrolling past every petugas and lokasi hit.
+      { key: 'region', label: t('monitoring:layers.kawasan'), count: results.region.length },
       { key: 'district', label: t('monitoring:layers.districts'), count: results.district.length },
     ],
     [results, t],
@@ -238,6 +240,7 @@ export function MonitoringSearchModal({
               tabs={tabs}
               activeTab={tab}
               onTabChange={(k) => setTab(k as Tab)}
+              testID="search-tab"
               style={styles.tabs}
             />
             <FlatList
