@@ -36,14 +36,6 @@ jest.mock('../../../services/websocket/websocketService', () => ({
   },
 }));
 jest.mock('../../../hooks', () => ({
-  useMapDashboard: jest.fn(() => ({
-    areas: [],
-    mapReady: true,
-    setMapReady: jest.fn(),
-    currentRegion: null,
-    setCurrentRegion: jest.fn(),
-    handleRefresh: jest.fn(),
-  })),
   useNotifications: jest.fn(() => ({})),
 }));
 jest.mock('../../../hooks/useMapAutoFocus', () => ({

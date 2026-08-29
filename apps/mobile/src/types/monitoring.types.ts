@@ -50,15 +50,24 @@ export interface FieldDashboard {
   pending_sync_count: number;
 }
 
-// Monitoring Stats
+/**
+ * Monitoring stats as the backend ACTUALLY sends them (`CityStatsDto`).
+ *
+ * The previous shape declared `total_users` / `online_users` / `staffed_areas`,
+ * none of which the API returns — reading any of them would have yielded
+ * `undefined`. It went unnoticed because the only types extending this one were
+ * themselves unused. Corrected against `apps/be/.../dto/city-stats.dto.ts`.
+ */
 export interface MonitoringStats {
-  total_users: number;
-  online_users: number;
-  offline_users: number;
+  total_districts: number;
   total_areas: number;
-  staffed_areas: number;
-  understaffed_areas: number;
+  total_workers: number;
+  workers_online: number;
+  workers_offline: number;
+  /** Workers with an open shift — clocked in, not yet clocked out. */
+  active_shifts: number;
   tasks_pending: number;
+  tasks_in_progress: number;
   tasks_completed_today: number;
   activities_submitted_today: number;
 }

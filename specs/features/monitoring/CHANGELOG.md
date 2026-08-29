@@ -2,6 +2,24 @@
 
 Newest first. Feature overview + current design live in [README.md](./README.md).
 
+- **2026-08-29** — **`/supervisor/*` has no callers left, and three piles of dead code are gone.**
+  Mobile's profile stats called `/supervisor/active-users` and `/supervisor/area-status` purely to
+  `.length` them — downloading every active user and every area to display two numbers. Both are now
+  one `/monitoring/city` read, which counts them server-side. That surfaced a **stale type**: mobile's
+  `MonitoringStats` declared `total_users` / `online_users` / `staffed_areas`, none of which the API
+  returns; reading any would have yielded `undefined`. It went unnoticed because the only types
+  extending it were themselves unused. Corrected against `city-stats.dto.ts`.
+  `totalUsersManaged` keeps its existing meaning (workers with an OPEN SHIFT) so no displayed number
+  silently changes — though its label says "managed" while the value says "clocked in", a pre-existing
+  mismatch now flagged in the code. Deleted: mobile's `useMapDashboard` (a hook no component
+  rendered, whose only job was calling `getActiveUsers`), `getActiveUsers` itself, a stale `jest.mock`
+  for that hook, and web's `ReassignWorkerModal` + its 625-line test — redundant since
+  `BulkReassignModal` handles 1..N, and reachable from nowhere. Also separated signal from noise in
+  the `react-hooks/set-state-in-effect` warnings: **5 of 18 are provable false positives** —
+  deliberate post-mount localStorage hydration, where a lazy `useState` initializer would run on the
+  server and cause a hydration mismatch — now documented and silenced, leaving 13 that are genuinely
+  actionable (derived/reset state across export, reports, schedules, auth, sidebar).
+
 - **2026-08-29** — **Reassignment is reachable again on both platforms** (parity M9), and **M10 needed
   nothing**. Verifying M9 before building it turned up the largest audit correction yet: the row said
   web *has* bulk reassign. Web has the COMPONENT — `BulkReassignModal` fully built and unit-tested,

@@ -76,6 +76,11 @@ export function useHiddenEntities(): UseHiddenEntities {
 
   // Hydrate after mount so SSR and the first client render agree.
   useEffect(() => {
+    // INTENTIONAL hydration, not the cascading-render bug the rule looks for:
+    // reading localStorage in a lazy useState initializer would run on the server
+    // too and produce a hydration mismatch. Render the default first, adopt the
+    // stored value after mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHidden(readStored());
   }, []);
 

@@ -187,42 +187,6 @@ describe('monitoringApi', () => {
     });
   });
 
-  describe('getActiveUsers', () => {
-    it('should call get with correct endpoint', async () => {
-      const mockResponse = {
-        data: {
-          users: [
-            {
-              id: 'uuid-1',
-              username: 'user1',
-              full_name: 'John Doe',
-              shift: {
-                id: 'shift-1',
-                clock_in_time: '2026-01-19T08:00:00Z',
-                area: { id: 'area-1', name: 'Park A' },
-              },
-              latest_location: { gps_lat: -7.25, gps_lng: 112.75, logged_at: '2026-01-19T10:00:00Z' },
-            },
-          ],
-        },
-      };
-      mockGet.mockResolvedValue(mockResponse);
-
-      const result = await monitoringApi.getActiveUsers();
-
-      expect(mockGet).toHaveBeenCalledWith('/supervisor/active-users');
-      expect(result).toEqual(mockResponse);
-    });
-
-    it('should return error on failure', async () => {
-      const mockError = { error: 'Failed to fetch active users' };
-      mockGet.mockResolvedValue(mockError);
-
-      const result = await monitoringApi.getActiveUsers();
-
-      expect(result).toEqual(mockError);
-    });
-  });
 
   describe('getAllActivities', () => {
     it('should call get with /activities endpoint and empty params', async () => {
@@ -496,7 +460,6 @@ describe('monitoringApi', () => {
       expect(defaultExport.getDistrictMonitoring).toBeDefined();
       expect(defaultExport.getAreaMonitoring).toBeDefined();
       expect(defaultExport.getLiveUsers).toBeDefined();
-      expect(defaultExport.getActiveUsers).toBeDefined();
       expect(defaultExport.getAllActivities).toBeDefined();
       expect(defaultExport.getActivityDetails).toBeDefined();
       expect(defaultExport.getAttendance).toBeDefined();
