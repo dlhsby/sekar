@@ -2,6 +2,22 @@
 
 Newest first. Feature overview + current design live in [README.md](./README.md).
 
+- **2026-08-29** — **Attendance drill-down on web, on a new monitoring endpoint** (parity W3). A
+  supervisor at a desk can now ask "who is missing today" instead of inferring it from the map: pick a
+  service-day, switch between clocked-in and not, open one worker for their sessions (flagging a punch
+  recorded outside the area boundary). W3 was the one W row the audit had RIGHT — no
+  `supervisor/attendance?date=` call existed in web at all. Built on a **new `GET
+  /monitoring/attendance`**, not the superseded `/supervisor` one, because web had zero coupling to
+  that module and adding some would be the wrong direction; the response shape is deliberately
+  identical so mobile's migration stays a one-line swap. It is a reimplementation rather than a move,
+  because the original carried four defects: the roster was `satgas` only (every `linmas` worker
+  invisible to attendance), day bounds were server-local (`new Date('YYYY-MM-DD')` → UTC midnight →
+  `setHours` → SERVER midnight, so a UTC container reported the *previous* day between 00:00 and 07:00
+  WIB), sessions matched `clock_in_time` rather than `service_day` (ADR-055 — so a night worker's
+  00:30 clock-in landed on the wrong day), and rows were per-SHIFT, so a worker who clocked in twice
+  counted twice and `clocked_in_count` could exceed the roster. Adds `TimezoneUtil.jakartaDayRange`,
+  half-open so no timestamp falls in two days or neither.
+
 - **2026-08-29** — **Verification photos are openable, and the trail steps by day** (parity W2 + W4, web).
   Both rows were re-scoped after verifying them. W2 claimed photos were viewable on a phone but not at
   a desk; they were viewable on neither — mobile's `PhotoGallery` is rendered by no screen, and web
