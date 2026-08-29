@@ -9,6 +9,9 @@ import { StatusSummaryBar } from './StatusSummaryBar';
 import { WorkerTile } from './WorkerTile';
 import { PersonnelGroupCard, type PersonnelGroup } from './PersonnelGroupCard';
 import { AttendanceDetailModal } from './AttendanceDetailModal';
+import { NBTab } from '../nb/NBTab';
+import { MonitoringNodeList } from './MonitoringNodeList';
+import type { NodeMarker } from './AggregateBubbleLayer';
 import { ROLE_LABELS } from '../../constants/roles';
 import { leaveReasonPill } from '../../utils/statusHelpers';
 import {
@@ -36,6 +39,22 @@ interface MonitoringStatusSheetProps {
   scheduledFilter?: 'all' | 'adhoc';
   onScheduledChange?: (next: 'all' | 'adhoc') => void;
   liveUsers: LiveUser[];
+  /**
+   * The children of the current drill level, for the Wilayah tab.
+   *
+   * The map SHOWS what is here; this list lets you go somewhere. That is why it
+   * is one level deep and not the whole subtree — a flattened rayon is hundreds
+   * of rows, which nobody navigates.
+   */
+  nodes?: NodeMarker[];
+  onDrillNode?: (node: NodeMarker) => void;
+  onNodeDetail?: (node: NodeMarker) => void;
+  isNodeHidden?: (id: string) => boolean;
+  onToggleNodeHidden?: (id: string) => void;
+  onShowAllHiddenNodes?: () => void;
+  /** Where the operator is, shown above the tabs. */
+  breadcrumbLabel?: string;
+  onBreadcrumbBack?: () => void;
   lastUpdated: string | null;
   totalAreas: number;
   staffedAreas: number;
@@ -86,6 +105,14 @@ export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
   scheduledFilter,
   onScheduledChange,
   liveUsers,
+  nodes,
+  onDrillNode,
+  onNodeDetail,
+  isNodeHidden,
+  onToggleNodeHidden,
+  onShowAllHiddenNodes,
+  breadcrumbLabel,
+  onBreadcrumbBack,
   lastUpdated,
   totalAreas,
   staffedAreas,
@@ -143,8 +170,34 @@ export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
 
   const keyExtractor = useCallback((item: PersonnelGroup) => item.role, []);
 
+  const hasNodes = (nodes?.length ?? 0) > 0;
+  // Wilayah leads when there is a level to browse; at lokasi scope there are no
+  // children, so the tabs disappear and the sheet reads as it always did.
+  const [tab, setTab] = useState<'wilayah' | 'petugas'>('wilayah');
+
   const contentHeader = useMemo(() => (
     <>
+      {/* Where you are. Current level only: the sheet is narrow at every size,
+          and a trail you have to scroll has stopped answering the question it
+          exists for. The map's own bar carries the full trail. */}
+      {breadcrumbLabel && (
+        <View style={styles.breadcrumb}>
+          {onBreadcrumbBack && (
+            <TouchableOpacity
+              onPress={onBreadcrumbBack}
+              accessibilityRole="button"
+              accessibilityLabel={t('monitoring:page.backLabel')}
+              testID="sheet-breadcrumb-back"
+            >
+              <MaterialCommunityIcons name="chevron-left" size={20} color={nbColors.black} />
+            </TouchableOpacity>
+          )}
+          <NBText variant="body-sm" numberOfLines={1} style={styles.breadcrumbLabel}>
+            {breadcrumbLabel}
+          </NBText>
+        </View>
+      )}
+
       {/* Status row — single source for the per-status counts; tap to filter */}
       <StatusSummaryBar
         liveUsers={liveUsers}
@@ -227,13 +280,39 @@ export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
         </View>
       </View>
 
-      {/* Daftar Petugas header */}
-      <View style={styles.listHeader}>
-        <NBText variant="h3">{t('monitoring:status.sections.staffList')}</NBText>
-        <NBText variant="caption" color="gray500">{liveUsers.length} {t('monitoring:status.staffCount')}</NBText>
-      </View>
+      {/* Wilayah / Petugas. A tab rather than a second sheet: this sheet
+          already owns the "what is here" question, and a surface beside it
+          would split that answer in two. */}
+      {hasNodes ? (
+        <View style={styles.tabBar}>
+          <NBTab
+            tabs={[
+              { key: 'wilayah', label: t('monitoring:sidebar.tabWilayah'), count: nodes?.length ?? 0 },
+              { key: 'petugas', label: t('monitoring:sidebar.tabWorkers'), count: liveUsers.length },
+            ]}
+            activeTab={tab}
+            onTabChange={k => setTab(k as 'wilayah' | 'petugas')}
+          />
+        </View>
+      ) : (
+        <View style={styles.listHeader}>
+          <NBText variant="h3">{t('monitoring:status.sections.staffList')}</NBText>
+          <NBText variant="caption" color="gray500">{liveUsers.length} {t('monitoring:status.staffCount')}</NBText>
+        </View>
+      )}
+
+      {tab === 'wilayah' && hasNodes && (
+        <MonitoringNodeList
+          nodes={nodes ?? []}
+          onDrill={n => onDrillNode?.(n)}
+          onDetail={onNodeDetail}
+          isHidden={isNodeHidden}
+          onToggleHidden={onToggleNodeHidden}
+          onShowAllHidden={onShowAllHiddenNodes}
+        />
+      )}
     </>
-  ), [activeActivity, onActivityChange, liveUsers, staffedAreas, totalAreas, staleCount, lastUpdated, attendance, rosterSplit, onLeaveUsers, t]);
+  ), [activeActivity, onActivityChange, tab, hasNodes, nodes, breadcrumbLabel, onBreadcrumbBack, onDrillNode, onNodeDetail, isNodeHidden, onToggleNodeHidden, onShowAllHiddenNodes, liveUsers, staffedAreas, totalAreas, staleCount, lastUpdated, attendance, rosterSplit, onLeaveUsers, t]);
 
   const groupLabel = selectedGroup
     ? ROLE_LABELS[selectedGroup.role as UserRole] ?? selectedGroup.role
@@ -252,7 +331,7 @@ export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
       >
         <FlatList
           style={styles.list}
-          data={groups}
+          data={tab === 'petugas' || !hasNodes ? groups : []}
           keyExtractor={keyExtractor}
           renderItem={renderGroupCard}
           ListHeaderComponent={contentHeader}
@@ -445,6 +524,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: nbColors.black,
   },
+  breadcrumb: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nbSpacing.xs,
+    paddingHorizontal: nbSpacing.md,
+    paddingBottom: nbSpacing.xs,
+  },
+  breadcrumbLabel: { flexShrink: 1, fontWeight: '700' },
+  tabBar: { paddingHorizontal: nbSpacing.md, paddingVertical: nbSpacing.xs },
   listHeader: {
     flexDirection: 'row',
     alignItems: 'center',

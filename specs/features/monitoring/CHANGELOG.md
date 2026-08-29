@@ -2,6 +2,15 @@
 
 Newest first. Feature overview + current design live in [README.md](./README.md).
 
+- **2026-08-29** — **Mobile can browse and drill areas from the sheet** (parity slice 3, gaps M4/M7/M8).
+  `MonitoringStatusSheet` had no node list at all, so areas could only be reached from the map. It now
+  carries a Wilayah/Petugas tab over the children of the current level — one level deep, because the
+  map's job is to show and the list's is to navigate — with per-row drill, hide and detail. Row hide is
+  per-device and presentation-only: counts come from the server over the full scope, so hiding changes
+  what is listed and never what is counted, and a banner always says how many are hidden with one tap
+  back. A breadcrumb names the current level above the tabs. Zero counts are muted to `gray600`, which
+  still clears WCAG AA.
+
 - **2026-08-29** — **Mobile search finds kawasan, and finds anything regardless of the camera** (parity
   slice 2, gaps M5–M6). Geography now comes from a complete index fetched once (`useGeoIndex`) instead
   of the map's own boundaries: viewport mode's bbox fetch replaces the stored boundaries, so a lokasi
