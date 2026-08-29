@@ -259,7 +259,8 @@
     "running": "Berjalan",
     "outsideBoundary": "Di luar area",
     "yes": "Ya",
-    "defaultName": "Petugas"
+    "defaultName": "Petugas",
+    "session": "Sesi {{index}}"
   },
   "mapError": {
     "title": "Gagal Memuat Peta",

@@ -7,7 +7,7 @@
  *    two summary tiles,
  *  - tap any petugas to open their per-date attendance detail (UserAttendanceModal).
  *
- * Owns its own data fetch (`/supervisor/attendance?date=`) so the date selector
+ * Owns its own data fetch (`/monitoring/attendance?date=`) so the date selector
  * works without a parent round-trip; seeded with the parent's today snapshot to
  * avoid an initial flash.
  */

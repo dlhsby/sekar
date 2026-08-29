@@ -312,7 +312,7 @@ describe('monitoringApi', () => {
 
       const result = await monitoringApi.getAttendance();
 
-      expect(mockGet).toHaveBeenCalledWith('/supervisor/attendance', {});
+      expect(mockGet).toHaveBeenCalledWith('/monitoring/attendance', {});
       expect(result).toEqual(mockResponse);
     });
 
@@ -322,7 +322,7 @@ describe('monitoringApi', () => {
 
       const result = await monitoringApi.getAttendance({ date: '2026-01-18' });
 
-      expect(mockGet).toHaveBeenCalledWith('/supervisor/attendance', { date: '2026-01-18' });
+      expect(mockGet).toHaveBeenCalledWith('/monitoring/attendance', { date: '2026-01-18' });
     });
 
     it('should return error on failure', async () => {

@@ -2,6 +2,15 @@
 
 Newest first. Feature overview + current design live in [README.md](./README.md).
 
+- **2026-08-29** — **Mobile moved off the superseded `/supervisor/attendance`.** The list was the
+  one-line URL swap the shared shape was designed for. The detail was NOT: it deliberately changed
+  `shift` → `shifts[]`, because the old single-shift response **hid the second session** of any worker
+  who clocked out for a break and back in, making a full day read as a half one. `UserAttendanceModal`
+  now renders one card per session, labelled only when there is more than one. Mobile inherits all
+  four backend fixes for free — linmas counted, WIB day bounds, `service_day` attribution, and no
+  double-counting. `/supervisor/attendance*` has no callers left; `active-users` and `area-status`
+  still do.
+
 - **2026-08-29** — **Mobile can open verification photos too — W2 fully closed.** `PhotoGallery` had
   shipped in Phase 3 exported, unit-tested and rendered by **no screen**, so a `UserDetailSheet`
   activity card could display "2 foto" and do nothing at all when tapped. The activity LIST returns

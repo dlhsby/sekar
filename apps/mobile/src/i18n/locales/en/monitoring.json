@@ -259,7 +259,8 @@
     "running": "Running",
     "outsideBoundary": "Outside area",
     "yes": "Yes",
-    "defaultName": "Officer"
+    "defaultName": "Officer",
+    "session": "Session {{index}}"
   },
   "mapError": {
     "title": "Failed to Load Map",

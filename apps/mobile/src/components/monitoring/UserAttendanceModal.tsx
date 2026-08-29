@@ -1,7 +1,7 @@
 /**
  * UserAttendanceModal — per-user attendance detail for a selected date (Phase 4
  * M3 / CP3). Opened from a row in the AttendanceDetailModal. Fetches
- * `/supervisor/attendance/:userId?date=` and shows clock-in/out, duration, and
+ * `/monitoring/attendance/:userId?date=` and shows every session's clock-in/out, duration, and
  * geofence flags (or a "belum clock in" state).
  */
 
@@ -106,29 +106,41 @@ export function UserAttendanceModal({
           <NBText variant="body-sm" color="gray500" align="center" style={styles.msg}>
             {t('monitoring:userAttendance.loadError')}
           </NBText>
-        ) : detail && clockedIn && detail.shift ? (
-          <View style={styles.detailCard}>
-            <DetailRow icon="login" label={t('monitoring:userAttendance.clockIn')} value={fmtTime(detail.shift.clock_in_time)} />
-            <DetailRow
-              icon="logout"
-              label={t('monitoring:userAttendance.clockOut')}
-              value={detail.shift.clock_out_time ? fmtTime(detail.shift.clock_out_time) : t('monitoring:userAttendance.notClockedOut')}
-            />
-            <DetailRow
-              icon="timer-outline"
-              label={t('monitoring:userAttendance.duration')}
-              value={fmtDuration(detail.shift.duration_minutes, t)}
-            />
-            {(detail.shift.clock_in_outside_boundary || detail.shift.clock_out_outside_boundary) ? (
-              <DetailRow
-                icon="map-marker-alert"
-                label={t('monitoring:userAttendance.outsideBoundary')}
-                value={t('monitoring:userAttendance.yes')}
-                valueColor={nbColors.statusMissing}
-                isLast
-              />
-            ) : null}
-          </View>
+        ) : detail && clockedIn && detail.shifts.length > 0 ? (
+          // One card per session. A worker who clocks out for a break and back
+          // in again has two, and the old single-`shift` shape showed only the
+          // first — so a full day could read as a half one.
+          <>
+            {detail.shifts.map((shift, i) => (
+              <View key={shift.id} style={styles.detailCard}>
+                {detail.shifts.length > 1 ? (
+                  <NBText variant="caption" color="gray500" style={styles.sessionLabel}>
+                    {t('monitoring:userAttendance.session', { index: i + 1 })}
+                  </NBText>
+                ) : null}
+                <DetailRow icon="login" label={t('monitoring:userAttendance.clockIn')} value={fmtTime(shift.clock_in_time)} />
+                <DetailRow
+                  icon="logout"
+                  label={t('monitoring:userAttendance.clockOut')}
+                  value={shift.clock_out_time ? fmtTime(shift.clock_out_time) : t('monitoring:userAttendance.notClockedOut')}
+                />
+                <DetailRow
+                  icon="timer-outline"
+                  label={t('monitoring:userAttendance.duration')}
+                  value={fmtDuration(shift.duration_minutes, t)}
+                />
+                {(shift.clock_in_outside_boundary || shift.clock_out_outside_boundary) ? (
+                  <DetailRow
+                    icon="map-marker-alert"
+                    label={t('monitoring:userAttendance.outsideBoundary')}
+                    value={t('monitoring:userAttendance.yes')}
+                    valueColor={nbColors.statusMissing}
+                    isLast
+                  />
+                ) : null}
+              </View>
+            ))}
+          </>
         ) : detail ? (
           <NBText variant="body-sm" color="gray500" align="center" style={styles.msg}>
             {t('monitoring:userAttendance.notClockedInDate')}
@@ -189,6 +201,10 @@ const styles = StyleSheet.create({
     borderRadius: nbRadius.base,
     backgroundColor: nbColors.white,
     overflow: 'hidden',
+  },
+  sessionLabel: {
+    marginBottom: nbSpacing.xs,
+    textTransform: 'uppercase',
   },
   detailRow: {
     flexDirection: 'row',
