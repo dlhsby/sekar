@@ -167,7 +167,7 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
           )}
           <span className="flex-1 truncate">{item.label}</span>
           {item.external ? (
-            <ExternalLink className="size-3.5 flex-shrink-0 text-nb-gray-400" aria-hidden="true" />
+            <ExternalLink className="size-3.5 flex-shrink-0 text-nb-gray-500" aria-hidden="true" />
           ) : (
             countBadge(item.count, active)
           )}

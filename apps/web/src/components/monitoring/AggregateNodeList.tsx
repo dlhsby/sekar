@@ -225,7 +225,7 @@ export function AggregateNodeList({
                   )}
                 </div>
               </div>
-              <ChevronRight className="h-4 w-4 shrink-0 text-nb-gray-400" aria-hidden="true" />
+              <ChevronRight className="h-4 w-4 shrink-0 text-nb-gray-500" aria-hidden="true" />
             </button>
             {onToggleHidden && (
               <button
@@ -233,7 +233,7 @@ export function AggregateNodeList({
                 onClick={() => onToggleHidden(node.id)}
                 aria-label={t('monitoring:hidden.hideLabel', { name: node.name })}
                 title={t('monitoring:hidden.hideLabel', { name: node.name })}
-                className="shrink-0 border-l-2 border-nb-gray-100 px-2 text-nb-gray-400 transition-colors hover:bg-nb-gray-50 hover:text-nb-black"
+                className="shrink-0 border-l-2 border-nb-gray-100 px-2 text-nb-gray-500 transition-colors hover:bg-nb-gray-50 hover:text-nb-black"
               >
                 <EyeOff className="h-4 w-4" aria-hidden="true" />
               </button>
@@ -244,7 +244,7 @@ export function AggregateNodeList({
                 onClick={() => onDetail(node)}
                 aria-label={t('monitoring:aggregate.detailLabel', { name: node.name })}
                 className={cn(
-                  'shrink-0 border-l-2 border-nb-gray-100 px-3 text-nb-gray-400 transition-colors hover:bg-nb-gray-50 hover:text-nb-black',
+                  'shrink-0 border-l-2 border-nb-gray-100 px-3 text-nb-gray-500 transition-colors hover:bg-nb-gray-50 hover:text-nb-black',
                   dimmed && 'opacity-40'
                 )}
               >

@@ -92,7 +92,7 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
               {t('activities:detail.breadcrumb')}
             </Link>
           </li>
-          <li className="text-nb-gray-400">/</li>
+          <li className="text-nb-gray-500">/</li>
           <li className="text-nb-gray-600">{t('common:actions.detail')}</li>
         </ol>
       </nav>

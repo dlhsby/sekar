@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
   },
   charCount: {
     fontSize: nbType.caption.fontSize,
-    color: nbColors.gray400,
+    color: nbColors.gray500,
     textAlign: 'right',
     marginTop: 4,
   },

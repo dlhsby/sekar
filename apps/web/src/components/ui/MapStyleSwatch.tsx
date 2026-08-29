@@ -57,14 +57,14 @@ function ColorLine({
 }) {
   return (
     <span className="flex items-center gap-1 whitespace-nowrap font-mono text-nb-caption text-nb-gray-600">
-      {label ? <span className="text-nb-gray-400">{label}</span> : null}
+      {label ? <span className="text-nb-gray-500">{label}</span> : null}
       {hex ? (
         <>
           <span>{hex}</span>
-          <span className="text-nb-gray-400">· {pct(opacity, fallback)}%</span>
+          <span className="text-nb-gray-500">· {pct(opacity, fallback)}%</span>
         </>
       ) : (
-        <span className="text-nb-gray-400">—</span>
+        <span className="text-nb-gray-500">—</span>
       )}
     </span>
   );

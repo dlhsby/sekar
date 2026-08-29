@@ -298,7 +298,7 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
             </div>
           ) : (
             <div className="py-8 text-center text-nb-gray-500">
-              <MapIcon className="w-10 h-10 mx-auto mb-3 text-nb-gray-300" />
+              <MapIcon className="w-10 h-10 mx-auto mb-3 text-nb-gray-500" />
               <p className="font-semibold">{t('common:empty.noBoundary')}</p>
               <p className="text-sm mt-1">
                 {isAdmin

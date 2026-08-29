@@ -135,7 +135,7 @@ export function MonitoringSidePanel({
       {/* Search + Role chips */}
       <div className="px-3 py-2 flex-shrink-0 border-b border-nb-gray-200">
         <div className="relative mb-2">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-nb-gray-400 pointer-events-none" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-nb-gray-500 pointer-events-none" />
           <input
             type="search"
             placeholder={t('monitoring:sidePanel.searchPlaceholder')}
@@ -143,7 +143,7 @@ export function MonitoringSidePanel({
             onChange={(e) => setSearch(e.target.value)}
             className={cn(
               'w-full pl-8 pr-3 py-2 text-sm border-2 border-nb-black rounded-nb-base',
-              'bg-white placeholder:text-nb-gray-400 focus:outline-none focus:ring-2',
+              'bg-white placeholder:text-nb-gray-500 focus:outline-none focus:ring-2',
               'focus:ring-nb-primary focus:ring-offset-1'
             )}
             aria-label={t('monitoring:sidePanel.searchLabel')}
@@ -218,7 +218,7 @@ export function MonitoringSidePanel({
 
       {/* Footer count */}
       {!isLoading && filteredUsers.length > 0 && (
-        <div className="px-3 py-1.5 text-xs text-center text-nb-gray-400 border-t border-nb-gray-200 flex-shrink-0">
+        <div className="px-3 py-1.5 text-xs text-center text-nb-gray-500 border-t border-nb-gray-200 flex-shrink-0">
           {t('monitoring:sidePanel.count', { count: filteredUsers.length })}
         </div>
       )}

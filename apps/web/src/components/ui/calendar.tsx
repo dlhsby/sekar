@@ -50,7 +50,7 @@ export function Calendar({
         today:
           'font-bold text-nb-success-dark [&>button]:rounded-full [&>button]:ring-2 [&>button]:ring-inset [&>button]:ring-nb-success',
         selected: 'rounded-nb-base',
-        outside: 'text-nb-gray-400 opacity-60',
+        outside: 'text-nb-gray-500 opacity-60',
         disabled: 'text-nb-gray-300 opacity-50',
         hidden: 'invisible',
         range_middle: 'aria-selected:bg-nb-primary/30 aria-selected:text-nb-black aria-selected:border-0',

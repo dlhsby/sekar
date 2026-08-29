@@ -177,7 +177,7 @@ export function MonitoringSearch({ workers, geo, onSelect, className }: Monitori
   return (
     <div ref={rootRef} className={cn('pointer-events-auto relative', className)}>
       <Search
-        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-nb-gray-400"
+        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-nb-gray-500"
         aria-hidden="true"
       />
       <input
@@ -190,7 +190,7 @@ export function MonitoringSearch({ workers, geo, onSelect, className }: Monitori
         onFocus={() => setOpen(true)}
         placeholder={t('monitoring:page.searchPlaceholder')}
         aria-label={t('monitoring:page.searchLabel')}
-        className="h-11 w-full rounded-nb-base border-2 border-nb-black bg-nb-white pl-9 pr-9 text-sm font-medium text-nb-black shadow-nb-sm placeholder:text-nb-gray-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-nb-primary"
+        className="h-11 w-full rounded-nb-base border-2 border-nb-black bg-nb-white pl-9 pr-9 text-sm font-medium text-nb-black shadow-nb-sm placeholder:text-nb-gray-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-nb-primary"
       />
       {query ? (
         <button
@@ -200,7 +200,7 @@ export function MonitoringSearch({ workers, geo, onSelect, className }: Monitori
             setOpen(true);
           }}
           aria-label={t('common:actions.clear')}
-          className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-nb-sm p-1 text-nb-gray-400 hover:bg-nb-gray-100 hover:text-nb-black"
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-nb-sm p-1 text-nb-gray-500 hover:bg-nb-gray-100 hover:text-nb-black"
         >
           <X className="h-4 w-4" />
         </button>

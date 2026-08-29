@@ -319,7 +319,7 @@ function ShiftRow({
               style={styles.shiftTimeIcon}
             />
             <NBText variant="mono-sm" color="gray600" style={styles.shiftTimeLabel}>{t('schedules:shiftHistory.duration')}</NBText>
-            <NBText variant="body-sm" color="gray400" style={styles.invisible}>·</NBText>
+            <NBText variant="body-sm" color="gray500" style={styles.invisible}>·</NBText>
             <NBText variant="body-sm" color="successDark" style={styles.semibold}>
               {dur.formatted}
             </NBText>
@@ -510,7 +510,7 @@ export function ShiftHistoryScreen(): React.JSX.Element {
                 </View>
               </ScrollView>
             ) : (
-              <NBText variant="body-sm" color="gray400" style={styles.filterBarPlaceholder}>{t('schedules:shiftHistory.allShifts')}</NBText>
+              <NBText variant="body-sm" color="gray500" style={styles.filterBarPlaceholder}>{t('schedules:shiftHistory.allShifts')}</NBText>
             )}
             {isFiltered && (
               <TouchableOpacity

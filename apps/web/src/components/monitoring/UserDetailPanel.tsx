@@ -274,7 +274,7 @@ export function UserDetailPanel({
                   {summary.last_location.battery_level}%
                 </div>
               )}
-              <div className="text-nb-gray-400">
+              <div className="text-nb-gray-500">
                 {formatRelativeTime(summary.last_location.logged_at)}
               </div>
               <div
@@ -376,7 +376,7 @@ export function UserDetailPanel({
               {t('monitoring:userDetail.reassignmentHistory')}
             </h3>
             {isReassignmentsLoading ? (
-              <p className="text-xs text-nb-gray-400">{t('monitoring:userDetail.loadingHistory')}</p>
+              <p className="text-xs text-nb-gray-500">{t('monitoring:userDetail.loadingHistory')}</p>
             ) : (
               <ul className="space-y-1.5">
                 {(reassignments ?? []).slice(0, 5).map((r) => (

@@ -47,7 +47,7 @@ function RoleRow({ role }: RoleRowProps) {
       <span className="w-10 text-right font-mono text-nb-gray-500 tabular-nums">
         {clocked}/{required}
       </span>
-      <div className="flex gap-1 text-[10px] text-nb-gray-400">
+      <div className="flex gap-1 text-[10px] text-nb-gray-500">
         <span title={t('monitoring:staffing.activeStatus')} className="text-[var(--color-status-active)]">
           {role.active}
         </span>
@@ -100,7 +100,7 @@ function AreaView({ areaId, onReassign }: AreaViewProps) {
   }
 
   const areaItem = data?.items?.find((item) => item.id === areaId);
-  if (!areaItem) return <p className="text-xs text-nb-gray-400 italic">{t('monitoring:staffing.dataUnavailable')}</p>;
+  if (!areaItem) return <p className="text-xs text-nb-gray-500 italic">{t('monitoring:staffing.dataUnavailable')}</p>;
 
   const totalClocked = areaItem.total_active + areaItem.total_offline;
   const totalAll = areaItem.total_active + areaItem.total_offline + areaItem.total_absent;
@@ -167,7 +167,7 @@ function DistrictView({ districtId, boundaries, onReassign }: DistrictViewProps)
   const district = boundaries?.districts.find((r) => r.id === districtId);
 
   if (!district) {
-    return <p className="text-xs text-nb-gray-400 italic">{t('monitoring:staffing.districtDataUnavailable')}</p>;
+    return <p className="text-xs text-nb-gray-500 italic">{t('monitoring:staffing.districtDataUnavailable')}</p>;
   }
 
   const toggleArea = (areaId: string) => {
@@ -275,7 +275,7 @@ function CityView({ boundaries, onReassign }: CityViewProps) {
   const [expandedDistrictIds, setExpandedDistrictIds] = useState<Set<string>>(new Set());
 
   if (!boundaries?.districts?.length) {
-    return <p className="text-xs text-nb-gray-400 italic">{t('monitoring:staffing.cityDataUnavailable')}</p>;
+    return <p className="text-xs text-nb-gray-500 italic">{t('monitoring:staffing.cityDataUnavailable')}</p>;
   }
 
   const toggleDistrict = (districtId: string) => {
@@ -395,7 +395,7 @@ export function StaffingSummaryCard({
         <h3 className="text-xs font-bold uppercase text-nb-gray-600 flex items-center gap-1.5">
           <Users className="w-3.5 h-3.5" />
           {t('monitoring:staffing.staffingLabel')}
-          <span className="text-nb-gray-400 font-normal normal-case">· {viewLabel}</span>
+          <span className="text-nb-gray-500 font-normal normal-case">· {viewLabel}</span>
         </h3>
         {dayType && dayTypeLabels[dayType] && (
           <span

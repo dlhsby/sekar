@@ -83,7 +83,7 @@ describe('MonthGrid', () => {
     // July 2026 starts on a Wednesday, so the grid leads with Jun 29/30 — the
     // first of the two "29"s. It is muted, which confirms we picked that one.
     const spill = screen.getAllByText('29')[0];
-    expect(spill.className).toContain('text-nb-gray-400');
+    expect(spill.className).toContain('text-nb-gray-500');
 
     await user.click(spill);
 

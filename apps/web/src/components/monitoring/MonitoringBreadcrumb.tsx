@@ -96,7 +96,7 @@ export function MonitoringBreadcrumb({
               >
                 {i > 0 && (
                   <ChevronRight
-                    className="h-3.5 w-3.5 shrink-0 text-nb-gray-400"
+                    className="h-3.5 w-3.5 shrink-0 text-nb-gray-500"
                     aria-hidden="true"
                   />
                 )}

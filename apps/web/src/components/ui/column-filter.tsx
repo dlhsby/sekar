@@ -123,7 +123,7 @@ function TextColumnFilter<TData>({ column, label }: ColumnFilterProps<TData>): R
   return (
     <div className="relative w-full min-w-[8.5rem]">
       <Search
-        className="pointer-events-none absolute inset-y-0 left-2 my-auto h-3.5 w-3.5 text-nb-gray-400"
+        className="pointer-events-none absolute inset-y-0 left-2 my-auto h-3.5 w-3.5 text-nb-gray-500"
         aria-hidden
       />
       <Input
@@ -140,7 +140,7 @@ function TextColumnFilter<TData>({ column, label }: ColumnFilterProps<TData>): R
           type="button"
           onClick={() => column.setFilterValue(undefined)}
           aria-label={t('components:columnFilter.clearLabel', { label })}
-          className="absolute inset-y-0 right-0 flex items-center pr-2 text-nb-gray-400 transition-colors hover:text-nb-black"
+          className="absolute inset-y-0 right-0 flex items-center pr-2 text-nb-gray-500 transition-colors hover:text-nb-black"
         >
           <X className="h-3.5 w-3.5" aria-hidden />
         </button>
@@ -224,7 +224,7 @@ function EnumColumnFilter<TData>({ column, label }: ColumnFilterProps<TData>): R
           className={triggerClass(selected.length > 0)}
           aria-label={t('components:columnFilter.filterLabel', { label })}
         >
-          <ListFilter className="h-3.5 w-3.5 shrink-0 text-nb-gray-400" aria-hidden />
+          <ListFilter className="h-3.5 w-3.5 shrink-0 text-nb-gray-500" aria-hidden />
           <span className="truncate">
             {selected.length > 0
               ? t('components:columnFilter.selectedCount', { count: selected.length })
@@ -260,7 +260,7 @@ function EnumColumnFilter<TData>({ column, label }: ColumnFilterProps<TData>): R
         </div>
         <div className="max-h-48 space-y-0.5 overflow-y-auto" onScroll={onListScroll}>
           {filteredOptions.length === 0 ? (
-            <p className="px-1 py-2 text-nb-body-sm text-nb-gray-400">
+            <p className="px-1 py-2 text-nb-body-sm text-nb-gray-500">
               {t('components:columnFilter.enumNoOptions')}
             </p>
           ) : (
@@ -274,7 +274,7 @@ function EnumColumnFilter<TData>({ column, label }: ColumnFilterProps<TData>): R
                   <span className="flex w-full min-w-0 items-center justify-between gap-2 text-nb-body-sm">
                     <span className="truncate">{o.label}</span>
                     {o.count != null ? (
-                      <span className="shrink-0 text-nb-gray-400">{o.count}</span>
+                      <span className="shrink-0 text-nb-gray-500">{o.count}</span>
                     ) : null}
                   </span>
                 }
@@ -283,7 +283,7 @@ function EnumColumnFilter<TData>({ column, label }: ColumnFilterProps<TData>): R
           )}
         </div>
         {hasMore && (
-          <p className="mt-1 px-1 text-nb-caption text-nb-gray-400">
+          <p className="mt-1 px-1 text-nb-caption text-nb-gray-500">
             {t('components:columnFilter.enumShowingCount', {
               shown: visibleOptions.length,
               total: filteredOptions.length,
@@ -329,7 +329,7 @@ function NumberRangeColumnFilter<TData>({
           className={triggerClass(active)}
           aria-label={t('components:columnFilter.filterLabel', { label })}
         >
-          <Hash className="h-3.5 w-3.5 shrink-0 text-nb-gray-400" aria-hidden />
+          <Hash className="h-3.5 w-3.5 shrink-0 text-nb-gray-500" aria-hidden />
           <span className="truncate">{summary}</span>
         </button>
       </PopoverTrigger>
@@ -343,7 +343,7 @@ function NumberRangeColumnFilter<TData>({
             placeholder={t('components:columnFilter.numberMinPlaceholder')}
             aria-label={t('components:columnFilter.numberMinPlaceholder')}
           />
-          <span className="text-nb-gray-400">–</span>
+          <span className="text-nb-gray-500">–</span>
           <Input
             type="number"
             size="sm"
@@ -396,7 +396,7 @@ function DateRangeColumnFilter<TData>({
           className={triggerClass(active)}
           aria-label={t('components:columnFilter.filterLabel', { label })}
         >
-          <Calendar className="h-3.5 w-3.5 shrink-0 text-nb-gray-400" aria-hidden />
+          <Calendar className="h-3.5 w-3.5 shrink-0 text-nb-gray-500" aria-hidden />
           <span className="truncate">{summary}</span>
         </button>
       </PopoverTrigger>

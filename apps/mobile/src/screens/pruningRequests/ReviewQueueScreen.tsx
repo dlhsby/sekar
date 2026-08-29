@@ -389,7 +389,7 @@ export function ReviewQueueScreen(): React.JSX.Element {
                 ))}
               </ScrollView>
             ) : (
-              <NBText variant="body-sm" color="gray400" style={styles.filterBarPlaceholder}>{t('pruning:list.allRequestsLabel')}</NBText>
+              <NBText variant="body-sm" color="gray500" style={styles.filterBarPlaceholder}>{t('pruning:list.allRequestsLabel')}</NBText>
             )}
             {activeFilterCount > 0 && (
               <TouchableOpacity
@@ -533,7 +533,7 @@ const styles = StyleSheet.create({
   },
   filterBarPlaceholder: {
     fontStyle: 'italic',
-    // Color handled by NBText color="gray400"
+    // Color handled by NBText color="gray500"
   },
   miniChipsContent: {
     flexDirection: 'row',

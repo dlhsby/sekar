@@ -231,7 +231,7 @@ export function ReassignWorkerModal({
                 'w-full px-3 py-2 text-sm rounded-nb-base resize-none',
                 'border-2 border-nb-black bg-nb-white text-nb-black',
                 'shadow-nb-md focus:outline-none focus:ring-2 focus:ring-nb-primary focus:ring-offset-1',
-                'placeholder:text-nb-gray-400'
+                'placeholder:text-nb-gray-500'
               )}
             />
           </div>

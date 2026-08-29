@@ -198,7 +198,7 @@ export function UnscheduledWorkersSheet({
           row.original.teams.length ? (
             <span className="text-nb-body-sm">{row.original.teams.join(', ')}</span>
           ) : (
-            <span className="text-nb-gray-400">—</span>
+            <span className="text-nb-gray-500">—</span>
           ),
       },
     ],

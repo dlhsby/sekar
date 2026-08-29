@@ -121,7 +121,7 @@ export function ActivitiesTab({
           </View>
         ) : !hasMore && activities.length > 0 ? (
           <View style={styles.footerEnd}>
-            <NBText variant="body-sm" color="gray400" style={styles.footerEndText}>{t('ui.noMore')}</NBText>
+            <NBText variant="body-sm" color="gray500" style={styles.footerEndText}>{t('ui.noMore')}</NBText>
           </View>
         ) : null
       }
