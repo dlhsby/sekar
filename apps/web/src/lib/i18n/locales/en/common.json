@@ -140,7 +140,10 @@
     "multiCombobox": {
       "selected": "{{count}} selected",
       "removeItem": "Remove {{label}}"
-    }
+    },
+    "photoPreview": "Photo preview",
+    "photoPrevious": "Previous photo",
+    "photoNext": "Next photo"
   },
   "app": {
     "install": {
