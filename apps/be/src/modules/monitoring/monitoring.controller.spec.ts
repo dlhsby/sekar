@@ -4,6 +4,7 @@ import { MonitoringService } from './monitoring.service';
 import { MonitoringConfigService } from './services/monitoring-config.service';
 import { MonitoringStatsService } from './services/monitoring-stats.service';
 import { MonitoringReassignService } from './services/monitoring-reassign.service';
+import { MonitoringAttendanceService } from './services/monitoring-attendance.service';
 import { AreaPlantStatusService } from './services/area-plant-status.service';
 import { AuditLogService } from '../audit/audit.service';
 import { CityStatsDto } from './dto/city-stats.dto';
@@ -288,6 +289,13 @@ describe('MonitoringController', () => {
           provide: MonitoringReassignService,
           useValue: {
             reassign: jest.fn(),
+          },
+        },
+        {
+          provide: MonitoringAttendanceService,
+          useValue: {
+            getAttendance: jest.fn(),
+            getUserAttendanceDetail: jest.fn(),
           },
         },
         {

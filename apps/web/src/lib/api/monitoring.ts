@@ -72,6 +72,10 @@ export const monitoringKeys = {
   staffingSummary: (filters?: StaffingFilters) =>
     [...monitoringKeys.all, 'staffing-summary', filters] as const,
   config: () => [...monitoringKeys.all, 'config'] as const,
+  attendance: (date: string, page: number) =>
+    [...monitoringKeys.all, 'attendance', date, page] as const,
+  userAttendance: (userId: string, date: string) =>
+    [...monitoringKeys.all, 'user-attendance', userId, date] as const,
   boundaries: (level?: 'district' | 'area', districtId?: string, bbox?: string | null) =>
     [...monitoringKeys.all, 'boundaries', level ?? 'area', districtId ?? null, bbox ?? null] as const,
 };
@@ -322,5 +326,104 @@ export function useReassignWorker() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: monitoringKeys.all });
     },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Attendance by service-day (parity W3)
+// ---------------------------------------------------------------------------
+
+export interface AttendanceLocation {
+  id: string;
+  name: string;
+}
+
+export interface ClockedInWorker {
+  id: string;
+  username: string;
+  full_name: string;
+  role: string;
+  area: AttendanceLocation | null;
+  clock_in_time: string;
+  clock_out_time: string | null;
+}
+
+export interface NotClockedInWorker {
+  id: string;
+  username: string;
+  full_name: string;
+  role: string;
+  area: AttendanceLocation | null;
+}
+
+interface Paged<T> {
+  data: T[];
+  meta: { total: number; page: number; limit: number; totalPages: number };
+}
+
+export interface MonitoringAttendance {
+  date: string;
+  total_workers: number;
+  clocked_in_count: number;
+  clocked_in: Paged<ClockedInWorker>;
+  not_clocked_in: Paged<NotClockedInWorker>;
+}
+
+export interface UserShiftDetail {
+  id: string;
+  clock_in_time: string;
+  clock_out_time: string | null;
+  duration_minutes: number | null;
+  clock_in_outside_boundary: boolean;
+  clock_out_outside_boundary: boolean;
+}
+
+export interface UserAttendanceDetail {
+  date: string;
+  user: {
+    id: string;
+    username: string;
+    full_name: string;
+    role: string;
+    area: AttendanceLocation | null;
+  };
+  clocked_in: boolean;
+  shifts: UserShiftDetail[];
+}
+
+/**
+ * Attendance for one WIB service-day.
+ *
+ * Points at `/monitoring/attendance`, NOT the superseded `/supervisor` one:
+ * that roster is satgas-only, its day bounds are server-local, and it matches
+ * sessions on clock-in rather than service_day.
+ */
+export function useMonitoringAttendance(date: string, page = 1, enabled = true) {
+  return useQuery({
+    queryKey: monitoringKeys.attendance(date, page),
+    queryFn: async () => {
+      const response = await apiClient.get<MonitoringAttendance>('/monitoring/attendance', {
+        params: { date, page, limit: 50 },
+      });
+      return response.data;
+    },
+    enabled: enabled && !!date,
+    staleTime: 60 * 1000,
+  });
+}
+
+/** One worker's sessions on a service-day. Fetched only when a row is opened. */
+export function useUserAttendance(userId: string | null, date: string) {
+  return useQuery({
+    queryKey: monitoringKeys.userAttendance(userId ?? '', date),
+    queryFn: async () => {
+      const response = await apiClient.get<UserAttendanceDetail>(
+        `/monitoring/attendance/${userId}`,
+        { params: { date } },
+      );
+      return response.data;
+    },
+    enabled: !!userId && !!date,
+    staleTime: 60 * 1000,
   });
 }

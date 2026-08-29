@@ -22,6 +22,12 @@ import { MonitoringService } from './monitoring.service';
 import { MonitoringConfigService } from './services/monitoring-config.service';
 import { MonitoringStatsService } from './services/monitoring-stats.service';
 import { MonitoringReassignService } from './services/monitoring-reassign.service';
+import { MonitoringAttendanceService } from './services/monitoring-attendance.service';
+import {
+  AttendanceQueryDto,
+  MonitoringAttendanceDto,
+  UserAttendanceDetailDto,
+} from './dto/attendance.dto';
 import { UserLocationsService } from '../../modules/user-locations/user-locations.service';
 import { AuditLogService } from '../audit/audit.service';
 import { CityStatsDto } from './dto/city-stats.dto';
@@ -64,6 +70,7 @@ export class MonitoringController {
     private readonly configService: MonitoringConfigService,
     private readonly statsService: MonitoringStatsService,
     private readonly reassignService: MonitoringReassignService,
+    private readonly attendanceService: MonitoringAttendanceService,
     private readonly userAreasService: UserLocationsService,
     private readonly areaPlantStatusService: AreaPlantStatusService,
     private readonly auditLogService: AuditLogService,
@@ -561,5 +568,39 @@ export class MonitoringController {
         throw new ForbiddenException('You can only view users in your own district');
       }
     }
+  }
+
+  /**
+   * Attendance for a WIB service-day, split into who clocked in and who did not.
+   *
+   * Supersedes `GET /supervisor/attendance`. Same response SHAPE, but the roster
+   * is the counted one (satgas + linmas, not satgas alone), the day is bounded
+   * in WIB rather than server-local time, sessions are matched on `service_day`
+   * so night shifts land on the right day, and a worker with two sessions counts
+   * once.
+   */
+  @Get('attendance')
+  @Roles(...MONITORING_CITY, ...MONITORING_DISTRICT, ...MONITORING_AREA)
+  @ApiOperation({ summary: 'Attendance report for a service-day (clocked-in / not clocked-in)' })
+  @ApiResponse({ status: 200, type: MonitoringAttendanceDto })
+  async getAttendance(@Query() query: AttendanceQueryDto): Promise<MonitoringAttendanceDto> {
+    return this.attendanceService.getAttendance(query);
+  }
+
+  /**
+   * One worker's sessions on a service-day. Returns every session, not just the
+   * first — a worker can clock in more than once in a day.
+   */
+  @Get('attendance/:userId')
+  @Roles(...MONITORING_CITY, ...MONITORING_DISTRICT, ...MONITORING_AREA)
+  @ApiOperation({ summary: 'Per-user attendance detail for a service-day' })
+  @ApiParam({ name: 'userId', description: 'User UUID' })
+  @ApiQuery({ name: 'date', required: false, description: 'YYYY-MM-DD (WIB); defaults to today' })
+  @ApiResponse({ status: 200, type: UserAttendanceDetailDto })
+  async getUserAttendance(
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Query('date') date?: string,
+  ): Promise<UserAttendanceDetailDto> {
+    return this.attendanceService.getUserAttendanceDetail(userId, date);
   }
 }

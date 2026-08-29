@@ -42,6 +42,9 @@ jest.mock('@/lib/api/monitoring', () => ({
   // the panel's own empty/loading handling rather than stubbing a summary.
   useUserDaySummary: () => ({ data: undefined, isLoading: false }),
   useReassignmentHistory: () => ({ data: undefined, isLoading: false }),
+  // The attendance dialog is mounted closed, so its hooks still run (disabled).
+  useMonitoringAttendance: () => ({ data: undefined, isLoading: false, isError: false }),
+  useUserAttendance: () => ({ data: undefined, isLoading: false, isError: false }),
 }));
 
 // The real map needs Google Maps/WebGL — assert we hand it the worker list

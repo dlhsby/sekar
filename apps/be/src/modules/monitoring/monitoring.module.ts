@@ -28,6 +28,7 @@ import { StatusCalculatorService } from './services/status-calculator.service';
 import { MonitoringSchedulerService } from './services/monitoring-scheduler.service';
 import { DayTypeService } from './services/day-type.service';
 import { MonitoringReassignService } from './services/monitoring-reassign.service';
+import { MonitoringAttendanceService } from './services/monitoring-attendance.service';
 import { StatusProjectorService } from './services/status-projector.service';
 import { StaffingDebouncerService } from './services/staffing-debouncer.service';
 import { StaleStatusSweeperService } from './services/stale-status-sweeper.service';
@@ -76,6 +77,7 @@ import { SettingsModule } from '../settings/settings.module';
   controllers: [MonitoringController],
   providers: [
     MonitoringService,
+    MonitoringAttendanceService,
     MonitoringStatsService,
     MonitoringUserService,
     AreaPlantStatusService,

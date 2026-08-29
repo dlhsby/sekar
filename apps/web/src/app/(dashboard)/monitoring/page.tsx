@@ -14,7 +14,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, 
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { SlidersHorizontal, RefreshCw, X, List, ChevronDown, Settings } from 'lucide-react';
+import { SlidersHorizontal, RefreshCw, X, List, ChevronDown, Settings, ClipboardCheck } from 'lucide-react';
 
 import { useAuth } from '@/lib/auth/hooks';
 import {
@@ -52,6 +52,7 @@ import { AreaDetailPanel } from '@/components/monitoring/AreaDetailPanel';
 import { useAreaPlants, useNotablePlants } from '@/lib/api/plants';
 import { MonitoringSearch } from '@/components/monitoring/MonitoringSearch';
 import { MonitoringLayersPanel } from '@/components/monitoring/MonitoringLayersPanel';
+import { AttendanceDetailDialog } from '@/components/monitoring/AttendanceDetailDialog';
 import { SimpleMonitoringMap } from '@/components/monitoring/SimpleMonitoringMapLazy';
 import type { SimpleWorker, CurrentNodeMarker } from '@/components/monitoring/SimpleMonitoringMap';
 import type { NodeMarker } from '@/components/monitoring/NodeMarkerLayer';
@@ -160,6 +161,7 @@ export default function MonitoringPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [layersOpen, setLayersOpen] = useState(false);
+  const [attendanceOpen, setAttendanceOpen] = useState(false);
   const [listOpen, setListOpen] = useState(false);
   // Which node's detail card is open. An ID rather than a boolean, because
   // detail can now be opened for ANY node (a child's ⓘ badge or Wilayah row),
@@ -1498,6 +1500,19 @@ export default function MonitoringPage() {
             onSelect={handleSearchSelect}
             className="max-w-md flex-1"
           />
+          {/* Attendance drill-down — who clocked in on a given service-day, and
+              who did not. Mobile has had this since Phase 4; a supervisor at a
+              desk could previously only infer it from the map. */}
+          <button
+            type="button"
+            onClick={() => setAttendanceOpen(true)}
+            aria-label={t('monitoring:attendance.openLabel')}
+            className="pointer-events-auto flex h-11 items-center gap-1.5 rounded-nb-base border-2 border-nb-black bg-nb-white px-3 text-sm font-bold text-nb-black shadow-nb-sm transition-colors hover:bg-nb-gray-50"
+            data-testid="open-attendance"
+          >
+            <ClipboardCheck className="h-4 w-4" />
+            <span className="hidden sm:inline">{t('monitoring:attendance.title')}</span>
+          </button>
           {/* Settings control (map overlay toggles) — "Pengaturan" */}
           <button
             type="button"
@@ -1595,6 +1610,8 @@ export default function MonitoringPage() {
           />
         </div>
       )}
+
+      <AttendanceDetailDialog open={attendanceOpen} onOpenChange={setAttendanceOpen} />
 
       {/* Settings panel (map overlay toggles) */}
       {layersOpen && (
