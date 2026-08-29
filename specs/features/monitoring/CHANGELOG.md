@@ -2,6 +2,18 @@
 
 Newest first. Feature overview + current design live in [README.md](./README.md).
 
+- **2026-08-30** — **Hotfix: both attendance endpoints were returning HTTP 500 in merged code.** The
+  query joined `shift.location`, but the Area→Location rename moved the **column** to `location_id`
+  while leaving the entity **property** as `area`. TypeORM resolves join paths by property name, so
+  every call threw *"Relation with property path location in entity was not found"* — W3's drill-down
+  was broken end to end on both platforms from the moment it merged. **Twenty unit tests passed
+  throughout**, because they mock `createQueryBuilder`: the ORM never sees the string, so a wrong path
+  is invisible at that level. Found by calling the endpoint against a real database during device
+  verification, and fixed to `shift.area`. Verified live afterwards: list 200 (roster 89, area names
+  resolving), per-user 200, and a past date exercising the `service_day` branch returning real
+  historical sessions. Added assertions pinning the exact join paths — the cheapest guard where the
+  ORM is mocked, though the real guard is exercising the endpoint against a live DB.
+
 - **2026-08-29** — **`/supervisor/*` has no callers left, and three piles of dead code are gone.**
   Mobile's profile stats called `/supervisor/active-users` and `/supervisor/area-status` purely to
   `.length` them — downloading every active user and every area to display two numbers. Both are now

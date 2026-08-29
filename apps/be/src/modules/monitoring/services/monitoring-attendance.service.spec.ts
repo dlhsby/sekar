@@ -115,6 +115,35 @@ describe('MonitoringAttendanceService', () => {
     });
   });
 
+  /**
+   * Regression: the join used `shift.location`, but the Area→Location rename
+   * moved the COLUMN to `location_id` while leaving the entity PROPERTY as
+   * `area`. TypeORM resolves join paths by property name, so every call threw
+   * "Relation with property path location in entity was not found" -- a 500 on
+   * both endpoints, in merged code, found only by calling it against a real
+   * database.
+   *
+   * These tests mock `createQueryBuilder`, so the ORM never validates the
+   * string and a wrong path stays invisible. Asserting the exact path is the
+   * cheapest guard available at this level; the real one is exercising the
+   * endpoint against a live DB, which no unit test does.
+   */
+  describe('join paths (regression: property name vs column name)', () => {
+    it('joins shift.area — the PROPERTY — not shift.location, the column', async () => {
+      await service.getAttendance({ date: '2026-03-05' });
+
+      const joined = qb.leftJoinAndSelect.mock.calls.map((c) => c[0]);
+      expect(joined).toContain('shift.area');
+      expect(joined).not.toContain('shift.location');
+    });
+
+    it('joins the user relation', async () => {
+      await service.getAttendance({ date: '2026-03-05' });
+
+      expect(qb.leftJoinAndSelect.mock.calls.map((c) => c[0])).toContain('shift.user');
+    });
+  });
+
   describe('session matching (defect 3: clock_in_time vs service_day)', () => {
     it('matches on service_day, falling back to clock-in only for rows without one', async () => {
       await service.getAttendance({ date: '2026-03-05' });
