@@ -2,6 +2,14 @@
 
 Newest first. Feature overview + current design live in [README.md](./README.md).
 
+- **2026-08-29** — **Notable plants are drawn on the map, on both platforms** (parity slice 4, gap W1).
+  Web gains a `plants` layer row and a `PlantMarkerLayer`; mobile's `PlantOverlayLayer` stops being a
+  stub that returned `null` while its toggle sat in the tools sheet controlling nothing. Lokasi scope
+  only — the endpoint is per-location, so anything wider would be one request per lokasi. Heritage
+  trees ring differently from ordinary specimens, which is the distinction an operator scans for. The
+  web layer row is additive: `sanitize` falls back to defaults for absent keys, so no storage version
+  bump and no migration.
+
 - **2026-08-29** — **Mobile can browse and drill areas from the sheet** (parity slice 3, gaps M4/M7/M8).
   `MonitoringStatusSheet` had no node list at all, so areas could only be reached from the map. It now
   carries a Wilayah/Petugas tab over the children of the current level — one level deep, because the

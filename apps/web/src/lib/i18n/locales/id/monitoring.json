@@ -54,7 +54,8 @@
       "label": "Nama",
       "petugas": "Petugas",
       "tim": "Tim"
-    }
+    },
+    "plants": "Tanaman"
   },
   "search": {
     "personnelLabel": "Petugas",

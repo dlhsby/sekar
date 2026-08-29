@@ -35,6 +35,8 @@ import {
 } from '@/lib/monitoring/layers';
 import { NodeMarkerLayer, type NodeMarker } from './NodeMarkerLayer';
 import { WorkerClusterLayer, type MapBounds } from './WorkerClusterLayer';
+import { PlantMarkerLayer } from './PlantMarkerLayer';
+import type { NotablePlantRow } from '@/lib/api/plants';
 import type { TeamGroup } from '@/lib/monitoring/teamGrouping';
 import {
   pinElement,
@@ -118,6 +120,13 @@ export interface SimpleMonitoringMapProps {
    * value it was computing anyway.
    */
   onBoundsChange?: (bounds: MapBounds, zoom: number | undefined) => void;
+  /**
+   * Notable plants for the drilled lokasi. Empty at every other scope — the
+   * endpoint is per-location, so there is nothing to draw until you are inside
+   * one. See `PlantMarkerLayer`.
+   */
+  plants?: NotablePlantRow[];
+  onSelectPlant?: (plant: NotablePlantRow) => void;
 }
 
 const SURABAYA = { lat: -7.2575, lng: 112.7521 };
@@ -283,6 +292,8 @@ function MonitoringMapInner({
   onDrillNode,
   currentNode,
   onNodeDetail,
+  plants,
+  onSelectPlant,
   openNodeId,
   areaId,
   regionId,
@@ -803,6 +814,11 @@ function MonitoringMapInner({
           promoted={reveal.promotedNodes}
           labelled={reveal.labelledNodes}
         />
+
+        {/* Notable plants — lokasi scope only, and only when the layer is on. */}
+        {scope === 'location' && showsNodeMarker(layers.plants) && plants && plants.length > 0 && (
+          <PlantMarkerLayer plants={plants} onSelect={onSelectPlant} />
+        )}
 
         {/* Movement trail (today) — a dashed path under the pins, drawn only on
             an explicit "Lihat jejak". Start and end are marked, matching the

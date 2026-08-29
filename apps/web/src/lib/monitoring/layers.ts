@@ -44,11 +44,20 @@ export type GeoFacet = 'boundary' | 'fill' | 'marker' | 'label';
 /** Which people the map draws. `tim` alone hides anyone not on a team. */
 export type PersonnelFacet = 'petugas' | 'tim';
 
+/**
+ * Notable plants. One facet, not four: a tree has a pin and nothing else — no
+ * boundary to outline, no area to fill. It stays a facet SET rather than a
+ * boolean so every row in the panel is the same kind of control.
+ */
+export type PlantFacet = 'marker';
+
 export type GeoLayer = GeoFacet[];
 export type PersonnelLayer = PersonnelFacet[];
+export type PlantLayer = PlantFacet[];
 
 export const GEO_FACETS: GeoFacet[] = ['boundary', 'fill', 'marker', 'label'];
 export const PERSONNEL_FACETS: PersonnelFacet[] = ['petugas', 'tim'];
+export const PLANT_FACETS: PlantFacet[] = ['marker'];
 
 export interface MonitoringLayers {
   /** Rayon — outline / fill / count marker / name label. */
@@ -57,6 +66,13 @@ export interface MonitoringLayers {
   kawasan: GeoLayer;
   /** Lokasi (area) — outline / fill / count marker / name label. */
   lokasi: GeoLayer;
+  /**
+   * Notable-plant pins. Drawn at LOKASI scope only: the endpoint is
+   * per-location, so anything wider would be one request per lokasi — and a
+   * tree is the densest thing on the map, which is exactly the layer the tier
+   * rules reveal last anyway.
+   */
+  plants: PlantLayer;
   /** Worker pins and/or collapsed team bubbles. */
   personnel: PersonnelLayer;
 }
@@ -66,6 +82,9 @@ export const DEFAULT_LAYERS: MonitoringLayers = {
   kawasan: ['boundary', 'fill', 'marker', 'label'],
   lokasi: ['boundary', 'fill', 'marker', 'label'],
   personnel: ['petugas', 'tim'],
+  // Off by default: a lokasi's trees are a specialist view, and turning the
+  // layer on is how an operator says they want it.
+  plants: [],
 };
 
 const STORAGE_KEY = 'monitoring.layers.v6';
@@ -114,6 +133,11 @@ export const LAYER_ROWS: LayerRow[] = [
   { key: 'kawasan', labelKey: 'monitoring:layers.kawasan', facets: GEO_FACET_ROWS },
   { key: 'lokasi', labelKey: 'monitoring:layers.lokasi', facets: GEO_FACET_ROWS },
   {
+    key: 'plants',
+    labelKey: 'monitoring:layers.plants',
+    facets: [{ value: 'marker', labelKey: 'monitoring:layers.facet.marker' }],
+  },
+  {
     key: 'personnel',
     labelKey: 'monitoring:layers.personnel',
     facets: [
@@ -125,7 +149,9 @@ export const LAYER_ROWS: LayerRow[] = [
 
 /** Every facet a row can hold — the target of the "Semua" shortcut. */
 export function allFacets(key: keyof MonitoringLayers): string[] {
-  return key === 'personnel' ? [...PERSONNEL_FACETS] : [...GEO_FACETS];
+  if (key === 'personnel') return [...PERSONNEL_FACETS];
+  if (key === 'plants') return [...PLANT_FACETS];
+  return [...GEO_FACETS];
 }
 
 /** Add or remove one facet, preserving the canonical order. */
@@ -192,6 +218,9 @@ export function migrateV5(legacy: LegacyV5Layers): MonitoringLayers {
     kawasan: geo(legacy.kawasan),
     lokasi: geo(legacy.lokasi),
     personnel,
+    // The plants row postdates both legacy formats, so a migrated store takes
+    // its default rather than inventing a preference the operator never set.
+    plants: [...DEFAULT_LAYERS.plants],
   };
 }
 
@@ -210,6 +239,9 @@ export function migrateV4(legacy: LegacyV4Layers): MonitoringLayers {
     kawasan: geo(legacy.kawasan),
     lokasi: geo(legacy.lokasi),
     personnel,
+    // The plants row postdates both legacy formats, so a migrated store takes
+    // its default rather than inventing a preference the operator never set.
+    plants: [...DEFAULT_LAYERS.plants],
   };
 }
 
@@ -233,6 +265,9 @@ function sanitize(parsed: Partial<Record<keyof MonitoringLayers, unknown>>): Mon
     kawasan: clean('kawasan') as GeoLayer,
     lokasi: clean('lokasi') as GeoLayer,
     personnel: clean('personnel') as PersonnelLayer,
+    // Absent from a v6 store written before this row existed — `clean` falls
+    // back to the default, so no version bump and no migration is needed.
+    plants: clean('plants') as PlantLayer,
   };
 }
 

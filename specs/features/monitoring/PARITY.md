@@ -55,7 +55,7 @@ supervisor tool that is backwards.
 
 | # | Gap | Size | Why it matters |
 |---|---|---|---|
-| W1 | **Plant overlay layer** (`PlantOverlayLayer`, `plants` layer row) | M | Mobile has a fifth layer row web has no equivalent of. Web's `layers.ts` has no `plants` key at all. |
+| W1 | **Plant overlay layer** | M | **DONE** (slice 4). **Audit correction, twice over:** this row claimed mobile had an overlay web lacked. Mobile's `PlantOverlayLayer` was a **stub** — 28 lines returning `null` unconditionally, `TODO sub-phase 3-8` — so its Tanaman toggle controlled nothing; and web already had a `/plants` page, a Tanaman row in `AreaDetailPanel` and a `useNotablePlants` client. The real gap was that **neither platform drew plants on the map**. Built on both, at lokasi scope: the endpoint is per-location, so anything wider would be ~950 requests. |
 | W2 | **Photo gallery** (`PhotoGallery`) | M | Verification photos are viewable on a phone, not at a desk. |
 | W3 | **Attendance detail modal** (`AttendanceDetailModal`, `UserAttendanceModal`) | M | Per-user attendance drill-down. |
 | W4 | **Trail date stepper** (`TrailDateStepper`, `TrailInfoBar`) | S | Web's `LocationTimeline` shows today only; mobile can step days. |
@@ -95,8 +95,8 @@ combined branch would be unreviewable and would couple a mobile map rewrite to a
 ## 6. Open decisions
 
 1. ~~Clustering on mobile~~ — **resolved**, see §5. Mobile adopts the dot field.
-2. **Plant overlay on web (W1)** — is this wanted at a desk, or is it a field-only tool? Blocks slice 4
-   only; the rest of the roadmap does not depend on the answer.
+2. ~~Plant overlay on web (W1)~~ — **resolved**: wanted at a desk. Built on both platforms at lokasi
+   scope. A city-wide view would need a new bbox endpoint; deferred until someone asks for it.
 3. **Density constants for mobile** — a phone viewport is roughly a quarter of a laptop's, so the
    separation box and cap need their own values. Deliberately left to be *measured* during slice 1
    rather than guessed here; web's own constants were retuned twice after seeing them rendered.
