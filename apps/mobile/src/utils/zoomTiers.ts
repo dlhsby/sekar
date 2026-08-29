@@ -53,11 +53,52 @@ export function tiersAtDelta(latitudeDelta: number | undefined): TierVisibility 
   };
 }
 
-/** The next tier to appear, for the "zoom in to see more" hint. Null at full depth. */
+/**
+ * Drill scope, as far as tier admission is concerned. Only the distinction
+ * between "looking at the whole city" and "looking inside something" matters.
+ */
+export type TierScope = 'surabaya' | 'city' | 'district' | 'region' | 'location';
+
+/** Has the operator asked to look inside a particular place? */
+const drilledIn = (scope: TierScope | undefined): boolean =>
+  scope === 'district' || scope === 'region' || scope === 'location';
+
+/**
+ * The tier set for a camera span AND a drill scope.
+ *
+ * Camera span is a proxy for density, and drilling in is where the proxy
+ * breaks: a rayon that spans the whole city leaves the camera wide after the
+ * fit, so the span gate admitted nothing below rayon and the map showed an
+ * empty area behind a "zoom in" hint — with only 42 lokasi to draw.
+ *
+ * Drilling in IS the request to see what is inside, so it reveals the whole
+ * subtree at any span. The gate survives at city scope only, where "every tier"
+ * means every lokasi in Surabaya.
+ *
+ * Density is no longer this function's job either: progressive reveal caps the
+ * full pins and draws the remainder as dots, which beats hiding a tier outright.
+ */
+export function tiersFor({
+  latitudeDelta,
+  scope,
+}: {
+  latitudeDelta: number | undefined;
+  scope: TierScope | undefined;
+}): TierVisibility {
+  if (drilledIn(scope)) return ALL_TIERS;
+  return tiersAtDelta(latitudeDelta);
+}
+
+/**
+ * The next tier to appear, for the "zoom in to see more" hint. Null at full
+ * depth — which drilling in reaches immediately, so the hint stops promising a
+ * tier that is already on screen.
+ */
 export function nextTierAtDelta(
   latitudeDelta: number | undefined,
+  scope?: TierScope,
 ): 'region' | 'location' | null {
-  const t = tiersAtDelta(latitudeDelta);
+  const t = tiersFor({ latitudeDelta, scope });
   if (!t.region) return 'region';
   if (!t.location) return 'location';
   return null;

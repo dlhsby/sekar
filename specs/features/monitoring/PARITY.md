@@ -37,9 +37,9 @@ how the modes *behave* once selected — which is §2.
 
 | # | Gap | Size | Why it matters |
 |---|---|---|---|
-| M1 | **Progressive reveal** — `salience` / `affinity` / `declutter` / `mercator` (0 files on mobile) | **L** | The core of PR #463. Without it mobile's zoom mode draws every eligible marker, which is the exact complaint that started this work — and a phone is the *most* crowded surface. |
-| M2 | **Scope-aware tier admission** (`tiersFor`) | S | Drilling into a city-spanning rayon on mobile shows nothing, same defect the client hit on web. |
-| M3 | **Label decluttering** | M | Mobile reserves an opposite-side slot per label (Android bitmap clipping) but does not measure collisions. Web measures and withholds. |
+| M1 | **Progressive reveal** — `salience` / `affinity` / `declutter` / `mercator` (0 files on mobile) | **L** | **DONE** (slice 1). The core of PR #463. Without it mobile's zoom mode draws every eligible marker, which is the exact complaint that started this work — and a phone is the *most* crowded surface. |
+| M2 | **Scope-aware tier admission** (`tiersFor`) | S | **DONE** (slice 1). Drilling into a city-spanning rayon on mobile shows nothing, same defect the client hit on web. |
+| M3 | **Label decluttering** | M | **DONE** (slice 1). Mobile reserves an opposite-side slot per label (Android bitmap clipping) but does not measure collisions. Web measures and withholds. |
 | M4 | **Row hide** (`hidden.ts`, restore banner) | M | No mobile equivalent. |
 | M5 | **Luar jadwal filter** | S | Same presence-model gap web had: visible in the summary, not filterable. |
 | M6 | **Geo search index** (`useGeoIndex`) | M | Mobile search reads "districts always come from the loaded boundaries client-side" — the exact defect web fixed: at city scope no lokasi or kawasan is findable. |
@@ -88,7 +88,7 @@ combined branch would be unreviewable and would couple a mobile map rewrite to a
 
 | Divergence | Standing decision |
 |---|---|
-| **Mobile clusters worker pins; web does not** | Clustering was removed from web **on the client's request** — "it hid people and confused operators" — and replaced by the ranked dot field. Porting clustering to web would reinstate what she rejected. **Resolved 2026-08-28: mobile loses clustering too.** The original complaint was that clustering hides people, and that is not a property of screen size — a merged bubble hides its members on a phone exactly as it did on a desktop. The dot field withholds *detail* and never withholds a *marker*, which is the distinction the complaint was actually about. Slice 1 retires it. |
+| **Mobile clusters worker pins; web does not** | Clustering was removed from web **on the client's request** — "it hid people and confused operators" — and replaced by the ranked dot field. Porting clustering to web would reinstate what she rejected. **Resolved 2026-08-28, and DONE in slice 1: mobile lost clustering.** The original complaint was that clustering hides people, and that is not a property of screen size — a merged bubble hides its members on a phone exactly as it did on a desktop. The dot field withholds *detail* and never withholds a *marker*, which is the distinction the complaint was actually about. Slice 1 retires it. |
 | **Label placement differs** (web absolute, mobile reserved slot) | Not drift: `react-native-maps` anchors by a fraction of the rendered view and Android snapshots that view to a bitmap, clipping anything outside its bounds. Same *result*, different mechanism, by necessity. |
 | **Tier thresholds keyed differently** (web zoom level, mobile `latitudeDelta`) | The platforms expose different camera models. The thresholds are tuned to match visually; unifying the *units* is not possible. |
 | **Panel resize is web-only** | A phone sheet has no spare width. Correctly absent. |

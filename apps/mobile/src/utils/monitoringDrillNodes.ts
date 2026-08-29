@@ -44,6 +44,10 @@ export function aggregateNodeToNodeMarker(node: AggregateNode): NodeMarker | nul
     clocked_in: node.roster?.clocked_in ?? 0,
     // Not-clocked-in = belum_hadir (within grace) + tidak_hadir (no-show), ADR-050.
     not_clocked_in: (node.roster?.belum_hadir ?? 0) + (node.roster?.tidak_hadir ?? 0),
+    // Also carried unsummed: salience weights a no-show above someone still
+    // within their grace window, and the sum discards that.
+    belum_hadir: node.roster?.belum_hadir ?? 0,
+    tidak_hadir: node.roster?.tidak_hadir ?? 0,
   };
 }
 

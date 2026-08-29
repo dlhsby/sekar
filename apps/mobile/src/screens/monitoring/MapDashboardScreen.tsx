@@ -132,7 +132,7 @@ export function MapDashboardScreen(): React.JSX.Element {
   const { resetHeading, handleClusterPress, handleMyLocation, handleZoomIn, handleZoomOut } =
     useMapOperations(mapRef, currentRegion);
 
-  const { visibleUsers, teamBubbles, useClustering, clusters, labelMode, staffedAreas, totalAreas, lastUpdated } =
+  const { visibleUsers, teamBubbles, labelMode, staffedAreas, totalAreas, lastUpdated } =
     useLiveUsersFiltering(liveUsers, activityFilter, filters, visibleLayers, currentRegion, boundaries, scope, view.id, selectedTeamId, mode);
 
 
@@ -570,9 +570,7 @@ export function MapDashboardScreen(): React.JSX.Element {
                 visibleLayers={visibleLayers}
                 visibleUsers={visibleUsers}
                 selectedUser={selectedUser}
-                clusters={clusters}
                 labelMode={labelMode}
-                useClustering={useClustering}
                 currentRegion={currentRegion}
                 boundaryKey={boundaryKey}
                 scope={scope}

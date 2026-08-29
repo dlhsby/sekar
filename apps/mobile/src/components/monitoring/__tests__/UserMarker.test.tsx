@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { render, act } from '@testing-library/react-native';
+import { render, act, fireEvent } from '@testing-library/react-native';
 import { UserMarker } from '../UserMarker';
 import type { LiveUser } from '../../../types/models.types';
 
@@ -151,40 +151,46 @@ describe('UserMarker', () => {
     });
   });
 
-  describe('cluster rendering', () => {
-    it('should render cluster marker when clusterCount > 1', () => {
+  describe('demoted form (progressive reveal)', () => {
+    it('renders a dot instead of a pin when demoted', () => {
+      // Clustering used to merge people into a count bubble here. It was removed
+      // for the same reason it was removed from web: it HID PEOPLE, which is not
+      // a property of screen size. The dot withholds detail, never the marker.
       const user = createMockUser();
-      const { getByText } = render(
-        <UserMarker user={user} onPress={mockOnPress} labelMode="none" clusterCount={5} />
+      const { getByTestId, queryByTestId } = render(
+        <UserMarker user={user} onPress={mockOnPress} labelMode="none" demoted />
       );
-      expect(getByText('5')).toBeTruthy();
+      expect(getByTestId('worker-dot')).toBeTruthy();
+      expect(queryByTestId('worker-pin')).toBeNull();
     });
 
-    it('should render normal marker when clusterCount is 1', () => {
-      const user = createMockUser();
-      const { queryByText, getAllByTestId } = render(
-        <UserMarker user={user} onPress={mockOnPress} labelMode="none" clusterCount={1} />
-      );
-      expect(queryByText('1')).toBeNull();
-      expect(getAllByTestId('icon').length).toBeGreaterThan(0);
-    });
-
-    it('should render normal marker when clusterCount is undefined', () => {
+    it('keeps the dot pressable, so nothing is unreachable', () => {
       const user = createMockUser();
       const { getByTestId } = render(
-        <UserMarker user={user} onPress={mockOnPress} labelMode="none" />
+        <UserMarker user={user} onPress={mockOnPress} labelMode="none" demoted />
       );
-      expect(getByTestId('marker')).toBeTruthy();
+      fireEvent.press(getByTestId('marker'));
+      expect(mockOnPress).toHaveBeenCalledWith(user);
     });
 
-    it('should suppress label in cluster mode regardless of labelMode', () => {
-      const user = createMockUser({ role: 'satgas', full_name: 'Ahmad Wijaya' });
-      const { queryByText } = render(
-        <UserMarker user={user} onPress={mockOnPress} labelMode="full" clusterCount={3} />
+    it('draws the full pin when not demoted', () => {
+      const user = createMockUser();
+      const { getByTestId, queryByTestId } = render(
+        <UserMarker user={user} onPress={mockOnPress} labelMode="none" />
       );
-      // Cluster count should show, but no name label
-      expect(queryByText('3')).toBeTruthy();
-      expect(queryByText(/STG|Satgas/)).toBeNull();
+      expect(getByTestId('worker-pin')).toBeTruthy();
+      expect(queryByTestId('worker-dot')).toBeNull();
+    });
+
+    it('withholds the name through the EXISTING labelMode, not a second switch', () => {
+      // `labelMode` already decides whether a name is drawn. The label pass
+      // feeds it 'none'; a parallel boolean would be two switches for one
+      // behaviour, and they would eventually disagree.
+      const user = createMockUser({ full_name: 'Ahmad Wijaya' });
+      const { queryByText } = render(
+        <UserMarker user={user} onPress={mockOnPress} labelMode="none" />
+      );
+      expect(queryByText('Ahmad Wijaya')).toBeNull();
     });
   });
 

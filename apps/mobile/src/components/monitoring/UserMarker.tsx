@@ -52,8 +52,14 @@ interface UserMarkerProps {
   user: LiveUser;
   onPress: (user: LiveUser) => void;
   labelMode: LabelMode;
-  clusterCount?: number;
   dimmed?: boolean;
+  /**
+   * Progressive reveal: this worker lost their space to a more salient
+   * neighbour. Still drawn, still at their true position, still pressable —
+   * only their detail is deferred. The dot IS the marker at low priority, which
+   * is the distinction clustering failed to make when it merged people away.
+   */
+  demoted?: boolean;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -84,10 +90,10 @@ export const UserMarker = React.memo(function UserMarker({
   user,
   onPress,
   labelMode,
-  clusterCount,
+  demoted = false,
   dimmed = false,
 }: UserMarkerProps): React.JSX.Element {
-  const isCluster = (clusterCount ?? 0) > 1;
+
   // Fill comes from THE presence colour standard (presenceMarkerColor), so a
   // worker's pin matches their pill everywhere else. A ring still marks
   // luar_area, and ad-hoc pins stay hollow so they read as "not counted" — but
@@ -102,7 +108,7 @@ export const UserMarker = React.memo(function UserMarker({
   const bodyColor = user.role_marker_color || markerColor;
   const isOutside = location === 'luar_area';
   const roleIcon = getRoleIcon(user.role);
-  const label = isCluster ? null : getMarkerLabel(user, labelMode);
+  const label = getMarkerLabel(user, labelMode);
   const isCloseZoom = labelMode === 'full';
 
   // Phase 3 marker-rendering fix:
@@ -117,7 +123,27 @@ export const UserMarker = React.memo(function UserMarker({
     setTracksViewChanges(true);
     const t = setTimeout(() => setTracksViewChanges(false), 250);
     return () => clearTimeout(t);
-  }, [labelMode, user.status, user.activity, user.location, user.is_within_area, user.full_name, user.role_marker_color, isCluster, clusterCount]);
+  }, [labelMode, user.status, user.activity, user.location, user.is_within_area, user.full_name, user.role_marker_color, demoted]);
+
+  if (demoted) {
+    return (
+      <Marker
+        coordinate={{ latitude: user.latitude, longitude: user.longitude }}
+        onPress={e => {
+          e?.stopPropagation?.();
+          onPress(user);
+        }}
+        tracksViewChanges={false}
+        anchor={{ x: 0.5, y: 0.5 }}
+        zIndex={50}
+        style={dimmed ? styles.dimmed : undefined}
+      >
+        {/* Status colour is kept: a red dot still means absent. Losing the pin
+            must not also lose what the pin was saying. */}
+        <View testID="worker-dot" style={[styles.dot, { backgroundColor: markerColor }]} />
+      </Marker>
+    );
+  }
 
   return (
     <Marker
@@ -134,18 +160,11 @@ export const UserMarker = React.memo(function UserMarker({
       }}
       tracksViewChanges={tracksViewChanges}
       anchor={{ x: 0.5, y: 1 }}
-      zIndex={isCluster ? 100 : 200}
+      zIndex={200}
       style={dimmed ? styles.dimmed : undefined}
     >
-      <View style={styles.markerContainer}>
-        {isCluster ? (
-          <View style={[styles.clusterMarker, { backgroundColor: nbColors.primary }]}>
-            <NBText variant="body" color="white" style={styles.clusterText}>
-              {clusterCount}
-            </NBText>
-          </View>
-        ) : (
-          <>
+      <View style={styles.markerContainer} testID="worker-pin">
+        <>
             {/* The name sits ABOVE the pin: below is where the geo tiers write
                 theirs, and with anchor y=1 the arrow tip now lands on the
                 coordinate instead of the label's bottom edge. Always rendered
@@ -180,9 +199,8 @@ export const UserMarker = React.memo(function UserMarker({
                 />
               </View>
             </View>
-            <View style={[styles.markerArrow, { borderTopColor: markerColor }]} />
-          </>
-        )}
+          <View style={[styles.markerArrow, { borderTopColor: markerColor }]} />
+        </>
       </View>
     </Marker>
   );
@@ -199,6 +217,18 @@ const styles = StyleSheet.create({
     // fixed width keeps the bitmap dimensions stable across re-renders.
     width: 132,
     paddingHorizontal: 6,
+  },
+  /**
+   * The demoted form. Small and quiet by design — it says "someone is here"
+   * and nothing else — but a real, pressable target: 10pt of ink inside a
+   * marker whose own hit area is larger, so it stays tappable on a phone.
+   */
+  dot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: nbColors.white,
   },
   dimmed: {
     opacity: 0.2,

@@ -52,6 +52,10 @@ describe('aggregateNodeToNodeMarker', () => {
       scheduled: 4,
       clocked_in: 2,
       not_clocked_in: 2,
+      // Carried unsummed as well: salience weights a no-show above someone
+      // still inside their grace window, and `not_clocked_in` discards that.
+      belum_hadir: 1,
+      tidak_hadir: 1,
     });
   });
 
@@ -170,6 +174,8 @@ describe('clusterNodes', () => {
     scheduled: 0,
     clocked_in: 0,
     not_clocked_in: 0,
+    belum_hadir: 0,
+    tidak_hadir: 0,
   });
 
   it('collapses coincident/near nodes into one cluster with the members', () => {
