@@ -134,12 +134,12 @@ function ExportForm({ role }: { role: UserRole }) {
     return entityType === 'areas' ? [...base, { value: 'kmz', label: 'KMZ' }] : base;
   }, [entityType]);
 
-  // Reset KMZ format if the entity changes away from areas.
-  useEffect(() => {
-    if (format === 'kmz' && entityType !== 'areas') {
-      setFormat('csv');
-    }
-  }, [entityType, format]);
+  // KMZ exists only for areas, so a stale 'kmz' must not survive an entity
+  // change. Derived during render rather than corrected in an effect: the
+  // effect ran AFTER the render that already showed (and could submit) the
+  // invalid pairing, so a quick submit could ask for KMZ on a non-area entity.
+  const effectiveFormat: ExportFormat =
+    format === 'kmz' && entityType !== 'areas' ? 'csv' : format;
 
   // Surface async-job completion / failure as the poll resolves. Depend on the
   // status/error primitives so this fires once per transition (not on every
@@ -147,6 +147,10 @@ function ExportForm({ role }: { role: UserRole }) {
   // purpose to avoid re-running on unrelated renders.
   const jobStatus = activeJob.data?.status;
   const jobError = activeJob.data?.errorMessage;
+  // Synchronising with an EXTERNAL system (a polled async job), which is what
+  // effects are for: the setState stops the poll rather than deriving render
+  // state from props. TanStack Query v5 removed `onSuccess`, so this is the
+  // idiomatic place for it — not the cascading-render bug the rule looks for.
   useEffect(() => {
     if (!jobStatus) return;
     if (jobStatus === 'completed') {
@@ -164,7 +168,7 @@ function ExportForm({ role }: { role: UserRole }) {
     try {
       const outcome = await exportData.mutateAsync({
         entityType,
-        format,
+        format: effectiveFormat,
         startDate: startDate || undefined,
         endDate: endDate || undefined,
         districtId: districtId !== ALL ? districtId : undefined,
@@ -212,7 +216,7 @@ function ExportForm({ role }: { role: UserRole }) {
           <FormSelect
             label={t('export.formatLabel')}
             options={formatOptions}
-            value={format}
+            value={effectiveFormat}
             onChange={(v) => setFormat(v as ExportFormat)}
           />
           <Field label={t('export.dateRangeLabel')}>
