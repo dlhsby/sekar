@@ -32,6 +32,22 @@
  *   this.shiftsRepository.createQueryBuilder('shift')  →  alias shift = Shift
  *   .leftJoinAndSelect('shift.area', …)  →  Shift must declare relation `area`
  *
+ * WHY ONLY JOINS, AND NOT `where` / `orderBy`
+ * -------------------------------------------
+ * Tempting, and wrong. TypeORM treats the two differently:
+ *
+ *   - a JOIN path must resolve to a relation PROPERTY, and throws if it does not
+ *     — which is why the attendance bug was a hard 500;
+ *   - a `where` / `orderBy` string falls through as RAW SQL when the token is
+ *     not a known property, so `species.name_id` is perfectly valid even though
+ *     the property is `nameId`: `name_id` is the real column and `species` is
+ *     the table alias.
+ *
+ * Checking `where` strings the same way was measured against this codebase: 333
+ * resolvable references, 4 "failures", and all 4 were correct raw-column SQL in
+ * `plants.service.ts`. A guard that reports working code trains people to ignore
+ * it, so this one deliberately stops at joins.
+ *
  * Anything this chain cannot resolve is SKIPPED, not failed — an unresolved
  * alias means the guard lacks evidence, not that the code is wrong. The count
  * of checked paths is asserted so the scan can never silently degrade to
