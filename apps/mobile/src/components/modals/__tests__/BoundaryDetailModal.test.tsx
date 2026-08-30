@@ -298,7 +298,7 @@ describe('BoundaryDetailModal', () => {
       const { getByText } = render(
         <BoundaryDetailModal type="location" data={understaffedArea} {...baseProps} onReassign={jest.fn()} />,
       );
-      expect(getByText('Reassign Petugas')).toBeTruthy();
+      expect(getByText('Pindahkan Petugas')).toBeTruthy();
       await flushPlants();
     });
 
@@ -307,7 +307,7 @@ describe('BoundaryDetailModal', () => {
       const { getByText } = render(
         <BoundaryDetailModal type="location" data={understaffedArea} {...baseProps} onReassign={onReassign} />,
       );
-      fireEvent.press(getByText('Reassign Petugas'));
+      fireEvent.press(getByText('Pindahkan Petugas'));
       expect(onReassign).toHaveBeenCalledTimes(1);
       expect(onReassign).toHaveBeenCalledWith(understaffedArea);
       await flushPlants();
@@ -317,7 +317,7 @@ describe('BoundaryDetailModal', () => {
       const { queryByText } = render(
         <BoundaryDetailModal type="location" data={adequateArea} {...baseProps} onReassign={jest.fn()} />,
       );
-      expect(queryByText('Reassign Petugas')).toBeNull();
+      expect(queryByText('Pindahkan Petugas')).toBeNull();
       await flushPlants();
     });
 
@@ -325,7 +325,7 @@ describe('BoundaryDetailModal', () => {
       const { queryByText } = render(
         <BoundaryDetailModal type="location" data={understaffedArea} {...baseProps} />,
       );
-      expect(queryByText('Reassign Petugas')).toBeNull();
+      expect(queryByText('Pindahkan Petugas')).toBeNull();
       await flushPlants();
     });
   });
