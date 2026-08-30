@@ -2,6 +2,19 @@
 
 Newest first. Feature overview + current design live in [README.md](./README.md).
 
+- **2026-08-30** — **Two real derived-state defects fixed out of the 18 `set-state-in-effect`
+  warnings; the rest triaged rather than blanket-silenced.** The export page corrected an invalid
+  format (`kmz` on a non-area entity) inside an effect, i.e. AFTER the render that already displayed —
+  and could submit — the invalid pairing; it is now derived during render, which closes that window
+  as well as the double render. The report builder set its default 30-day range in a mount effect,
+  rendering one frame with empty date inputs before replacing them; moved into a lazy `useState`
+  initializer. Of the original 18: **5 were provable false positives** (post-mount localStorage
+  hydration, silenced with reasons in the earlier pass), **2 were these real defects**, and **11 are
+  legitimate** — "reset on modal open" and one external-job subscription (TanStack Query v5 removed
+  `onSuccess`, so an effect is the idiomatic place). Those 11 are left flagged and explained rather
+  than silenced: a pragma that silences a warning without fixing anything is how a rule stops meaning
+  something.
+
 - **2026-08-30** — **A guard for the bug class that shipped the 500: QueryBuilder join paths are now
   checked against entity metadata.** The attendance outage was a join on `shift.location` where the
   entity property is `area`; every unit test passed because they mock `createQueryBuilder`, so the ORM

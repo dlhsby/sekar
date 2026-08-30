@@ -59,14 +59,22 @@ export default function ReportBuilderPage() {
     { value: ReportFormat.XLSX, label: t('formats.xlsx') },
   ], [t]);
 
-  const [state, setState] = useState<BuilderState>({
-    reportType: '',
-    format: '',
-    startDate: '',
-    endDate: '',
-    areaId: '',
-    districtId: '',
-    workerId: '',
+  // Lazy initializer, not an effect: the default range is INITIAL state, and
+  // setting it after mount rendered one frame with empty date inputs and then
+  // replaced them. The function form also keeps `new Date()` from running on
+  // every render.
+  const [state, setState] = useState<BuilderState>(() => {
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+    return {
+      reportType: '',
+      format: '',
+      startDate: thirtyDaysAgo.toISOString().split('T')[0],
+      endDate: today.toISOString().split('T')[0],
+      areaId: '',
+      districtId: '',
+      workerId: '',
+    };
   });
 
   const REPORTING_VIEWERS: UserRole[] = [
@@ -86,18 +94,6 @@ export default function ReportBuilderPage() {
 
   const { data: templates, isLoading: templatesLoading } = useReportTemplates();
   const generateReportMutation = useGenerateReport();
-
-  // Get today's date in YYYY-MM-DD format and 30 days ago
-  useEffect(() => {
-    const today = new Date();
-    const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-    setState((s) => ({
-      ...s,
-      endDate: today.toISOString().split('T')[0],
-      startDate: thirtyDaysAgo.toISOString().split('T')[0],
-    }));
-  }, []);
 
   const handleSubmit = async () => {
     // Validate form
