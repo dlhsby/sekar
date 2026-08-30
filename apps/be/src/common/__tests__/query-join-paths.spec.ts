@@ -57,7 +57,9 @@
  * Anything this chain cannot resolve is SKIPPED, not failed — an unresolved
  * alias means the guard lacks evidence, not that the code is wrong. The count
  * of checked paths is asserted so the scan can never silently degrade to
- * checking nothing.
+ * checking nothing. At present every join path in the backend resolves, but the
+ * skip path is kept because the next unresolvable shape should go unchecked
+ * rather than falsely fail.
  */
 
 import { readFileSync, readdirSync, statSync } from 'node:fs';
@@ -153,18 +155,50 @@ const QB_RE = /(?:this\.)?(\w+)\s*\.\s*createQueryBuilder\(\s*'(\w+)'/g;
 const JOIN_RE =
   /\.(?:leftJoin|innerJoin|leftJoinAndSelect|innerJoinAndSelect)\(\s*'(\w+)\.(\w+)'(?:\s*,\s*'(\w+)')?/g;
 
+/**
+ * Repository identifier → entity, across the whole codebase, but ONLY for names
+ * bound to exactly one entity.
+ *
+ * Some queries build from a repository owned by another file
+ * (`svc.rosterRepo.createQueryBuilder('ds')`), which same-file resolution cannot
+ * see. Resolving those globally is safe only where the name is unambiguous: four
+ * identifiers are not (`shiftRepo` is `Shift` in one place and `ShiftDefinition`
+ * in another, `repo` is three different entities), and guessing would produce
+ * false failures. Ambiguous names are left unresolved and reported.
+ */
+function globallyUniqueRepos(): Map<string, string> {
+  const seen = new Map<string, Set<string>>();
+  for (const file of walk(SRC, (n) => n.endsWith('.ts') && !n.endsWith('.spec.ts'))) {
+    const src = readFileSync(file, 'utf8');
+    if (!src.includes('@InjectRepository')) continue;
+    for (const m of src.matchAll(INJECT_RE)) {
+      const set = seen.get(m[2]) ?? new Set<string>();
+      set.add(m[1]);
+      seen.set(m[2], set);
+    }
+  }
+  const unique = new Map<string, string>();
+  for (const [name, entities] of seen) {
+    if (entities.size === 1) unique.set(name, [...entities][0]);
+  }
+  return unique;
+}
+
 function collect(targets: Map<string, Map<string, string>>): {
   resolved: JoinUse[];
   unresolvedAliases: Set<string>;
 } {
   const resolved: JoinUse[] = [];
   const unresolvedAliases = new Set<string>();
+  const globalRepos = globallyUniqueRepos();
 
   for (const file of walk(SRC, (n) => n.endsWith('.ts') && !n.endsWith('.spec.ts'))) {
     const src = readFileSync(file, 'utf8');
     if (!src.includes('createQueryBuilder')) continue;
 
-    const repoToEntity = new Map<string, string>();
+    // Same-file injections win; the global map is a fallback for repositories
+    // owned elsewhere.
+    const repoToEntity = new Map<string, string>(globalRepos);
     for (const m of src.matchAll(INJECT_RE)) repoToEntity.set(m[2], m[1]);
 
     const aliasToEntity = new Map<string, string>();
@@ -229,9 +263,10 @@ describe('TypeORM QueryBuilder join paths', () => {
   it('resolves a meaningful number of join paths', () => {
     // Guards against the scan degrading to nothing after a refactor — e.g. a
     // repository-naming change that breaks alias resolution everywhere. The
-    // floor sits below the current count (92) so ordinary churn does not trip
-    // it, but far above zero so a broken resolver cannot pass silently.
-    expect(resolved.length).toBeGreaterThanOrEqual(75);
+    // floor sits below the current count (105, all of them) so ordinary churn
+    // does not trip it, but far above zero so a broken resolver cannot pass
+    // silently.
+    expect(resolved.length).toBeGreaterThanOrEqual(85);
   });
 
   it('every joined property is a real relation on its entity', () => {
