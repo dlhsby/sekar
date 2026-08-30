@@ -15,6 +15,20 @@ Newest first. Feature overview + current design live in [README.md](./README.md)
   than silenced: a pragma that silences a warning without fixing anything is how a rule stops meaning
   something.
 
+- **2026-08-30** — **Reassign verified on a device at last, and two Indonesian strings that were not
+  Indonesian.** The reassign button's positive case had never been seen working; the blocker turned out
+  NOT to be caching but the requirement query's `req.shift_definition_id = :shiftId` filter — the test
+  requirement had been attached to Shift 1 (06:00–15:00) while the active shift was the evening one, so
+  it could never match. With a requirement on the live shift, Taman Bungkul reports
+  `is_understaffed: true, required 3`, the button renders ("KEKURANGAN PERSONEL", "0/3 PETUGAS",
+  "Satgas 0/3 −3") and opens `ReassignWorkerModal` ("Pindah Petugas · Tujuan: Taman Bungkul"). Seeing
+  it also exposed the copy: the button read **"Reassign Petugas"** — an English verb in the `id`
+  locale — while the modal it opens says "Pindah Petugas". Now "Pindahkan Petugas", matching web's
+  `bulkReassign.openLabel`. A sweep of the Indonesian monitoring copy found one more outlier,
+  `userInfo.locationUpdate = "Update lokasi"`, against `Perbarui lokasi` in `home.json` (×2) and
+  `common:actions.update = "Perbarui"` — now "Perbarui lokasi". "Filter" was left alone: it is standard
+  Indonesian tech vocabulary and used consistently.
+
 - **2026-08-30** — **A guard for the bug class that shipped the 500: QueryBuilder join paths are now
   checked against entity metadata.** The attendance outage was a join on `shift.location` where the
   entity property is `area`; every unit test passed because they mock `createQueryBuilder`, so the ORM

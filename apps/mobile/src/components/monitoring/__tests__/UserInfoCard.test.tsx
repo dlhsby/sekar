@@ -437,7 +437,7 @@ describe('UserInfoCard', () => {
       expect(getByText('Lokasi')).toBeTruthy();
       expect(getByText('Masuk')).toBeTruthy();
       expect(getByText('Durasi kerja')).toBeTruthy();
-      expect(getByText('Update lokasi')).toBeTruthy();
+      expect(getByText('Perbarui lokasi')).toBeTruthy();
     });
 
     it('should have accessible overlay for dismissal', () => {
@@ -616,7 +616,7 @@ describe('UserInfoCard', () => {
       );
 
       // Assert - all labels should be present
-      const labels = getAllByText(/Lokasi|Masuk|Durasi kerja|Update lokasi/);
+      const labels = getAllByText(/Lokasi|Masuk|Durasi kerja|Perbarui lokasi/);
       expect(labels.length).toBe(4);
     });
   });

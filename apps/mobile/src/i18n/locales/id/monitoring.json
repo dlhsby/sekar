@@ -282,7 +282,7 @@
     "understaffedCount": "Kurang",
     "staffingTitle": "Kebutuhan per Jabatan",
     "noStaffingMessage": "Belum ada kebutuhan jabatan",
-    "reassignButton": "Reassign Petugas",
+    "reassignButton": "Pindahkan Petugas",
     "plantsTrigger": "Lihat tanaman",
     "plantsLabel": "Tanaman",
     "plantsLoading": "Memuat data tanaman…",
@@ -318,7 +318,7 @@
     "location": "Lokasi",
     "checkIn": "Masuk",
     "workDuration": "Durasi kerja",
-    "locationUpdate": "Update lokasi",
+    "locationUpdate": "Perbarui lokasi",
     "viewDetail": "Lihat Detail"
   },
   "workerTile": {
