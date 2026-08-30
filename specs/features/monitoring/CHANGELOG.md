@@ -2,6 +2,35 @@
 
 Newest first. Feature overview + current design live in [README.md](./README.md).
 
+- **2026-08-30** — **A guard for the bug class that shipped the 500: QueryBuilder join paths are now
+  checked against entity metadata.** The attendance outage was a join on `shift.location` where the
+  entity property is `area`; every unit test passed because they mock `createQueryBuilder`, so the ORM
+  never validates the string. The new spec needs **no database**: importing the `*.entity.ts` files
+  registers their relations in TypeORM's global metadata store, which is enough to check every join
+  path in the backend. Aliases resolve **per file** (`@InjectRepository(X) → repo → alias`) rather
+  than from a shared table, because they are genuinely ambiguous — `t` is `taskRepository` in one file
+  and `activityTagRepository` in another, so a global map would raise false failures and a guard that
+  cries wolf gets switched off. **86 of 105 join paths checked (81%)**; the other 19 build their
+  QueryBuilder from a DataSource rather than an injected repository and are **reported, not silently
+  skipped**, so the blind spot stays visible. Asserts a floor on how many paths it resolves, so the
+  scan cannot quietly degrade to checking nothing. Verified by reintroducing the exact bug: it fails
+  naming the file, the bad path, and the valid relations.
+
+- **2026-08-30** — **A guard for the bug class that shipped the 500: QueryBuilder join paths are now
+  checked against entity metadata.** The attendance outage was a join on `shift.location` where the
+  entity property is `area`; every unit test passed because they mock `createQueryBuilder`, so the ORM
+  never validates the string. The new spec needs **no database**: importing the `*.entity.ts` files
+  registers their relations in TypeORM's global metadata store, which is enough to check every join
+  path in the backend, in the ordinary unit-test job. Aliases resolve **per file**
+  (`@InjectRepository(X)` → repo → alias) rather than from a shared table, because they are genuinely
+  ambiguous — `t` is `taskRepository` in one file and `activityTagRepository` in another, so a global
+  map would raise false failures, and a guard that cries wolf gets switched off. **86 of 105 join
+  paths checked (81%)**; the other 19 build their QueryBuilder from a DataSource rather than an
+  injected repository and are **reported, not silently skipped**, so the blind spot stays visible.
+  A floor is asserted on how many paths resolve, so the scan cannot quietly degrade to checking
+  nothing. Verified by reintroducing the exact bug: it fails naming the file, the bad path, and the
+  valid relations.
+
 - **2026-08-30** — **Hotfix: both attendance endpoints were returning HTTP 500 in merged code.** The
   query joined `shift.location`, but the Area→Location rename moved the **column** to `location_id`
   while leaving the entity **property** as `area`. TypeORM resolves join paths by property name, so
