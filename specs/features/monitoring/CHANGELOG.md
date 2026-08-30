@@ -15,6 +15,17 @@ Newest first. Feature overview + current design live in [README.md](./README.md)
   than silenced: a pragma that silences a warning without fixing anything is how a rule stops meaning
   something.
 
+- **2026-08-30** — **Join guard now follows aliases a join introduces: coverage 81% → 88%.**
+  `.leftJoinAndSelect('activity.shift', 'shift')` binds the alias `shift` to whatever `Activity.shift`
+  targets, and a later `.leftJoinAndSelect('shift.area', …)` hangs off it — previously unresolvable and
+  therefore unchecked. The relation's target entity is read from the same metadata store (its `type`
+  thunk), and aliases are learned to a **fixpoint** rather than in source order, because the join that
+  introduces an alias may appear after the one that consumes it. **92 of 105 paths checked**, up from
+  86; unresolvable aliases fell from 7 to 4, all the same cross-file shape
+  (`svc.rosterRepo.createQueryBuilder(…)`, where the `@InjectRepository` lives in another file). The
+  6 newly-checked paths were all already correct. The coverage floor is asserted at 75 — below current
+  so ordinary churn will not trip it, far above zero so a broken resolver cannot pass silently.
+
 - **2026-08-30** — **Reassign verified on a device at last, and two Indonesian strings that were not
   Indonesian.** The reassign button's positive case had never been seen working; the blocker turned out
   NOT to be caching but the requirement query's `req.shift_definition_id = :shiftId` filter — the test

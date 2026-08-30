@@ -32,6 +32,12 @@
  *   this.shiftsRepository.createQueryBuilder('shift')  →  alias shift = Shift
  *   .leftJoinAndSelect('shift.area', …)  →  Shift must declare relation `area`
  *
+ * Aliases a join INTRODUCES are followed too, to a fixpoint:
+ *   .leftJoinAndSelect('activity.shift', 'shift')  →  alias shift = Shift
+ *   .leftJoinAndSelect('shift.area', …)            →  now checkable
+ * Iterated rather than read in source order, because the join that introduces
+ * an alias may appear after the one that consumes it.
+ *
  * WHY ONLY JOINS, AND NOT `where` / `orderBy`
  * -------------------------------------------
  * Tempting, and wrong. TypeORM treats the two differently:
@@ -99,6 +105,42 @@ function relationsByEntity(): Map<string, Set<string>> {
   return byName;
 }
 
+/**
+ * entity name → relation property → the entity that relation POINTS AT.
+ *
+ * Needed to follow a join's own alias: `.leftJoinAndSelect('activity.shift',
+ * 'shift')` introduces the alias `shift` bound to whatever `Activity.shift`
+ * targets, and a later `.leftJoinAndSelect('shift.area', …)` hangs off it. Without
+ * this the second join is unresolvable and goes unchecked.
+ */
+function relationTargets(): Map<string, Map<string, string>> {
+  const byName = new Map<string, Map<string, string>>();
+  for (const rel of getMetadataArgsStorage().relations) {
+    const target = rel.target as { name?: string } | string;
+    if (typeof target !== 'function' || typeof target.name !== 'string') continue;
+    // `type` is a thunk (`() => Location`) for lazy refs, or the class itself.
+    // Calling a class would construct it, so only invoke true thunks.
+    const raw = rel.type as unknown;
+    let targetName = '';
+    try {
+      const resolved =
+        typeof raw === 'function'
+          ? (raw as { prototype?: unknown }).prototype
+            ? raw
+            : (raw as () => unknown)()
+          : raw;
+      if (typeof resolved === 'function') targetName = (resolved as { name: string }).name;
+    } catch {
+      targetName = '';
+    }
+    if (!targetName) continue;
+    const m = byName.get(target.name) ?? new Map<string, string>();
+    m.set(rel.propertyName, targetName);
+    byName.set(target.name, m);
+  }
+  return byName;
+}
+
 interface JoinUse {
   file: string;
   alias: string;
@@ -108,9 +150,13 @@ interface JoinUse {
 
 const INJECT_RE = /@InjectRepository\(\s*(\w+)\s*\)\s*(?:private\s+)?(?:readonly\s+)?(\w+)/g;
 const QB_RE = /(?:this\.)?(\w+)\s*\.\s*createQueryBuilder\(\s*'(\w+)'/g;
-const JOIN_RE = /\.(?:leftJoin|innerJoin|leftJoinAndSelect|innerJoinAndSelect)\(\s*'(\w+)\.(\w+)'/g;
+const JOIN_RE =
+  /\.(?:leftJoin|innerJoin|leftJoinAndSelect|innerJoinAndSelect)\(\s*'(\w+)\.(\w+)'(?:\s*,\s*'(\w+)')?/g;
 
-function collect(): { resolved: JoinUse[]; unresolvedAliases: Set<string> } {
+function collect(targets: Map<string, Map<string, string>>): {
+  resolved: JoinUse[];
+  unresolvedAliases: Set<string>;
+} {
   const resolved: JoinUse[] = [];
   const unresolvedAliases = new Set<string>();
 
@@ -127,9 +173,31 @@ function collect(): { resolved: JoinUse[]; unresolvedAliases: Set<string> } {
       if (entity) aliasToEntity.set(m[2], entity);
     }
 
+    const joins = [...src.matchAll(JOIN_RE)].map((m) => ({
+      alias: m[1],
+      property: m[2],
+      introduced: m[3],
+    }));
+
+    // A join can both USE an alias and INTRODUCE one, and the introducing join
+    // may appear after the one that consumes it. Iterate to a fixpoint rather
+    // than assuming source order; bounded because each pass must add an alias.
+    for (let pass = 0; pass < joins.length + 1; pass++) {
+      let learned = false;
+      for (const j of joins) {
+        if (!j.introduced || aliasToEntity.has(j.introduced)) continue;
+        const from = aliasToEntity.get(j.alias);
+        const to = from ? targets.get(from)?.get(j.property) : undefined;
+        if (to) {
+          aliasToEntity.set(j.introduced, to);
+          learned = true;
+        }
+      }
+      if (!learned) break;
+    }
+
     const short = file.split('/src/')[1] ?? file;
-    for (const m of src.matchAll(JOIN_RE)) {
-      const [, alias, property] = m;
+    for (const { alias, property } of joins) {
       const entity = aliasToEntity.get(alias);
       if (!entity) {
         unresolvedAliases.add(`${short}:${alias}`);
@@ -149,7 +217,7 @@ describe('TypeORM QueryBuilder join paths', () => {
   beforeAll(() => {
     loadEntities();
     relations = relationsByEntity();
-    ({ resolved, unresolvedAliases } = collect());
+    ({ resolved, unresolvedAliases } = collect(relationTargets()));
   });
 
   it('loads entity metadata to check against', () => {
@@ -160,8 +228,10 @@ describe('TypeORM QueryBuilder join paths', () => {
 
   it('resolves a meaningful number of join paths', () => {
     // Guards against the scan degrading to nothing after a refactor — e.g. a
-    // repository-naming change that breaks alias resolution everywhere.
-    expect(resolved.length).toBeGreaterThanOrEqual(20);
+    // repository-naming change that breaks alias resolution everywhere. The
+    // floor sits below the current count (92) so ordinary churn does not trip
+    // it, but far above zero so a broken resolver cannot pass silently.
+    expect(resolved.length).toBeGreaterThanOrEqual(75);
   });
 
   it('every joined property is a real relation on its entity', () => {
