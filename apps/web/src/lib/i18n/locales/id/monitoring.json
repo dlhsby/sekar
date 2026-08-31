@@ -224,7 +224,8 @@
   "areaDetail": {
     "district": "Rayon",
     "region": "Kawasan",
-    "area": "Lokasi"
+    "location": "Lokasi",
+    "surabaya": "Kota"
   },
   "pruningStatus": {
     "submitted": "Diajukan",
@@ -430,5 +431,8 @@
     "minutes_one": "{{count}} menit",
     "minutes_other": "{{count}} menit",
     "openLabel": "Lihat detail kehadiran"
+  },
+  "hoverPreview": {
+    "hint": "Klik untuk telusuri"
   }
 }

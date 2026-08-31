@@ -27,6 +27,16 @@ export interface AdvancedMarkerProps {
   zIndex?: number;
   onClick?: () => void;
   onDragEnd?: (position: google.maps.LatLngLiteral) => void;
+  /**
+   * Pointer entered/left the marker's own DOM. Carries the cursor position so a
+   * caller can place a preview beside it without projecting lat/lng to screen
+   * space; `null` means the pointer left.
+   *
+   * Attached to `content` rather than the marker, because AdvancedMarkerElement
+   * exposes a click event but no hover event. Mouse-only by design: `mouseenter`
+   * does not fire for touch, so a phone browser gets the plain click it had.
+   */
+  onHover?: (cursor: { x: number; y: number } | null) => void;
 }
 
 function toLatLngLiteral(
@@ -41,6 +51,7 @@ function toLatLngLiteral(
 export function AdvancedMarker({
   position,
   content,
+  onHover,
   draggable = false,
   clickable = true,
   title,
@@ -99,6 +110,33 @@ export function AdvancedMarker({
     const nextContent = content ?? null;
     if (content !== undefined && marker.content !== nextContent) marker.content = nextContent;
   }, [position, content, draggable, clickable, title, zIndex]);
+
+  // Hover lives on the content element. Re-attached whenever the element itself
+  // is rebuilt (its `signature` changed upstream), and read through a ref so a
+  // new handler identity does not detach and reattach on every render.
+  const onHoverRef = useRef(onHover);
+  useEffect(() => {
+    onHoverRef.current = onHover;
+  }, [onHover]);
+
+  useEffect(() => {
+    const el = content;
+    if (!el || !onHoverRef.current) return;
+    const enter = (e: MouseEvent) => onHoverRef.current?.({ x: e.clientX, y: e.clientY });
+    const move = (e: MouseEvent) => onHoverRef.current?.({ x: e.clientX, y: e.clientY });
+    const leave = () => onHoverRef.current?.(null);
+    el.addEventListener('mouseenter', enter);
+    el.addEventListener('mousemove', move);
+    el.addEventListener('mouseleave', leave);
+    return () => {
+      el.removeEventListener('mouseenter', enter);
+      el.removeEventListener('mousemove', move);
+      el.removeEventListener('mouseleave', leave);
+      // The pointer can never "leave" an element that is being removed, so clear
+      // explicitly or the preview would outlive the marker it describes.
+      onHoverRef.current?.(null);
+    };
+  }, [content]);
 
   return null;
 }

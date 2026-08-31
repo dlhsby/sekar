@@ -22,6 +22,8 @@ export interface AdvancedPinMarkerProps {
   /** Builds the pin's DOM element; called only when `signature` changes. */
   build: () => HTMLElement;
   onClick?: () => void;
+  /** Pointer entered/left the pin; carries the cursor, `null` on leave. */
+  onHover?: (cursor: { x: number; y: number } | null) => void;
   title?: string;
   zIndex?: number;
 }
@@ -31,6 +33,7 @@ export function AdvancedPinMarker({
   signature,
   build,
   onClick,
+  onHover,
   title,
   zIndex,
 }: AdvancedPinMarkerProps) {
@@ -43,6 +46,7 @@ export function AdvancedPinMarker({
       position={position}
       content={content}
       onClick={onClick}
+      onHover={onHover}
       title={title}
       zIndex={zIndex}
     />

@@ -34,6 +34,7 @@ import {
   teamMembersOnly,
 } from '@/lib/monitoring/layers';
 import { NodeMarkerLayer, type NodeMarker } from './NodeMarkerLayer';
+import { NodeHoverPreview } from './NodeHoverPreview';
 import { WorkerClusterLayer, type MapBounds } from './WorkerClusterLayer';
 import { PlantMarkerLayer } from './PlantMarkerLayer';
 import type { NotablePlantRow } from '@/lib/api/plants';
@@ -650,6 +651,18 @@ function MonitoringMapInner({
   // Engaging with something is what makes it familiar (see `affinity.ts`). Each
   // of these is an explicit operator choice — never a hover, never a pan — so
   // the history reflects attention rather than mouse travel.
+  // Hover preview (parity W5). Node + cursor travel together so the card can
+  // sit beside the pointer without projecting lat/lng to screen space.
+  const [hovered, setHovered] = useState<{
+    node: NodeMarker | null;
+    cursor: { x: number; y: number } | null;
+  }>({ node: null, cursor: null });
+  const setHoveredNode = useCallback(
+    (node: NodeMarker | null, cursor: { x: number; y: number } | null) =>
+      setHovered({ node, cursor }),
+    [],
+  );
+
   const drillNode = useCallback(
     (node: NodeMarker) => {
       visit(node.id);
@@ -808,6 +821,7 @@ function MonitoringMapInner({
         <NodeMarkerLayer
           nodes={drawnNodeMarkers}
           onDrill={drillNode}
+          onHoverNode={setHoveredNode}
           zoom={zoom}
           activeGeoId={activeGeoId}
           showLabels={nodeLabels}
@@ -900,6 +914,11 @@ function MonitoringMapInner({
         )}
         {/* My-Location is a native map control (stacked with zoom, bottom-right). */}
       </GoogleMap>
+
+      {/* Rendered OUTSIDE <GoogleMap> and fixed to the viewport: it follows the
+          cursor, not the map, so it must not be clipped by the map container or
+          repositioned by a pan. */}
+      <NodeHoverPreview node={hovered.node} cursor={hovered.cursor} />
     </div>
   );
 }
