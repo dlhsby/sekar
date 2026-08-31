@@ -63,6 +63,15 @@ export interface NodeMarkerLayerProps {
   nodes: NodeMarker[];
   onDrill?: (node: NodeMarker) => void;
   /**
+   * Pointer entered a node (with the cursor position) or left it (`null`).
+   *
+   * Parity W5: mobile shows a preview card before committing to a drill, because
+   * a tap is imprecise and it recenters the map first. A mouse needs neither, so
+   * web keeps click→drill and puts the same information on HOVER — the value is
+   * "see what this is before you commit", not the extra step.
+   */
+  onHoverNode?: (node: NodeMarker | null, cursor: { x: number; y: number } | null) => void;
+  /**
    * NOTE: there is deliberately no detail affordance ON the pin.
    *
    * A ⓘ badge used to sit on the pin's top-right — the same corner the SVG
@@ -110,6 +119,7 @@ export interface NodeMarkerLayerProps {
 export function NodeMarkerLayer({
   nodes,
   onDrill,
+  onHoverNode,
   activeGeoId,
   showLabels,
   promoted,
@@ -196,6 +206,7 @@ export function NodeMarkerLayer({
               return el;
             }}
             onClick={() => onDrill?.(node)}
+            onHover={onHoverNode ? (cursor) => onHoverNode(cursor ? node : null, cursor) : undefined}
             title={node.name}
             zIndex={demoted ? 2 : dimmed ? 3 : node.variant === 'surabaya' ? 8 : 5}
           />

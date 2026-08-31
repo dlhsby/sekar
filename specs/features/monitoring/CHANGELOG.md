@@ -15,6 +15,23 @@ Newest first. Feature overview + current design live in [README.md](./README.md)
   than silenced: a pragma that silences a warning without fixing anything is how a rule stops meaning
   something.
 
+- **2026-08-31** — **Web gains a hover preview (parity W5), and a raw i18n key stops shipping.** W5 was a
+  parity row missed in the earlier sweep — mobile wires `MarkerPreview` into `MapDashboardScreen`, web
+  had nothing. Built as a **hover** card rather than a copy of mobile's tap flow: mobile previews on tap
+  because a tap is imprecise and the map recenters first, so a direct drill often drills the wrong node;
+  a mouse has neither problem, and web's click→drill is already fewer steps, so mirroring it would have
+  added a click to every drill. Hover carries the same information (name, tier, scheduled/hadir/aktif)
+  and keeps click→drill intact. Positioned from the CURSOR, not the node's lat/lng — no projection, no
+  reflow on pan, and it lands where the eye already is; it flips at the viewport edges and is
+  `pointer-events-none`, since a card under the cursor would fire `mouseleave` on the pin and flicker.
+  Hover is attached to the marker's own DOM because `AdvancedMarkerElement` exposes a click event but no
+  hover event, and it is mouse-only by design (`mouseenter` does not fire for touch). **Building it
+  surfaced a live bug:** `AreaDetailPanel` reads `` t(`monitoring:areaDetail.${variant}`) `` while the
+  locale still carried `area` from the Area→Location rename — so **every lokasi panel rendered the raw
+  key `areaDetail.location`**. Renamed to `location` (+ a `surabaya` label for the new card). The i18n
+  call-site guard cannot catch this class: the key is a template literal, which it skips rather than
+  guess at, so both call sites are now pinned by per-variant tests instead.
+
 - **2026-08-30** — **Join guard now follows aliases a join introduces: coverage 81% → 88%.**
   `.leftJoinAndSelect('activity.shift', 'shift')` binds the alias `shift` to whatever `Activity.shift`
   targets, and a later `.leftJoinAndSelect('shift.area', …)` hangs off it — previously unresolvable and

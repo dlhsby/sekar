@@ -130,4 +130,28 @@ describe('AreaDetailPanel', () => {
       expect(screen.queryByTestId('area-detail-reassign')).not.toBeInTheDocument();
     });
   });
+
+  /**
+   * Regression: the header reads `areaDetail.${variant}`, and the locale carried
+   * `area` — a leftover from the Area→Location rename — while the variant for a
+   * lokasi is `location`. Every lokasi panel therefore rendered the raw key
+   * "areaDetail.location" as its type label.
+   *
+   * The i18n call-site guard cannot catch this: the key is a template literal,
+   * which it skips rather than guess at. So it is pinned here, per variant.
+   */
+  describe('type label', () => {
+    it.each(['district', 'region', 'location'] as const)(
+      'renders a real label for %s, never a raw key',
+      (variant) => {
+        const { container } = render(<AreaDetailPanel {...base} variant={variant} />);
+        expect(container.textContent).not.toContain('areaDetail.');
+      },
+    );
+
+    it('names a lokasi "Lokasi"', () => {
+      render(<AreaDetailPanel {...base} variant="location" />);
+      expect(screen.getByText('Lokasi')).toBeInTheDocument();
+    });
+  });
 });

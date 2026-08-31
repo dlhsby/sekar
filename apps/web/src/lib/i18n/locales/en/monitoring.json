@@ -224,7 +224,8 @@
   "areaDetail": {
     "district": "District",
     "region": "Region",
-    "area": "Location"
+    "location": "Location",
+    "surabaya": "City"
   },
   "pruningStatus": {
     "submitted": "Submitted",
@@ -430,5 +431,8 @@
     "minutes_one": "{{count}} minute",
     "minutes_other": "{{count}} minutes",
     "openLabel": "View attendance detail"
+  },
+  "hoverPreview": {
+    "hint": "Click to drill in"
   }
 }
