@@ -73,10 +73,16 @@ Ordered by *client-visible value per unit of risk*, not by size.
 2. ~~**M6 + M5 — mobile search and filter.**~~ **DONE (slice 2).** M6 was indeed a defect, though not
    the one this document first described — see its row above for the correction.
 3. ~~**M4 + M7 + M8 — the mobile list sheet.**~~ **DONE (slice 3).**
-4. **W1–W4 — web catches up.** Independent of everything above; can run in parallel with a different
-   pair of hands.
-5. **M9 + M10 — reassignment and leave.** Lowest urgency; both are administrative rather than
-   monitoring.
+4. ~~**W1–W5 — web catches up.**~~ **ALL DONE.** Independent of everything above; can run in parallel
+   with a different pair of hands.
+
+   > **This line used to read "W1–W4" and silently omitted W5.** Someone (me) planned from this
+   > ordering rather than from §3's table, reported "every parity row closed", and only found W5 by
+   > re-reading the table afterwards. **§4 is a reading order, not the inventory — §3 is.** Keep the
+   > two in sync, or plan from §3.
+5. ~~**M9 + M10 — reassignment and leave.**~~ **DONE** — and neither was what this line assumed.
+   M10 needed no code (mobile already had it end to end); M9 turned out to be reassignment being
+   unreachable on BOTH platforms, dark for ~11 weeks after a rebuild dropped its trigger.
 
 **Not recommended:** a single "parity" branch. Each numbered slice is its own spec → plan → PR. A
 combined branch would be unreviewable and would couple a mobile map rewrite to a web photo viewer.
