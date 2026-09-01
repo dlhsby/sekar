@@ -1,6 +1,6 @@
 # SEKAR — Status (Source of Truth)
 
-**Last updated:** 2026-07-10 · **Single source of truth** for status & metrics. Specs do not
+**Last updated:** 2026-09-01 · **Single source of truth** for status & metrics. Specs do not
 duplicate these numbers. Build history: [`history/CHANGELOG.md`](history/CHANGELOG.md).
 
 ## Deployment
@@ -14,17 +14,24 @@ duplicate these numbers. Build history: [`history/CHANGELOG.md`](history/CHANGEL
 | Monitoring (Sentry) | wired | 🔄 Dormant until DSN set | backend + web + mobile |
 | Secrets (dotenvx) | all envs | ✅ Encrypted (key in AWS SSM) | — |
 
-**UAT sign-off:** 2026-06-22. Staging auto-deploys on green push to `main`; versioned releases via
-`scripts/release.sh`.
+**UAT sign-off:** 2026-06-22. **Staging deploys are DELIBERATE** — `deploy-staging.yml` runs only on a
+push to the `staging` branch (merge `main` → `staging`) or a manual dispatch. Merging to `main` does
+**not** deploy; this line previously claimed it did. Versioned releases via `scripts/release.sh`.
+
+> **Staging is currently ~403 commits behind `main`.** Nothing from that backlog is deployed, which is
+> why a monitoring-attendance regression that lived briefly on `main` never reached a running system.
 
 ## Ground-truth metrics (from code)
 
-- **Backend:** 34 modules · 35 controllers · ~246 route handlers · 528+ tests · >80% coverage
-- **Mobile:** 8 roles · 30+ screens · 4,200+ tests · WCAG 2.1 AA · offline-first
-- **Web:** 8-role dashboard · Next.js 16 · 1,700+ tests · realtime · a11y-audited
-- **Architecture:** 44 ADRs ([index](architecture/decisions/README.md)) · **i18n** id/en bilingual
+- **Backend:** 38 modules · 44 controllers · ~305 route handlers · 2,858 tests · >80% coverage
+- **Mobile:** 8 roles · 54 screens · 4,585 tests · WCAG 2.1 AA · offline-first
+- **Web:** 8-role dashboard · Next.js 16 · 2,433 tests · realtime · a11y-audited
+- **Architecture:** 55 ADRs ([index](architecture/decisions/README.md)) · **i18n** id/en bilingual
   (react-i18next), API English-canonical
-- **Quality:** zero `npm audit` vulnerabilities across workspaces
+- **Quality:** zero `npm audit` vulnerabilities across workspaces · 92 token/ESLint-rule tests
+- **Guardrails:** `i18n:check` verifies keys are *used-and-present*, not just id/en-symmetric;
+  `sekar-design/no-low-contrast-text` blocks sub-AA foreground greys; a metadata spec checks
+  **105/105** TypeORM join paths without a database
 
 > Live endpoint list is the Swagger doc (`/api/v1/docs`); treat these counts as approximate.
 
@@ -64,7 +71,7 @@ bottom-up, web before mobile:
 2. **Geography** — 4-level hierarchy: Region/Kawasan + per-level map styling (ADR-045) — ✅ **Merged to main** (PR #202 + #206): regions module + migrations, per-level styling, `locations.region_id`, `users.region_id`, web `/regions` + `MapStyleFields`, cross-rayon integrity guards, boundary validation, rayon-scoped listing. City styling + monitoring region-tier drill deferred to Phase 5. Not deployed.
 3. **Users & Teams** — role-driven scope inputs; teams CRUD (ADR-044/048) — ✅ **Merged to main** (PR #202 + #207): teams backend + web `/teams`; user form scope role-driven from monitoring_scope; backend role+scope validation; team-name uniqueness + active-type filtering. Not deployed.
 4. **Scheduling** — calendar + rule-based recurrence + team schedules (ADR-047) — ✅ **Merged to main** (PRs #218–223, Phase 4 engine + UX redesign): `schedule_events` rule layer + materializer engine (rolling horizon), time-based overlap guard (multi-shift days legal), team fan-out with per-member conflict reporting, this/this-and-future/series edit semantics, template→events data migration (template cron retired). **Jadwal UX redesign** on top: single range select (default Hari) with drill-down, Rayon▸Kawasan▸Lokasi day coverage board (per-tier accent), year mini-calendars, per-rayon month + per-shift/role week summaries, hybrid search + filter chips, capacity converged on `location_staff_requirements` (understaffing = satgas+linmas only), mobile day-nav. Verified live against a scratch DB. **P5 rayon-scope schedule model DONE** (ScheduleScope +`rayon`, migration + CHECK widened, materializer/projections/validation/day-board/event-form wired, tests + live-verified). Weekend/holiday capacity + year heatmap + holiday management also landed. **Deferred:** full mobile parity; dark-mode visual sign-off. Not merged/deployed.
-5. **Monitoring (web)** — subject model, drop Surabaya bubble, presence model, static/mobile, search (ADR-046) — ✅ **Merged to main** (PRs #279–#294 backend + #324/#325/#326 web UX): aggregate drill Rayon→Kawasan→Lokasi→workers, 3-axis presence (Aktif/Tidak Aktif/Tidak Hadir + inside/outside + Luar Jadwal), scope-narrowing drill, per-entity glyph markers + boundary border/fill colors (seeded defaults: rayon=building, kawasan=trees, lokasi=leaf, teams=distinct glyphs), team glyph marker with click→member list, worker trail + area-detail on marker click, breadcrumb with inline stats, Individu/Tim filter, attendance split (belum/tidak hadir). **Marker layers migrated to Advanced Markers** (node/worker/team/current-node on `AdvancedMarkerElement`, DOM glyph pins) after a browser profiling pass — reposition-on-patch (memoize content by visual signature, move-only on GPS patch, ~47× cheaper than rebuild); requires a vector `mapId`. Verified end-to-end after a clean reseed (Playwright, all levels + desktop/mobile) incl. live Advanced-Markers smoke; be 371 + web 342 monitoring specs green. **Remaining:** mobile-app parity; **cloud-console follow-up** — replicate the #304 base-map declutter in the Map Style bound to the Map ID (vector maps ignore JSON `styles`). Not deployed to staging.
+5. **Monitoring (web)** — subject model, drop Surabaya bubble, presence model, static/mobile, search (ADR-046) — ✅ **Merged to main** (PRs #279–#294 backend + #324/#325/#326 web UX): aggregate drill Rayon→Kawasan→Lokasi→workers, 3-axis presence (Aktif/Tidak Aktif/Tidak Hadir + inside/outside + Luar Jadwal), scope-narrowing drill, per-entity glyph markers + boundary border/fill colors (seeded defaults: rayon=building, kawasan=trees, lokasi=leaf, teams=distinct glyphs), team glyph marker with click→member list, worker trail + area-detail on marker click, breadcrumb with inline stats, Individu/Tim filter, attendance split (belum/tidak hadir). **Marker layers migrated to Advanced Markers** (node/worker/team/current-node on `AdvancedMarkerElement`, DOM glyph pins) after a browser profiling pass — reposition-on-patch (memoize content by visual signature, move-only on GPS patch, ~47× cheaper than rebuild); requires a vector `mapId`. Verified end-to-end after a clean reseed (Playwright, all levels + desktop/mobile) incl. live Advanced-Markers smoke; be 371 + web 342 monitoring specs green. **Mobile parity: COMPLETE** (2026-08/09, PRs #463–#486) — all 15 audited rows (M1–M10, W1–W5): progressive reveal + tier rule + label declutter on mobile, geo search index, row-hide, Wilayah/Petugas tabs, plant overlay + photo viewing on both platforms, web attendance drill-down on a new `/monitoring/attendance` (the superseded `/supervisor/*` now has no callers), reassignment made reachable again on both platforms after ~11 weeks dark, and a web hover preview. Seven of the audit's rows were wrong and corrected in place — a symbol existing is not a feature existing. **Remaining:** **cloud-console follow-up** — replicate the #304 base-map declutter in the Map Style bound to the Map ID (vector maps ignore JSON `styles`). Not deployed to staging.
 6. **Mobile parity** — after web design ack — ✅ **Merged to main** (PR0/PR0b/PR0c cross-platform canon + mobile PR1–PR4, #345–#367): contract/type + all-9-role sweep, Surabaya bubble dropped, Rayon→Kawasan→Lokasi drill with the region-less fallback, workers from `/monitoring/snapshot` with `display_scope` tier-matching, team-marker expansion (ADR-048), lifecycle presence pills + shared presence colour standard (ADR-050), WS `subscribe:region` + `user:clock-out` removal + hybrid server search (online, client fallback offline). Post-sweep fixes: residual contract drift, task scope selector + submit-activity-from-task, RBAC menu access, excused pill, WSL2 Android dev-loop repair (#373). **Deliberately deferred (optional, not regressions):** day-view stays the default (no week/month switcher); "Jadwal Petugas" supervisor viewer is a new feature → [`REVAMP-STATUS.md`](REVAMP-STATUS.md). Not deployed to staging.
 
 > **Staging cutover — 🚧 prep underway (not deployed).** All revamp phases have landed on `main`, which
