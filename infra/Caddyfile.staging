@@ -41,7 +41,7 @@ sekar.wahyutrip.com {
 }
 
 # Public user manual (Docusaurus static site). No auth — anyone can read it.
-# DNS: docs.sekar.wahyutrip.com A 16.79.124.63 (shared Elastic IP).
+# DNS: docs.sekar.wahyutrip.com A 16.79.13.227 (shared Elastic IP).
 docs.sekar.wahyutrip.com {
 	encode gzip
 	reverse_proxy sekar-docs:80
@@ -50,7 +50,7 @@ docs.sekar.wahyutrip.com {
 # Adminer (DB admin UI) — staging/UAT only. Gated by HTTP basic-auth BEFORE the
 # UI loads (bcrypt hash; safe to commit — the plaintext is not). Adminer's own
 # login still requires the sekar_staging DB creds on top. DNS: adminer.wahyutrip.com
-# A 16.79.124.63 (kept off the *.sekar pattern to match the existing record).
+# A 16.79.13.227 (kept off the *.sekar pattern to match the existing record).
 adminer.wahyutrip.com {
 	encode gzip
 	basic_auth {
