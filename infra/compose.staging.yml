@@ -26,7 +26,7 @@ x-logging: &default-logging
 
 services:
   backend:
-    image: 659828096624.dkr.ecr.ap-southeast-3.amazonaws.com/sekar-backend:${IMAGE_TAG:-staging}
+    image: 204284492859.dkr.ecr.ap-southeast-3.amazonaws.com/sekar-backend:${IMAGE_TAG:-staging}
     container_name: sekar-backend
     env_file:
       - /opt/sekar/.env
@@ -59,7 +59,7 @@ services:
     networks: [edge, internal]
 
   web:
-    image: 659828096624.dkr.ecr.ap-southeast-3.amazonaws.com/sekar-web:${IMAGE_TAG:-staging}
+    image: 204284492859.dkr.ecr.ap-southeast-3.amazonaws.com/sekar-web:${IMAGE_TAG:-staging}
     container_name: sekar-web
     environment:
       NODE_ENV: production
@@ -79,7 +79,7 @@ services:
   # image's bundled nginx — no env, no DB. Reached via Caddy at
   # docs.sekar.wahyutrip.com (see infra/Caddyfile.staging).
   docs:
-    image: 659828096624.dkr.ecr.ap-southeast-3.amazonaws.com/sekar-docs:${IMAGE_TAG:-staging}
+    image: 204284492859.dkr.ecr.ap-southeast-3.amazonaws.com/sekar-docs:${IMAGE_TAG:-staging}
     container_name: sekar-docs
     expose:
       - "80" # internal only; reached via Caddy on the edge network
@@ -98,7 +98,7 @@ services:
     image: adminer:4.8.1
     container_name: sekar-adminer
     environment:
-      ADMINER_DEFAULT_SERVER: dlhsby.cvuoeguwo5dg.ap-southeast-3.rds.amazonaws.com
+      ADMINER_DEFAULT_SERVER: sekar-staging.c3iiyyyswr0m.ap-southeast-3.rds.amazonaws.com
       ADMINER_DESIGN: dracula
     expose:
       - "8080" # internal only; reached via Caddy on the edge network

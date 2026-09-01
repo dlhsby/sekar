@@ -6,10 +6,10 @@ name: Deploy staging (AWS)
 #
 # Required repo Variables (Settings → Secrets and variables → Actions → Variables):
 #   AWS_REGION        ap-southeast-3
-#   AWS_ROLE_ARN      arn:aws:iam::659828096624:role/sekar-gha-deploy
-#   ECR_BACKEND       659828096624.dkr.ecr.ap-southeast-3.amazonaws.com/sekar-backend
-#   ECR_WEB           659828096624.dkr.ecr.ap-southeast-3.amazonaws.com/sekar-web
-#   ECR_DOCS          659828096624.dkr.ecr.ap-southeast-3.amazonaws.com/sekar-docs
+#   AWS_ROLE_ARN      arn:aws:iam::204284492859:role/sekar-gha-deploy
+#   ECR_BACKEND       204284492859.dkr.ecr.ap-southeast-3.amazonaws.com/sekar-backend
+#   ECR_WEB           204284492859.dkr.ecr.ap-southeast-3.amazonaws.com/sekar-web
+#   ECR_DOCS          204284492859.dkr.ecr.ap-southeast-3.amazonaws.com/sekar-docs
 #   EC2_INSTANCE_ID   i-08edccdc966c0985e
 #   RDS_INSTANCE_ID   dlhsby
 # Required Environment Secret (staging environment):
@@ -257,7 +257,7 @@ jobs:
           # Fail loudly if the running image is not the SHA we just built — otherwise a
           # stale container would pass the smoke test (false positive).
           RUNNING_BE=\$(docker inspect sekar-backend --format '{{.Config.Image}}')
-          EXPECT_BE="659828096624.dkr.ecr.ap-southeast-3.amazonaws.com/sekar-backend:\$IMAGE_TAG"
+          EXPECT_BE="204284492859.dkr.ecr.ap-southeast-3.amazonaws.com/sekar-backend:\$IMAGE_TAG"
           echo "running backend image: \$RUNNING_BE (expected \$EXPECT_BE)"
           test "\$RUNNING_BE" = "\$EXPECT_BE"
           echo "DEPLOY-VERIFIED \$IMAGE_TAG"
