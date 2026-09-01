@@ -16,7 +16,7 @@ export interface TasksActivityFiltersState {
   createdFrom: string;
   createdTo: string;
   petugasFilter: string | null;
-  rayonFilter: string | null;
+  districtFilter: string | null;
   areaFilter: string | null;
 }
 
@@ -28,7 +28,7 @@ export interface UseTasksActivityFiltersResult extends TasksActivityFiltersState
   setCreatedFrom: (date: string) => void;
   setCreatedTo: (date: string) => void;
   setPetugasFilter: (petugas: string | null) => void;
-  setRayonFilter: (rayon: string | null) => void;
+  setDistrictFilter: (district: string | null) => void;
   setAreaFilter: (area: string | null) => void;
   activeFilterCount: number;
   handleApplyFilters: (filters: TasksActivityFiltersState) => void;
@@ -36,14 +36,14 @@ export interface UseTasksActivityFiltersResult extends TasksActivityFiltersState
 }
 
 interface UseTasksActivityFiltersOptions {
-  initialRayonId: string | null;
+  initialDistrictId: string | null;
   initialAreaId: string | null;
 }
 
 export function useTasksActivityFilters(
   options: UseTasksActivityFiltersOptions
 ): UseTasksActivityFiltersResult {
-  const { initialRayonId, initialAreaId } = options;
+  const { initialDistrictId, initialAreaId } = options;
 
   const [taskFilter, setTaskFilter] = useState<TaskFilterType>('assigned');
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
@@ -52,7 +52,7 @@ export function useTasksActivityFilters(
   const [createdFrom, setCreatedFrom] = useState<string>('');
   const [createdTo, setCreatedTo] = useState<string>('');
   const [petugasFilter, setPetugasFilter] = useState<string | null>(null);
-  const [rayonFilter, setRayonFilter] = useState<string | null>(initialRayonId);
+  const [districtFilter, setDistrictFilter] = useState<string | null>(initialDistrictId);
   const [areaFilter, setAreaFilter] = useState<string | null>(initialAreaId);
 
   const activeFilterCount = useMemo(() => {
@@ -60,10 +60,10 @@ export function useTasksActivityFilters(
     if (taskFilter !== 'assigned') count++;
     if (statusFilter !== 'all') count++;
     if (dateFrom || dateTo) count++;
-    if (rayonFilter && rayonFilter !== initialRayonId) count++;
+    if (districtFilter && districtFilter !== initialDistrictId) count++;
     if (areaFilter && areaFilter !== initialAreaId) count++;
     return count;
-  }, [taskFilter, statusFilter, dateFrom, dateTo, rayonFilter, areaFilter, initialRayonId, initialAreaId]);
+  }, [taskFilter, statusFilter, dateFrom, dateTo, districtFilter, areaFilter, initialDistrictId, initialAreaId]);
 
   const handleApplyFilters = useCallback((filters: TasksActivityFiltersState) => {
     setTaskFilter(filters.taskFilter);
@@ -72,7 +72,7 @@ export function useTasksActivityFilters(
     setDateTo(filters.dateTo);
     setCreatedFrom(filters.createdFrom);
     setCreatedTo(filters.createdTo);
-    setRayonFilter(filters.rayonFilter);
+    setDistrictFilter(filters.districtFilter);
     setAreaFilter(filters.areaFilter);
     setPetugasFilter(filters.petugasFilter);
   }, []);
@@ -85,9 +85,9 @@ export function useTasksActivityFilters(
     setCreatedTo('');
     setPetugasFilter(null);
     setTaskFilter('assigned');
-    setRayonFilter(initialRayonId);
+    setDistrictFilter(initialDistrictId);
     setAreaFilter(initialAreaId);
-  }, [initialRayonId, initialAreaId]);
+  }, [initialDistrictId, initialAreaId]);
 
   return {
     taskFilter,
@@ -97,7 +97,7 @@ export function useTasksActivityFilters(
     createdFrom,
     createdTo,
     petugasFilter,
-    rayonFilter,
+    districtFilter,
     areaFilter,
     setTaskFilter,
     setStatusFilter,
@@ -106,7 +106,7 @@ export function useTasksActivityFilters(
     setCreatedFrom,
     setCreatedTo,
     setPetugasFilter,
-    setRayonFilter,
+    setDistrictFilter,
     setAreaFilter,
     activeFilterCount,
     handleApplyFilters,

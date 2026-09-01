@@ -15,19 +15,18 @@ export interface ValidatedUserRow {
   role: UserRole;
   /** Optional: when omitted the backend generates a one-time temp password. */
   password?: string;
-  area_id?: string;
-  rayon_id?: string;
+  location_id?: string;
+  district_id?: string;
   employee_id?: string;
 }
 
 export interface ValidatedAreaRow {
   name: string;
-  area_type_id: string;
-  rayon_id: string;
+  location_type_id: string;
+  district_id: string;
   address?: string;
   latitude: number;
   longitude: number;
-  radius_meters?: number;
 }
 
 export interface ValidationOutcome<T> {
@@ -40,9 +39,9 @@ const IMPORTABLE_ROLES: UserRole[] = [
   UserRole.SATGAS,
   UserRole.LINMAS,
   UserRole.KORLAP,
-  UserRole.ADMIN_DATA,
+  UserRole.ADMIN_RAYON,
   UserRole.KEPALA_RAYON,
-  UserRole.TOP_MANAGEMENT,
+  UserRole.MANAGEMENT,
   UserRole.ADMIN_SYSTEM,
 ];
 
@@ -51,7 +50,7 @@ const PHONE_REQUIRED_ROLES: UserRole[] = [
   UserRole.SATGAS,
   UserRole.LINMAS,
   UserRole.KORLAP,
-  UserRole.ADMIN_DATA,
+  UserRole.ADMIN_RAYON,
   UserRole.KEPALA_RAYON,
 ];
 
@@ -101,11 +100,11 @@ function validateUserRow(
     fail('password', 'Password must be at least 8 characters');
   }
 
-  if (row.area_id && !UUID_RE.test(row.area_id)) {
-    fail('area_id', 'area_id must be a valid UUID');
+  if (row.location_id && !UUID_RE.test(row.location_id)) {
+    fail('location_id', 'location_id must be a valid UUID');
   }
-  if (row.rayon_id && !UUID_RE.test(row.rayon_id)) {
-    fail('rayon_id', 'rayon_id must be a valid UUID');
+  if (row.district_id && !UUID_RE.test(row.district_id)) {
+    fail('district_id', 'district_id must be a valid UUID');
   }
   if (row.employee_id && row.employee_id.length > 20) {
     fail('employee_id', 'employee_id must be at most 20 characters');
@@ -120,8 +119,8 @@ function validateUserRow(
     role,
     password: row.password || undefined,
     phone_number: phone || undefined,
-    area_id: row.area_id || undefined,
-    rayon_id: row.rayon_id || undefined,
+    location_id: row.location_id || undefined,
+    district_id: row.district_id || undefined,
     employee_id: row.employee_id || undefined,
   };
 }
@@ -190,11 +189,11 @@ function validateAreaRow(
   if (name.length < 2 || name.length > 100) {
     fail('name', 'Name must be 2–100 characters');
   }
-  if (!UUID_RE.test(row.area_type_id ?? '')) {
-    fail('area_type_id', 'area_type_id must be a valid UUID');
+  if (!UUID_RE.test(row.location_type_id ?? '')) {
+    fail('location_type_id', 'location_type_id must be a valid UUID');
   }
-  if (!UUID_RE.test(row.rayon_id ?? '')) {
-    fail('rayon_id', 'rayon_id must be a valid UUID');
+  if (!UUID_RE.test(row.district_id ?? '')) {
+    fail('district_id', 'district_id must be a valid UUID');
   }
 
   const latitude = parseCoordinate(row.latitude ?? '', -90, 90);
@@ -206,16 +205,6 @@ function validateAreaRow(
     fail('longitude', 'longitude must be a decimal between -180 and 180');
   }
 
-  let radius: number | undefined;
-  if (row.radius_meters) {
-    const r = Number(row.radius_meters);
-    if (!Number.isInteger(r) || r < 10 || r > 10000) {
-      fail('radius_meters', 'radius_meters must be an integer between 10 and 10000');
-    } else {
-      radius = r;
-    }
-  }
-
   if (row.address && row.address.length > 500) {
     fail('address', 'address must be at most 500 characters');
   }
@@ -225,12 +214,11 @@ function validateAreaRow(
   }
   return {
     name,
-    area_type_id: row.area_type_id,
-    rayon_id: row.rayon_id,
+    location_type_id: row.location_type_id,
+    district_id: row.district_id,
     address: row.address || undefined,
     latitude,
     longitude,
-    radius_meters: radius,
   };
 }
 

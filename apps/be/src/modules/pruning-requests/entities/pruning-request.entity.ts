@@ -8,7 +8,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
-import { Rayon } from '../../rayons/entities/rayon.entity';
+import { District } from '../../districts/entities/district.entity';
 
 export type PruningRequestStatus =
   | 'submitted'
@@ -64,7 +64,7 @@ export class PruningRequest {
   expectedDate: Date | null;
 
   // ADR-035 amendment 2026-05-01: kecamatan submitter picks an ISO week; the
-  // concrete `expectedDate` is set later by admin_data at assign-to-task or
+  // concrete `expectedDate` is set later by admin_rayon at assign-to-task or
   // by the convert auto-pick.
   @Column({ type: 'int', nullable: true, name: 'expected_year' })
   expectedYear: number | null;
@@ -72,7 +72,7 @@ export class PruningRequest {
   @Column({ type: 'int', nullable: true, name: 'expected_iso_week' })
   expectedIsoWeek: number | null;
 
-  // May 9, 2026 — admin-confirmed work day. Set by admin_data via
+  // May 9, 2026 — admin-confirmed work day. Set by admin_rayon via
   // `/assign-to-task` (auto-picked from the booked week) or via the
   // "Atur Jadwal" reschedule endpoint. This replaces the previous overload
   // of `expected_date`, which stays NULL going forward (kept on the
@@ -114,13 +114,13 @@ export class PruningRequest {
   @Column({ type: 'text', default: 'submitted' })
   status: PruningRequestStatus;
 
-  @Column({ type: 'uuid', nullable: true, name: 'rayon_id' })
-  rayonId: string | null;
+  @Column({ type: 'uuid', nullable: true, name: 'district_id' })
+  districtId: string | null;
 
-  // May 9, 2026 — relation for `request.rayon?.name` on detail screen.
-  @ManyToOne(() => Rayon, { onDelete: 'SET NULL', nullable: true })
-  @JoinColumn({ name: 'rayon_id' })
-  rayon?: Rayon;
+  // May 9, 2026 — relation for `request.district?.name` on detail screen.
+  @ManyToOne(() => District, { onDelete: 'SET NULL', nullable: true })
+  @JoinColumn({ name: 'district_id' })
+  district?: District;
 
   @Column({ type: 'uuid', nullable: true, name: 'reviewed_by' })
   reviewedBy: string | null;

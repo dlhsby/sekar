@@ -1,10 +1,11 @@
 /**
  * Theme store (Phase 4-R — dark mode)
  *
- * Light/dark toggle persisted to localStorage under `sekar-theme`. The actual
- * `.dark` class is applied to <html> by a no-flash inline script in the root
- * layout BEFORE first paint; this store mirrors that and lets the toggle flip
- * it. `init()` syncs the store to whatever the inline script already applied.
+ * Light/dark toggle persisted to localStorage under `sekar-theme` AND mirrored
+ * to a same-named cookie. The cookie lets the root layout render the `.dark`
+ * class server-side (no inline no-flash script → no React "raw <script>"
+ * warning). `init()` resolves the effective theme on mount (stored → system
+ * preference), applies it, and syncs the cookie for the next SSR.
  */
 import { create } from 'zustand';
 
@@ -17,9 +18,27 @@ const applyTheme = (theme: Theme) => {
   document.documentElement.classList.toggle('dark', theme === 'dark');
 };
 
+const writeThemeCookie = (theme: Theme) => {
+  if (typeof document === 'undefined') return;
+  try {
+    document.cookie = `${THEME_STORAGE_KEY}=${theme}; path=/; max-age=31536000; samesite=lax`;
+  } catch {
+    // ignore (cookies disabled)
+  }
+};
+
+const readStoredTheme = (): Theme | null => {
+  try {
+    const v = localStorage.getItem(THEME_STORAGE_KEY);
+    return v === 'dark' || v === 'light' ? v : null;
+  } catch {
+    return null;
+  }
+};
+
 interface ThemeState {
   theme: Theme;
-  /** Sync the store to the class the no-flash script already set on <html>. */
+  /** Resolve stored → system theme, apply it, and sync the SSR cookie. */
   init: () => void;
   setTheme: (theme: Theme) => void;
   toggle: () => void;
@@ -28,9 +47,15 @@ interface ThemeState {
 export const useThemeStore = create<ThemeState>((set, get) => ({
   theme: 'light',
   init: () => {
-    const isDark =
-      typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
-    set({ theme: isDark ? 'dark' : 'light' });
+    if (typeof document === 'undefined') return;
+    const stored = readStoredTheme();
+    const prefersDark =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-color-scheme: dark)').matches;
+    const theme: Theme = stored ?? (prefersDark ? 'dark' : 'light');
+    applyTheme(theme);
+    writeThemeCookie(theme);
+    set({ theme });
   },
   setTheme: (theme) => {
     applyTheme(theme);
@@ -39,6 +64,7 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
     } catch {
       // ignore storage failures (private mode, etc.)
     }
+    writeThemeCookie(theme);
     set({ theme });
   },
   toggle: () => get().setTheme(get().theme === 'dark' ? 'light' : 'dark'),

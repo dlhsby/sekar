@@ -17,10 +17,10 @@ const BASE_USER: LiveUser = {
   role: 'satgas',
   phone: '+6281234567890',
   status: 'active',
-  area_id: 'area-1',
-  area_name: 'Taman Bungkul',
-  rayon_id: 'rayon-1',
-  rayon_name: 'Rayon Selatan',
+  location_id: 'area-1',
+  location_name: 'Taman Bungkul',
+  district_id: 'district-1',
+  district_name: 'Rayon Selatan',
   latitude: -7.289659,
   longitude: 112.739208,
   accuracy: 5,
@@ -63,8 +63,8 @@ describe('UserListItem', () => {
       expect(screen.getByText(/satgas|petugas/i)).toBeInTheDocument();
     });
 
-    it('should render a dash when area_name is empty', () => {
-      const user = { ...BASE_USER, area_name: '' };
+    it('should render a dash when location_name is empty', () => {
+      const user = { ...BASE_USER, location_name: '' };
       render(<UserListItem {...defaultProps} user={user} />);
       expect(screen.getByText('—')).toBeInTheDocument();
     });
@@ -85,9 +85,8 @@ describe('UserListItem', () => {
   describe('Status dot colors', () => {
     it.each([
       ['active', 'bg-[var(--color-status-active)]'],
-      ['inactive', 'bg-[var(--color-status-idle)]'],
-      ['outside_area', 'bg-[var(--color-status-outside)]'],
-      ['offline', 'bg-[var(--color-status-offline)]'],
+      ['offline', 'bg-[var(--color-status-idle)]'],
+      ['absent', 'bg-[var(--color-status-missing)]'],
     ] as const)(
       'should render status dot with correct color class for status "%s"',
       (status, expectedClass) => {
@@ -99,12 +98,12 @@ describe('UserListItem', () => {
       }
     );
 
-    it('should add animate-pulse class to missing status dot', () => {
+    it('should add animate-pulse class to offline status dot', () => {
       const { container } = render(
-        <UserListItem {...defaultProps} user={{ ...BASE_USER, status: 'missing' }} />
+        <UserListItem {...defaultProps} user={{ ...BASE_USER, status: 'offline' }} />
       );
       const dot = container.querySelector('.rounded-full.flex-shrink-0');
-      expect(dot).toHaveClass('bg-[var(--color-status-missing)]', 'animate-pulse');
+      expect(dot).toHaveClass('bg-[var(--color-status-idle)]', 'animate-pulse');
     });
   });
 

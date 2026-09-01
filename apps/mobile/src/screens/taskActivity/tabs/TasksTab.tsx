@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { NBEmptyState, NBSkeleton, NBText } from '../../../components/nb';
 import { nbColors, nbSpacing } from '../../../constants/nbTokens';
+import { screenContent } from '../../../constants/layout';
 import { TaskCard } from '../components/TaskCard';
 import type { Task } from '../../../types/models.types';
 
@@ -136,7 +137,7 @@ export function TasksTab({
           </View>
         ) : !hasMore && tasks.length > 0 ? (
           <View style={styles.footerEnd}>
-            <NBText variant="body-sm" color="gray400" style={styles.footerEndText}>{t('ui.noMore')}</NBText>
+            <NBText variant="body-sm" color="gray500" style={styles.footerEndText}>{t('ui.noMore')}</NBText>
           </View>
         ) : null
       }
@@ -149,6 +150,7 @@ const styles = StyleSheet.create({
     padding: nbSpacing.md,
   },
   listContent: {
+    ...screenContent,
     paddingBottom: nbSpacing.lg,
   },
   emptyListContent: {

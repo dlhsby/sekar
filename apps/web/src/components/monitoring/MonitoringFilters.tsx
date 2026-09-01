@@ -2,52 +2,70 @@
 
 /**
  * MonitoringFilters — filter rail for the monitoring page (mobile parity).
- * Search by name, 5-status toggle chips with live counts, rayon + role selects.
- * Purely client-side over the snapshot worker list. Controlled by the page.
+ * 3-status toggle chips with live counts, then a cascading set of type-to-search,
+ * lazily-rendered comboboxes: District → Kawasan → Lokasi, plus Peran + Tim, and a
+ * Petugas picker that cascades from everything above. Purely client-side over the
+ * snapshot worker list. Controlled by the page.
  */
 import { Search, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui';
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { cn } from '@/lib/utils/cn';
 import { getStatusLabels } from '@/lib/constants/monitoring';
-import { ROLE_LABELS } from '@/lib/constants/roles';
+import { roleLabel } from '@/lib/constants/roles';
 import type { TrackingStatus } from '@/lib/api/monitoring-types';
 import type { UserRole } from '@/types/models';
 
 const STATUS_VAR: Record<TrackingStatus, string> = {
   active: 'var(--color-status-active)',
-  inactive: 'var(--color-status-idle)',
-  outside_area: 'var(--color-status-outside)',
-  missing: 'var(--color-status-missing)',
-  offline: 'var(--color-status-offline)',
+  offline: 'var(--color-status-idle)',
+  absent: 'var(--color-status-missing)',
 };
 
-const STATUS_ORDER: TrackingStatus[] = [
-  'active',
-  'inactive',
-  'outside_area',
-  'missing',
-  'offline',
-];
+const STATUS_ORDER: TrackingStatus[] = ['active', 'offline', 'absent'];
 
 export interface MonitoringFilterState {
   search: string;
   statuses: Set<TrackingStatus>;
-  rayonId: string; // 'all' or a rayon id
-  role: string; // 'all' or a role value
+  /**
+   * Luar jadwal (ad-hoc) — clocked in but not on the current shift's roster.
+   *
+   * Its own field rather than a fourth entry in `statuses`, because it is a
+   * different AXIS of the presence model (ADR-050): a worker is off-schedule
+   * *and* active/inactive, not off-schedule *instead of* them. Folding the two
+   * together is precisely the collapse that made `outside_area` overlap with the
+   * status enum and produced double counts in four places.
+   */
+  scheduled: 'all' | 'scheduled' | 'adhoc';
+  districtId: string; // 'all' or a district id
+  regionId: string; // 'all' or a kawasan (region) id
+  locationId: string; // 'all' or a lokasi (location) id
+  jenis: 'individu' | 'team'; // assignment type — decides role vs team sub-filter
+  role: string; // 'all' or a role value (only used when jenis = individu)
+  teamId: string; // 'all' or a team id (only used when jenis = team)
 }
 
-export interface RayonOption {
+export interface DistrictOption {
   id: string;
   name: string;
 }
 
+/** A selectable id/name option (kawasan, lokasi, team, worker, …). */
+export type FilterOption = DistrictOption;
+
 export interface MonitoringFiltersProps {
   filters: MonitoringFilterState;
   onChange: (next: MonitoringFilterState) => void;
-  statusCounts: Record<TrackingStatus, number>;
-  rayonOptions: RayonOption[];
+  districtOptions: DistrictOption[];
+  regionOptions: FilterOption[];
+  locationOptions: FilterOption[];
+  /** Kawasan/Lokasi options are fetched on district change — show a loading hint
+   *  instead of the "no kawasan" empty state while they resolve. */
+  regionLoading?: boolean;
+  locationLoading?: boolean;
   roleOptions: UserRole[];
+  teamOptions: FilterOption[];
   total: number;
   matched: number;
   /** Hide the built-in search field (when search lives elsewhere, e.g. a top overlay). */
@@ -55,12 +73,39 @@ export interface MonitoringFiltersProps {
   className?: string;
 }
 
+const toComboOptions = (opts: FilterOption[]): ComboboxOption[] =>
+  opts.map((o) => ({ value: o.id, label: o.name }));
+
+/** Labelled wrapper for a filter control. */
+function Field({
+  label,
+  htmlFor,
+  children,
+}: {
+  label: string;
+  htmlFor: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label className="mb-1 block text-xs font-bold uppercase text-nb-gray-500" htmlFor={htmlFor}>
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
+
 export function MonitoringFilters({
   filters,
   onChange,
-  statusCounts,
-  rayonOptions,
+  districtOptions,
+  regionOptions,
+  locationOptions,
+  regionLoading = false,
+  locationLoading = false,
   roleOptions,
+  teamOptions,
   total,
   matched,
   showSearch = true,
@@ -68,6 +113,14 @@ export function MonitoringFilters({
 }: MonitoringFiltersProps) {
   const { t } = useTranslation();
   const statusLabels = getStatusLabels();
+  const searchPh = t('common:ui.combobox.searchPlaceholder');
+  const noResults = t('common:ui.combobox.noResults');
+
+  // Cascade gating: Kawasan + Lokasi stay disabled until a district is chosen.
+  // Kawasan is also disabled for a district that has none (e.g. Taman Aktif).
+  const districtPicked = filters.districtId !== 'all';
+  const regionDisabled = !districtPicked || regionLoading || regionOptions.length === 0;
+  const locationDisabled = !districtPicked || locationLoading || locationOptions.length === 0;
 
   const toggleStatus = (status: TrackingStatus) => {
     const next = new Set(filters.statuses);
@@ -79,23 +132,48 @@ export function MonitoringFilters({
   const hasActiveFilters =
     filters.search !== '' ||
     filters.statuses.size > 0 ||
-    filters.rayonId !== 'all' ||
-    filters.role !== 'all';
+    filters.scheduled !== 'all' ||
+    filters.districtId !== 'all' ||
+    filters.regionId !== 'all' ||
+    filters.locationId !== 'all' ||
+    filters.jenis !== 'individu' ||
+    filters.role !== 'all' ||
+    filters.teamId !== 'all';
 
   const reset = () =>
-    onChange({ search: '', statuses: new Set(), rayonId: 'all', role: 'all' });
+    onChange({
+      search: '',
+      statuses: new Set(),
+      scheduled: 'all',
+      districtId: 'all',
+      regionId: 'all',
+      locationId: 'all',
+      jenis: 'individu',
+      role: 'all',
+      teamId: 'all',
+    });
+
+  const regionPlaceholder = !districtPicked
+    ? t('monitoring:filters.pickDistrictFirst')
+    : regionLoading
+      ? t('common:actions.loading')
+      : regionOptions.length === 0
+        ? t('monitoring:filters.noKawasan')
+        : t('monitoring:filters.kawasanAllOption');
+  const locationPlaceholder = !districtPicked
+    ? t('monitoring:filters.pickDistrictFirst')
+    : locationLoading
+      ? t('common:actions.loading')
+      : t('monitoring:filters.lokasiAllOption');
 
   return (
     <div className={cn('flex flex-col gap-4', className)}>
       {/* Search */}
       {showSearch && (
-        <div>
-          <label className="mb-1 block text-xs font-bold uppercase text-nb-gray-500" htmlFor="mon-search">
-            {t('monitoring:filters.label')}
-          </label>
+        <Field label={t('monitoring:filters.label')} htmlFor="mon-search">
           <div className="relative">
             <Search
-              className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-nb-gray-400"
+              className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-nb-gray-500"
               aria-hidden="true"
             />
             <Input
@@ -106,12 +184,14 @@ export function MonitoringFilters({
               className="pl-8"
             />
           </div>
-        </div>
+        </Field>
       )}
 
       {/* Status chips */}
       <fieldset>
-        <legend className="mb-1.5 text-xs font-bold uppercase text-nb-gray-500">{t('monitoring:filters.statusLabel')}</legend>
+        <legend className="mb-1.5 text-xs font-bold uppercase text-nb-gray-500">
+          {t('monitoring:filters.statusLabel')}
+        </legend>
         <div className="flex flex-wrap gap-1.5">
           {STATUS_ORDER.map((status) => {
             const active = filters.statuses.has(status);
@@ -135,62 +215,153 @@ export function MonitoringFilters({
                   aria-hidden="true"
                 />
                 {statusLabels[status]}
-                <span className="font-mono tabular-nums opacity-70">{statusCounts[status] ?? 0}</span>
               </button>
             );
           })}
+          {/* Luar jadwal sits with the status chips because that is where the
+              operator looks for it — the header pills show it alongside the
+              other three — but it toggles its own axis, so it can be combined
+              with any of them rather than replacing them. */}
+          <button
+            type="button"
+            onClick={() =>
+              onChange({
+                ...filters,
+                scheduled: filters.scheduled === 'adhoc' ? 'all' : 'adhoc',
+              })
+            }
+            aria-pressed={filters.scheduled === 'adhoc'}
+            className={cn(
+              'flex items-center gap-1.5 rounded-nb-base border-2 px-2 py-1 text-xs font-semibold transition-colors',
+              'focus:outline-none focus-visible:ring-2 focus-visible:ring-nb-primary',
+              filters.scheduled === 'adhoc'
+                ? 'bg-nb-gray-900 text-nb-white'
+                : 'bg-nb-white text-nb-gray-700 hover:bg-nb-gray-50'
+            )}
+            style={{ borderColor: 'var(--color-status-offline)' }}
+          >
+            <span
+              className="h-2 w-2 flex-shrink-0 rounded-full"
+              style={{ backgroundColor: 'var(--color-status-offline)' }}
+              aria-hidden="true"
+            />
+            {t('monitoring:status.adhoc')}
+          </button>
         </div>
       </fieldset>
 
       {/* Rayon */}
-      {rayonOptions.length > 0 && (
-        <div>
-          <label className="mb-1 block text-xs font-bold uppercase text-nb-gray-500" htmlFor="mon-rayon">
-            {t('monitoring:filters.rayonLabel')}
-          </label>
-          <select
-            id="mon-rayon"
-            value={filters.rayonId}
-            onChange={(e) => onChange({ ...filters, rayonId: e.target.value })}
-            className="w-full rounded-nb-base border-2 border-nb-black bg-nb-white px-2.5 py-2 text-sm font-medium text-nb-black focus:outline-none focus-visible:ring-2 focus-visible:ring-nb-primary"
-          >
-            <option value="all">{t('monitoring:filters.rayonAllOption')}</option>
-            {rayonOptions.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name}
-              </option>
-            ))}
-          </select>
-        </div>
+      {districtOptions.length > 0 && (
+        <Field label={t('monitoring:filters.districtLabel')} htmlFor="mon-district">
+          <Combobox
+            id="mon-district"
+            options={toComboOptions(districtOptions)}
+            value={filters.districtId === 'all' ? '' : filters.districtId}
+            onValueChange={(v) => onChange({ ...filters, districtId: v || 'all', regionId: 'all', locationId: 'all' })}
+            placeholder={t('monitoring:filters.districtAllOption')}
+            searchPlaceholder={searchPh}
+            emptyText={noResults}
+            clearable
+          />
+        </Field>
       )}
 
-      {/* Role */}
-      {roleOptions.length > 0 && (
-        <div>
-          <label className="mb-1 block text-xs font-bold uppercase text-nb-gray-500" htmlFor="mon-role">
-            {t('monitoring:filters.roleLabel')}
-          </label>
-          <select
-            id="mon-role"
-            value={filters.role}
-            onChange={(e) => onChange({ ...filters, role: e.target.value })}
-            className="w-full rounded-nb-base border-2 border-nb-black bg-nb-white px-2.5 py-2 text-sm font-medium text-nb-black focus:outline-none focus-visible:ring-2 focus-visible:ring-nb-primary"
-          >
-            <option value="all">{t('monitoring:filters.roleAllOption')}</option>
-            {roleOptions.map((role) => (
-              <option key={role} value={role}>
-                {ROLE_LABELS[role] ?? role}
-              </option>
-            ))}
-          </select>
+      {/* Kawasan — cascades from Rayon (disabled until one is picked; a district
+          without kawasan, e.g. Taman Aktif, keeps it disabled with a hint). */}
+      {districtOptions.length > 0 && (
+        <Field label={t('monitoring:filters.kawasanLabel')} htmlFor="mon-region">
+          <Combobox
+            id="mon-region"
+            options={toComboOptions(regionOptions)}
+            value={filters.regionId === 'all' ? '' : filters.regionId}
+            onValueChange={(v) => onChange({ ...filters, regionId: v || 'all', locationId: 'all' })}
+            placeholder={regionPlaceholder}
+            searchPlaceholder={searchPh}
+            emptyText={noResults}
+            disabled={regionDisabled}
+            clearable
+          />
+        </Field>
+      )}
+
+      {/* Lokasi — cascades from Rayon (+ Kawasan when one is picked). */}
+      {districtOptions.length > 0 && (
+        <Field label={t('monitoring:filters.lokasiLabel')} htmlFor="mon-location">
+          <Combobox
+            id="mon-location"
+            options={toComboOptions(locationOptions)}
+            value={filters.locationId === 'all' ? '' : filters.locationId}
+            onValueChange={(v) => onChange({ ...filters, locationId: v || 'all' })}
+            placeholder={locationPlaceholder}
+            searchPlaceholder={searchPh}
+            emptyText={noResults}
+            disabled={locationDisabled}
+            clearable
+          />
+        </Field>
+      )}
+
+      {/* Jenis — Individu vs Tim. Individu reveals the Peran (role) filter; Tim
+          reveals the Jenis Tim (team) filter and scopes to team-assigned workers.
+          Switching resets the other axis so they never both apply. */}
+      <Field label={t('monitoring:filters.jenisLabel')} htmlFor="mon-jenis">
+        <div id="mon-jenis" className="flex rounded-nb-base border-2 border-nb-black p-0.5" role="group">
+          {(['individu', 'team'] as const).map((j) => (
+            <button
+              key={j}
+              type="button"
+              aria-pressed={filters.jenis === j}
+              onClick={() =>
+                onChange({ ...filters, jenis: j, role: 'all', teamId: 'all' })
+              }
+              className={cn(
+                'flex-1 rounded-nb-sm px-2 py-1.5 text-sm font-bold transition-colors',
+                filters.jenis === j
+                  ? 'bg-nb-gray-900 text-nb-white'
+                  : 'bg-nb-white text-nb-gray-700 hover:bg-nb-gray-50'
+              )}
+            >
+              {t(`monitoring:filters.jenis.${j}`)}
+            </button>
+          ))}
         </div>
+      </Field>
+
+      {/* Individu → Peran (role) */}
+      {filters.jenis === 'individu' && roleOptions.length > 0 && (
+        <Field label={t('monitoring:filters.roleLabel')} htmlFor="mon-role">
+          <Combobox
+            id="mon-role"
+            options={roleOptions.map((r) => ({ value: r, label: roleLabel(r) }))}
+            value={filters.role === 'all' ? '' : filters.role}
+            onValueChange={(v) => onChange({ ...filters, role: v || 'all' })}
+            placeholder={t('monitoring:filters.roleAllOption')}
+            searchPlaceholder={searchPh}
+            emptyText={noResults}
+            clearable
+          />
+        </Field>
+      )}
+
+      {/* Tim → Jenis Tim (team category) */}
+      {filters.jenis === 'team' && (
+        <Field label={t('monitoring:filters.timLabel')} htmlFor="mon-team">
+          <Combobox
+            id="mon-team"
+            options={toComboOptions(teamOptions)}
+            value={filters.teamId === 'all' ? '' : filters.teamId}
+            onValueChange={(v) => onChange({ ...filters, teamId: v || 'all' })}
+            placeholder={t('monitoring:filters.timAllOption')}
+            searchPlaceholder={searchPh}
+            emptyText={noResults}
+            clearable
+          />
+        </Field>
       )}
 
       {/* Footer: match count + reset */}
       <div className="flex items-center justify-between border-t-2 border-nb-gray-200 pt-3 text-xs text-nb-gray-500">
-        <span aria-live="polite">
-          {t('monitoring:filters.matchSummary', { matched, total })}
-        </span>
+        <span aria-live="polite">{t('monitoring:filters.matchSummary', { matched, total })}</span>
         {hasActiveFilters && (
           <button
             type="button"

@@ -4,6 +4,7 @@
 
 import { StyleSheet } from 'react-native';
 import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows, withAlpha } from '../../constants/nbTokens';
+import { screenContent } from '../../constants/layout';
 
 export const styles = StyleSheet.create({
   container: {
@@ -14,8 +15,7 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: nbSpacing.md,
-    paddingBottom: nbSpacing.md,
+    ...screenContent,
   },
   fab: {
     paddingHorizontal: nbSpacing.md,

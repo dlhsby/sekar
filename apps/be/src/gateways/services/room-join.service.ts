@@ -3,13 +3,13 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Socket } from 'socket.io';
 import { User, UserRole } from '../../modules/users/entities/user.entity';
-import { UserAreasService } from '../../modules/user-areas/user-areas.service';
+import { UserLocationsService } from '../../modules/user-locations/user-locations.service';
 
 /** Roles that watch the whole city */
-const CITY_ROLES: string[] = [UserRole.SUPERADMIN, UserRole.ADMIN_SYSTEM, UserRole.TOP_MANAGEMENT];
+const CITY_ROLES: string[] = [UserRole.SUPERADMIN, UserRole.ADMIN_SYSTEM, UserRole.MANAGEMENT];
 
-/** Roles scoped to a rayon */
-const RAYON_ROLES: string[] = [UserRole.KEPALA_RAYON, UserRole.ADMIN_DATA];
+/** Roles scoped to a district */
+const RAYON_ROLES: string[] = [UserRole.KEPALA_RAYON, UserRole.ADMIN_RAYON];
 
 /**
  * RoomJoinService — computes and applies the WebSocket room set for a user
@@ -19,7 +19,7 @@ const RAYON_ROLES: string[] = [UserRole.KEPALA_RAYON, UserRole.ADMIN_DATA];
  * - `user:{userId}` — personal room (basis of the multi-instance-safe
  *   emitToUser pattern, ADR-016)
  * - `monitoring:city` — city-wide roles
- * - `monitoring:rayon:{rayonId}` — rayon-scoped roles
+ * - `monitoring:district:{districtId}` — district-scoped roles
  * - `monitoring:area:{areaId}` — korlap's assigned areas (multi-area aware)
  */
 @Injectable()
@@ -29,7 +29,7 @@ export class RoomJoinService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    private readonly userAreasService: UserAreasService,
+    private readonly userAreasService: UserLocationsService,
   ) {}
 
   /**
@@ -51,22 +51,24 @@ export class RoomJoinService {
     try {
       const user = await this.userRepository.findOne({
         where: { id: userId },
-        select: ['id', 'rayon_id', 'area_id'],
+        select: ['id', 'district_id', 'location_id', 'region_id'],
       });
 
       if (!user) return rooms;
 
-      if (RAYON_ROLES.includes(role) && user.rayon_id) {
-        rooms.push(`monitoring:rayon:${user.rayon_id}`);
+      if (RAYON_ROLES.includes(role) && user.district_id) {
+        rooms.push(`monitoring:district:${user.district_id}`);
       }
+
+      // TODO (Phase 5.5c): when a REGION-scope role is introduced, push monitoring:region:${user.region_id} here
 
       if (role === UserRole.KORLAP) {
         // Multi-area: all assigned area rooms, falling back to the legacy single area
-        const areaIds = await this.userAreasService.getPermanentAreaIds(userId);
-        if (areaIds.length > 0) {
-          rooms.push(...areaIds.map((areaId) => `monitoring:area:${areaId}`));
-        } else if (user.area_id) {
-          rooms.push(`monitoring:area:${user.area_id}`);
+        const locationIds = await this.userAreasService.getPermanentLocationIds(userId);
+        if (locationIds.length > 0) {
+          rooms.push(...locationIds.map((areaId) => `monitoring:area:${areaId}`));
+        } else if (user.location_id) {
+          rooms.push(`monitoring:area:${user.location_id}`);
         }
       }
     } catch (error) {

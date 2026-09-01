@@ -23,7 +23,9 @@ describe('PdfGeneratorService', () => {
     service = new PdfGeneratorService();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    // Clears the periodic-sweep interval created by onModuleInit.
+    await service.onModuleDestroy();
     jest.useRealTimers();
   });
 
@@ -64,6 +66,51 @@ describe('PdfGeneratorService', () => {
       });
 
       await expect(service.onModuleInit()).resolves.not.toThrow();
+    });
+
+    it('records the newly-created profile dir as the live one', async () => {
+      // cleanup readdir -> before-launch readdir -> after-launch readdir
+      mockReaddir
+        .mockReturnValueOnce([])
+        .mockReturnValueOnce([])
+        .mockReturnValueOnce(['puppeteer_dev_chrome_profile-new']);
+      (puppeteer.launch as jest.Mock).mockResolvedValue({
+        close: jest.fn(),
+        process: jest.fn(),
+      });
+
+      await service.onModuleInit();
+
+      expect((service as unknown as { currentProfile: string | null }).currentProfile).toBe(
+        'puppeteer_dev_chrome_profile-new',
+      );
+    });
+  });
+
+  describe('periodic sweep', () => {
+    it('removes orphaned profiles but keeps the live browser profile', () => {
+      (service as unknown as { currentProfile: string | null }).currentProfile =
+        'puppeteer_dev_chrome_profile-live';
+      mockReaddir.mockReturnValue([
+        'puppeteer_dev_chrome_profile-live',
+        'puppeteer_dev_chrome_profile-orphan',
+      ]);
+
+      (service as unknown as { cleanupStaleProfiles(): void }).cleanupStaleProfiles();
+
+      const tmpDir = os.tmpdir();
+      expect(mockRm).toHaveBeenCalledTimes(1);
+      expect(mockRm).toHaveBeenCalledWith(
+        path.join(tmpDir, 'puppeteer_dev_chrome_profile-orphan'),
+        {
+          recursive: true,
+          force: true,
+        },
+      );
+      expect(mockRm).not.toHaveBeenCalledWith(
+        path.join(tmpDir, 'puppeteer_dev_chrome_profile-live'),
+        expect.anything(),
+      );
     });
   });
 

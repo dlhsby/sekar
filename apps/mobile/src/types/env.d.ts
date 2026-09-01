@@ -28,6 +28,12 @@ declare module '@env' {
   export const SUPPORT_HOTLINE_WHATSAPP: string;
   export const SUPPORT_HOTLINE_PHONE: string;
 
+  // Anti-spoofing dev overrides. Read ONLY via src/config/integrity.ts, which
+  // additionally gates them on __DEV__ so a release bundle cannot honour them.
+  // "true" enables the bypass; anything else (including unset) fails closed.
+  export const ALLOW_MOCK_LOCATION: string;
+  export const ALLOW_GALLERY_UPLOAD: string;
+
   // Crash reporting (Phase 4-1 B4) — empty disables Sentry (default in dev)
   export const SENTRY_DSN_MOBILE: string;
   export const SENTRY_RELEASE: string;

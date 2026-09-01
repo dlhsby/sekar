@@ -391,7 +391,12 @@ export async function clearFailedItems(): Promise<void> {
 export async function clearOrphanedItems(): Promise<void> {
   try {
     const items = await getQueuedItems();
-    const remainingItems = items.filter(item => item.user_id && item.status !== 'orphaned');
+    // Only items EXPLICITLY marked orphaned are deleted. The previous test also
+    // dropped anything merely missing a `user_id`, conflating "no owner
+    // recorded" with "belongs to nobody" - a pending ping written during a
+    // forced logout is unsent work, not a leftover, and deleting it is the
+    // silent data loss this sweep is supposed to prevent.
+    const remainingItems = items.filter(item => item.status !== 'orphaned');
     await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(remainingItems));
 
     const clearedCount = items.length - remainingItems.length;

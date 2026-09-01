@@ -20,7 +20,7 @@
     "present": "Hadir",
     "absent": "Tidak hadir",
     "onLeave": "Cuti",
-    "perRayon": "Per rayon"
+    "perDistrict": "Per rayon"
   },
   "quickActions": {
     "title": "Tindakan cepat",
@@ -33,7 +33,7 @@
     "viewAll": "Tanaman →",
     "allOnSchedule": "Semua tanaman terpangkas sesuai jadwal. 🌿",
     "overdueCount": "{{count}} jenis tanaman melewati jadwal di {{rayons}} rayon",
-    "noRayon": "Tanpa rayon"
+    "noDistrict": "Tanpa rayon"
   },
   "notifications": {
     "title": "Notifikasi terkini",

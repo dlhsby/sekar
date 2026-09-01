@@ -32,7 +32,7 @@ const mockArea = {
   id: 'area-1',
   name: 'Taman Bungkul',
   area_type_id: 'type-1',
-  areaType: {
+  locationType: {
     id: 'type-1',
     code: 'park' as const,
     name: 'Taman Kota',
@@ -49,7 +49,7 @@ const mockArea = {
 const mockActiveShift: Shift = {
   id: 'shift-1',
   user_id: 'user-1',
-  area_id: 'area-1',
+  location_id: 'area-1',
   clock_in_time: '2024-01-01T08:00:00Z',
   clock_in_gps_lat: -7.275,
   clock_in_gps_lng: 112.75,
@@ -225,7 +225,7 @@ describe('ShiftCard', () => {
     });
 
     it('should handle missing area type gracefully', () => {
-      const areaWithoutType = { ...mockArea, areaType: undefined };
+      const areaWithoutType = { ...mockArea, locationType: undefined };
       const shiftWithPartialArea = { ...mockActiveShift, area: areaWithoutType };
       const { getByText, queryByText } = render(
         <ShiftCard shift={shiftWithPartialArea} />
@@ -339,7 +339,7 @@ describe('ShiftCard', () => {
     });
 
     it('should handle shift with undefined area_type name', () => {
-      const undefinedType = { ...mockArea, areaType: { ...mockArea.areaType, name: undefined } };
+      const undefinedType = { ...mockArea, locationType: { ...mockArea.locationType, name: undefined } };
       const shift = { ...mockActiveShift, area: undefinedType as any };
       const { queryByText } = render(<ShiftCard shift={shift} />);
       // Should not crash

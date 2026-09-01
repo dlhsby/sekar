@@ -1,6 +1,6 @@
 /**
  * Empty-state illustrations — branded Neo-Brutalist SVGs ported from
- * design/project/illustrations.html (#illo-*). Each renders at a square `size`
+ * specs/design-system/mockups/project/illustrations.html (#illo-*). Each renders at a square `size`
  * (default 120) and is consumed via NBEmptyState's `illustration` prop.
  *
  * Colors come from design tokens (no inline hex — ESLint `no-inline-hex-colors`).

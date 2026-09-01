@@ -4,12 +4,16 @@
  * Phase 2D-11: Home Screen Location Card
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import i18n from '../i18n/config';
-import Geolocation from 'react-native-geolocation-service';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { readPosition } from '../services/location/verifiedPosition';
+import { describeLocationError } from '../services/location/locationErrors';
 import { useAppSelector } from '../store/hooks';
 import { isWithinAreaBoundary } from '../utils/gpsUtils';
 import { locationTracker, type LocationPing } from '../services/location/locationTracker';
+import { useTodayRoster } from './useTodayRoster';
+import { useAllDistrictAreas, type GeofenceArea } from './useAllDistrictAreas';
+import { resolveScheduleScope } from '../utils/scheduleScope';
+import { buildMapArea, type MapArea } from '../utils/mapUtils';
 
 export interface HomeLocationState {
   latitude: number | null;
@@ -35,22 +39,80 @@ export function useHomeLocation() {
   const { assignedArea } = useAppSelector((state) => state.auth);
   const { currentShift } = useAppSelector((state) => state.shift);
   const hasActiveShift = !!currentShift;
-  // During an active shift, check against the area actually clocked into; fall
-  // back to the standing assigned area. Null for unscheduled/ad-hoc workers.
-  const boundaryArea = currentShift?.area ?? assignedArea ?? null;
+
+  // Today's roster carries the assigned scope. A rayon/kawasan assignment names
+  // no lokasi but HAS its own boundary polygon — geofence against it so the home
+  // hero shows real inside/outside for scope workers too (mirrors useClockInOut).
+  const { roster } = useTodayRoster();
+  const scheduleScope = useMemo(() => resolveScheduleScope(roster), [roster]);
+  // City scope has no single polygon; geofence against every rayon (inside any =
+  // inside Surabaya). Only fetched for a city-scope worker.
+  const cityAreas = useAllDistrictAreas(scheduleScope.scope === 'city');
+  const scopeBoundary = useMemo(() => {
+    const scoped =
+      scheduleScope.scope === 'region'
+        ? roster?.region
+        : scheduleScope.scope === 'district'
+          ? roster?.district
+          : null;
+    if (!scoped?.boundary_polygon) return null;
+    return {
+      name: scoped.name,
+      boundary_polygon: scoped.boundary_polygon,
+      gps_lat: scoped.center_lat ?? null,
+      gps_lng: scoped.center_lng ?? null,
+    };
+  }, [scheduleScope, roster]);
+
+  // Boundary priority: the lokasi clocked into → today's roster lokasi → the
+  // assigned rayon/kawasan boundary → every rayon (city scope) → the standing
+  // assignment. A worker is "in area" if inside ANY of these. Empty for a
+  // genuinely ad-hoc worker (no boundary to be inside/outside of).
+  const boundaryAreas = useMemo<GeofenceArea[]>(() => {
+    const rosterLocation =
+      roster?.location?.gps_lat != null && roster.location.gps_lng != null ? roster.location : null;
+    if (currentShift?.area) return [currentShift.area];
+    if (rosterLocation) return [rosterLocation];
+    if (scopeBoundary) return [scopeBoundary];
+    if (scheduleScope.scope === 'city' && cityAreas.length > 0) return cityAreas;
+    if (assignedArea) return [assignedArea];
+    return [];
+  }, [currentShift, roster, scopeBoundary, scheduleScope, cityAreas, assignedArea]);
+
+  // Whether there is a real polygon to test — drives the hero's inside/outside
+  // pill vs a neutral "scope, no boundary" state.
+  const hasBoundary = boundaryAreas.some((a) => !!a.boundary_polygon);
 
   const [location, setLocation] = useState<HomeLocationState>(INITIAL_STATE);
+
+  // The area to draw on the LocationMapModal, built with the SAME shared builder
+  // the clock-in/out screen uses so the home hero's map is identical to it. With
+  // several areas (city scope → all rayons) draw the one the worker is inside.
+  const mapArea = useMemo<MapArea | undefined>(() => {
+    if (boundaryAreas.length === 0) return undefined;
+    const primary =
+      boundaryAreas.length > 1 && location.latitude != null && location.longitude != null
+        ? boundaryAreas.find((a) =>
+            isWithinAreaBoundary(location.latitude!, location.longitude!, a),
+          ) ?? boundaryAreas[0]
+        : boundaryAreas[0];
+    return buildMapArea(primary);
+  }, [boundaryAreas, location.latitude, location.longitude]);
 
   const fetchLocation = useCallback(() => {
     setLocation((prev) => ({ ...prev, loading: true, error: null }));
 
-    Geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude, accuracy } = position.coords;
-
-        const withinArea = boundaryArea
-          ? isWithinAreaBoundary(latitude, longitude, boundaryArea)
-          : false;
+    // allowMocked: the home card only *displays* where the worker appears to be.
+    // Nothing is recorded from it, and the punch flow re-reads position under
+    // full enforcement, so blocking here would strand an emulator for no gain.
+    readPosition({
+      allowMocked: true,
+      geoOptions: { timeout: 15000, maximumAge: 10000 },
+    })
+      .then(({ latitude, longitude, accuracy }) => {
+        const withinArea = boundaryAreas.some((a) =>
+          isWithinAreaBoundary(latitude, longitude, a),
+        );
 
         setLocation({
           latitude,
@@ -61,27 +123,24 @@ export function useHomeLocation() {
           error: null,
           updatedAt: new Date(),
         });
-      },
-      (error) => {
+      })
+      .catch((error) => {
         setLocation((prev) => ({
           ...prev,
           loading: false,
-          error: error.message || i18n.t('location:getFailed'),
+          error: describeLocationError(error),
         }));
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 10000,
-      },
-    );
-  }, [boundaryArea]);
+      });
+  }, [boundaryAreas]);
 
   const refresh = useCallback(() => {
     fetchLocation();
-    // Trigger location tracker capture + upload for backend sync
-    locationTracker.captureNow();
-    locationTracker.forceUpload();
+    // Capture AND upload, in that order. These used to be two calls: the upload
+    // ran while the GPS read was still in flight, found an empty buffer and
+    // returned, so pressing Refresh updated the card on screen but sent nothing
+    // to the server. `upload: true` also keeps the ping past the stationary
+    // thinning — a worker who has not moved still pressed the button.
+    void locationTracker.captureNow({ upload: true });
   }, [fetchLocation]);
 
   // Auto-fetch on mount when shift is active
@@ -98,9 +157,9 @@ export function useHomeLocation() {
     if (!hasActiveShift) return;
 
     const handleLocationUpdate = (ping: LocationPing) => {
-      const withinArea = boundaryArea
-        ? isWithinAreaBoundary(ping.latitude, ping.longitude, boundaryArea)
-        : false;
+      const withinArea = boundaryAreas.some((a) =>
+        isWithinAreaBoundary(ping.latitude, ping.longitude, a),
+      );
       setLocation({
         latitude: ping.latitude,
         longitude: ping.longitude,
@@ -116,7 +175,14 @@ export function useHomeLocation() {
     return () => {
       locationTracker.off('locationUpdate', handleLocationUpdate);
     };
-  }, [hasActiveShift, boundaryArea]);
+  }, [hasActiveShift, boundaryAreas]);
 
-  return { location, refresh, hasActiveShift };
+  return {
+    location,
+    refresh,
+    hasActiveShift,
+    hasBoundary,
+    mapArea,
+    scheduleScope,
+  };
 }

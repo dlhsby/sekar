@@ -29,21 +29,13 @@ jest.mock('../../../services/websocket/websocketService', () => ({
     onUserClockOut: jest.fn(() => jest.fn()),
     isConnected: jest.fn(() => false),
     subscribeToArea: jest.fn(),
-    subscribeToRayon: jest.fn(),
+    subscribeToDistrict: jest.fn(),
     unsubscribeFromArea: jest.fn(),
-    unsubscribeFromRayon: jest.fn(),
+    unsubscribeFromDistrict: jest.fn(),
     cleanup: jest.fn(),
   },
 }));
 jest.mock('../../../hooks', () => ({
-  useMapDashboard: jest.fn(() => ({
-    areas: [],
-    mapReady: true,
-    setMapReady: jest.fn(),
-    currentRegion: null,
-    setCurrentRegion: jest.fn(),
-    handleRefresh: jest.fn(),
-  })),
   useNotifications: jest.fn(() => ({})),
 }));
 jest.mock('../../../hooks/useMapAutoFocus', () => ({
@@ -63,6 +55,11 @@ jest.mock('../../../store/slices/monitoringSlice', () => ({
 
 import React from 'react';
 import { render, act } from '@testing-library/react-native';
+// Aliased to a `mock`-prefixed name: `jest.mock` factories are HOISTED above
+// the imports, so babel-plugin-jest-hoist rejects any out-of-scope reference
+// it cannot prove is lazy. The prefix is the sanctioned way to assert that it
+// is — this one is only read inside `useSelector`, long after the module loads.
+import { DEFAULT_VISIBLE_LAYERS as mockDefaultVisibleLayers } from '../../../utils/layerVisibility';
 import { MapDashboardScreen } from '../MapDashboardScreen';
 import type { LiveUser } from '../../../types/models.types';
 
@@ -113,9 +110,6 @@ jest.mock('../../../components/modals/BoundaryDetailModal', () => ({
   BoundaryDetailModal: () => null,
 }));
 // Phase 3 sub-phase 3-5 component mocks
-jest.mock('../../../components/monitoring/ClusteredUserMarkers', () => ({
-  ClusteredUserMarkers: () => null,
-}));
 jest.mock('../../../components/monitoring/AreaStatusOverlay', () => ({
   AreaStatusOverlay: () => null,
 }));
@@ -129,6 +123,11 @@ jest.mock('../../../components/monitoring/MonitoringSearchBar', () => ({
   MonitoringSearchBar: () => null,
 }));
 jest.mock('../../../store/slices/monitoringV2Slice', () => ({
+  // Spread the REAL module: only the action creators need stubbing, and the
+  // slice also exports pure helpers the screen calls through (`isZoomLike`).
+  // Listing exports by hand meant every new helper arrived here as
+  // `undefined` and surfaced as "is not a function" at render.
+  ...jest.requireActual('../../../store/slices/monitoringV2Slice'),
   toggleLayer: jest.fn((l: any) => ({ type: 'monitoringV2/toggleLayer', payload: l })),
   fetchAggregate: jest.fn(() => ({ type: 'monitoringV2/fetchAggregate' })),
   setMode: jest.fn((m: any) => ({ type: 'monitoringV2/setMode', payload: m })),
@@ -171,16 +170,13 @@ jest.mock('react-redux', () => ({
   useSelector: (selector: any) =>
     selector({
       monitoring: mockMonitoringState,
-      auth: { user: { id: 'u-1', role: 'korlap', area_id: 'area-1' } },
+      auth: { user: { id: 'u-1', role: 'korlap', location_id: 'area-1' } },
       // Phase 3 sub-phase 3-5: monitoringV2 slice default state
       monitoringV2: {
-        visibleLayers: {
-          workers: true,
-          plants: false,
-          overdue: false,
-          rayons: true,
-          areas: true,
-        },
+        // The real default shape. This fixture used to carry the pre-v5 keys
+        // (workers/districts/areas), which no predicate reads any more — it only
+        // survived because comparing a missing key to a string quietly said no.
+        visibleLayers: { ...mockDefaultVisibleLayers },
         selectedUserId: null,
         selectedAreaId: null,
         clusterZoomThreshold: 0.05,
@@ -188,8 +184,8 @@ jest.mock('react-redux', () => ({
         error: null,
         snapshot: { scope: 'city', scope_id: null, workers: [], generated_at: null },
         mode: 'workers',
-        view: { scope: 'area', id: 'area-1', rayonId: null, name: null },
-        floor: 'area',
+        view: { scope: 'location', id: 'area-1', districtId: null, name: null },
+        floor: 'location',
         aggregate: null,
         aggregateLoading: false,
       },
@@ -202,10 +198,10 @@ const mockLiveUser1: LiveUser = {
   role: 'satgas',
   phone: '08123456789',
   status: 'active' as any,
-  area_id: 'area-1',
-  area_name: 'Taman Bungkul',
-  rayon_id: 'rayon-1',
-  rayon_name: 'Rayon 1',
+  location_id: 'area-1',
+  location_name: 'Taman Bungkul',
+  district_id: 'district-1',
+  district_name: 'Rayon 1',
   latitude: -7.2905,
   longitude: 112.7398,
   accuracy: 10,
@@ -225,9 +221,9 @@ const mockLiveUser2: LiveUser = {
   ...mockLiveUser1,
   id: 'u-2',
   full_name: 'Worker Two',
-  area_id: 'area-2',
-  area_name: 'Taman Jayengrono',
-  status: 'inactive' as any,
+  location_id: 'area-2',
+  location_name: 'Taman Jayengrono',
+  status: 'absent' as any,
 };
 
 // ─── Tests ───────────────────────────────────────────────────────────────────

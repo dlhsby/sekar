@@ -18,6 +18,7 @@ import {
   IsPositive,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { IsNotInlineMedia } from '../../../common/validators/is-not-inline-media.validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export const VALID_CASE_TYPES = ['GT', 'PT', 'PS', 'PD', 'PK'] as const;
@@ -53,6 +54,16 @@ export class CreateActivityDto {
   @IsNotEmpty()
   activity_type_id: string;
 
+  @ApiPropertyOptional({
+    description:
+      'Task this activity is submitted against (ADR-046). When set, the activity ' +
+      "inherits the task's geographic scope instead of the active shift occurrence.",
+    example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+  })
+  @IsUUID()
+  @IsOptional()
+  task_id?: string;
+
   @ApiProperty({
     description: 'Description of work done (5-500 characters)',
     example: 'Melakukan penyiraman tanaman di area Taman Bungkul',
@@ -77,6 +88,7 @@ export class CreateActivityDto {
   @ArrayMinSize(1, { message: 'Minimal 1 foto diperlukan' })
   @ArrayMaxSize(3, { message: 'Maksimal 3 foto diperbolehkan' })
   @IsString({ each: true })
+  @IsNotInlineMedia()
   photo_urls: string[];
 
   @ApiPropertyOptional({

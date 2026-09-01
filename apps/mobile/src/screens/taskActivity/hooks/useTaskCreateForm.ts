@@ -15,7 +15,9 @@ export interface FormState {
   priority: TaskPriority | '';
   deadline: Date | null;
   areaId: string;
-  rayonId: string;
+  districtId: string;
+  regionId: string;
+  scope: 'auto' | 'city' | 'district' | 'region' | 'location' | 'none';
   assignedTo: string;
   taggedUserIds: string[];
 }
@@ -34,7 +36,9 @@ const INITIAL_FORM_STATE: FormState = {
   priority: 'medium',
   deadline: null,
   areaId: '',
-  rayonId: '',
+  districtId: '',
+  regionId: '',
+  scope: 'auto',
   assignedTo: '',
   taggedUserIds: [],
 };
@@ -42,12 +46,14 @@ const INITIAL_FORM_STATE: FormState = {
 /**
  * Hook to manage task creation form state and validation
  */
-export const useTaskCreateForm = (userAreaId?: string, userRayonId?: string) => {
+export const useTaskCreateForm = (userAreaId?: string, userDistrictId?: string) => {
   const { t } = useTranslation('validation');
   const [form, setForm] = useState<FormState>({
     ...INITIAL_FORM_STATE,
     areaId: userAreaId || '',
-    rayonId: userRayonId || '',
+    districtId: userDistrictId || '',
+    regionId: '',
+    scope: 'auto',
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
@@ -71,10 +77,12 @@ export const useTaskCreateForm = (userAreaId?: string, userRayonId?: string) => 
     setForm({
       ...INITIAL_FORM_STATE,
       areaId: userAreaId || '',
-      rayonId: userRayonId || '',
+      districtId: userDistrictId || '',
+      regionId: '',
+      scope: 'auto',
     });
     setErrors({});
-  }, [userAreaId, userRayonId]);
+  }, [userAreaId, userDistrictId]);
 
   const updateField = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));

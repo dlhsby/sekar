@@ -22,6 +22,7 @@ import type { MainTabParamList, MainTabScreenProps } from '../../types/navigatio
 import { getActivityById, approveActivity, rejectActivity } from '../../services/api/activitiesApi';
 import { NBCard, NBCardHeader, NBCardContent, NBBackgroundPattern, NBBadge, NBButton, NBCardTextInput, NBText } from '../../components/nb';
 import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows } from '../../constants/nbTokens';
+import { screenContent } from '../../constants/layout';
 import type { Activity } from '../../types/models.types';
 import { useAppSelector } from '../../store/hooks';
 
@@ -123,15 +124,15 @@ export function ActivityDetailScreen(): React.JSX.Element {
     const submitterRole = activity.user?.role;
     if (user.role === 'korlap') {
       return (submitterRole === 'satgas' || submitterRole === 'linmas') &&
-             user.area_id != null && activity.area_id === user.area_id;
+             user.location_id != null && activity.location_id === user.location_id;
     }
     if (user.role === 'kepala_rayon') {
-      if (!user.rayon_id) {return false;}
-      // Check rayon scope: activity area's rayon or submitter's rayon must match
-      const inSameRayon =
-        activity.area?.rayon_id === user.rayon_id ||
-        activity.user?.rayon_id === user.rayon_id;
-      return inSameRayon && (submitterRole === 'korlap' || submitterRole === 'admin_data');
+      if (!user.district_id) {return false;}
+      // Check district scope: activity area's district or submitter's district must match
+      const inSameDistrict =
+        activity.area?.district_id === user.district_id ||
+        activity.user?.district_id === user.district_id;
+      return inSameDistrict && (submitterRole === 'korlap' || submitterRole === 'admin_rayon');
     }
     return false;
   }, [activity, user]);
@@ -476,7 +477,7 @@ const styles = StyleSheet.create({
   },
   loadingTextMargin: {},
   contentContainer: {
-    paddingVertical: nbSpacing.md,
+    ...screenContent,
     paddingBottom: nbSpacing['2xl'],
   },
   contentContainerWithFooter: {

@@ -8,7 +8,13 @@ import {
   Param,
   Query,
   UseGuards,
+  UseInterceptors,
+  UploadedFiles,
+  BadRequestException,
 } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { Throttle } from '@nestjs/throttler';
+import { randomUUID } from 'crypto';
 import {
   ApiTags,
   ApiOperation,
@@ -16,8 +22,10 @@ import {
   ApiBearerAuth,
   ApiQuery,
   ApiBody,
+  ApiConsumes,
 } from '@nestjs/swagger';
 import { ActivitiesService } from './activities.service';
+import { S3Service } from '../../shared/services/s3.service';
 import { CreateActivityDto } from './dto/create-activity.dto';
 import { UpdateActivityDto } from './dto/update-activity.dto';
 import { RejectActivityDto } from './dto/reject-activity.dto';
@@ -49,7 +57,62 @@ import {
 @Controller('activities')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ActivitiesController {
-  constructor(private readonly activitiesService: ActivitiesService) {}
+  constructor(
+    private readonly activitiesService: ActivitiesService,
+    private readonly s3Service: S3Service,
+  ) {}
+
+  /**
+   * Upload 1–3 activity photos to object storage (MinIO local/prod, S3 staging)
+   * and return their stored URLs. The client then submits those URLs in
+   * `photo_urls` on POST/PATCH /activities.
+   *
+   * This exists so photos stop being posted as inline base64 data-URIs, which are
+   * stored verbatim in a `text[]` column — that inflated `activities` to multiple
+   * GB and OOM'd the backend on list reads (F9). `photo_urls` now rejects
+   * `data:`/`blob:` payloads (`IsNotInlineMedia`), so this endpoint is the path.
+   */
+  @Post('photos')
+  @Roles(...ACTIVITY_SUBMITTERS)
+  // Same cap as the profile-picture upload — file writes are throttled per-IP.
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @UseInterceptors(
+    FilesInterceptor('files', 3, { limits: { fileSize: 5 * 1024 * 1024, files: 3 } }),
+  )
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Upload activity photos to storage; returns their URLs' })
+  @ApiResponse({ status: 201, description: 'Photos uploaded; returns { urls }' })
+  @ApiResponse({ status: 400, description: 'No files, too many, or unsupported type' })
+  async uploadPhotos(@UploadedFiles() files: Express.Multer.File[]): Promise<{ urls: string[] }> {
+    if (!files || files.length === 0) {
+      throw new BadRequestException('Minimal 1 foto diperlukan');
+    }
+    if (files.length > 3) {
+      throw new BadRequestException('Maksimal 3 foto diperbolehkan');
+    }
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    const extByType: Record<string, string> = {
+      'image/jpeg': 'jpg',
+      'image/png': 'png',
+      'image/webp': 'webp',
+    };
+
+    const urls = await Promise.all(
+      files.map((file) => {
+        if (!allowedTypes.includes(file.mimetype)) {
+          throw new BadRequestException('Hanya foto JPEG, PNG, atau WebP yang diperbolehkan');
+        }
+        const key = this.s3Service.generateKey(
+          'activities',
+          `${randomUUID()}.${extByType[file.mimetype]}`,
+        );
+        return this.s3Service.uploadFile(file.buffer, key, file.mimetype);
+      }),
+    );
+
+    return { urls };
+  }
 
   /**
    * Create a new activity (Phase 2C)
@@ -78,13 +141,13 @@ export class ActivitiesController {
    * Get all activities with optional filters and pagination (Phase 2C: Scope-based access)
    * - Field workers (ACTIVITY_SUBMITTERS): Own activities only
    * - KORLAP: Activities from their area
-   * - KEPALA_RAYON: Activities from their rayon
-   * - TOP_MANAGEMENT, ADMIN_SYSTEM, SUPERADMIN: All activities
+   * - KEPALA_RAYON: Activities from their district
+   * - MANAGEMENT, ADMIN_SYSTEM, SUPERADMIN: All activities
    */
   @Get()
   @Roles(...MONITORING_AREA, ...ACTIVITY_SUBMITTERS)
   @ApiOperation({
-    summary: 'List activities with filters and pagination (Scope-based: Own/Area/Rayon/City)',
+    summary: 'List activities with filters and pagination (Scope-based: Own/Location/Rayon/City)',
   })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 50 })
@@ -133,8 +196,8 @@ export class ActivitiesController {
       {
         user_id: filterDto.user_id,
         shift_id: filterDto.shift_id,
-        area_id: filterDto.area_id,
-        rayon_id: filterDto.rayon_id,
+        location_id: filterDto.location_id,
+        district_id: filterDto.district_id,
         activity_type_id: filterDto.activity_type_id,
         from_date: filterDto.from_date,
         to_date: filterDto.to_date,
@@ -177,7 +240,7 @@ export class ActivitiesController {
   /**
    * Approve a pending activity (Phase 2C)
    * Korlap can approve Satgas/Linmas activities in their area.
-   * Kepala Rayon can approve Korlap/AdminData activities in their rayon.
+   * Kepala Rayon can approve Korlap/AdminData activities in their district.
    *
    * IMPORTANT: Must be placed BEFORE @Get(':id') to avoid route conflict.
    */
@@ -195,7 +258,7 @@ export class ActivitiesController {
   /**
    * Reject a pending activity with a reason (Phase 2C)
    * Korlap can reject Satgas/Linmas activities in their area.
-   * Kepala Rayon can reject Korlap/AdminData activities in their rayon.
+   * Kepala Rayon can reject Korlap/AdminData activities in their district.
    *
    * IMPORTANT: Must be placed BEFORE @Get(':id') to avoid route conflict.
    */
@@ -219,12 +282,12 @@ export class ActivitiesController {
    * Get activity by ID (Phase 2C: Scope-based access)
    * - Field workers: Own activities only
    * - KORLAP: Activities from their area
-   * - KEPALA_RAYON: Activities from their rayon
-   * - TOP_MANAGEMENT, ADMIN_SYSTEM, SUPERADMIN: All activities
+   * - KEPALA_RAYON: Activities from their district
+   * - MANAGEMENT, ADMIN_SYSTEM, SUPERADMIN: All activities
    */
   @Get(':id')
   @Roles(...MONITORING_AREA, ...ACTIVITY_SUBMITTERS)
-  @ApiOperation({ summary: 'Get activity details (Scope-based: Own/Area/Rayon/City)' })
+  @ApiOperation({ summary: 'Get activity details (Scope-based: Own/Location/Rayon/City)' })
   @ApiResponse({
     status: 200,
     description: 'Activity details',
@@ -276,7 +339,7 @@ export class ActivitiesController {
    * List the users tagged on an activity (ADR-038, May 2026).
    *
    * Read scope follows the standard activity-read rules: caller must be the
-   * owner, in the activity's area/rayon, or have a city-wide role.
+   * owner, in the activity's area/district, or have a city-wide role.
    */
   @Get(':id/tags')
   @Roles(...MONITORING_AREA, ...ACTIVITY_SUBMITTERS)

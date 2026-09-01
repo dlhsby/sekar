@@ -54,6 +54,25 @@ The SEKAR API uses standardized error codes defined in `ApiErrorCode` enum for c
 | `SHIFT_PHOTO_UPLOAD_FAILED` | 400 | Failed to upload clock-in/out selfie photo |
 | `SHIFT_DURATION_TOO_SHORT` | 400 | Shift duration is below the minimum required duration (default: 5 minutes, configurable) |
 
+### Location integrity (ADR-059)
+
+Refusals from the shared location-integrity evaluator, applied to both punches and the
+location ping stream. Distinct codes because the app shows a different remedy for each,
+and a supervisor needs to tell a spoofing attempt from a device with no signal.
+
+**Being outside an area is NOT one of these** — that stays advisory (`outside_boundary`)
+and never blocks. See [ADR-059](../architecture/decisions/ADR-059-location-integrity.md).
+
+| Code | HTTP | Meaning |
+|---|---|---|
+| `GPS_MISSING_COORDINATES` | 400 | Coordinates are exactly `(0,0)` — null island, the shape a missing fix takes since both coordinates are required by the DTO |
+| `GPS_MOCKED` | 400 | The OS reported the fix came from a mock provider |
+| `GPS_IMPOSSIBLE_TRAVEL` | 400 | Implied ground speed from the previous fix is not physically plausible |
+
+Punches **reject** on these. Pings do not fail the request: the row is stored with
+`rejection_reason` set and excluded from presence, so a spoofing worker reads as inactive
+rather than vanishing (a dropped ping is indistinguishable from a switched-off phone).
+
 ### Activity Errors (11 codes) ✅ Implemented (Phase 2C)
 
 > Renamed from `REPORT_*` to `ACTIVITY_*` per [ADR-010](../architecture/decisions/ADR-010-phase2c-terminology-cleanup.md). Table `work_reports` → `activities`.
@@ -343,7 +362,7 @@ POST /api/shifts/clock-in HTTP/1.1
 Content-Type: application/json
 
 {
-  "area_id": "area-uuid",
+  "location_id": "area-uuid",
   "latitude": -7.2756,
   "longitude": 112.7138
 }
@@ -367,7 +386,7 @@ Content-Type: application/json
 {
   "name": "John Doe",
   "phone": "081234567890",
-  "password": "Password123!"
+  "password": "12345678"
 }
 ```
 
@@ -408,7 +427,7 @@ POST /api/shifts/clock-in HTTP/1.1
 Content-Type: application/json
 
 {
-  "area_id": "area-uuid",
+  "location_id": "area-uuid",
   "latitude": -7.3000,
   "longitude": 112.8000
 }
@@ -427,7 +446,7 @@ Content-Type: application/json
 ```typescript
 // shifts.service.ts
 async clockIn(userId: string, dto: ClockInDto): Promise<Shift> {
-  const area = await this.areasService.findOne(dto.area_id);
+  const area = await this.areasService.findOne(dto.location_id);
   
   const distance = calculateHaversineDistance(
     dto.latitude,
@@ -647,7 +666,7 @@ throw new InternalServerErrorException(
 export class ClockInDto {
   @IsUUID()
   @IsNotEmpty()
-  area_id: string;
+  location_id: string;
 
   @IsNumber()
   @Min(-90)
@@ -733,7 +752,7 @@ describe('ShiftsService', () => {
     jest.spyOn(areasService, 'findOne').mockResolvedValue(area);
 
     // Act: Try to clock in 500m away
-    const dto = { area_id: 'uuid', latitude: -7.25, longitude: 112.70 };
+    const dto = { location_id: 'uuid', latitude: -7.25, longitude: 112.70 };
 
     // Assert
     await expect(
@@ -752,7 +771,7 @@ describe('POST /api/shifts/clock-in', () => {
       .post('/api/shifts/clock-in')
       .set('Authorization', `Bearer ${workerToken}`)
       .send({
-        area_id: areaId,
+        location_id: locationId,
         latitude: -7.30, // Too far
         longitude: 112.80,
       })
@@ -824,18 +843,18 @@ export class AllExceptionsFilter implements ExceptionFilter {
 | `PHONE_NUMBER_DUPLICATE` | 409 | Phone number already in use | User creation/update with existing phone_number |
 | `PROFILE_PICTURE_INVALID` | 400 | Invalid image format or size exceeded | Profile picture upload validation |
 | `AREA_ASSIGNMENT_INVALID` | 400 | Cannot assign area outside user's rayon | Multi-area assignment validation |
-| `AREA_ASSIGNMENT_DUPLICATE` | 409 | User already assigned to this area | Duplicate user_areas entry |
+| `AREA_ASSIGNMENT_DUPLICATE` | 409 | User already assigned to this area | Duplicate user_locations entry |
 | `OVERTIME_NORMAL_SHIFT_ACTIVE` | 400 | Cannot start overtime while normal shift is active | Overtime clock-in validation |
 | `OVERTIME_NOT_IN_PROGRESS` | 400 | No active overtime to end | Overtime clock-out without active overtime |
 | `OVERTIME_ACTIVITY_REQUIRED` | 400 | Activity submission required to end overtime | Missing mandatory activity on overtime clock-out |
 | `AUDIT_LOG_NOT_FOUND` | 404 | No audit history found for entity | Audit trail query with no results |
 
-> **Full specification:** See [`specs/phases/phase-2-e-client-feedback-2/backend.md`](../phases/phase-2-e-client-feedback-2/backend.md)
+> **Full specification:** See [build history](../history/CHANGELOG.md)
 
 ---
 
 **Document Owner:** Backend Developer
 **Last Updated:** 2026-06-20
 **Status:** Active
-**Error Codes:** 53 standardized (see `error-handling.md` §Standardized Error Codes); Phase 2E adds 9 more (phone login, profile picture, multi-area, overtime, audit trail) — see `specs/phases/phase-2-e-client-feedback-2/backend.md` for full Phase 2E specification
+**Error Codes:** 53 standardized (see `error-handling.md` §Standardized Error Codes); Phase 2E adds 9 more (phone login, profile picture, multi-area, overtime, audit trail) — see history/CHANGELOG.md for full Phase 2E specification
 **Related Docs:** [`contracts.md`](./contracts.md), [`authentication.md`](./authentication.md), [`../architecture/security.md`](../architecture/security.md)

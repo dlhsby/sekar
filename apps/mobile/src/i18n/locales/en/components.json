@@ -58,7 +58,8 @@
     "cameraUnavailable": "Camera is not available on this device",
     "cameraPermissionDenied": "Camera/gallery permission denied. Please enable in Settings.",
     "cameraAccessError": "An error occurred while accessing the camera/gallery",
-    "unknownCameraError": "Error: {{errorCode}}"
+    "unknownCameraError": "Error: {{errorCode}}",
+    "galleryDisabled": "Evidence photos must be taken with the camera, not chosen from the gallery."
   },
   "locationPicker": {
     "title": "Select Location",
@@ -78,7 +79,8 @@
     "withinWorkArea": "Within work area",
     "outsideWorkArea": "Outside work area",
     "updated": "Updated {{time}}",
-    "coordAria": "Coordinates: {{lat}}, {{lng}}"
+    "coordAria": "Coordinates: {{lat}}, {{lng}}",
+    "distanceFrom": "{{distance}} from {{area}}"
   },
   "nbDatePicker": {
     "months": [

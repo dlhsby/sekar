@@ -25,7 +25,7 @@ describe('API Client', () => {
 
   beforeEach(() => {
     mock = new MockAdapter(apiClient);
-    axiosMock = new MockAdapter(axios); // Mock raw axios for refresh calls
+    axiosMock = new MockAdapter(axios, { onNoMatch: 'throwException' }); // Mock raw axios for refresh calls
     jest.clearAllMocks();
 
     // Restore Alert mock after clearAllMocks (which clears it)
@@ -258,7 +258,7 @@ describe('API Client', () => {
       mock.reset();
       axiosMock.reset();
       mock = new MockAdapter(apiClient);
-      axiosMock = new MockAdapter(axios);
+      axiosMock = new MockAdapter(axios, { onNoMatch: 'throwException' });
     });
 
     afterEach(() => {
@@ -450,7 +450,11 @@ describe('API Client', () => {
       }
     }, 10000);
 
-    it('should handle refresh error and clear storage', async () => {
+    it('KEEPS the session when the refresh endpoint is unreachable', async () => {
+      // This case used to clear storage: `refreshAccessToken` returned null for
+      // "server said no" and for "could not ask", so a field worker in a
+      // basement was signed out by a bad signal and lost their shift context.
+      // No response means no refusal — hold the credentials and retry later.
       mockSecureStorage.getRefreshToken.mockResolvedValue('refresh-token');
 
       mock.onGet('/protected').reply(401, {
@@ -459,14 +463,66 @@ describe('API Client', () => {
         message: 'Token expired',
       });
 
-      // Refresh throws error
       axiosMock.onPost(new RegExp('/auth/refresh$')).networkError();
 
       try {
         await apiClient.get('/protected');
         fail('Should have thrown an error');
       } catch (error) {
-        // Small delay to let async operations complete
+        await new Promise(resolve => setTimeout(resolve, 50));
+        expect(mockSecureStorage.clearAll).not.toHaveBeenCalled();
+        const apiError = error as ApiError;
+        // Reported as what it is, so the caller queues the work offline.
+        expect(apiError.code).toBe('NETWORK_ERROR');
+      }
+    }, 15000);
+
+    it('KEEPS the session when the refresh endpoint answers 502', async () => {
+      // A rolling deploy behind nginx/ALB does not connection-refuse — it
+      // answers 502/503. That IS a response, so a naive "did the server
+      // answer?" test reads it as a refusal and signs the worker out mid-shift.
+      // Only the server saying the TOKEN is bad may end a session; "I am
+      // broken right now" must not.
+      mockSecureStorage.getRefreshToken.mockResolvedValue('refresh-token');
+
+      mock.onGet('/protected').reply(401, {
+        statusCode: 401,
+        code: 'AUTH_TOKEN_EXPIRED',
+        message: 'Token expired',
+      });
+
+      axiosMock.onPost(new RegExp('/auth/refresh$')).reply(502, '<html>Bad Gateway</html>');
+
+      try {
+        await apiClient.get('/protected');
+        fail('Should have thrown an error');
+      } catch (error) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+        expect(mockSecureStorage.clearAll).not.toHaveBeenCalled();
+        const apiError = error as ApiError;
+        expect(apiError.code).toBe('NETWORK_ERROR');
+      }
+    }, 15000);
+
+    it('clears storage when the refresh token is REJECTED', async () => {
+      // The server answered, and the answer was no. That is terminal.
+      mockSecureStorage.getRefreshToken.mockResolvedValue('refresh-token');
+
+      mock.onGet('/protected').reply(401, {
+        statusCode: 401,
+        code: 'AUTH_TOKEN_EXPIRED',
+        message: 'Token expired',
+      });
+
+      axiosMock.onPost(new RegExp('/auth/refresh$')).reply(401, {
+        statusCode: 401,
+        code: 'AUTH_TOKEN_INVALID',
+      });
+
+      try {
+        await apiClient.get('/protected');
+        fail('Should have thrown an error');
+      } catch (error) {
         await new Promise(resolve => setTimeout(resolve, 50));
         expect(mockSecureStorage.clearAll).toHaveBeenCalled();
         const apiError = error as ApiError;

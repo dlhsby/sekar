@@ -3,9 +3,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ImportController } from './import.controller';
 import { ImportService } from './import.service';
 import { CsvImportService } from './csv/csv-import.service';
-import { Area } from '../areas/entities/area.entity';
+import { Location } from '../locations/entities/location.entity';
 import { UsersModule } from '../users/users.module';
-import { AreasModule } from '../areas/areas.module';
+import { LocationsModule } from '../locations/locations.module';
 
 /**
  * Module for importing data into SEKAR.
@@ -15,7 +15,7 @@ import { AreasModule } from '../areas/areas.module';
  *   session), reusing the Users/Areas services for the actual inserts.
  */
 @Module({
-  imports: [TypeOrmModule.forFeature([Area]), UsersModule, AreasModule],
+  imports: [TypeOrmModule.forFeature([Location]), UsersModule, LocationsModule],
   controllers: [ImportController],
   providers: [ImportService, CsvImportService],
   exports: [ImportService, CsvImportService],

@@ -50,7 +50,7 @@ appId: com.wahyutrip.sekar
 - inputText: "edi_santoso"
 - tapOn:
     id: "password-input"
-- inputText: "password123"
+- inputText: "12345678"
 - hideKeyboard
 - tapOn:
     id: "login-button"

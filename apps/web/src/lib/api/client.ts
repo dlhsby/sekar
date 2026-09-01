@@ -14,24 +14,25 @@ const API_BASE_URL = (() => {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL;
   const apiVersion = process.env.NEXT_PUBLIC_API_VERSION || 'v1';
 
-  // Only validate during runtime in production (not build time)
-  // Check if we're in a browser or server-side during actual request
-  if (
-    !baseUrl &&
-    process.env.NODE_ENV === 'production' &&
-    typeof window !== 'undefined' // Only check in browser, not during SSG build
-  ) {
-    console.error(
-      'NEXT_PUBLIC_API_URL is not set in production. ' +
-        'Please set it in your .env.production file. ' +
-        'Falling back to localhost (API calls will fail).'
-    );
+  // Empty NEXT_PUBLIC_API_URL = "use the same origin the app is served from".
+  // In the browser that's a relative path, so ONE build works on localhost AND
+  // any LAN host (the dev server proxies /api to the backend) — no baked IP and
+  // no CORS. Server-side (SSR, no origin) falls back to the local backend.
+  if (!baseUrl) {
+    if (typeof window !== 'undefined') {
+      if (process.env.NODE_ENV === 'production') {
+        console.error(
+          'NEXT_PUBLIC_API_URL is empty in production — using the same origin. ' +
+            'Set it if the API is served from another host.'
+        );
+      }
+      return `/api/${apiVersion}`;
+    }
+    return `http://localhost:${process.env.SEKAR_API_PORT || '3000'}/api/${apiVersion}`;
   }
 
-  const url = baseUrl || 'http://localhost:3000';
-
   // Construct full API URL: baseUrl/api/version
-  return `${url}/api/${apiVersion}`;
+  return `${baseUrl}/api/${apiVersion}`;
 })();
 
 // Create axios instance with default config

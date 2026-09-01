@@ -112,7 +112,7 @@ Rationale: keep UAT lean by running on a shared RDS (cost-effective), with SEKAR
 EC2 and Caddy (sole tenant as of 2026-06 after KPI decommissioning). Instance-role S3,
 Parameter-Store secrets, SHA-pinned rollback, per-container memory limits, pre-deploy RDS
 snapshot, gated migration.
-Full runbook: `specs/deployment/deployment-guide.md` §"AWS staging".
+Full runbook: `specs/deployment/README.md` §"AWS staging".
 
 ---
 

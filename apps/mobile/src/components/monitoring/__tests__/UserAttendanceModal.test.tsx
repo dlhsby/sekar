@@ -30,14 +30,16 @@ const clockedInDetail = {
     area: { id: 'a1', name: 'Taman Bungkul' },
   },
   clocked_in: true,
-  shift: {
-    id: 's1',
-    clock_in_time: '2026-06-04T08:00:00Z',
-    clock_out_time: '2026-06-04T16:00:00Z',
-    duration_minutes: 480,
-    clock_in_outside_boundary: false,
-    clock_out_outside_boundary: false,
-  },
+  shifts: [
+    {
+      id: 's1',
+      clock_in_time: '2026-06-04T08:00:00Z',
+      clock_out_time: '2026-06-04T16:00:00Z',
+      duration_minutes: 480,
+      clock_in_outside_boundary: false,
+      clock_out_outside_boundary: false,
+    },
+  ],
 };
 
 describe('UserAttendanceModal', () => {
@@ -59,7 +61,7 @@ describe('UserAttendanceModal', () => {
 
   it('renders the not-clocked-in state', async () => {
     mockGet.mockResolvedValue({
-      data: { ...clockedInDetail, clocked_in: false, shift: null },
+      data: { ...clockedInDetail, clocked_in: false, shifts: [] },
     } as any);
 
     const { getByText } = render(
@@ -83,5 +85,55 @@ describe('UserAttendanceModal', () => {
   it('does not fetch when no user is selected', () => {
     render(<UserAttendanceModal visible userId={null} date="2026-06-04" onClose={jest.fn()} />);
     expect(mockGet).not.toHaveBeenCalled();
+  });
+
+  /**
+   * The endpoint moved off the superseded `/supervisor/attendance`, which
+   * returned a SINGLE shift and so silently hid the second session of any worker
+   * who clocked out for a break and back in — a full day reading as a half one.
+   */
+  it('renders every session, not just the first', async () => {
+    mockGet.mockResolvedValue({
+      data: {
+        ...clockedInDetail,
+        shifts: [
+          {
+            id: 's1',
+            clock_in_time: '2026-06-04T08:00:00Z',
+            clock_out_time: '2026-06-04T11:00:00Z',
+            duration_minutes: 180,
+            clock_in_outside_boundary: false,
+            clock_out_outside_boundary: false,
+          },
+          {
+            id: 's2',
+            clock_in_time: '2026-06-04T13:00:00Z',
+            clock_out_time: '2026-06-04T16:00:00Z',
+            duration_minutes: 180,
+            clock_in_outside_boundary: false,
+            clock_out_outside_boundary: false,
+          },
+        ],
+      },
+    } as any);
+
+    const { getAllByText, getByText } = render(
+      <UserAttendanceModal visible userId="u1" userName="Ahmad Satgas" date="2026-06-04" onClose={jest.fn()} />,
+    );
+
+    await waitFor(() => expect(getByText('Sesi 1')).toBeTruthy());
+    expect(getByText('Sesi 2')).toBeTruthy();
+    // One clock-in row per session.
+    expect(getAllByText('Clock In')).toHaveLength(2);
+  });
+
+  it('labels nothing when there is only one session', async () => {
+    mockGet.mockResolvedValue({ data: clockedInDetail } as any);
+    const { queryByText, getByText } = render(
+      <UserAttendanceModal visible userId="u1" userName="Ahmad Satgas" date="2026-06-04" onClose={jest.fn()} />,
+    );
+
+    await waitFor(() => expect(getByText('Clock In')).toBeTruthy());
+    expect(queryByText('Sesi 1')).toBeNull();
   });
 });

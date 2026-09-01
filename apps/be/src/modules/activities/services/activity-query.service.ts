@@ -1,6 +1,6 @@
 import { Injectable, Logger, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, SelectQueryBuilder } from 'typeorm';
+import { Repository, SelectQueryBuilder } from 'typeorm';
 import { Activity, ActivityStatus } from '../entities/activity.entity';
 import { S3Service } from '../../../shared/services/s3.service';
 import { User, UserRole } from '../../users/entities/user.entity';
@@ -12,8 +12,8 @@ import { ACTIVITY_SUBMITTERS } from '../../users/constants/role-groups';
 export interface ActivityListFilters {
   user_id?: string;
   shift_id?: string;
-  area_id?: string;
-  rayon_id?: string;
+  location_id?: string;
+  district_id?: string;
   activity_type_id?: string;
   from_date?: string;
   to_date?: string;
@@ -23,7 +23,7 @@ export interface ActivityListFilters {
   // ADR-038 (May 2026) — return activities where the current user is the
   // owner OR appears in `activity_tags`. When set, this overrides the
   // default role-based scope so tagged satgas/linmas see activities filed
-  // for them by korlap/admin_data even outside their own area.
+  // for them by korlap/admin_rayon even outside their own area.
   involving_me?: boolean;
 }
 
@@ -35,6 +35,14 @@ const ACTIVITY_DETAIL_RELATIONS = [
   'activityType',
   'reviewer',
 ];
+
+/**
+ * Hard cap on the "my activities" list. Without a date it would otherwise load a
+ * worker's ENTIRE history in one query; combined with the old full-payload select
+ * that was an OOM path (F9). The list is day-oriented in the UI, so this ceiling
+ * is never reached in normal use — it only bounds the pathological case.
+ */
+const MY_ACTIVITIES_MAX = 200;
 
 /**
  * Read side of activities: filtered/paginated/role-scoped listings, detail
@@ -63,22 +71,30 @@ export class ActivityQueryService {
     this.applyDateRange(queryBuilder, filters);
     this.applySortAndPagination(queryBuilder, filters, page, limit);
 
-    const [data, total] = await queryBuilder.getManyAndCount();
-    const withPresignedUrls = await Promise.all(
-      data.map((activity) => this.convertPhotoUrlsToPresigned(activity)),
-    );
-    return new PaginatedResponseDto(withPresignedUrls, total, page, limit);
+    // List responses carry photo_count, NOT the photo payload (F9) — see
+    // buildListQuery / attachPhotoCount. No presigning here: there are no URLs to sign.
+    const total = await queryBuilder.getCount();
+    const { entities, raw } = await queryBuilder.getRawAndEntities();
+    const data = this.attachPhotoCount(entities, raw);
+    return new PaginatedResponseDto(data, total, page, limit);
   }
 
-  /** Find all activities for a specific user (my activities). */
+  /**
+   * Find a user's own activities (my activities). Bounded and photo-payload-free:
+   * an unbounded `find()` returning full data-URI `photo_urls` was a direct OOM
+   * path (F9). Callers that need the actual photos open the detail read.
+   */
   async findMyActivities(userId: string, date?: string): Promise<Activity[]> {
-    const activities = await this.activitiesRepository.find({
-      where: { user_id: userId, ...this.createdAtRangeFor(date) },
-      relations: ACTIVITY_DETAIL_RELATIONS,
-      order: { created_at: 'DESC' },
-    });
-    // 24 hour expiry for mobile caching
-    return Promise.all(activities.map((activity) => this.convertPhotoUrlsToPresigned(activity)));
+    const qb = this.buildListQuery()
+      .where('activity.user_id = :userId', { userId })
+      .orderBy('activity.created_at', 'DESC')
+      .take(MY_ACTIVITIES_MAX);
+    const bounds = this.createdAtBounds(date);
+    if (bounds) {
+      qb.andWhere('activity.created_at BETWEEN :from AND :to', bounds);
+    }
+    const { entities, raw } = await qb.getRawAndEntities();
+    return this.attachPhotoCount(entities, raw);
   }
 
   /** Find activity by ID with scope-based access control (Phase 2C). */
@@ -100,18 +116,18 @@ export class ActivityQueryService {
 
   /**
    * Resolve the set of area UUIDs a korlap is permanently assigned to via
-   * `user_areas`. Falls back to `[user.area_id]` if no row exists, so legacy
+   * `user_areas`. Falls back to `[user.location_id]` if no row exists, so legacy
    * single-area users keep working before backfill.
    */
   async getKorlapAreaIds(user: User): Promise<string[]> {
-    const rows: Array<{ area_id: string }> = await this.activitiesRepository.manager.query(
-      `SELECT area_id FROM user_areas
+    const rows: Array<{ location_id: string }> = await this.activitiesRepository.manager.query(
+      `SELECT location_id FROM user_locations
         WHERE user_id = $1 AND assignment_type = 'permanent'`,
       [user.id],
     );
-    const ids = rows.map((r) => r.area_id);
+    const ids = rows.map((r) => r.location_id);
     if (ids.length > 0) return ids;
-    return user.area_id ? [user.area_id] : [];
+    return user.location_id ? [user.location_id] : [];
   }
 
   /**
@@ -133,9 +149,23 @@ export class ActivityQueryService {
     return activity;
   }
 
+  /**
+   * List query for activities. Selects every activity column EXCEPT the
+   * `photo_urls` payload — a page of rows carrying inline base64 data-URIs was a
+   * direct OOM path (F9) — and computes `cardinality(photo_urls)` as a cheap
+   * scalar the DB never has to ship. `attachPhotoCount` maps it onto the entities.
+   * The column list comes from entity metadata so a future column is included
+   * automatically (and only `photo_urls` is ever dropped).
+   */
   private buildListQuery(): SelectQueryBuilder<Activity> {
+    const scalarCols = this.activitiesRepository.metadata.columns
+      .filter((c) => c.databaseName !== 'photo_urls')
+      .map((c) => `activity.${c.propertyName}`);
+
     return this.activitiesRepository
       .createQueryBuilder('activity')
+      .select(scalarCols)
+      .addSelect('COALESCE(cardinality(activity.photo_urls), 0)', 'activity_photo_count')
       .leftJoinAndSelect('activity.user', 'user')
       .leftJoinAndSelect('activity.shift', 'shift')
       .leftJoinAndSelect('shift.area', 'shiftArea')
@@ -145,10 +175,24 @@ export class ActivityQueryService {
   }
 
   /**
+   * Map the computed `activity_photo_count` raw column onto each entity and blank
+   * the payload. Raw rows are 1:1 with entities here — every activity relation is
+   * to-one, so no fan-out. Keeping `photo_urls: []` (not undefined) preserves the
+   * array contract for any client still reading `.length`.
+   */
+  private attachPhotoCount(entities: Activity[], raw: Array<Record<string, unknown>>): Activity[] {
+    entities.forEach((activity, i) => {
+      activity.photo_count = Number(raw[i]?.activity_photo_count ?? 0);
+      activity.photo_urls = [];
+    });
+    return entities;
+  }
+
+  /**
    * Listing scope: involving_me (owner OR tagged) overrides the role scope;
-   * otherwise korlap sees their assigned areas, kepala_rayon/admin_data their
-   * rayon, submitters their own rows. ADMIN_SYSTEM / SUPERADMIN /
-   * TOP_MANAGEMENT see all.
+   * otherwise korlap sees their assigned areas, kepala_rayon/admin_rayon their
+   * district, submitters their own rows. ADMIN_SYSTEM / SUPERADMIN /
+   * MANAGEMENT see all.
    */
   private async applyAccessScope(
     queryBuilder: SelectQueryBuilder<Activity>,
@@ -170,8 +214,8 @@ export class ActivityQueryService {
     if (user.role === UserRole.KORLAP) {
       return this.applyKorlapScope(queryBuilder, user);
     }
-    if (user.role === UserRole.KEPALA_RAYON || user.role === UserRole.ADMIN_DATA) {
-      queryBuilder.andWhere('area.rayon_id = :rayonId', { rayonId: user.rayon_id });
+    if (user.role === UserRole.KEPALA_RAYON || user.role === UserRole.ADMIN_RAYON) {
+      queryBuilder.andWhere('area.district_id = :districtId', { districtId: user.district_id });
       return;
     }
     if (ACTIVITY_SUBMITTERS.includes(user.role as UserRole)) {
@@ -182,7 +226,7 @@ export class ActivityQueryService {
   /**
    * Korlap may have multiple permanent areas via `user_areas` (e.g.
    * korlap_pusat_1 → all 13 Rayon Pusat areas); the legacy single
-   * `user.area_id` only reflects their primary area.
+   * `user.location_id` only reflects their primary area.
    */
   private async applyKorlapScope(
     queryBuilder: SelectQueryBuilder<Activity>,
@@ -193,7 +237,7 @@ export class ActivityQueryService {
       queryBuilder.andWhere('1=0');
       return;
     }
-    queryBuilder.andWhere('activity.area_id IN (:...korlapAreaIds)', { korlapAreaIds });
+    queryBuilder.andWhere('activity.location_id IN (:...korlapAreaIds)', { korlapAreaIds });
   }
 
   private applyEntityFilters(
@@ -206,11 +250,15 @@ export class ActivityQueryService {
     if (filters.shift_id) {
       queryBuilder.andWhere('activity.shift_id = :shiftId', { shiftId: filters.shift_id });
     }
-    if (filters.area_id) {
-      queryBuilder.andWhere('activity.area_id = :filterAreaId', { filterAreaId: filters.area_id });
+    if (filters.location_id) {
+      queryBuilder.andWhere('activity.location_id = :filterAreaId', {
+        filterAreaId: filters.location_id,
+      });
     }
-    if (filters.rayon_id) {
-      queryBuilder.andWhere('area.rayon_id = :filterRayonId', { filterRayonId: filters.rayon_id });
+    if (filters.district_id) {
+      queryBuilder.andWhere('area.district_id = :filterDistrictId', {
+        filterDistrictId: filters.district_id,
+      });
     }
     if (filters.activity_type_id) {
       queryBuilder.andWhere('activity.activity_type_id = :activityTypeId', {
@@ -257,21 +305,22 @@ export class ActivityQueryService {
       .take(limit);
   }
 
-  private createdAtRangeFor(date?: string): { created_at?: ReturnType<typeof Between<Date>> } {
-    if (!date) return {};
-    const startDate = new Date(date);
-    startDate.setHours(0, 0, 0, 0);
-    const endDate = new Date(date);
-    endDate.setHours(23, 59, 59, 999);
-    return { created_at: Between(startDate, endDate) };
+  /** The [start, end] of a single day, or null when no date is given. */
+  private createdAtBounds(date?: string): { from: Date; to: Date } | null {
+    if (!date) return null;
+    const from = new Date(date);
+    from.setHours(0, 0, 0, 0);
+    const to = new Date(date);
+    to.setHours(23, 59, 59, 999);
+    return { from, to };
   }
 
   private async assertReadScope(activity: Activity, user: User): Promise<void> {
     if (user.role === UserRole.KORLAP) {
       return this.assertKorlapReadScope(activity, user);
     }
-    if (user.role === UserRole.KEPALA_RAYON || user.role === UserRole.ADMIN_DATA) {
-      return this.assertRayonReadScope(activity, user);
+    if (user.role === UserRole.KEPALA_RAYON || user.role === UserRole.ADMIN_RAYON) {
+      return this.assertDistrictReadScope(activity, user);
     }
     if (ACTIVITY_SUBMITTERS.includes(user.role as UserRole) && activity.user_id !== user.id) {
       throw new ApiException(
@@ -280,12 +329,12 @@ export class ActivityQueryService {
         'You can only access your own activities',
       );
     }
-    // ADMIN_SYSTEM, SUPERADMIN, TOP_MANAGEMENT can see all activities
+    // ADMIN_SYSTEM, SUPERADMIN, MANAGEMENT can see all activities
   }
 
   private async assertKorlapReadScope(activity: Activity, user: User): Promise<void> {
     const korlapAreaIds = await this.getKorlapAreaIds(user);
-    if (!activity.area_id || !korlapAreaIds.includes(activity.area_id)) {
+    if (!activity.location_id || !korlapAreaIds.includes(activity.location_id)) {
       throw new ApiException(
         HttpStatus.FORBIDDEN,
         ApiErrorCode.ACTIVITY_ACCESS_DENIED,
@@ -294,12 +343,12 @@ export class ActivityQueryService {
     }
   }
 
-  private assertRayonReadScope(activity: Activity, user: User): void {
-    if (activity.shift?.area?.rayon_id !== user.rayon_id) {
+  private assertDistrictReadScope(activity: Activity, user: User): void {
+    if (activity.shift?.area?.district_id !== user.district_id) {
       throw new ApiException(
         HttpStatus.FORBIDDEN,
         ApiErrorCode.ACTIVITY_ACCESS_DENIED,
-        'You can only access activities from your assigned rayon',
+        'You can only access activities from your assigned district',
       );
     }
   }

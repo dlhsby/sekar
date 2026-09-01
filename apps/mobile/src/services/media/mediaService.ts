@@ -14,6 +14,7 @@ import ImageResizer from '@bam.tech/react-native-image-resizer';
 import RNFS from 'react-native-fs';
 import uuid from 'react-native-uuid';
 import i18n from '../../i18n/config';
+import { galleryUploadAllowed } from '../../config/integrity';
 
 /**
  * Photo object with file info
@@ -100,10 +101,28 @@ class MediaService {
   }
 
   /**
+   * Whether evidence flows may offer the gallery.
+   *
+   * Exposed so the UI can hide the option rather than presenting a button that
+   * then refuses — but the refusal in `pickFromGallery` is the real control,
+   * since a screen that forgets to ask would otherwise reopen the hole.
+   */
+  isGalleryAllowed(): boolean {
+    return galleryUploadAllowed();
+  }
+
+  /**
    * Pick photos from gallery
    * Allows multiple selection up to maxPhotos limit
+   *
+   * Refused in release builds: a photo chosen from the gallery is not evidence
+   * that the worker was anywhere, which is the whole point of requiring it.
+   * Profile pictures are unaffected — they do not go through this method.
    */
   async pickFromGallery(maxPhotos = PHOTO_CONFIG.maxPhotos): Promise<Photo[]> {
+    if (!galleryUploadAllowed()) {
+      throw new Error(i18n.t('components:mediaService.galleryDisabled'));
+    }
     try {
       const result: ImagePickerResponse = await launchImageLibrary({
         mediaType: 'photo',

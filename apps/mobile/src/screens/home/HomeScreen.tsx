@@ -5,7 +5,7 @@
  * that has one. It dispatches to the per-role dashboard variant:
  *   - satgas / linmas        → FieldHomeScreen   (HOME-1) ✅
  *   - korlap / kepala_rayon  → CoordinatorHomeScreen (HOME-2) — next checkpoint
- *   - admin_data             → AdminDataHomeScreen   (HOME-3) — next checkpoint
+ *   - admin_rayon             → AdminDataHomeScreen   (HOME-3) — next checkpoint
  * Until HOME-2/HOME-3 land, every Home-tab role gets the field dashboard
  * (unchanged from before the dispatcher was introduced).
  */
@@ -24,9 +24,9 @@ export function HomeScreen(): React.JSX.Element {
     case 'korlap':
     case 'kepala_rayon':
       return <CoordinatorHomeScreen />;
-    case 'admin_data':
+    case 'admin_rayon':
       return <AdminDataHomeScreen />;
-    case 'top_management':
+    case 'management':
     case 'admin_system':
     case 'superadmin':
       return <ExecHomeScreen />;

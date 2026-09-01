@@ -15,7 +15,8 @@ import {
   type QueueItem,
 } from './offlineQueue';
 import { clockIn, clockOut } from '../api/shiftsApi';
-import { createActivity } from '../api/activitiesApi';
+import { createActivity, uploadActivityPhotos } from '../api/activitiesApi';
+import type { UploadableFile } from '../api/activitiesApi';
 import { uploadLocationBatch } from '../api/locationApi';
 import { submitPruningRequest } from '../api/pruningRequestsApi';
 import { locationTracker } from '../location/locationTracker';
@@ -28,23 +29,47 @@ import { logger } from '../../utils/logger';
  * Type-safe data interfaces for sync operations
  */
 interface ClockInData {
-  area_id: number;
+  location_id?: number | string;
   gps_lat: number;
   gps_lng: number;
   selfie_photo?: string;
+  // ADR-055: idempotency key + explicit picker shift, carried so an offline
+  // replay is a server-side no-op and lands on the right shift.
+  client_uuid?: string;
+  accuracy_m?: number;
+  shift_definition_id?: string;
+  service_day?: string;
+  punched_at?: string;
+  /** Mock-provider verdict captured with the fix, replayed on sync. */
+  is_mocked?: boolean;
 }
 
 interface ClockOutData {
   gps_lat: number;
   gps_lng: number;
+  client_uuid?: string;
+  accuracy_m?: number;
+  punched_at?: string;
+  /** Mock-provider verdict captured with the fix, replayed on sync. */
+  is_mocked?: boolean;
 }
 
 interface ActivityData {
   activity_type_id: string;
   description: string;
-  photo_urls: string[];
+  /** Present once photos are uploaded (online submit, or after a sync-time upload). */
+  photo_urls?: string[];
+  /**
+   * Offline submissions carry the LOCAL photo file refs here instead of URLs —
+   * there was no network to upload them at capture time. syncActivity uploads
+   * them to storage and fills `photo_urls` before POSTing (F9: no inline base64).
+   */
+  photo_local?: UploadableFile[];
   gps_lat?: number;
   gps_lng?: number;
+  // Pass-through extras carried from the submit form (preserved on offline sync).
+  tagged_user_ids?: string[];
+  task_id?: string;
 }
 
 interface PruningRequestData {
@@ -55,7 +80,7 @@ interface PruningRequestData {
   target_count: number;
   photo_keys: string[];
   notes?: string;
-  rayon_id?: string;
+  district_id?: string;
 }
 
 // New format for location batch (matches backend)
@@ -199,7 +224,10 @@ class SyncManager extends EventEmitter {
         // Trigger immediate location capture if tracking is active
         if (locationTracker.isTracking()) {
           logger.debug('[SyncManager] Triggering immediate location capture');
-          locationTracker.captureNow();
+          // Upload it too: coming back online is exactly when the supervisor's
+          // map is most out of date, and a capture that only buffers waits for
+          // the batch to fill before anyone sees it.
+          void locationTracker.captureNow({ upload: true });
         }
       }
 
@@ -226,7 +254,7 @@ class SyncManager extends EventEmitter {
       // Trigger immediate location capture if tracking is active
       if (locationTracker.isTracking()) {
         logger.debug('[SyncManager] Triggering immediate location capture on foreground');
-        locationTracker.captureNow();
+        void locationTracker.captureNow({ upload: true });
       }
 
       this.processQueue();
@@ -482,8 +510,15 @@ class SyncManager extends EventEmitter {
    * Sync clock-in
    */
   private async syncClockIn(data: ClockInData): Promise<void> {
-    const { area_id, gps_lat, gps_lng, selfie_photo } = data;
-    const result = await clockIn(gps_lat, gps_lng, selfie_photo, area_id?.toString());
+    const { location_id, gps_lat, gps_lng, selfie_photo } = data;
+    const result = await clockIn(gps_lat, gps_lng, selfie_photo, location_id?.toString(), {
+      clientUuid: data.client_uuid,
+      accuracyM: data.accuracy_m,
+      shiftDefinitionId: data.shift_definition_id,
+      serviceDay: data.service_day,
+      punchedAt: data.punched_at,
+      isMocked: data.is_mocked,
+    });
 
     if (!result || result.error) {
       throw new Error(result?.error || 'Clock-in sync failed');
@@ -498,7 +533,12 @@ class SyncManager extends EventEmitter {
    */
   private async syncClockOut(data: ClockOutData): Promise<void> {
     const { gps_lat, gps_lng } = data;
-    const result = await clockOut(gps_lat, gps_lng);
+    const result = await clockOut(gps_lat, gps_lng, undefined, {
+      clientUuid: data.client_uuid,
+      accuracyM: data.accuracy_m,
+      punchedAt: data.punched_at,
+      isMocked: data.is_mocked,
+    });
 
     if (!result || result.error) {
       throw new Error(result?.error || 'Clock-out sync failed');
@@ -511,7 +551,25 @@ class SyncManager extends EventEmitter {
    * Sync activity
    */
   private async syncActivity(data: ActivityData): Promise<void> {
-    const result = await createActivity(data);
+    // Offline-captured photos were queued as local file refs (no network at
+    // capture time). Upload them to storage now, then submit the URLs — the
+    // backend rejects inline base64 (F9).
+    let payload = data;
+    if (data.photo_local && data.photo_local.length > 0) {
+      const upload = await uploadActivityPhotos(data.photo_local);
+      if (upload.error || !upload.data) {
+        throw new Error(upload.error || 'Activity photo upload failed');
+      }
+      const { photo_local: _dropped, ...rest } = data;
+      payload = { ...rest, photo_urls: upload.data.urls };
+    }
+
+    const { photo_local: _drop, photo_urls, ...restForSubmit } = payload;
+    if (!photo_urls || photo_urls.length === 0) {
+      throw new Error('Activity has no photos to sync');
+    }
+
+    const result = await createActivity({ ...restForSubmit, photo_urls });
 
     if (!result || result.error) {
       throw new Error(result?.error || 'Activity sync failed');

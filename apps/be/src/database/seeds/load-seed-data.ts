@@ -1,17 +1,16 @@
 /**
  * Loaders for the committed seed-data snapshots under `./data/`.
  *
- * These let the staging seeder be re-run from the client's exported sheet data
- * without code edits: update the CSVs (or re-run the KMZ extractor) and reseed.
+ * The geography snapshots (districts/kawasan/areas) are pulled live from staging —
+ * the source of truth. The real user roster still comes from the exported sheet.
  *
- *   data/rayons.csv                — 8 rayons master data (name/description/color)
- *   data/areas-kmz.generated.json  — geographic areas (run scripts/extract-kmz-seed-data.js)
- *   data/areas-taman-aktif.csv     — Taman Aktif parks (exported from the sheet)
- *   data/users.csv                 — real roster (exported + merged from the sheet)
+ *   data/districts.snapshot.json   — 8 districts pulled live from staging (name/desc/colour/geometry)
+ *   data/kawasan.snapshot.json  — kawasan (regions) from the client's workbook
+ *   data/areas.snapshot.json    — ~953 locations pulled live from staging
+ *   data/users.csv              — real roster (exported + merged from the sheet)
  */
 import * as fs from 'fs';
 import * as path from 'path';
-import type { RayonCode } from './kmz-areas';
 import { parseCsvRecords, uuidv5 } from './csv-util';
 
 const DATA_DIR = path.join(__dirname, 'data');
@@ -20,7 +19,7 @@ const DATA_DIR = path.join(__dirname, 'data');
 // derived here from the username is byte-identical to the one the sheet holds.
 const USER_NS = 'b7e3c1a0-5d2f-4e8b-9c3a-1f2e3d4c5b6a';
 
-export interface SeedRayonRow {
+export interface SeedDistrictRow {
   id: string;
   name: string;
   description: string;
@@ -29,22 +28,144 @@ export interface SeedRayonRow {
   rayon_code: string;
 }
 
-export interface KmzAreaRow {
-  id: string;
-  name: string;
-  typeCode: 'park' | 'pedestrian' | 'mini_garden' | 'street';
-  rayonCode: RayonCode;
-  coordStrings: string[];
+/** GeoJSON Polygon (the only shape district boundaries use). */
+export interface GeoJsonPolygon {
+  type: 'Polygon';
+  coordinates: number[][][];
 }
 
-export interface TamanAktifAreaRow {
+/**
+ * Full district snapshot pulled live from staging (the source of truth — the client
+ * validated names/colours/boundaries there via the UI). Supersedes the initial
+ * `data/districts.csv` + KMZ-derived boundaries. Regenerate with the data-pull
+ * script when staging changes.
+ */
+export interface DistrictSnapshotRow extends SeedDistrictRow {
+  center_lat: number | null;
+  center_lng: number | null;
+  boundary_polygon: GeoJsonPolygon;
+  /** Tier its staffing requirements attach to: region (kawasan) | location | district. */
+  staffing_level: 'region' | 'location' | 'district';
+}
+
+/** The 8 districts as they currently live in staging (master data + geometry). */
+export function loadDistrictSnapshot(): DistrictSnapshotRow[] {
+  const file = path.join(DATA_DIR, 'districts.snapshot.json');
+  return JSON.parse(fs.readFileSync(file, 'utf8')) as DistrictSnapshotRow[];
+}
+
+/**
+ * A Kawasan (Region) — name + parent district. Extracted from the client's
+ * "Kebutuhan Satgas" workbook (column K "NAMA RTH", cells prefixed "Kawasan…"),
+ * grouped under the district each tab belongs to. Boundaries are drawn fresh in the
+ * UI, so only name + district_id are seeded (id is deterministic for idempotency).
+ */
+export interface KawasanSnapshotRow {
   id: string;
   name: string;
-  korlap: string;
-  rayon_code: string;
-  /** Geocoded park centre (null until sourced); empty in CSV → null. */
+  district_id: string;
+  /** Rayon display name at extraction time — documentation only. */
+  district_name: string;
+}
+
+/**
+ * The Kawasan (regions) grouped by district, from the client's workbook.
+ *
+ * The snapshot file still carries the pre-ADR-052 `rayon_id`/`rayon_name` keys;
+ * normalise them to `district_id`/`district_name` here so callers see one shape
+ * regardless of when the file was regenerated.
+ */
+export function loadKawasanSnapshot(): KawasanSnapshotRow[] {
+  const file = path.join(DATA_DIR, 'kawasan.snapshot.json');
+  const raw = JSON.parse(fs.readFileSync(file, 'utf8')) as Array<
+    Partial<KawasanSnapshotRow> & { rayon_id?: string; rayon_name?: string }
+  >;
+  return raw.map((r) => ({
+    id: r.id as string,
+    name: r.name as string,
+    district_id: (r.district_id ?? r.rayon_id) as string,
+    district_name: (r.district_name ?? r.rayon_name) as string,
+  }));
+}
+
+/**
+ * One area (location) as it lives in staging — the source of truth (client
+ * validated names/boundaries/district there). Pulled verbatim; boundaries are
+ * GeoJSON. `region_id` is intentionally absent (staging predates the Kawasan
+ * tier; areas are re-parented later).
+ */
+export interface AreaSnapshotRow {
+  id: string;
+  name: string;
+  district_id: string;
+  /** location-type code: park | pedestrian | mini_garden | street. */
+  area_type_code: string;
   gps_lat: number | null;
   gps_lng: number | null;
+  /** Snapshot-only: retired as a column, still the source for a derived ring. */
+  radius_meters: number | null;
+  address: string | null;
+  is_active: boolean;
+  coverage_area: number | null;
+  boundary_polygon: GeoJsonPolygon | null;
+}
+
+/** All areas (locations) as they currently live in staging.
+ *
+ * The snapshot file carries the pre-ADR-052 `rayon_id` key in some versions;
+ * normalise it to `district_id` here so callers see one shape regardless of when
+ * the file was regenerated.
+ */
+export function loadAreaSnapshot(): AreaSnapshotRow[] {
+  const file = path.join(DATA_DIR, 'areas.snapshot.json');
+  const raw = JSON.parse(fs.readFileSync(file, 'utf8')) as Array<
+    Partial<AreaSnapshotRow> & { rayon_id?: string }
+  >;
+  return raw.map((r) => ({
+    id: r.id as string,
+    name: r.name as string,
+    district_id: (r.district_id ?? r.rayon_id) as string,
+    area_type_code: r.area_type_code as string,
+    gps_lat: r.gps_lat ?? null,
+    gps_lng: r.gps_lng ?? null,
+    radius_meters: r.radius_meters ?? null,
+    address: r.address ?? null,
+    is_active: r.is_active as boolean,
+    coverage_area: r.coverage_area ?? null,
+    boundary_polygon: r.boundary_polygon ?? null,
+  }));
+}
+
+/**
+ * area id → kawasan (region) id — the confident name matches between the
+ * workbook's per-kawasan RTH lists and staging area names. Areas without a
+ * confident match are absent (left unassigned for UI remediation).
+ */
+export function loadAreaRegionMap(): Record<string, string> {
+  const file = path.join(DATA_DIR, 'area-region.snapshot.json');
+  return JSON.parse(fs.readFileSync(file, 'utf8')) as Record<string, string>;
+}
+
+/**
+ * A staffing requirement (KEBUTUHAN) extracted from the client workbook: satgas
+ * headcount per subject × shift × day_type. `subject_type` says which id column
+ * it fills (`region` for the 7 grouped districts' kawasan, `location` for Taman
+ * Aktif parks). Deterministic id → idempotent seed + migration.
+ */
+export interface StaffingSnapshotRow {
+  id: string;
+  subject_type: 'region' | 'location' | 'district';
+  subject_id: string;
+  shift_definition_id: string;
+  role: 'satgas' | 'linmas';
+  day_type: 'WEEKDAY' | 'WEEKEND' | 'HOLIDAY';
+  required_count: number;
+}
+
+/** Staffing requirements (satgas KEBUTUHAN) from the client workbook. */
+export function loadStaffingSnapshot(): StaffingSnapshotRow[] {
+  const file = path.join(DATA_DIR, 'staffing.snapshot.json');
+  return JSON.parse(fs.readFileSync(file, 'utf8')) as StaffingSnapshotRow[];
 }
 
 export interface SeedUserRow {
@@ -65,36 +186,6 @@ export interface SeedUserRow {
 function readCsvRecords(file: string): Record<string, string>[] {
   if (!fs.existsSync(file)) return [];
   return parseCsvRecords(fs.readFileSync(file, 'utf8'));
-}
-
-/** The 8 rayons — master data (id/name/description/color) editable via the
- * sheet's `rayon` tab. Boundaries are sourced separately from the KMZ
- * (RAYON_BOUNDARIES), not this CSV. */
-export function loadRayons(): SeedRayonRow[] {
-  return readCsvRecords(path.join(DATA_DIR, 'rayons.csv')).map((r) => ({
-    id: r.id?.trim() ?? '',
-    name: r.name?.trim() ?? '',
-    description: r.description?.trim() ?? '',
-    color: r.color?.trim() ?? '',
-    rayon_code: r.rayon_code?.trim() ?? '',
-  }));
-}
-
-export function loadKmzAreas(): KmzAreaRow[] {
-  const file = path.join(DATA_DIR, 'areas-kmz.generated.json');
-  const parsed = JSON.parse(fs.readFileSync(file, 'utf8')) as { areas: KmzAreaRow[] };
-  return parsed.areas;
-}
-
-export function loadTamanAktifAreas(): TamanAktifAreaRow[] {
-  return readCsvRecords(path.join(DATA_DIR, 'areas-taman-aktif.csv')).map((r) => ({
-    id: r.id,
-    name: r.name,
-    korlap: r.korlap,
-    rayon_code: r.rayon_code,
-    gps_lat: r.gps_lat ? Number(r.gps_lat) : null,
-    gps_lng: r.gps_lng ? Number(r.gps_lng) : null,
-  }));
 }
 
 export function loadSeedUsers(): SeedUserRow[] {

@@ -9,6 +9,7 @@ import {
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { TaskPriority } from '../entities/task.entity';
+import { AssignmentScope } from '../../../common/enums/assignment-scope.enum';
 
 /**
  * DTO for creating a new task
@@ -16,7 +17,7 @@ import { TaskPriority } from '../entities/task.entity';
 export class CreateTaskDto {
   @ApiProperty({
     description: 'Task title',
-    example: 'Penyiraman Area Timur',
+    example: 'Penyiraman Location Timur',
     maxLength: 200,
   })
   @IsString()
@@ -51,20 +52,39 @@ export class CreateTaskDto {
   deadline?: string;
 
   @ApiPropertyOptional({
-    description: 'Area ID where the task should be performed (optional)',
+    description:
+      'Explicit geographic scope for the task (ADR-046). Omit to derive it from ' +
+      "the assignee's schedule occurrence on the task date; provide it (with the " +
+      'matching id below) to override — e.g. an ad-hoc district-scoped task.',
+    enum: AssignmentScope,
+  })
+  @IsEnum(AssignmentScope)
+  @IsOptional()
+  scope?: AssignmentScope;
+
+  @ApiPropertyOptional({
+    description: 'Location ID where the task should be performed (optional)',
     example: 'c3d4e5f6-a7b8-9012-cdef-123456789012',
   })
   @IsUUID()
   @IsOptional()
-  area_id?: string;
+  location_id?: string;
 
   @ApiPropertyOptional({
-    description: 'Rayon ID for rayon-scoped tasks (optional)',
+    description: 'Region (Kawasan) ID for region-scoped tasks (optional)',
+    example: 'k1k2k3k4-a5b6-7890-abcd-ef1234567890',
+  })
+  @IsUUID()
+  @IsOptional()
+  region_id?: string;
+
+  @ApiPropertyOptional({
+    description: 'District ID for district-scoped tasks (optional)',
     example: 'r1r2r3r4-a5b6-7890-abcd-ef1234567890',
   })
   @IsUUID()
   @IsOptional()
-  rayon_id?: string;
+  district_id?: string;
 
   @ApiPropertyOptional({
     description: 'User ID to assign the task to (optional at creation)',

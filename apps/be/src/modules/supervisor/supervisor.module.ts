@@ -4,7 +4,7 @@ import { SupervisorService } from './supervisor.service';
 import { SupervisorController } from './supervisor.controller';
 import { Shift } from '../shifts/entities/shift.entity';
 import { User } from '../users/entities/user.entity';
-import { Area } from '../areas/entities/area.entity';
+import { Location } from '../locations/entities/location.entity';
 import { LocationLog } from '../location/entities/location-log.entity';
 
 /**
@@ -12,11 +12,11 @@ import { LocationLog } from '../location/entities/location-log.entity';
  *
  * Provides dashboard functionality for supervisors:
  * - Active workers with real-time locations
- * - Area status overview
+ * - Location status overview
  * - Daily attendance reports
  */
 @Module({
-  imports: [TypeOrmModule.forFeature([Shift, User, Area, LocationLog])],
+  imports: [TypeOrmModule.forFeature([Shift, User, Location, LocationLog])],
   controllers: [SupervisorController],
   providers: [SupervisorService],
   exports: [SupervisorService],

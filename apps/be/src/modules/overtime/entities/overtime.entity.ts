@@ -8,7 +8,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
-import { Area } from '../../areas/entities/area.entity';
+import { Location } from '../../locations/entities/location.entity';
 import { ActivityType } from '../../activity-types/entities/activity-type.entity';
 import { Shift } from '../../shifts/entities/shift.entity';
 
@@ -28,7 +28,7 @@ export class Overtime {
   user_id: string;
 
   @Column('uuid', { nullable: true })
-  area_id?: string;
+  location_id?: string;
 
   @Column({ type: 'timestamptz', default: () => 'NOW()' })
   start_datetime: Date;
@@ -100,9 +100,9 @@ export class Overtime {
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @ManyToOne(() => Area, { nullable: true, onDelete: 'SET NULL' })
-  @JoinColumn({ name: 'area_id' })
-  area?: Area;
+  @ManyToOne(() => Location, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'location_id' })
+  area?: Location;
 
   @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'approved_by' })

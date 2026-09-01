@@ -4,8 +4,9 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { User, UserRole } from '../users/entities/user.entity';
-import { Area } from '../areas/entities/area.entity';
-import { UserAreasService } from '../user-areas/user-areas.service';
+import { Location } from '../locations/entities/location.entity';
+import { UserLocationsService } from '../../modules/user-locations/user-locations.service';
+import { RolePermissionsService } from '../rbac/services/role-permissions.service';
 
 describe('AuthController', () => {
   let module: TestingModule;
@@ -32,11 +33,17 @@ describe('AuthController', () => {
   };
 
   const mockUserAreasService = {
-    getEffectiveAreas: jest.fn().mockResolvedValue([]),
+    getEffectiveLocations: jest.fn().mockResolvedValue([]),
+    getPermanentLocationIds: jest.fn().mockResolvedValue([]),
   };
 
   const mockAreaRepository = {
     findOne: jest.fn(),
+  };
+
+  const mockRolePermissionsService = {
+    getRolePermissionKeys: jest.fn().mockResolvedValue([]),
+    getMonitoringScope: jest.fn().mockResolvedValue('none'),
   };
 
   beforeEach(async () => {
@@ -48,12 +55,16 @@ describe('AuthController', () => {
           useValue: mockAuthService,
         },
         {
-          provide: getRepositoryToken(Area),
+          provide: getRepositoryToken(Location),
           useValue: mockAreaRepository,
         },
         {
-          provide: UserAreasService,
+          provide: UserLocationsService,
           useValue: mockUserAreasService,
+        },
+        {
+          provide: RolePermissionsService,
+          useValue: mockRolePermissionsService,
         },
       ],
     }).compile();
@@ -76,7 +87,7 @@ describe('AuthController', () => {
     it('should call authService.login and return result', async () => {
       const loginDto: LoginDto = {
         identifier: 'testuser',
-        password: 'Password123!',
+        password: '12345678',
       };
 
       const expectedResult = {
@@ -146,14 +157,14 @@ describe('AuthController', () => {
       expect(result).toHaveProperty('profile_picture_url', null);
     });
 
-    describe('Phase 2C: Area Assignment', () => {
-      describe('Korlap with permanent area_id', () => {
-        it('should return assigned_area when area_id exists and area is found', async () => {
+    describe('Phase 2C: Location Assignment', () => {
+      describe('Korlap with permanent location_id', () => {
+        it('should return assigned_area when location_id exists and area is found', async () => {
           const korlapUser: User = {
             ...mockUser,
             role: UserRole.KORLAP,
-            area_id: 'area-123',
-            rayon_id: 'rayon-456',
+            location_id: 'area-123',
+            district_id: 'district-456',
           };
 
           const mockArea = {
@@ -161,7 +172,6 @@ describe('AuthController', () => {
             name: 'Taman Bungkul',
             gps_lat: -7.281234,
             gps_lng: 112.734567,
-            radius_meters: 100,
             boundary_polygon: {
               type: 'Polygon',
               coordinates: [
@@ -181,38 +191,65 @@ describe('AuthController', () => {
           const result = await controller.getMe(korlapUser);
 
           expect(result).toHaveProperty('id', korlapUser.id);
-          expect(result).toHaveProperty('area_id', 'area-123');
-          expect(result).toHaveProperty('rayon_id', 'rayon-456');
+          expect(result).toHaveProperty('location_id', 'area-123');
+          expect(result).toHaveProperty('district_id', 'district-456');
           expect(result).toHaveProperty('assigned_area');
           expect(result.assigned_area).toEqual({
             id: 'area-123',
             name: 'Taman Bungkul',
             gps_lat: -7.281234,
             gps_lng: 112.734567,
-            radius_meters: 100,
             boundary_polygon: mockArea.boundary_polygon,
             area_type: null,
           });
           expect(mockAreaRepository.findOne).toHaveBeenCalledWith({
             where: { id: 'area-123' },
-            relations: ['areaType'],
+            relations: ['locationType'],
           });
         });
 
-        it('should return area_id but no assigned_area when area is deleted', async () => {
+        it('should expose monitoring_scope + region_id + assigned_location_ids (ADR-044/046)', async () => {
           const korlapUser: User = {
             ...mockUser,
             role: UserRole.KORLAP,
-            area_id: 'deleted-area',
-            rayon_id: 'rayon-456',
+            location_id: 'area-123',
+            district_id: 'district-456',
+            region_id: 'region-789',
+          };
+          mockAreaRepository.findOne.mockResolvedValue({
+            id: 'area-123',
+            name: 'Taman Bungkul',
+            gps_lat: -7.281234,
+            gps_lng: 112.734567,
+            boundary_polygon: null,
+            locationType: null,
+          });
+          mockRolePermissionsService.getMonitoringScope.mockResolvedValue('region');
+          mockUserAreasService.getPermanentLocationIds.mockResolvedValue(['area-123', 'area-999']);
+
+          const result = await controller.getMe(korlapUser);
+
+          expect(result.monitoring_scope).toBe('region');
+          expect(result.region_id).toBe('region-789');
+          expect(result.assigned_location_ids).toEqual(['area-123', 'area-999']);
+          expect(mockRolePermissionsService.getMonitoringScope).toHaveBeenCalledWith('korlap');
+          expect(mockUserAreasService.getPermanentLocationIds).toHaveBeenCalledWith(korlapUser.id);
+        });
+
+        it('should return location_id but no assigned_area when area is deleted', async () => {
+          const korlapUser: User = {
+            ...mockUser,
+            role: UserRole.KORLAP,
+            location_id: 'deleted-area',
+            district_id: 'district-456',
           };
 
           mockAreaRepository.findOne.mockResolvedValue(null);
 
           const result = await controller.getMe(korlapUser);
 
-          expect(result).toHaveProperty('area_id', 'deleted-area');
-          expect(result).toHaveProperty('rayon_id', 'rayon-456');
+          expect(result).toHaveProperty('location_id', 'deleted-area');
+          expect(result).toHaveProperty('district_id', 'district-456');
           expect(result).not.toHaveProperty('assigned_area');
         });
       });
@@ -225,13 +262,12 @@ describe('AuthController', () => {
             role: UserRole.SATGAS,
           };
 
-          mockUserAreasService.getEffectiveAreas.mockResolvedValue([{ id: 'area-456' }]);
+          mockUserAreasService.getEffectiveLocations.mockResolvedValue([{ id: 'area-456' }]);
           mockAreaRepository.findOne.mockResolvedValue({
             id: 'area-456',
             name: 'Taman Bungkul',
             gps_lat: -7.281234,
             gps_lng: 112.734567,
-            radius_meters: 100,
             boundary_polygon: null,
           });
 
@@ -243,14 +279,13 @@ describe('AuthController', () => {
             name: 'Taman Bungkul',
             gps_lat: -7.281234,
             gps_lng: 112.734567,
-            radius_meters: 100,
             boundary_polygon: null,
             area_type: null,
           });
-          expect(mockUserAreasService.getEffectiveAreas).toHaveBeenCalledWith('satgas-123');
+          expect(mockUserAreasService.getEffectiveLocations).toHaveBeenCalledWith('satgas-123');
           expect(mockAreaRepository.findOne).toHaveBeenCalledWith({
             where: { id: 'area-456' },
-            relations: ['areaType'],
+            relations: ['locationType'],
           });
         });
 
@@ -261,7 +296,7 @@ describe('AuthController', () => {
             role: UserRole.SATGAS,
           };
 
-          mockUserAreasService.getEffectiveAreas.mockResolvedValue([]);
+          mockUserAreasService.getEffectiveLocations.mockResolvedValue([]);
 
           const result = await controller.getMe(satgasUser);
 
@@ -275,8 +310,8 @@ describe('AuthController', () => {
             role: UserRole.LINMAS,
           };
 
-          mockUserAreasService.getEffectiveAreas.mockResolvedValue([{ id: 'area-789' }]);
-          mockAreaRepository.findOne.mockResolvedValue(null); // Area was deleted
+          mockUserAreasService.getEffectiveLocations.mockResolvedValue([{ id: 'area-789' }]);
+          mockAreaRepository.findOne.mockResolvedValue(null); // Location was deleted
 
           const result = await controller.getMe(linmasUser);
 
@@ -290,7 +325,7 @@ describe('AuthController', () => {
             role: UserRole.SATGAS,
           };
 
-          mockUserAreasService.getEffectiveAreas.mockResolvedValue([
+          mockUserAreasService.getEffectiveLocations.mockResolvedValue([
             { id: 'area-789' },
             { id: 'area-other' },
           ]);
@@ -299,7 +334,6 @@ describe('AuthController', () => {
             name: 'Taman Mayangkara',
             gps_lat: -7.285678,
             gps_lng: 112.738901,
-            radius_meters: 150,
             boundary_polygon: null,
           });
 
@@ -311,20 +345,20 @@ describe('AuthController', () => {
       });
 
       describe('Edge cases', () => {
-        it('should handle user with no area_id and no effective area gracefully', async () => {
+        it('should handle user with no location_id and no effective area gracefully', async () => {
           const basicUser: User = {
             ...mockUser,
             id: 'basic-user',
             role: UserRole.SATGAS,
           };
 
-          mockUserAreasService.getEffectiveAreas.mockResolvedValue([]);
+          mockUserAreasService.getEffectiveLocations.mockResolvedValue([]);
 
           const result = await controller.getMe(basicUser);
 
           expect(result).toHaveProperty('id', 'basic-user');
-          expect(result).toHaveProperty('area_id', null);
-          expect(result).toHaveProperty('rayon_id', null);
+          expect(result).toHaveProperty('location_id', null);
+          expect(result).toHaveProperty('district_id', null);
           expect(result).not.toHaveProperty('assigned_area');
         });
       });

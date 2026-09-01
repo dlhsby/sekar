@@ -12,10 +12,10 @@ export class KecamatansController {
   constructor(private readonly service: KecamatansService) {}
 
   @Get()
-  @ApiOperation({ summary: 'List kecamatans (optionally filtered by rayon)' })
-  @ApiQuery({ name: 'rayonId', required: false, type: String })
-  async findAll(@Query('rayonId') rayonId?: string): Promise<KecamatanResponseDto[]> {
-    const items = await this.service.findAll(rayonId);
+  @ApiOperation({ summary: 'List kecamatans (optionally filtered by district)' })
+  @ApiQuery({ name: 'districtId', required: false, type: String })
+  async findAll(@Query('districtId') districtId?: string): Promise<KecamatanResponseDto[]> {
+    const items = await this.service.findAll(districtId);
     return items.map(KecamatanResponseDto.fromEntity);
   }
 

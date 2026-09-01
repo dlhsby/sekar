@@ -7,14 +7,24 @@
 import React, { useMemo } from 'react';
 import { clusterUsers, shouldCluster } from '../../../utils/mapUtils';
 import { userAxes } from '../../../utils/statusHelpers';
+import { scopeMatches, subtreeMatches } from '../../../utils/monitoringScope';
+import { isZoomLike, type MonitoringMode } from '../../../store/slices/monitoringV2Slice';
+import { groupWorkersByTeam, isTeamGroup, type TeamGroup } from '../../../utils/teamGrouping';
 import type { LiveUser, UserRole, PresenceActivity } from '../../../types/models.types';
 import type { MonitoringFilters } from '../../../types/api.types';
-import type { MonitoringV2VisibleLayers } from '../../../store/slices/monitoringV2Slice';
+import {
+  showsWorkerPins,
+  teamMembersOnly,
+  type MonitoringV2VisibleLayers,
+} from '../../../utils/layerVisibility';
 
 type LabelMode = 'none' | 'abbrev' | 'full';
 
 interface UseLiveUsersFilteringReturn {
+  /** Individual worker pins to render (team members collapsed out, unless a team is selected). */
   visibleUsers: LiveUser[];
+  /** Collapsed team bubbles (≥2 members) to render alongside the pins (empty when a team is selected). */
+  teamBubbles: TeamGroup[];
   useClustering: boolean;
   clusters: any[];
   labelMode: LabelMode;
@@ -26,43 +36,85 @@ interface UseLiveUsersFilteringReturn {
 export function useLiveUsersFiltering(
   liveUsers: LiveUser[],
   activityFilter: PresenceActivity | null,
+  /**
+   * Luar jadwal (ad-hoc) — clocked in but not on the current shift's roster.
+   *
+   * Its OWN parameter rather than a fourth `PresenceActivity`, because it is a
+   * different AXIS of the presence model (ADR-050): a worker is off-schedule
+   * *and* active, not off-schedule *instead of* active. Folding the two together
+   * is the collapse that made `outside_area` overlap the status enum and
+   * produced double counts in four places.
+   */
+  scheduledFilter: 'all' | 'adhoc',
   filters: MonitoringFilters,
   visibleLayers: MonitoringV2VisibleLayers,
   currentRegion: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number },
   boundaries: any,
-  scope: 'surabaya' | 'city' | 'rayon' | 'area',
-  areaId: string | null,
+  scope: 'city' | 'district' | 'region' | 'location',
+  viewId: string | null,
+  /** When set, show ONLY that team's members (as pins) and hide the rest (ADR-048). */
+  selectedTeamId: string | null = null,
+  /** Zoom mode swaps the visibility question (ADR-060). */
+  mode: MonitoringMode = 'drill',
 ): UseLiveUsersFilteringReturn {
-  const visibleUsers = React.useMemo(() => {
-    if (!visibleLayers.workers) { return []; }
+  const scopedUsers = React.useMemo(() => {
+    if (!showsWorkerPins(visibleLayers.personnel)) { return []; }
+    // "Tim saja" keeps only workers who are ON a team; the collapse itself
+    // happens in the team layer, same split as web.
+    const teamOnly = teamMembersOnly(visibleLayers.personnel);
     if (!Array.isArray(liveUsers)) { return []; }
     let users = liveUsers.filter(u => u.status !== 'offline');
-    // Worker pins only render at area scope — scope them to the SELECTED area so
-    // the map shows exactly the people working / scheduled in that area.
-    if (scope === 'area' && areaId) {
-      users = users.filter(u => u.area_id === areaId);
-    }
+    // Render each worker at their OWN drill tier: keep only those whose occurrence
+    // `display_scope` matches the current scope (+ node id below city). City scope
+    // thus shows city/ad-hoc "Luar Jadwal" workers; a location shows its own crew.
+    // Drill: does this worker's SCHEDULE scope here (ADR-046). Zoom: are they
+    // standing anywhere inside it. Same fork as web, same two predicates.
+    const visible = isZoomLike(mode) ? subtreeMatches : scopeMatches;
+    users = users.filter(u => visible(u, scope, viewId));
     if (activityFilter) {
       users = users.filter(u => userAxes(u).activity === activityFilter);
+    }
+    if (scheduledFilter === 'adhoc') {
+      // Narrows independently of activity, so "Luar jadwal AND tidak aktif" is
+      // expressible — which is the combination a supervisor actually chases.
+      users = users.filter(u => u.is_scheduled === false);
     }
     if (filters.location && filters.location.length > 0) {
       const locs = filters.location;
       users = users.filter(u => locs.includes(userAxes(u).location));
     }
+    if (teamOnly) { users = users.filter(u => !!u.team_id); }
     return users;
-  }, [liveUsers, activityFilter, filters.location, visibleLayers.workers, scope, areaId]);
+  }, [liveUsers, activityFilter, scheduledFilter, filters.location, visibleLayers.personnel, scope, viewId, mode]);
+
+  // Collapse ≥2-member teams into team bubbles (ADR-048). With a team selected,
+  // show ONLY its members as individual pins and no team bubbles — so `visibleUsers`
+  // (and thus clustering below) stays consistent with what's on the map.
+  const { visibleUsers, teamBubbles } = React.useMemo(() => {
+    if (selectedTeamId) {
+      return {
+        visibleUsers: scopedUsers.filter(u => u.team_id === selectedTeamId),
+        teamBubbles: [] as TeamGroup[],
+      };
+    }
+    const renderables = groupWorkersByTeam(scopedUsers);
+    return {
+      visibleUsers: renderables.filter((r): r is LiveUser => !isTeamGroup(r)),
+      teamBubbles: renderables.filter(isTeamGroup),
+    };
+  }, [scopedUsers, selectedTeamId]);
 
   const staffedAreas = useMemo(() => {
     if (!Array.isArray(liveUsers)) { return 0; }
     const ids = new Set(
-      liveUsers.filter(u => u.status === 'active' && u.area_id).map(u => u.area_id),
+      liveUsers.filter(u => u.status === 'active' && u.location_id).map(u => u.location_id),
     );
     return ids.size;
   }, [liveUsers]);
 
   const totalAreas = useMemo(() => {
-    if (!boundaries?.rayons) { return 0; }
-    return boundaries.rayons.reduce((sum: number, r: any) => sum + (r.areas?.length ?? 0), 0);
+    if (!boundaries?.districts) { return 0; }
+    return boundaries.districts.reduce((sum: number, r: any) => sum + (r.areas?.length ?? 0), 0);
   }, [boundaries]);
 
   const lastUpdated = useMemo(() => {
@@ -76,8 +128,10 @@ export function useLiveUsersFiltering(
   }, [liveUsers]);
 
   const useClustering = React.useMemo(
-    () => shouldCluster(currentRegion, visibleUsers.length),
-    [currentRegion, visibleUsers.length],
+    // Never cluster while a team is selected — the whole point is to see its
+    // individual members, so keep them as pins regardless of zoom.
+    () => (selectedTeamId ? false : shouldCluster(currentRegion, visibleUsers.length)),
+    [currentRegion, visibleUsers.length, selectedTeamId],
   );
 
   const clusters = React.useMemo(
@@ -89,7 +143,7 @@ export function useLiveUsersFiltering(
               username: u.full_name,
               full_name: u.full_name,
               role: u.role as UserRole,
-              shift: { id: u.shift_id, clock_in_time: u.clock_in_time, area: { id: u.area_id ?? '', name: u.area_name } },
+              shift: { id: u.shift_id, clock_in_time: u.clock_in_time, area: { id: u.location_id ?? '', name: u.location_name } },
               latest_location: { gps_lat: u.latitude, gps_lng: u.longitude, logged_at: u.last_update },
             })),
             currentRegion,
@@ -107,6 +161,7 @@ export function useLiveUsersFiltering(
 
   return {
     visibleUsers,
+    teamBubbles,
     useClustering,
     clusters,
     labelMode,

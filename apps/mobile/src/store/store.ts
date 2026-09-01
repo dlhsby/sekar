@@ -18,7 +18,7 @@ import plantsReducer from './slices/plantsSlice';
 import pruningRequestsReducer from './slices/pruningRequestsSlice';
 import serviceCapacityReducer from './slices/serviceCapacitySlice';
 import plantSeedsReducer from './slices/plantSeedsSlice';
-import areasReducer from './slices/areasSlice';
+import areasReducer from './slices/locationsSlice';
 import usersReducer from './slices/usersSlice';
 import reportsReducer from './slices/reportsSlice';
 import analyticsReducer from './slices/analyticsSlice';

@@ -195,7 +195,7 @@ All tests follow the AAA pattern for clarity:
 describe('AuthService', () => {
   it('should successfully login with valid credentials', async () => {
     // Arrange: Set up test data and mocks
-    const loginDto = { username: 'worker1', password: 'Password123!' };
+    const loginDto = { username: 'worker1', password: '12345678' };
     const mockUser = { id: '123', username: 'worker1', role: UserRole.WORKER };
     mockUserRepository.findOne.mockResolvedValue(mockUser);
 
@@ -665,16 +665,16 @@ it('should reject worker accessing supervisor endpoints', async () => {
 
 ## Phase 2E: Planned Test Scenarios (Client Feedback II)
 
-> **Full specification:** See [`specs/phases/phase-2-e-client-feedback-2/testing.md`](../phases/phase-2-e-client-feedback-2/testing.md)
+> **Full specification:** See [build history](../history/CHANGELOG.md)
 
-### New Test Areas
+### New Test Coverage Areas
 
 | Area | Tests | Priority |
 |------|-------|----------|
 | Phone number login (dual-identifier) | 8 unit + 3 E2E | CRITICAL |
 | Profile picture upload (S3 integration) | 5 unit | HIGH |
-| Multi-area assignment (user_areas CRUD) | 10 unit + 2 integration | CRITICAL |
-| Multi-area boundary checking | 6 unit | CRITICAL |
+| Multi-location assignment (user_locations CRUD) | 10 unit + 2 integration | CRITICAL |
+| Multi-location boundary checking | 6 unit | CRITICAL |
 | Admin_data/kepala_rayon clock-in (rayon boundary) | 4 unit | HIGH |
 | Overtime clock-in/out flow | 10 unit + 1 integration | CRITICAL |
 | Optional selfie (shift + overtime) | 3 unit | MEDIUM |
@@ -697,9 +697,9 @@ it('should reject worker accessing supervisor endpoints', async () => {
 
 ## Phase 3 & 4 Implementation Status
 
-**Phase 3 (Plants Management + Monitoring Rebuild):** ✅ **Fully Closed (June 11, 2026)** — all 21 sub-phases shipped. Monitoring v2 on Redis Streams, plants catalog, typed tasks, pruning intake, service capacity, CSV backfill (4,979 rows executed locally), load testing baseline collected. See `specs/phases/phase-3-plants-monitoring-rebuild/STATUS.md` for close-out table.
+**Phase 3 (Plants Management + Monitoring Rebuild):** ✅ **Fully Closed (June 11, 2026)** — all 21 sub-phases shipped. Monitoring v2 on Redis Streams, plants catalog, typed tasks, pruning intake, service capacity, CSV backfill (4,979 rows executed locally), load testing baseline collected. See history/CHANGELOG.md for close-out table.
 
-**Phase 4 (Production Readiness & Rebrand):** ~98% code-side complete (Jun 20). All 13 sub-phases shipped except on-device Maestro run (pending device access) and iOS background location (deferred to Phase 5). FCM full, offline sync, JWT rotation, Sentry, BullMQ, k6 load test baseline, security audit closed, WCAG-AA a11y gate passing. See `specs/phases/phase-4-production-readiness/STATUS.md`.
+**Phase 4 (Production Readiness & Rebrand):** ~98% code-side complete (Jun 20). All 13 sub-phases shipped except on-device Maestro run (pending device access) and iOS background location (deferred to Phase 5). FCM full, offline sync, JWT rotation, Sentry, BullMQ, k6 load test baseline, security audit closed, WCAG-AA a11y gate passing. See history/CHANGELOG.md.
 
 ### Coverage Gates (Phases 1–5, All Inherited)
 
@@ -720,7 +720,7 @@ k6 load test harness at `infra/loadtest/` — **scenario validated, baseline sna
 ### Integration Tests (Phase 3+4, Shipped)
 
 - ✅ Task partial-complete → resume-tomorrow → child completion → parent rollup (3 tests, all green)
-- ✅ Pruning request submit (staff_kecamatan) → review (admin_data, rayon-scoped) → convert-to-task → outcome visibility (15 tests)
+- ✅ Pruning request submit (staff_kecamatan) → review (admin_rayon, rayon-scoped) → convert-to-task → outcome visibility (15 tests)
 - ✅ `service_capacity` booking decrement on convert-to-task, rebalance on cancellation (6 tests)
 - ✅ CSV backfill seeder idempotency on `activities.reference_code` (integration test + manual prod validation, 4,979/5,008 rows)
 

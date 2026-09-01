@@ -1,6 +1,6 @@
 /**
  * Seeds List Page (Phase 3) — seed inventory master list
- * Access: admin_data, kepala_rayon, top_management, admin_system, superadmin
+ * Access: admin_rayon, kepala_rayon, management, admin_system, superadmin
  */
 
 'use client';
@@ -30,17 +30,17 @@ import { formatDate } from '@/lib/utils/time';
 import { useViewModal } from '@/lib/hooks/use-view-modal';
 
 const ALLOWED_ROLES = [
-  'admin_data',
+  'admin_rayon',
   'kepala_rayon',
-  'top_management',
+  'management',
   'admin_system',
   'superadmin',
 ];
 
 const EDIT_ALLOWED_ROLES = [
-  'admin_data',
+  'admin_rayon',
   'kepala_rayon',
-  'top_management',
+  'management',
   'superadmin',
 ];
 

@@ -4,9 +4,9 @@ import { useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/auth/hooks';
 
 const ADMIN_ROLES = new Set([
-  'admin_data',
+  'admin_rayon',
   'kepala_rayon',
-  'top_management',
+  'management',
   'admin_system',
   'superadmin',
 ]);

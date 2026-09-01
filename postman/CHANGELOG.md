@@ -1,5 +1,20 @@
 # Postman Collection & Environment Changelog
 
+## Scope-Aware Tasks & Activities + Auth/Env Sync (July 22, 2026)
+
+### Collection Updates (ADR-046)
+- ✅ **Auth** — all Login requests use `identifier` (username or phone), **not** `username`; the login test script saves `access_token` to the environment.
+- ✅ **POST `/tasks`** — added `scope` (`city|district|region|location|none`) + `region_id`; `location_id`/`district_id` retained; `priority` values are `low|medium|high|urgent` (no `normal`). Example bodies for both an explicit-scope task and an Auto task (omit `scope` → backend derives from the assignee's schedule occurrence).
+- ✅ **POST `/activities`** — added optional `task_id` (an activity submitted against a task inherits the task's scope); path standardized `/aktivitas` → `/activities`.
+
+### Environment Updates
+- ✅ `SEKAR - Local`: backend base port `3000` → **`4110`** (matches the local dev backend).
+
+### Notes
+- Swagger (`/api/v1/docs`) documents the same scope fields — the Task entity gained `@ApiProperty` on `scope`/`region_id`/`district_id`/`location_id`; activities were already documented.
+
+---
+
 ## Backend Terminology Cleanup - DTO & Field Names (February 15, 2026)
 
 ### Breaking API Changes Documentation
@@ -94,13 +109,13 @@
 - Updated status: "Client Feedback Complete" → "Terminology Cleanup Complete"
 
 **Credentials Updated:**
-- `password` (default): `Password123!` → `satgas123`
+- `password` (default): `12345678` → `satgas123`
 - `admin_username`: `superadmin` → `admin`
 - `admin_password`: `superadmin123` → `admin123`
-- `supervisor_password`: `Password123!` → `korlap123`
-- `korlap_password`: `Password123!` → `korlap123`
-- `satgas_password`: `Password123!` → `satgas123`
-- `linmas_password`: `Password123!` → `satgas123`
+- `supervisor_password`: `12345678` → `korlap123`
+- `korlap_password`: `12345678` → `korlap123`
+- `satgas_password`: `12345678` → `satgas123`
+- `linmas_password`: `12345678` → `satgas123`
 
 **Variable Renames:**
 - `created_report_id` → `created_activity_id`

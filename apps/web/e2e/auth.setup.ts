@@ -13,16 +13,17 @@ export interface TestUser {
 }
 
 export const testUsers: Record<MockUserKey, TestUser> = {
-  admin: { username: 'admin', password: 'Password123!', role: 'admin', expectedName: 'Admin Sistem' },
-  superadmin: { username: 'superadmin', password: 'Password123!', role: 'superadmin', expectedName: 'Super Admin' },
-  korlap: { username: 'korlap1', password: 'Password123!', role: 'korlap', expectedName: 'Koordinator Lapangan' },
-  kepalaRayon: { username: 'kepala_rayon1', password: 'Password123!', role: 'kepalaRayon', expectedName: 'Kepala Rayon Selatan' },
-  topManagement: { username: 'topmgmt1', password: 'Password123!', role: 'topManagement', expectedName: 'Top Management' },
-  adminData: { username: 'admindata1', password: 'Password123!', role: 'adminData', expectedName: 'Admin Data' },
-  staffKecamatan: { username: 'kecamatan1', password: 'Password123!', role: 'staffKecamatan', expectedName: 'Staff Kecamatan Tegalsari' },
-  satgas: { username: 'satgas1', password: 'Password123!', role: 'satgas', expectedName: 'Satgas Lapangan' },
-  linmas: { username: 'linmas1', password: 'Password123!', role: 'linmas', expectedName: 'Linmas Keamanan' },
-};
+  admin: { username: 'admin', password: '12345678', role: 'admin', expectedName: 'Admin Sistem' },
+  superadmin: { username: 'superadmin', password: '12345678', role: 'superadmin', expectedName: 'Super Admin' },
+  korlap: { username: 'korlap1', password: '12345678', role: 'korlap', expectedName: 'Koordinator Lapangan' },
+  kepalaRayon: { username: 'kepala_rayon1', password: '12345678', role: 'kepalaRayon', expectedName: 'Kepala Rayon Selatan' },
+  topManagement: { username: 'topmgmt1', password: '12345678', role: 'topManagement', expectedName: 'Top Management' },
+  adminData: { username: 'admindata1', password: '12345678', role: 'adminData', expectedName: 'Admin Data' },
+  staffKecamatan: { username: 'kecamatan1', password: '12345678', role: 'staffKecamatan', expectedName: 'Staff Kecamatan Tegalsari' },
+  satgas: { username: 'satgas1', password: '12345678', role: 'satgas', expectedName: 'Satgas Lapangan' },
+  linmas: { username: 'linmas1', password: '12345678', role: 'linmas', expectedName: 'Linmas Keamanan' },
+}; // Note: testUser.role values are MockUserKey (test keys), not the backend enum codes.
+// The actual enum codes are in mockUsers (admin → admin_system, topManagement → management, adminData → admin_rayon)
 
 /** Full login through the form; lands on the dashboard home (`/`). */
 export async function login(page: Page, user: TestUser) {
@@ -47,10 +48,11 @@ export async function quickLogin(page: Page, role: MockUserKey = 'admin', path =
 
 /** Logout via the header user menu → confirm modal. */
 export async function logout(page: Page) {
-  await page.getByLabel('User menu').click();
-  await page.getByRole('menuitem', { name: /keluar/i }).click();
+  // User menu aria-label is "Menu pengguna" in Indonesian (default language)
+  await page.getByLabel(/menu pengguna|user menu/i).click();
+  await page.getByRole('menuitem', { name: /keluar|logout/i }).click();
   // Confirm in the "Konfirmasi Keluar" dialog.
-  await page.getByRole('dialog').getByRole('button', { name: /keluar/i }).click();
+  await page.getByRole('dialog').getByRole('button', { name: /keluar|logout/i }).click();
   await page.waitForURL('**/login', { timeout: 8000 });
 }
 

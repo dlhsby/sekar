@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { NBEmptyState, NBSkeleton, NBText } from '../../../components/nb';
 import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows } from '../../../constants/nbTokens';
+import { screenContent } from '../../../constants/layout';
 import { ActivityCard } from '../components/ActivityCard';
 import type { Activity } from '../../../types/models.types';
 
@@ -120,7 +121,7 @@ export function ActivitiesTab({
           </View>
         ) : !hasMore && activities.length > 0 ? (
           <View style={styles.footerEnd}>
-            <NBText variant="body-sm" color="gray400" style={styles.footerEndText}>{t('ui.noMore')}</NBText>
+            <NBText variant="body-sm" color="gray500" style={styles.footerEndText}>{t('ui.noMore')}</NBText>
           </View>
         ) : null
       }
@@ -133,6 +134,7 @@ const styles = StyleSheet.create({
     padding: nbSpacing.md,
   },
   listContent: {
+    ...screenContent,
     paddingBottom: nbSpacing.lg,
   },
   emptyListContent: {

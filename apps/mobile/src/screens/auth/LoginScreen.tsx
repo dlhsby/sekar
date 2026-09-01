@@ -124,8 +124,8 @@ function LoginScreen(): React.JSX.Element {
           if (meResponse.data) {
             enrichedUser = {
               ...loginData.user,
-              area_id: meResponse.data.area_id ?? loginData.user.area_id,
-              rayon_id: meResponse.data.rayon_id ?? loginData.user.rayon_id,
+              location_id: meResponse.data.location_id ?? loginData.user.location_id,
+              district_id: meResponse.data.district_id ?? loginData.user.district_id,
             };
             if (meResponse.data.assigned_area) {
               // Transform GeoJSON Polygon → flat [lng, lat][] for mobile gpsUtils.
@@ -134,7 +134,6 @@ function LoginScreen(): React.JSX.Element {
                 ...meResponse.data.assigned_area,
                 gps_lat: Number(meResponse.data.assigned_area.gps_lat),
                 gps_lng: Number(meResponse.data.assigned_area.gps_lng),
-                radius_meters: Number(meResponse.data.assigned_area.radius_meters),
                 boundary_polygon: rawPolygon?.coordinates?.[0] ?? undefined,
               };
             }

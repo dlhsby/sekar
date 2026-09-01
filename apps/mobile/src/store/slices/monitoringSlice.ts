@@ -28,10 +28,9 @@ import i18n from '../../i18n/config';
 
 interface StatusCounts {
   active: number;
-  inactive: number;
-  outside_area: number;
-  missing: number;
   offline: number;
+  absent: number;
+  outside_area: number;
 }
 
 interface RosterCounts {
@@ -45,7 +44,7 @@ interface RosterCounts {
 interface MonitoringState {
   liveUsers: LiveUser[];
   cityStats: Record<string, unknown> | null;
-  rayonStats: Record<string, Record<string, unknown>>;
+  districtStats: Record<string, Record<string, unknown>>;
   areaStats: Record<string, Record<string, unknown>>;
   filters: MonitoringFilters;
   selectedUser: LiveUser | null;
@@ -59,6 +58,7 @@ interface MonitoringState {
   statusCounts: StatusCounts;
   rosterCounts: RosterCounts;
   absentUsers: AbsentUser[];
+  onLeaveUsers: AbsentUser[];
   isLoading: boolean;
   isLoadingDaySummary: boolean;
   isLoadingLocationHistory: boolean;
@@ -68,10 +68,9 @@ interface MonitoringState {
 
 const initialStatusCounts: StatusCounts = {
   active: 0,
-  inactive: 0,
-  outside_area: 0,
-  missing: 0,
   offline: 0,
+  absent: 0,
+  outside_area: 0,
 };
 
 const initialRosterCounts: RosterCounts = {
@@ -85,7 +84,7 @@ const initialRosterCounts: RosterCounts = {
 const initialState: MonitoringState = {
   liveUsers: [],
   cityStats: null,
-  rayonStats: {},
+  districtStats: {},
   areaStats: {},
   filters: {},
   selectedUser: null,
@@ -99,6 +98,7 @@ const initialState: MonitoringState = {
   statusCounts: initialStatusCounts,
   rosterCounts: initialRosterCounts,
   absentUsers: [],
+  onLeaveUsers: [],
   isLoading: false,
   isLoadingDaySummary: false,
   isLoadingLocationHistory: false,
@@ -187,7 +187,7 @@ export const fetchLocationHistory = createAsyncThunk(
 export const fetchStaffingSummary = createAsyncThunk(
   'monitoring/fetchStaffingSummary',
   async (
-    filters: { rayon_id?: string; area_id?: string } | undefined,
+    filters: { district_id?: string; location_id?: string } | undefined,
     { rejectWithValue },
   ) => {
     try {
@@ -209,22 +209,24 @@ export const fetchStaffingSummary = createAsyncThunk(
 export const fetchBoundaries = createAsyncThunk(
   'monitoring/fetchBoundaries',
   async (
-    filters: { rayon_id?: string; level?: 'rayon' | 'area' } | undefined,
+    filters:
+      | { district_id?: string; level?: 'district' | 'area'; bbox?: string | null }
+      | undefined,
     { rejectWithValue },
   ) => {
     try {
       // Keep full (server-simplified) area geometry by default so the current
       // city view still shows area polygons; `level` is opt-in for a future
-      // drill flow that wants rayon-outlines-only.
-      const response = await getBoundaries(filters?.rayon_id, filters?.level);
+      // drill flow that wants district-outlines-only.
+      const response = await getBoundaries(filters?.district_id, filters?.level, filters?.bbox);
       if (response.error) {
         return rejectWithValue(response.error);
       }
       // Map backend staffing_summary → mobile staffing field + compute totals
       const data = response.data;
-      if (data?.rayons) {
-        for (const rayon of data.rayons) {
-          for (const area of rayon.areas) {
+      if (data?.districts) {
+        for (const district of data.districts) {
+          for (const area of district.areas) {
             const raw = area as any;
             if (!area.staffing && raw.staffing_summary) {
               area.staffing = raw.staffing_summary;
@@ -270,15 +272,30 @@ const monitoringSlice = createSlice({
       }
     },
 
+    /**
+     * Remove a worker from the live set — used when they clock out (the map should
+     * drop their pin immediately, mirroring web's snapshot-removal on `user:clock-out`).
+     * Defensive: a no-op if the user isn't present (e.g. already filtered out).
+     */
+    removeLiveUser(state, action: PayloadAction<{ id: string }>) {
+      const { id } = action.payload;
+      if (!state.liveUsers.some((u) => u.id === id)) return;
+      state.liveUsers = state.liveUsers.filter((u) => u.id !== id);
+      state.statusCounts = computeStatusCounts(state.liveUsers);
+      if (state.selectedUser?.id === id) {
+        state.selectedUser = null;
+      }
+    },
+
     setCityStats(state, action: PayloadAction<Record<string, unknown> | null>) {
       state.cityStats = action.payload;
     },
 
-    setRayonStats(
+    setDistrictStats(
       state,
       action: PayloadAction<Record<string, Record<string, unknown>>>,
     ) {
-      state.rayonStats = action.payload;
+      state.districtStats = action.payload;
     },
 
     setAreaStats(
@@ -344,10 +361,9 @@ const monitoringSlice = createSlice({
         state.liveUsers = action.payload.users;
         state.statusCounts = {
           active: action.payload.total_active ?? 0,
-          inactive: action.payload.total_inactive ?? 0,
-          outside_area: action.payload.total_outside_area ?? 0,
-          missing: action.payload.total_missing ?? 0,
           offline: action.payload.total_offline ?? 0,
+          absent: action.payload.total_absent ?? 0,
+          outside_area: action.payload.total_outside_area ?? 0,
         };
         // Phase 3: Extract roster counts from the response
         state.rosterCounts = {
@@ -358,6 +374,7 @@ const monitoringSlice = createSlice({
           off_schedule_count: action.payload.off_schedule_count ?? 0,
         };
         state.absentUsers = action.payload.absent_users ?? [];
+        state.onLeaveUsers = action.payload.on_leave_users ?? [];
       }
     });
     builder.addCase(fetchLiveUsers.rejected, (state, action) => {
@@ -422,8 +439,9 @@ const monitoringSlice = createSlice({
 export const {
   setLiveUsers,
   updateLiveUser,
+  removeLiveUser,
   setCityStats,
-  setRayonStats,
+  setDistrictStats,
   setAreaStats,
   setMonitoringFilters,
   resetMonitoringFilters,

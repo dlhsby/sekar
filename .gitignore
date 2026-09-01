@@ -35,3 +35,23 @@ prompts/
 
 # WSL/Windows alternate-data-stream junk (sit next to downloaded creds)
 *:Zone.Identifier
+
+# JVM crash dumps — Gradle/Metro can drop these in the repo root mid-build.
+# One (hs_err_pid124689.log) reached main via a broad `git add -A`.
+hs_err_pid*.log
+replay_pid*.log
+
+# Database dumps / clones — real staging data. NEVER commit these.
+# The clone script keeps them outside the repo by default; this is the guard for
+# the day someone points STAGING_CLONE_DIR inside it.
+*.dump
+*.dump.partial
+*.sql.gz
+staging-clone/
+
+# Claude Code plugin/skill artifacts — per-developer tooling state, not project
+# code. `.agents/` holds locally-installed skill definitions and
+# `skills-lock.json` pins their hashes; both are regenerated per machine and
+# would otherwise sit permanently in `git status` as untracked noise.
+.agents/
+skills-lock.json

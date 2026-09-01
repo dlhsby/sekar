@@ -59,7 +59,7 @@ export interface ReportParameters {
   start_date?: string;
   end_date?: string;
   area_id?: string;
-  rayon_id?: string;
+  district_id?: string;
   worker_id?: string;
   [key: string]: any;
 }

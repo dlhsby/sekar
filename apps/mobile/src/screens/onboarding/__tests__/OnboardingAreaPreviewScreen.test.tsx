@@ -41,8 +41,8 @@ describe('OnboardingAreaPreviewScreen', () => {
     await AsyncStorage.clear();
   });
 
-  it('shows clockable variant for satgas with area_id', () => {
-    const { getByTestId } = renderForRole('satgas', 'u-1', { area_id: 'area-42' });
+  it('shows clockable variant for satgas with location_id', () => {
+    const { getByTestId } = renderForRole('satgas', 'u-1', { location_id: 'area-42' });
     expect(getByTestId('area-preview-clockable')).toBeTruthy();
   });
 
@@ -51,8 +51,8 @@ describe('OnboardingAreaPreviewScreen', () => {
     expect(getByTestId('area-preview-kecamatan')).toBeTruthy();
   });
 
-  it('shows admin variant for admin_data', () => {
-    const { getByTestId } = renderForRole('admin_data');
+  it('shows admin variant for admin_rayon', () => {
+    const { getByTestId } = renderForRole('admin_rayon');
     expect(getByTestId('area-preview-admin')).toBeTruthy();
   });
 

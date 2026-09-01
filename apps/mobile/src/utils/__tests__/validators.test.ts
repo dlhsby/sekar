@@ -99,7 +99,7 @@ describe('validators', () => {
 
   describe('isValidPassword', () => {
     it('should return true for valid password', () => {
-      expect(isValidPassword('Password123!')).toBe(true);
+      expect(isValidPassword('12345678')).toBe(true);
     });
 
     it('should return true for password with minimum length (6)', () => {

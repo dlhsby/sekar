@@ -103,8 +103,8 @@ describe('API Client - Interceptors Coverage', () => {
         message: 'Token expired',
       });
 
-      const refreshMock = new MockAdapter(axios);
-      refreshMock.onPost('/api/v1/auth/refresh').reply(200, null);
+      const refreshMock = new MockAdapter(axios, { onNoMatch: 'throwException' });
+      refreshMock.onPost(new RegExp('/auth/refresh$')).reply(200, null);
 
       mockSecureStorage.getRefreshToken.mockResolvedValue('valid-refresh-token');
 
@@ -112,6 +112,8 @@ describe('API Client - Interceptors Coverage', () => {
         await apiClient.get('/protected');
         fail('Should have thrown an error');
       } catch (error) {
+        // The server ANSWERED — 200 with no token is a broken contract, and
+        // there is no credential to continue with. Still terminal.
         const apiError = error as ApiError;
         expect(apiError.code).toBe('TOKEN_EXPIRED');
         expect(mockSecureStorage.clearAll).toHaveBeenCalled();
@@ -120,14 +122,14 @@ describe('API Client - Interceptors Coverage', () => {
       refreshMock.restore();
     });
 
-    it('should handle 401 when refresh endpoint throws error', async () => {
+    it('KEEPS the session when the refresh endpoint throws (no response)', async () => {
       mock.onGet('/protected').reply(401, {
         code: 'TOKEN_EXPIRED',
         message: 'Token expired',
       });
 
-      const refreshMock = new MockAdapter(axios);
-      refreshMock.onPost('/api/v1/auth/refresh').networkError();
+      const refreshMock = new MockAdapter(axios, { onNoMatch: 'throwException' });
+      refreshMock.onPost(new RegExp('/auth/refresh$')).networkError();
 
       mockSecureStorage.getRefreshToken.mockResolvedValue('valid-refresh-token');
 
@@ -135,9 +137,11 @@ describe('API Client - Interceptors Coverage', () => {
         await apiClient.get('/protected');
         fail('Should have thrown an error');
       } catch (error) {
+        // No response means we could not ASK, which is not a refusal. Clearing
+        // here signed workers out on a bad signal or mid-deploy.
         const apiError = error as ApiError;
-        expect(apiError.code).toBe('TOKEN_EXPIRED');
-        expect(mockSecureStorage.clearAll).toHaveBeenCalled();
+        expect(apiError.code).toBe('NETWORK_ERROR');
+        expect(mockSecureStorage.clearAll).not.toHaveBeenCalled();
       }
 
       refreshMock.restore();

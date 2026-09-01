@@ -1,12 +1,16 @@
 import { runProfileCli, type SeedContext } from '../lib/context';
 import { truncateAll } from '../lib/truncate';
+import { seedPermissions } from '../entities/permission';
+import { seedRoles } from '../entities/role';
+import { seedTeams } from '../entities/team';
 import { seedAreaTypes } from '../entities/area-type';
-import { seedRayons } from '../entities/rayon';
+import { seedDistricts } from '../entities/district';
 import { seedShiftDefinitions } from '../entities/shift-definition';
 import { seedActivityTypes } from '../entities/activity-type';
 import { seedAreas } from '../entities/area';
+import { seedRegions, seedRegionGeometry } from '../entities/region';
 import { seedSpecialDayOverrides } from '../entities/special-day';
-import { seedAreaStaffRequirements } from '../entities/area-staff-requirement';
+import { seedStaffingRequirements } from '../entities/staffing-requirement';
 import { seedKecamatans } from '../entities/kecamatan';
 import { seedUsers } from '../entities/user';
 import { seedNotificationTokens } from '../entities/notification-token';
@@ -39,13 +43,20 @@ async function seedDemo(ctx: SeedContext): Promise<void> {
   await truncateAll(ctx);
 
   // Reference data.
+  await seedPermissions(ctx);
+  await seedRoles(ctx);
+  await seedTeams(ctx);
   await seedAreaTypes(ctx);
-  await seedRayons(ctx);
+  await seedDistricts(ctx);
   await seedShiftDefinitions(ctx);
   await seedActivityTypes(ctx);
   await seedAreas(ctx);
+  await seedRegions(ctx);
+  // After seedRegions, because it derives each kawasan's shape from the lokasi
+  // that seedRegions has just re-parented under it.
+  await seedRegionGeometry(ctx);
   await seedSpecialDayOverrides(ctx);
-  await seedAreaStaffRequirements(ctx);
+  await seedStaffingRequirements(ctx);
   await seedKecamatans(ctx);
 
   // People + assignments.
@@ -60,6 +71,12 @@ async function seedDemo(ctx: SeedContext): Promise<void> {
   await seedMonitoringConfigs(ctx);
   await seedUserTrackingStatus(ctx);
   await seedUserAreas(ctx);
+
+  // NOTE: schedules/assignments are deliberately NOT seeded here. They are
+  // time-relative (a roster only means something against "now") and they must be
+  // COHERENT — the old variant seeder picked users with `ORDER BY username LIMIT`,
+  // which put e.g. a Rayon-Barat-2 korlap on CITY scope. All schedule assignment
+  // now lives in scripts/stage-presence-scenarios.ts, which owns it end-to-end.
 
   // Plants / pruning / capacity (Phase-3 demo data).
   await seedPlantSpecies(ctx);

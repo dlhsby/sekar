@@ -48,7 +48,7 @@ describe('Overtime API', () => {
       full_name: 'Satgas One',
       role: 'satgas',
     },
-    area_id: 'area-1',
+    location_id: 'area-1',
     area: {
       id: 'area-1',
       name: 'Taman Bungkul',
@@ -104,7 +104,7 @@ describe('Overtime API', () => {
     });
 
     it('should fetch overtime with area filter', async () => {
-      const filters: OvertimeFilters = { area_id: 'area-1' };
+      const filters: OvertimeFilters = { location_id: 'area-1' };
 
       mock.onGet('/overtime', { params: filters }).reply(200, {
         data: [mockOvertime],
@@ -348,7 +348,7 @@ describe('useOvertime hook', () => {
     id: 'ot-1',
     user_id: 'u-1',
     user: { id: 'u-1', username: 'satgas1', full_name: 'Satgas One', role: 'satgas' },
-    area_id: 'a-1',
+    location_id: 'a-1',
     area: { id: 'a-1', name: 'Taman' },
     start_datetime: '2026-02-16T17:00:00+07:00',
     end_datetime: '2026-02-16T20:00:00+07:00',

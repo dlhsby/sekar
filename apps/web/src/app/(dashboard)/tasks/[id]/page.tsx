@@ -30,6 +30,7 @@ import { useRouter } from 'next/navigation';
 import { use, useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, Check, RotateCcw, Send, X } from 'lucide-react';
 import { TASK_MANAGER_ROLES, TASK_VERIFIER_ROLES, hasRole } from '@/lib/constants/roles';
+import { runAction } from '@/lib/hooks/use-action';
 import {
   getTaskStatusLabel,
   getTaskPriorityLabel,
@@ -41,7 +42,7 @@ import type { UserRole } from '@/types/models';
 // ADR-038: which roles a delegator may hand a task to. Mirrors the backend
 // VALID_TASK_ASSIGNMENTS map in apps/be/src/modules/users/constants/role-groups.ts.
 const DELEGATION_TARGETS: Record<string, UserRole[]> = {
-  top_management: ['kepala_rayon', 'korlap'],
+  management: ['kepala_rayon', 'korlap'],
   kepala_rayon: ['korlap'],
   korlap: ['satgas', 'linmas'],
   admin_system: ['kepala_rayon', 'korlap'],
@@ -78,7 +79,7 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
   // ADR-038: assignment chain. Best-effort — failure leaves the card hidden.
   const { data: delegations = [] } = useTaskDelegations(taskId);
   // Pull a wide user pool when the delegate form is open; filter client-side
-  // by role + rayon to surface only valid hand-off targets.
+  // by role + district to surface only valid hand-off targets.
   const { data: usersResp } = useUsers({ limit: 200 });
   const delegateCandidates = useMemo(() => {
     if (!user || !task || !task.assigned_to) return [];
@@ -89,7 +90,7 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
       (u) =>
         allowedRoles.includes(u.role) &&
         u.id !== user.id &&
-        (!task.rayon?.id || !u.rayon_id || u.rayon_id === task.rayon.id),
+        (!task.district?.id || !u.district_id || u.district_id === task.district.id),
     );
   }, [user, task, usersResp]);
 
@@ -126,23 +127,31 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
     !!DELEGATION_TARGETS[user.role];
 
   const handleVerify = async () => {
-    await verifyMutation.mutateAsync(taskId);
+    await runAction(() => verifyMutation.mutateAsync(taskId), {
+      success: t('common:messages.verified'),
+    });
   };
 
   const handleRevision = async () => {
     if (!revisionReason.trim()) return;
-    await revisionMutation.mutateAsync({ taskId, reason: revisionReason });
+    await runAction(() => revisionMutation.mutateAsync({ taskId, reason: revisionReason }), {
+      success: t('common:messages.revisionRequested'),
+    });
     setShowRevisionForm(false);
     setRevisionReason('');
   };
 
   const handleUntag = async (userId: string) => {
-    await untagMutation.mutateAsync({ taskId, userId });
+    await runAction(() => untagMutation.mutateAsync({ taskId, userId }), {
+      success: t('common:messages.removed'),
+    });
   };
 
   const handleDelegate = async () => {
     if (!delegateUserId) return;
-    await assignMutation.mutateAsync({ taskId, assignedTo: delegateUserId });
+    await runAction(() => assignMutation.mutateAsync({ taskId, assignedTo: delegateUserId }), {
+      success: t('common:messages.assigned'),
+    });
     setShowDelegateForm(false);
     setDelegateUserId('');
   };
@@ -242,11 +251,11 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
                   <div className="text-nb-gray-700">{task.description}</div>
                 </div>
               )}
-              {task.due_date && (
+              {task.deadline && (
                 <div>
                   <div className="text-sm font-semibold text-nb-gray-600">{t('tasks:fields.dueDate')}</div>
                   <div className="font-bold text-nb-black">
-                    {new Date(task.due_date).toLocaleDateString(intlLocale())}
+                    {new Date(task.deadline).toLocaleDateString(intlLocale())}
                   </div>
                 </div>
               )}
@@ -305,10 +314,10 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
                   <div className="font-bold text-nb-black">{task.area.name}</div>
                 </div>
               )}
-              {task.rayon && (
+              {task.district && (
                 <div>
-                  <div className="text-sm font-semibold text-nb-gray-600">{t('tasks:fields.rayon')}</div>
-                  <div className="font-bold text-nb-black">{task.rayon.name}</div>
+                  <div className="text-sm font-semibold text-nb-gray-600">{t('tasks:fields.district')}</div>
+                  <div className="font-bold text-nb-black">{task.district.name}</div>
                 </div>
               )}
             </div>
@@ -470,7 +479,7 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
                     {d.from_user
                       ? `${d.from_user.full_name} (${d.from_user.role})`
                       : 'Sistem'}
-                    <span className="mx-2 text-nb-gray-400">→</span>
+                    <span className="mx-2 text-nb-gray-500">→</span>
                     {d.to_user.full_name} ({d.to_user.role})
                   </div>
                   <div className="text-xs text-nb-gray-600">

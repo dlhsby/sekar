@@ -18,8 +18,8 @@ import {
 import { ROLE_LABELS } from '@/lib/constants/roles';
 import { StatusCard } from './StatusCard';
 import { UserListItem } from './UserListItem';
+import { OnLeaveList } from './OnLeaveList';
 import type { LiveUser, LiveUsersResponse, TrackingStatus } from '@/lib/api/monitoring';
-import type { UserRole } from '@/types/models';
 
 export interface MonitoringSidePanelProps {
   data: LiveUsersResponse | undefined;
@@ -38,9 +38,8 @@ export function MonitoringSidePanel({
   const statusLabels = getStatusLabels();
   const STATUS_CARDS: Array<{ status: TrackingStatus; label: string }> = [
     { status: 'active', label: statusLabels.active },
-    { status: 'inactive', label: statusLabels.inactive },
-    { status: 'outside_area', label: statusLabels.outside_area },
-    { status: 'missing', label: statusLabels.missing },
+    { status: 'offline', label: statusLabels.offline },
+    { status: 'absent', label: statusLabels.absent },
   ];
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<TrackingStatus | null>(null);
@@ -71,7 +70,7 @@ export function MonitoringSidePanel({
       const matchesSearch =
         !debouncedSearch ||
         user.full_name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-        user.area_name.toLowerCase().includes(debouncedSearch.toLowerCase());
+        user.location_name.toLowerCase().includes(debouncedSearch.toLowerCase());
 
       const matchesStatus = !statusFilter || user.status === statusFilter;
       const matchesRole = roleFilters.size === 0 || roleFilters.has(user.role);
@@ -87,13 +86,11 @@ export function MonitoringSidePanel({
     });
   }, [data?.users, debouncedSearch, statusFilter, roleFilters]);
 
-  const totalOnline = (data?.total_active ?? 0) + (data?.total_inactive ?? 0);
+  const totalClocked = (data?.total_active ?? 0) + (data?.total_offline ?? 0);
   const totalAll =
     (data?.total_active ?? 0) +
-    (data?.total_inactive ?? 0) +
-    (data?.total_outside_area ?? 0) +
-    (data?.total_missing ?? 0) +
-    (data?.total_offline ?? 0);
+    (data?.total_offline ?? 0) +
+    (data?.total_absent ?? 0);
 
   const hasActiveFilters = !!search || !!statusFilter || roleFilters.size > 0;
 
@@ -106,7 +103,7 @@ export function MonitoringSidePanel({
             {t('monitoring:sidePanel.title')}
           </span>
           <span className="text-xs text-nb-gray-500">
-            {t('monitoring:sidePanel.summary', { totalOnline, totalAll })}
+            {t('monitoring:sidePanel.summary', { totalOnline: totalClocked, totalAll })}
           </span>
         </div>
 
@@ -115,10 +112,8 @@ export function MonitoringSidePanel({
           {STATUS_CARDS.map(({ status, label }) => {
             const countMap: Record<TrackingStatus, number> = {
               active: data?.total_active ?? 0,
-              inactive: data?.total_inactive ?? 0,
-              outside_area: data?.total_outside_area ?? 0,
-              missing: data?.total_missing ?? 0,
               offline: data?.total_offline ?? 0,
+              absent: data?.total_absent ?? 0,
             };
             return (
               <StatusCard
@@ -134,10 +129,13 @@ export function MonitoringSidePanel({
         </div>
       </div>
 
+      {/* On-leave section */}
+      <OnLeaveList users={data?.on_leave_users} />
+
       {/* Search + Role chips */}
       <div className="px-3 py-2 flex-shrink-0 border-b border-nb-gray-200">
         <div className="relative mb-2">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-nb-gray-400 pointer-events-none" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-nb-gray-500 pointer-events-none" />
           <input
             type="search"
             placeholder={t('monitoring:sidePanel.searchPlaceholder')}
@@ -145,7 +143,7 @@ export function MonitoringSidePanel({
             onChange={(e) => setSearch(e.target.value)}
             className={cn(
               'w-full pl-8 pr-3 py-2 text-sm border-2 border-nb-black rounded-nb-base',
-              'bg-white placeholder:text-nb-gray-400 focus:outline-none focus:ring-2',
+              'bg-white placeholder:text-nb-gray-500 focus:outline-none focus:ring-2',
               'focus:ring-nb-primary focus:ring-offset-1'
             )}
             aria-label={t('monitoring:sidePanel.searchLabel')}
@@ -220,7 +218,7 @@ export function MonitoringSidePanel({
 
       {/* Footer count */}
       {!isLoading && filteredUsers.length > 0 && (
-        <div className="px-3 py-1.5 text-xs text-center text-nb-gray-400 border-t border-nb-gray-200 flex-shrink-0">
+        <div className="px-3 py-1.5 text-xs text-center text-nb-gray-500 border-t border-nb-gray-200 flex-shrink-0">
           {t('monitoring:sidePanel.count', { count: filteredUsers.length })}
         </div>
       )}

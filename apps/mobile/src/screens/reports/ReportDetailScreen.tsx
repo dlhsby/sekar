@@ -29,6 +29,7 @@ import {
   nbColors,
   nbSpacing,
 } from '../../constants/nbTokens';
+import { screenContent } from '../../constants/layout';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import {
   fetchReport,
@@ -442,8 +443,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingHorizontal: nbSpacing.lg,
-    paddingVertical: nbSpacing.lg,
+    ...screenContent,
   },
   loadingContainer: {
     flex: 1,

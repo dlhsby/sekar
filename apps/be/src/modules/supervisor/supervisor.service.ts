@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull, Between } from 'typeorm';
 import { Shift } from '../shifts/entities/shift.entity';
 import { User, UserRole } from '../users/entities/user.entity';
-import { Area } from '../areas/entities/area.entity';
+import { Location } from '../locations/entities/location.entity';
 import { LocationLog } from '../location/entities/location-log.entity';
 import { ActiveUsersResponseDto, ActiveUserDto } from './dto/active-users-response.dto';
 import { AreaStatusResponseDto, AreaStatusDto } from './dto/area-status-response.dto';
@@ -23,7 +23,7 @@ import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
  *
  * Provides dashboard queries for supervisors:
  * - Active workers with real-time locations
- * - Area status overview
+ * - Location status overview
  * - Daily attendance reports
  */
 @Injectable()
@@ -35,8 +35,8 @@ export class SupervisorService {
     private shiftsRepository: Repository<Shift>,
     @InjectRepository(User)
     private usersRepository: Repository<User>,
-    @InjectRepository(Area)
-    private areasRepository: Repository<Area>,
+    @InjectRepository(Location)
+    private areasRepository: Repository<Location>,
     @InjectRepository(LocationLog)
     private locationLogsRepository: Repository<LocationLog>,
   ) {}
@@ -149,7 +149,7 @@ export class SupervisorService {
   /**
    * Get status overview of all areas
    *
-   * @returns Area statistics
+   * @returns Location statistics
    */
   async getAreaStatus(): Promise<AreaStatusResponseDto> {
     this.logger.log('Fetching area status');
@@ -159,16 +159,16 @@ export class SupervisorService {
       where: { is_active: true },
     });
 
-    // For each area, count assigned workers (via user.area_id) and active workers
+    // For each area, count assigned workers (via user.location_id) and active workers
     const areaStatuses: AreaStatusDto[] = await Promise.all(
       areas.map(async (area) => {
         const assignedCount = await this.usersRepository.count({
-          where: { area_id: area.id, is_active: true },
+          where: { location_id: area.id, is_active: true },
         });
 
         const activeCount = await this.shiftsRepository.count({
           where: {
-            area_id: area.id,
+            location_id: area.id,
             clock_out_time: IsNull(),
           },
         });
@@ -240,13 +240,13 @@ export class SupervisorService {
 
     const clockedIn: ClockedInWorkerDto[] = await Promise.all(
       paginatedClockInShifts.map(async (shift) => {
-        // Resolve area: prefer shift.area, fallback to user.area_id
+        // Resolve area: prefer shift.area, fallback to user.location_id
         let area: AttendanceAreaDto | null = null;
         if (shift.area) {
           area = { id: shift.area.id, name: shift.area.name };
-        } else if (shift.user.area_id) {
+        } else if (shift.user.location_id) {
           const areaEntity = await this.areasRepository.findOne({
-            where: { id: shift.user.area_id },
+            where: { id: shift.user.location_id },
           });
           if (areaEntity) {
             area = { id: areaEntity.id, name: areaEntity.name };
@@ -276,11 +276,11 @@ export class SupervisorService {
 
     const notClockedIn: NotClockedInWorkerDto[] = await Promise.all(
       paginatedNotClockedInWorkers.map(async (worker) => {
-        // Get area from user.area_id if set
+        // Get area from user.location_id if set
         let area = null;
-        if (worker.area_id) {
+        if (worker.location_id) {
           const areaEntity = await this.areasRepository.findOne({
-            where: { id: worker.area_id },
+            where: { id: worker.location_id },
           });
           if (areaEntity) {
             area = {
@@ -345,9 +345,9 @@ export class SupervisorService {
 
     // Resolve user's area
     let userArea: AttendanceAreaDto | null = null;
-    if (user.area_id) {
+    if (user.location_id) {
       const areaEntity = await this.areasRepository.findOne({
-        where: { id: user.area_id },
+        where: { id: user.location_id },
       });
       if (areaEntity) {
         userArea = { id: areaEntity.id, name: areaEntity.name };

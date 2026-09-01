@@ -92,7 +92,7 @@ describe('activitiesApi', () => {
 
   describe('getActivities', () => {
     it('gets activities with filters', async () => {
-      const filters = { area_id: 'area-001', date: '2026-02-14' };
+      const filters = { location_id: 'area-001', date: '2026-02-14' };
       const mockResponse = { data: [{ id: 'act-1' }] };
       mockGet.mockResolvedValue(mockResponse);
 

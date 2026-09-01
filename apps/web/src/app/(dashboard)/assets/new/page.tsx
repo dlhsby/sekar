@@ -16,7 +16,7 @@ import { useUser } from '@/lib/auth/hooks';
 import { useAssetCategories, useCreateAsset } from '@/lib/api/assets';
 import { getErrorMessage } from '@/lib/api/client';
 
-const ASSET_MANAGER_ROLES = ['korlap', 'kepala_rayon', 'top_management', 'admin_system', 'superadmin'];
+const ASSET_MANAGER_ROLES = ['korlap', 'kepala_rayon', 'management', 'admin_system', 'superadmin'];
 
 export default function CreateAssetPage() {
   const { t } = useTranslation();
@@ -27,7 +27,7 @@ export default function CreateAssetPage() {
   const [name, setName] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [areaId, setAreaId] = useState('');
-  const [rayonId, setRayonId] = useState('');
+  const [districtId, setDistrictId] = useState('');
   const [description, setDescription] = useState('');
   const [purchaseDate, setPurchaseDate] = useState('');
   const [purchasePrice, setPurchasePrice] = useState('');
@@ -51,7 +51,7 @@ export default function CreateAssetPage() {
         name,
         category_id: categoryId,
         area_id: areaId || undefined,
-        rayon_id: rayonId || undefined,
+        district_id: districtId || undefined,
         description: description || undefined,
         purchase_date: purchaseDate || undefined,
         purchase_price: purchasePrice ? parseFloat(purchasePrice) : undefined,

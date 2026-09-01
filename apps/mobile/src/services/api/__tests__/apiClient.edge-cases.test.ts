@@ -71,8 +71,8 @@ describe('API Client - Edge Cases & Token Refresh', () => {
         message: 'Token expired',
       });
 
-      const refreshMock = new MockAdapter(axios);
-      refreshMock.onPost('/api/v1/auth/refresh').reply(200, {
+      const refreshMock = new MockAdapter(axios, { onNoMatch: 'throwException' });
+      refreshMock.onPost(new RegExp('/auth/refresh$')).reply(200, {
         // No access_token in response
       });
 
@@ -90,14 +90,14 @@ describe('API Client - Edge Cases & Token Refresh', () => {
       refreshMock.restore();
     });
 
-    it('should clear auth when refresh fails with error', async () => {
+    it('KEEPS auth when the refresh endpoint is unreachable', async () => {
       mock.onGet('/protected').replyOnce(401, {
         code: 'TOKEN_EXPIRED',
         message: 'Token expired',
       });
 
-      const refreshMock = new MockAdapter(axios);
-      refreshMock.onPost('/api/v1/auth/refresh').networkError();
+      const refreshMock = new MockAdapter(axios, { onNoMatch: 'throwException' });
+      refreshMock.onPost(new RegExp('/auth/refresh$')).networkError();
 
       mockSecureStorage.getRefreshToken.mockResolvedValue('valid-refresh-token');
 
@@ -105,9 +105,11 @@ describe('API Client - Edge Cases & Token Refresh', () => {
         await apiClient.get('/protected');
         fail('Should have thrown an error');
       } catch (error) {
+        // No response means we could not ASK, which is not a refusal. Clearing
+        // here signed workers out on a bad signal or mid-deploy.
         const apiError = error as ApiError;
-        expect(apiError.code).toBe('TOKEN_EXPIRED');
-        expect(mockSecureStorage.clearAll).toHaveBeenCalled();
+        expect(apiError.code).toBe('NETWORK_ERROR');
+        expect(mockSecureStorage.clearAll).not.toHaveBeenCalled();
       }
 
       refreshMock.restore();
@@ -120,8 +122,8 @@ describe('API Client - Edge Cases & Token Refresh', () => {
         message: 'Token expired',
       });
 
-      const refreshMock = new MockAdapter(axios);
-      refreshMock.onPost('/api/v1/auth/refresh').reply(200, {
+      const refreshMock = new MockAdapter(axios, { onNoMatch: 'throwException' });
+      refreshMock.onPost(new RegExp('/auth/refresh$')).reply(200, {
         access_token: 'new-access-token',
       });
 

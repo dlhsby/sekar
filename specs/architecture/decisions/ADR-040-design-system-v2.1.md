@@ -10,7 +10,7 @@ Accepted (Phase 4 M1, 2026-05-23 — `tokens.json` `_meta.version` bumped to 2.1
 
 ## Context
 
-ADR-036 locked `specs/ui-ux/tokens.json` as the single source of truth and shipped a generator pipeline in Phase 3 M1-R. The first generator run (Apr 25, 2026) used the v2.0 palette: yellow `#FDFD96` as `--primary`, mixed canvas colours (yellow + off-white + warm stone), and partially hard-edge shadows. The brand identity was wordmark-only — there was no logo mark.
+ADR-036 locked `specs/design-system/tokens.json` as the single source of truth and shipped a generator pipeline in Phase 3 M1-R. The first generator run (Apr 25, 2026) used the v2.0 palette: yellow `#FDFD96` as `--primary`, mixed canvas colours (yellow + off-white + warm stone), and partially hard-edge shadows. The brand identity was wordmark-only — there was no logo mark.
 
 In May 2026 the project owner iterated a complete brand + UI revisit on Claude Design (`claude.ai/design`). The 224 KB handoff bundle is now vendored at `design/`. The bundle contains:
 
@@ -33,20 +33,20 @@ Leaving the codebase on v2.0 means shipping a public release with a stale palett
 
 ## Decision
 
-**Adopt Design System v2.1 as the canonical palette for `specs/ui-ux/tokens.json`.** The pinwheel pinwheel mark is the **primary brand asset**; the wordmark becomes secondary.
+**Adopt Design System v2.1 as the canonical palette for `specs/design-system/tokens.json`.** The pinwheel pinwheel mark is the **primary brand asset**; the wordmark becomes secondary.
 
 ADR-036's generator architecture is **retained unchanged** — same three-layer model, same `scripts/build-tokens.ts` pipeline, same generated outputs. Only the *values* change. This means v2.1 ships as a JSON edit + a generator run; no toolchain changes.
 
 Specifically:
 
-1. Regenerate `specs/ui-ux/tokens.json` from `design/project/hifi-shared.css` lines 7-82 (token block). Manual port — the generator does not consume CSS.
+1. Regenerate `specs/design-system/tokens.json` from `design/project/hifi-shared.css` lines 7-82 (token block). Manual port — the generator does not consume CSS.
 2. Run `npm run tokens:build` from repo root. Commit regenerated `apps/web/src/app/generated/tokens.css` + `apps/mobile/src/constants/generated/tokens.ts`.
 3. Ship pinwheel SVG to both platforms as the primary brand asset; replace iOS AppIcon + Android adaptive icon; replace mobile splash; update web PWA manifest.
 4. Ship the 6 empty-state illustrations + 3 onboarding scenes from `illustrations.html`.
-5. Update `specs/ui-ux/design-tokens.md` with the v2.1 diff and a "v2.0 → v2.1 migration" appendix.
+5. Update `specs/design-system/design-tokens.md` with the v2.1 diff and a "v2.0 → v2.1 migration" appendix.
 6. Run `eslint-plugin-sekar-design` repo-wide; fix every literal-value violation surfaced by the colour shift.
 
-Rebrand cutover requires an **app-store re-submission** (icon + splash changed). Plan a 2-week store-review buffer per the cutover checklist (`specs/phases/phase-4-production-readiness/status_deployment_checklist.md § 0 B`).
+Rebrand cutover requires an **app-store re-submission** (icon + splash changed). Plan a 2-week store-review buffer per the cutover checklist (history/CHANGELOG.md § 0 B`).
 
 ## Consequences
 
@@ -65,7 +65,7 @@ Rebrand cutover requires an **app-store re-submission** (icon + splash changed).
 - **App-store re-submission required.** Adds a 2-week buffer to the release schedule.
 - **Visual regressions possible.** Every screen needs a story-driven snapshot diff (Sub-Phase 4-0 A5). Some screens may have implicit colour assumptions that break.
 - **ESLint sweep noisy.** Expect 50-150 violations from literal hex / borderWidth / shadow values introduced since the M1-R sweep landed.
-- **Documentation churn.** `specs/ui-ux/design-tokens.md` rewrite + `CLAUDE.md` updates.
+- **Documentation churn.** `specs/design-system/design-tokens.md` rewrite + `CLAUDE.md` updates.
 - **Marketing materials need refresh.** Old screenshots / promo graphics carry the yellow primary; need re-shoot or re-render.
 
 ### Neutral
@@ -74,7 +74,7 @@ Rebrand cutover requires an **app-store re-submission** (icon + splash changed).
 
 ## Implementation
 
-Execution lives in Phase 4 Sub-Phase 4-0 (token re-baseline) and Sub-Phase 4-R (screen-by-screen revamp). See [`specs/phases/phase-4-production-readiness/README.md § 4-0`](../../phases/phase-4-production-readiness/README.md#4-0--design-bundle-adoption--token-re-baseline-3-4-days) and [`ui-ux.md § 1`](../../phases/phase-4-production-readiness/ui-ux.md#1-design-system-v21--token-diff-vs-v20) for the detailed token diff and brand asset inventory.
+Execution lives in Phase 4 Sub-Phase 4-0 (token re-baseline) and Sub-Phase 4-R (screen-by-screen revamp). See [build history](../../history/CHANGELOG.md) and [`ui-ux.md § 1`](../../history/CHANGELOG.md) for the detailed token diff and brand asset inventory.
 
 ## References
 

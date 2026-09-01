@@ -21,6 +21,7 @@ import {
   deriveAxes,
   userAxes,
   presenceActivityPill,
+  lifecycleFlagPills,
   locationLabel,
   pruningPill,
   getPruningRequestStatusColor,
@@ -236,13 +237,11 @@ describe('statusHelpers', () => {
 
   describe('presencePill', () => {
     it.each([
-      ['active',       'ok',      'Aktif'],
-      ['inactive',     'warn',    'Tidak aktif'],
-      ['outside_area', 'bad',     'Luar area'],
-      ['missing',      'bad',     'Tidak terdeteksi'],
-      ['offline',      'neutral', 'Offline'],
+      ['active',   'ok',      'Aktif'],
+      ['offline',  'neutral', 'Tidak Aktif'],
+      ['absent',   'bad',     'Tidak Hadir'],
     ] as const)('maps %s → %s / %s', (status, tone, label) => {
-      expect(presencePill(status)).toEqual({ tone, label });
+      expect(presencePill(status as any)).toEqual({ tone, label });
     });
   });
 
@@ -323,35 +322,31 @@ describe('statusHelpers', () => {
   // ─── Two-axis presence (CP6) ───────────────────────────────────────────────
 
   describe('deriveAxes', () => {
-    it('maps active → aktif/dalam_area', () => {
+    it('maps active → aktif, location from is_within_area', () => {
       expect(deriveAxes('active', true)).toEqual({ activity: 'aktif', location: 'dalam_area' });
+      expect(deriveAxes('active', false)).toEqual({ activity: 'aktif', location: 'luar_area' });
     });
-    it('maps outside_area → aktif/luar_area', () => {
-      expect(deriveAxes('outside_area', false)).toEqual({ activity: 'aktif', location: 'luar_area' });
+    it('maps offline → offline, still reporting the LAST KNOWN inside/outside', () => {
+      // Both aktif and offline carry the location axis (mirrors the backend's
+      // calculateAxes). An unreachable worker's last known position is the whole
+      // point — without it, offline would be indistinguishable from absent.
+      expect(deriveAxes('offline', true)).toEqual({ activity: 'offline', location: 'dalam_area' });
+      expect(deriveAxes('offline', false)).toEqual({ activity: 'offline', location: 'luar_area' });
     });
-    it('maps inactive → idle, location from is_within_area', () => {
-      expect(deriveAxes('inactive', true)).toEqual({ activity: 'idle', location: 'dalam_area' });
-      expect(deriveAxes('inactive', false)).toEqual({ activity: 'idle', location: 'luar_area' });
-    });
-    it('maps missing/offline → unknown location regardless of is_within_area', () => {
-      expect(deriveAxes('missing', true)).toEqual({ activity: 'missing', location: 'unknown' });
-      expect(deriveAxes('offline', true)).toEqual({ activity: 'offline', location: 'unknown' });
-    });
-    it('trusts the status for active/outside_area, ignoring a stale is_within_area', () => {
-      // active is inside by definition; outside_area is outside by definition.
-      expect(deriveAxes('active', false)).toEqual({ activity: 'aktif', location: 'dalam_area' });
-      expect(deriveAxes('outside_area', true)).toEqual({ activity: 'aktif', location: 'luar_area' });
+    it('maps absent → absent/unknown location regardless of is_within_area', () => {
+      expect(deriveAxes('absent', true)).toEqual({ activity: 'absent', location: 'unknown' });
+      expect(deriveAxes('absent', false)).toEqual({ activity: 'absent', location: 'unknown' });
     });
   });
 
   describe('userAxes', () => {
     it('prefers explicit backend fields when present', () => {
       expect(
-        userAxes({ status: 'active', activity: 'idle', location: 'luar_area', is_within_area: true }),
-      ).toEqual({ activity: 'idle', location: 'luar_area' });
+        userAxes({ status: 'active', activity: 'absent', location: 'luar_area', is_within_area: true }),
+      ).toEqual({ activity: 'absent', location: 'luar_area' });
     });
     it('falls back to deriveAxes when the fields are absent', () => {
-      expect(userAxes({ status: 'outside_area', is_within_area: false })).toEqual({
+      expect(userAxes({ status: 'active', is_within_area: false })).toEqual({
         activity: 'aktif',
         location: 'luar_area',
       });
@@ -361,9 +356,8 @@ describe('statusHelpers', () => {
   describe('presenceActivityPill', () => {
     it('maps each activity to a tone + label', () => {
       expect(presenceActivityPill('aktif')).toEqual({ tone: 'ok', label: 'Aktif' });
-      expect(presenceActivityPill('idle')).toEqual({ tone: 'warn', label: 'Tidak aktif' });
-      expect(presenceActivityPill('missing')).toEqual({ tone: 'bad', label: 'Tidak terdeteksi' });
-      expect(presenceActivityPill('offline')).toEqual({ tone: 'neutral', label: 'Offline' });
+      expect(presenceActivityPill('offline')).toEqual({ tone: 'neutral', label: 'Tidak Aktif' });
+      expect(presenceActivityPill('absent')).toEqual({ tone: 'bad', label: 'Tidak Hadir' });
     });
   });
 
@@ -440,5 +434,43 @@ describe('statusHelpers', () => {
     test.each(cases)('maps %s → %s', (status, label) => {
       expect(getPruningRequestStatusLabel(status)).toBe(label);
     });
+  });
+});
+
+describe('lifecycleFlagPills (ADR-050 third axis)', () => {
+  it('returns no pills for an on-time scheduled worker', () => {
+    expect(lifecycleFlagPills({ is_late: false, is_scheduled: true })).toEqual([]);
+    expect(lifecycleFlagPills({})).toEqual([]);
+  });
+
+  it('flags a late worker (warn)', () => {
+    const pills = lifecycleFlagPills({ is_late: true });
+    expect(pills).toEqual([{ tone: 'warn', label: 'Terlambat' }]);
+  });
+
+  it('flags an off-schedule worker as Luar Jadwal (is_scheduled=false OR ad_hoc flag)', () => {
+    expect(lifecycleFlagPills({ is_scheduled: false })).toEqual([
+      { tone: 'info', label: 'Luar Jadwal' },
+    ]);
+    expect(lifecycleFlagPills({ lifecycle_flags: ['ad_hoc'] })).toEqual([
+      { tone: 'info', label: 'Luar Jadwal' },
+    ]);
+  });
+
+  it('reads flags from lifecycle_flags too (lembur, lupa_clock_out)', () => {
+    const pills = lifecycleFlagPills({ lifecycle_flags: ['lembur', 'lupa_clock_out'] });
+    expect(pills).toEqual([
+      { tone: 'info', label: 'Lembur' },
+      { tone: 'bad', label: 'Lupa Clock-out' },
+    ]);
+  });
+
+  it('orders multiple flags: late → luar jadwal → lembur → lupa clock-out', () => {
+    const pills = lifecycleFlagPills({
+      is_late: true,
+      is_scheduled: false,
+      lifecycle_flags: ['is_late', 'ad_hoc', 'lembur', 'lupa_clock_out'],
+    });
+    expect(pills.map(p => p.label)).toEqual(['Terlambat', 'Luar Jadwal', 'Lembur', 'Lupa Clock-out']);
   });
 });

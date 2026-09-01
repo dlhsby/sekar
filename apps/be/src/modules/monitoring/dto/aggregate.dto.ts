@@ -1,33 +1,48 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
- * Per-status worker counts for an aggregate node (rayon or area).
+ * Per-status worker counts for an aggregate node (district or area).
  * Mirrors the five-status model (ADR-011).
  */
+/**
+ * Per-status headcount for a bubble. Three values (ADR-046 amendment):
+ * `inactive` / `missing` folded into **offline**, and `outside_area` is no longer
+ * a status at all — inside/outside is an independent axis (`outside_area` below
+ * counts it *alongside* active/offline rather than instead of them).
+ *
+ * ⚠️ `offline` changed meaning: it was *not clocked in* (now `absent`), it is now
+ * *clocked in but unreachable*.
+ */
 export class AggregateStatusCountsDto {
-  @ApiProperty({ example: 12 })
+  @ApiProperty({ example: 12, description: 'Clocked in, fix newer than the threshold' })
   active: number;
 
-  @ApiProperty({ example: 3 })
-  inactive: number;
-
-  @ApiProperty({ example: 1 })
-  outside_area: number;
-
-  @ApiProperty({ example: 2 })
-  missing: number;
-
-  @ApiProperty({ example: 4 })
+  @ApiProperty({ example: 4, description: 'Clocked in, no fix or stale beyond the threshold' })
   offline: number;
+
+  @ApiProperty({ example: 2, description: 'Not clocked in (tidak hadir where a schedule exists)' })
+  absent: number;
+
+  @ApiProperty({
+    example: 1,
+    description:
+      'Of the active+offline above, how many are outside their area — an AXIS, not a status',
+  })
+  outside_area: number;
 }
 
 /**
- * Roster attendance trio for an aggregate node (or the whole response).
- * Mirrors the snapshot's expected/present/absent so `not_clocked_in` is always
- * `scheduled - clocked_in` clamped at 0 (a person can't be absent and present).
- * - `scheduled`      — distinct workers rostered today (status planned/present)
- * - `clocked_in`     — of those, how many have an active shift (clocked in)
- * - `not_clocked_in` — scheduled workers who have not clocked in
+ * Roster attendance breakdown for an aggregate node (or the whole response).
+ * `scheduled = clocked_in + belum_hadir + tidak_hadir`. The old `not_clocked_in`
+ * is split by the shift window (presence model, ADR-046): a scheduled worker who
+ * hasn't clocked in is only a **no-show** (`tidak_hadir`) once their shift has
+ * started (past the late grace); before that they are simply **not-yet-due**
+ * (`belum_hadir`). This is what lets the UI stop labelling a 06:00 no-show as
+ * "Belum Hadir" three hours into the shift.
+ * - `scheduled`   — distinct workers rostered today (status planned/present)
+ * - `clocked_in`  — of those, how many have an active shift (clocked in)
+ * - `belum_hadir` — scheduled, not clocked in, shift not started (within grace)
+ * - `tidak_hadir` — scheduled, not clocked in, shift started (past grace) = no-show
  */
 export class AggregateRosterCountsDto {
   @ApiProperty({ example: 30 })
@@ -36,8 +51,11 @@ export class AggregateRosterCountsDto {
   @ApiProperty({ example: 24 })
   clocked_in: number;
 
-  @ApiProperty({ example: 6 })
-  not_clocked_in: number;
+  @ApiProperty({ example: 2 })
+  belum_hadir: number;
+
+  @ApiProperty({ example: 4 })
+  tidak_hadir: number;
 }
 
 /** Dalam/luar (inside/outside area) split for one activity bucket. */
@@ -64,19 +82,19 @@ export class PresenceBreakdownDto {
 }
 
 /**
- * One aggregate node — a rayon (city scope) or an area (rayon scope).
+ * One aggregate node — a district (city scope) or a location (district scope).
  * Carries only a center point + counts, never individual worker coordinates,
  * so the map can render lightweight summary bubbles that drill down on tap.
  */
 export class AggregateNodeDto {
-  @ApiProperty({ example: 'rayon-uuid' })
+  @ApiProperty({ example: 'district-uuid' })
   id: string;
 
   @ApiProperty({ example: 'Rayon Selatan' })
   name: string;
 
-  @ApiProperty({ enum: ['rayon', 'area'], example: 'rayon' })
-  type: 'rayon' | 'area';
+  @ApiProperty({ enum: ['district', 'location', 'region'], example: 'district' })
+  type: 'district' | 'location' | 'region';
 
   @ApiPropertyOptional({ example: -7.2575, nullable: true })
   center_lat: number | null;
@@ -117,22 +135,62 @@ export class AggregateNodeDto {
   })
   presence: PresenceBreakdownDto;
 
-  @ApiPropertyOptional({ description: 'Number of areas (rayon nodes only)', example: 15 })
+  @ApiPropertyOptional({ description: 'Number of areas (district nodes only)', example: 15 })
   area_count?: number;
 
-  @ApiPropertyOptional({ description: 'Rayon id (area nodes only)', example: 'rayon-uuid' })
-  rayon_id?: string | null;
+  @ApiPropertyOptional({ description: 'Number of locations (region nodes only)', example: 8 })
+  location_count?: number;
+
+  @ApiPropertyOptional({
+    description: 'Parent district id (location and region nodes)',
+    example: 'district-uuid',
+  })
+  district_id?: string | null;
+
+  @ApiPropertyOptional({ description: 'Region id (area nodes only)', example: 'region-uuid' })
+  region_id?: string | null;
+
+  @ApiPropertyOptional({
+    description: 'Named marker glyph configured for the area',
+    example: 'trees',
+  })
+  marker_icon?: string | null;
+
+  @ApiPropertyOptional({
+    description: "The area's fill_color — fills the marker pin",
+    example: '#1b6f1c',
+    nullable: true,
+  })
+  fill_color?: string | null;
+
+  @ApiPropertyOptional({
+    description: "The area's fill_opacity 0–1",
+    example: 0.25,
+    nullable: true,
+  })
+  fill_opacity?: number | null;
 }
 
 /**
+ * Which slice of the hierarchy an aggregate call returns.
+ *
+ * `all` is the map's zoom mode: districts, kawasan AND lokasi in one payload, so
+ * the client can draw every tier at once instead of issuing 1 + 2N requests.
+ * Each node still carries `type` + `district_id`/`region_id`, which is what lets
+ * the caller rebuild the tree without a shape change.
+ */
+export type AggregateScope = 'city' | 'district' | 'region' | 'all';
+
+/**
  * Lightweight aggregate response for the monitoring map's "Ringkasan" mode.
- * `nodes` are rayons when `scope=city`, or areas when `scope=rayon`.
+ * `nodes` are districts when `scope=city`, areas when `scope=district`, kawasan
+ * when `scope=region`, and all three tiers mixed when `scope=all`.
  */
 export class AggregateResponseDto {
-  @ApiProperty({ enum: ['city', 'rayon'], example: 'city' })
-  scope: 'city' | 'rayon';
+  @ApiProperty({ enum: ['city', 'district', 'region', 'all'], example: 'city' })
+  scope: AggregateScope;
 
-  @ApiPropertyOptional({ example: 'rayon-uuid', nullable: true })
+  @ApiPropertyOptional({ example: 'district-uuid', nullable: true })
   scope_id: string | null;
 
   @ApiProperty({ type: [AggregateNodeDto] })
@@ -152,6 +210,12 @@ export class AggregateResponseDto {
     description: 'Activity×location breakdown of hadir workers across the whole scope',
   })
   presence_totals: PresenceBreakdownDto;
+
+  @ApiProperty({
+    example: 1,
+    description: 'Ad-hoc workers: clocked in but not on the current shift roster (Luar jadwal).',
+  })
+  off_schedule_count: number;
 
   @ApiProperty({ example: '2026-07-04T10:30:00Z' })
   generated_at: Date;

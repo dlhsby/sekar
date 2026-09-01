@@ -128,12 +128,19 @@ export class PdfGeneratorService implements OnModuleInit, OnModuleDestroy {
   `/tmp/puppeteer_dev_chrome_profile-*` dir (~82MB) that is only removed on a clean
   `close()`. Ungraceful exits (OOM/crash/restart) orphan them; enough accumulate to
   fill the disk and crash-loop the API (this caused a staging outage). Mitigations:
-  `PdfGeneratorService` now sweeps stale profile dirs on startup and force-kills a
-  hung browser (timeout → SIGKILL) on recycle/shutdown so the profile is released.
-  Follow-up hardening: mount the backend container `/tmp` as a size-limited tmpfs +
-  a disk >80% alarm. See `specs/deployment/operations.md` → "Disk Space Full".
+  `PdfGeneratorService` now sweeps stale profile dirs on startup, force-kills a
+  hung browser (timeout → SIGKILL) on recycle/shutdown, and runs a periodic
+  (30-min) background sweep that drops orphaned profiles while keeping the live
+  browser's dir. A RAM-backed `/tmp` tmpfs was **rejected** — the staging box
+  (t3.micro, shared, ~80MB free RAM, already swapping) would OOM, which is the very
+  failure that orphans profiles. Defense-in-depth is instead the code sweeps above +
+  a root-disk >80% CloudWatch alarm (SNS email). See
+  `specs/deployment/operations.md` → "Disk Space Full" and
+  `specs/deployment/monitoring.md`.
 
 ## Changelog
+- 2026-07-13 — Follow-up hardening: periodic in-app profile sweep (RAM-free,
+  chosen over a risky tmpfs) + staging root-disk >80% alarm.
 - 2026-07-13 — Fixed Puppeteer temp-profile disk leak (startup sweep + guarded
   close); root-caused a staging ENOSPC outage.
 

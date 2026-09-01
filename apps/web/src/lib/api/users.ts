@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from './client';
 import {
   User,
+  UserRole,
   UserFilters,
   CreateUserDto,
   UpdateUserDto,
@@ -18,6 +19,7 @@ export const userKeys = {
   all: ['users'] as const,
   lists: () => [...userKeys.all, 'list'] as const,
   list: (filters: UserFilters) => [...userKeys.lists(), filters] as const,
+  lookup: () => [...userKeys.all, 'lookup'] as const,
   details: () => [...userKeys.all, 'detail'] as const,
   detail: (id: string) => [...userKeys.details(), id] as const,
 };
@@ -29,6 +31,8 @@ const buildUserParams = (filters: UserFilters, page: number): string => {
   const params = new URLSearchParams();
   if (filters.search) params.append('search', filters.search);
   if (filters.role) params.append('role', filters.role);
+  if (filters.roles?.length) params.append('roles', filters.roles.join(','));
+  if (filters.is_active !== undefined) params.append('is_active', String(filters.is_active));
   params.append('page', String(page));
   if (filters.limit) params.append('limit', String(filters.limit));
   return params.toString();
@@ -36,7 +40,7 @@ const buildUserParams = (filters: UserFilters, page: number): string => {
 
 const fetchUsersPage = async (
   filters: UserFilters,
-  page: number,
+  page: number
 ): Promise<PaginatedResponse<User>> =>
   (await apiClient.get<PaginatedResponse<User>>(`/users?${buildUserParams(filters, page)}`)).data;
 
@@ -50,6 +54,37 @@ const fetchUsers = async (filters: UserFilters = {}): Promise<PaginatedResponse<
   // read low. Walk every page so the client always receives the complete set.
   return collectAllPages((page) => fetchUsersPage(filters, page));
 };
+
+/** The four fields a picker or a name label needs. Mirrors the backend. */
+export interface UserLookup {
+  id: string;
+  full_name: string;
+  username: string;
+  role: UserRole;
+}
+
+/**
+ * Every active user as a bare id/name/role tuple, unpaginated.
+ *
+ * Prefer this over `useUsers({ limit: 1000 })` wherever only a name or a role is
+ * read: that pages through the full entity, which on a 1,173-person workforce is
+ * two requests and 928 KB on every page load.
+ */
+export function useUserLookup(enabled = true) {
+  return useQuery({
+    queryKey: userKeys.lookup(),
+    queryFn: async () => {
+      const response = await apiClient.get<UserLookup[]>('/users/lookup');
+      // Defensive: every caller treats this as an array and calls `.filter`/`.map`
+      // on it directly, so a non-array body (a paginated envelope, an error
+      // page, a stray single object) throws inside render and takes the whole
+      // page down to its error boundary rather than degrading to "no options".
+      return Array.isArray(response.data) ? response.data : [];
+    },
+    enabled,
+    staleTime: 5 * 60 * 1000,
+  });
+}
 
 /**
  * Fetch single user by ID
@@ -68,7 +103,7 @@ const resetUserPassword = async (id: string): Promise<{ temp_password: string }>
 /** Live username availability check (create-user form). */
 export const checkUsername = async (username: string): Promise<boolean> => {
   const response = await apiClient.get<{ available: boolean }>(
-    `/users/check-username?username=${encodeURIComponent(username)}`,
+    `/users/check-username?username=${encodeURIComponent(username)}`
   );
   return response.data.available;
 };
@@ -76,7 +111,7 @@ export const checkUsername = async (username: string): Promise<boolean> => {
 /** Suggest a unique username from a full name. */
 export const suggestUsername = async (fullName: string): Promise<string> => {
   const response = await apiClient.get<{ username: string }>(
-    `/users/suggest-username?full_name=${encodeURIComponent(fullName)}`,
+    `/users/suggest-username?full_name=${encodeURIComponent(fullName)}`
   );
   return response.data.username;
 };
@@ -89,7 +124,7 @@ export const checkPhone = async (phone: string, excludeUserId?: string): Promise
   const params = new URLSearchParams({ phone });
   if (excludeUserId) params.set('excludeUserId', excludeUserId);
   const response = await apiClient.get<{ available: boolean }>(
-    `/users/check-phone?${params.toString()}`,
+    `/users/check-phone?${params.toString()}`
   );
   return response.data.available;
 };
@@ -107,10 +142,16 @@ export const checkPhone = async (phone: string, excludeUserId?: string): Promise
  * });
  * ```
  */
-export function useUsers(filters: UserFilters = {}) {
+/**
+ * `enabled: false` defers the request without unmounting the caller — used by
+ * pickers that stay on screen (disabled) until a role narrows them, so the
+ * roster (~3000 workers) is never fetched speculatively.
+ */
+export function useUsers(filters: UserFilters = {}, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: userKeys.list(filters),
     queryFn: () => fetchUsers(filters),
+    enabled: options?.enabled ?? true,
   });
 }
 
@@ -207,7 +248,8 @@ export const useDeleteUser = userCrudHooks.useDelete;
 export function useDeactivateUser() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => apiClient.patch<User>(`/users/${id}/deactivate`).then((r) => r.data),
+    mutationFn: (id: string) =>
+      apiClient.patch<User>(`/users/${id}/deactivate`).then((r) => r.data),
     onSuccess: (user) => {
       queryClient.invalidateQueries({ queryKey: userKeys.lists() });
       queryClient.invalidateQueries({ queryKey: userKeys.detail(user.id) });

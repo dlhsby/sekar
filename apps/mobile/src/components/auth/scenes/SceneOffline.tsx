@@ -2,7 +2,7 @@
  * SceneOffline — WL-5 ("Bekerja offline") carousel illustration.
  * On the navy panel: a faint diagonal stripe wash, a white icon box with a
  * wifi-off mark, and a "3 ITEM ANTRI" queue chip. Mirrors
- * design/project/hifi-mobile.html · WL-5.
+ * specs/design-system/mockups/project/hifi-mobile.html · WL-5.
  */
 
 import React from 'react';

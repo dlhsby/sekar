@@ -8,7 +8,8 @@ import React from 'react';
 import { MonitoringStatusSheet } from '../../../components/monitoring/MonitoringStatusSheet';
 import { UserDetailSheet } from '../../../components/monitoring/UserDetailSheet';
 import { LocationTrailModal } from '../../../components/monitoring/LocationTrailModal';
-import type { LiveUser, PresenceActivity } from '../../../types/models.types';
+import type { LiveUser, PresenceActivity, AbsentUser } from '../../../types/models.types';
+import type { NodeMarker } from '../../../components/monitoring/AggregateBubbleLayer';
 import type { AttendanceResponse } from '../../../types/api.types';
 
 interface StatusAndDetailSheetsProps {
@@ -16,6 +17,18 @@ interface StatusAndDetailSheetsProps {
   onCloseStatusSheet: () => void;
   activityFilter: PresenceActivity | null;
   onActivityChange: (activity: PresenceActivity | null) => void;
+  /** Luar jadwal — its own axis, combinable with any activity (ADR-050). */
+  scheduledFilter?: 'all' | 'adhoc';
+  onScheduledChange?: (next: 'all' | 'adhoc') => void;
+  /** Wilayah tab: the children of the current level, plus its row actions. */
+  nodes?: NodeMarker[];
+  onDrillNode?: (node: NodeMarker) => void;
+  onNodeDetail?: (node: NodeMarker) => void;
+  isNodeHidden?: (id: string) => boolean;
+  onToggleNodeHidden?: (id: string) => void;
+  onShowAllHiddenNodes?: () => void;
+  breadcrumbLabel?: string;
+  onBreadcrumbBack?: () => void;
   liveUsers: LiveUser[];
   selectedUser: LiveUser | null;
   trailUser: LiveUser | null;
@@ -29,6 +42,9 @@ interface StatusAndDetailSheetsProps {
   lastUpdated: string | null;
   totalAreas: number;
   staffedAreas: number;
+  onLeaveUsers?: AbsentUser[];
+  /** belum_hadir / tidak_hadir split for the current scope (ADR-050). */
+  rosterSplit?: { belum_hadir: number; tidak_hadir: number } | null;
 }
 
 export function StatusAndDetailSheets({
@@ -36,6 +52,16 @@ export function StatusAndDetailSheets({
   onCloseStatusSheet,
   activityFilter,
   onActivityChange,
+  scheduledFilter,
+  onScheduledChange,
+  nodes,
+  onDrillNode,
+  onNodeDetail,
+  isNodeHidden,
+  onToggleNodeHidden,
+  onShowAllHiddenNodes,
+  breadcrumbLabel,
+  onBreadcrumbBack,
   liveUsers,
   selectedUser,
   trailUser,
@@ -49,6 +75,8 @@ export function StatusAndDetailSheets({
   lastUpdated,
   totalAreas,
   staffedAreas,
+  onLeaveUsers,
+  rosterSplit,
 }: StatusAndDetailSheetsProps): React.JSX.Element {
   return (
     <>
@@ -58,12 +86,24 @@ export function StatusAndDetailSheets({
         onClose={onCloseStatusSheet}
         activeActivity={activityFilter}
         onActivityChange={onActivityChange}
+        scheduledFilter={scheduledFilter}
+        onScheduledChange={onScheduledChange}
+        nodes={nodes}
+        onDrillNode={onDrillNode}
+        onNodeDetail={onNodeDetail}
+        isNodeHidden={isNodeHidden}
+        onToggleNodeHidden={onToggleNodeHidden}
+        onShowAllHiddenNodes={onShowAllHiddenNodes}
+        breadcrumbLabel={breadcrumbLabel}
+        onBreadcrumbBack={onBreadcrumbBack}
         liveUsers={liveUsers}
         lastUpdated={lastUpdated}
         totalAreas={totalAreas}
         staffedAreas={staffedAreas}
         onUserPress={onUserPress}
         attendance={attendance}
+        rosterSplit={rosterSplit}
+        onLeaveUsers={onLeaveUsers}
       />
 
       {/* User detail bottom sheet */}

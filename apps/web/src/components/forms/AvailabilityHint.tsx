@@ -11,7 +11,7 @@ interface AvailabilityHintProps {
 
 /**
  * Standard caption line for a {@link useAvailabilityCheck} status — used under
- * unique fields (username, phone, rayon name, …). Renders nothing when idle.
+ * unique fields (username, phone, district name, …). Renders nothing when idle.
  */
 export function AvailabilityHint({ status, labels }: AvailabilityHintProps) {
   const { t } = useTranslation();

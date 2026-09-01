@@ -1,13 +1,15 @@
 import { Injectable, NotFoundException, Logger, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, In, Not, IsNull } from 'typeorm';
+import { Repository, Between, In } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
-import { Area } from '../../areas/entities/area.entity';
+import { Location } from '../../locations/entities/location.entity';
 import { Shift } from '../../shifts/entities/shift.entity';
 import { Task, TaskStatus } from '../../tasks/entities/task.entity';
 import { Activity } from '../../activities/entities/activity.entity';
 import { LocationLog } from '../../location/entities/location-log.entity';
-import { Rayon } from '../../rayons/entities/rayon.entity';
+import { District } from '../../districts/entities/district.entity';
+import { Region } from '../../regions/entities/region.entity';
+import { Role } from '../../rbac/entities/role.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
 import { UserTrackingStatus, TrackingStatus } from '../entities/user-tracking-status.entity';
 import {
@@ -17,13 +19,43 @@ import {
   AbsentUserDto,
 } from '../dto/live-users.dto';
 import { SchedulesService } from '../../schedules/schedules.service';
+
+/** A role's configured map marker — glyph + colour, both set in role settings. */
+interface RoleMarker {
+  icon: string | null;
+  color: string | null;
+}
 import { ScheduleStatus } from '../../schedules/entities/schedule.entity';
 import { TimezoneUtil } from '../../../common/utils/timezone.util';
 import { LocationHistoryResponseDto, LocationHistoryPointDto } from '../dto/location-history.dto';
 import { UserDaySummaryDto } from '../dto/user-day-summary.dto';
 import { GpsUtil } from '../../../common/utils/gps.util';
 import { StatusCalculatorService } from './status-calculator.service';
-import { MonitoringCacheService } from './monitoring-cache.service';
+import { MonitoringCacheService, StatusThresholds } from './monitoring-cache.service';
+import {
+  derivePresenceState,
+  resolveShiftWindow,
+  type LifecycleState,
+  type LifecycleFlag,
+  type LeaveReason,
+} from '../lib/presence-lifecycle';
+
+/**
+ * Map a roster row's leave status to the presence-model leave reason (ADR-050).
+ *
+ * NOTE: `libur` is deliberately NOT produced here. The obvious candidate,
+ * `ScheduleStatus.OFF`, already feeds `off_schedule_count`, and `on_leave_count`
+ * is computed from an explicit sick/annual/permit list — so mapping OFF here
+ * would make `on_leave_users[]` disagree with `on_leave_count` and double-count
+ * the row across two KPIs. Whether a rest day is "on leave" or "off schedule" is
+ * a product call; until it's made, `libur` stays unreachable from a roster row
+ * (derivePresenceState still handles it if a leave reason ever arrives elsewhere).
+ */
+const SCHEDULE_STATUS_TO_LEAVE: Partial<Record<ScheduleStatus, LeaveReason>> = {
+  [ScheduleStatus.LEAVE_SICK]: 'sakit',
+  [ScheduleStatus.LEAVE_ANNUAL]: 'cuti',
+  [ScheduleStatus.LEAVE_PERMIT]: 'izin',
+};
 
 @Injectable()
 export class MonitoringUserService {
@@ -32,8 +64,8 @@ export class MonitoringUserService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    @InjectRepository(Area)
-    private readonly areaRepository: Repository<Area>,
+    @InjectRepository(Location)
+    private readonly areaRepository: Repository<Location>,
     @InjectRepository(Shift)
     private readonly shiftRepository: Repository<Shift>,
     @InjectRepository(Task)
@@ -42,8 +74,12 @@ export class MonitoringUserService {
     private readonly activityRepository: Repository<Activity>,
     @InjectRepository(LocationLog)
     private readonly locationRepository: Repository<LocationLog>,
-    @InjectRepository(Rayon)
-    private readonly rayonRepository: Repository<Rayon>,
+    @InjectRepository(District)
+    private readonly districtRepository: Repository<District>,
+    @InjectRepository(Region)
+    private readonly regionRepository: Repository<Region>,
+    @InjectRepository(Role)
+    private readonly roleRepository: Repository<Role>,
     @InjectRepository(ShiftDefinition)
     private readonly shiftDefinitionRepository: Repository<ShiftDefinition>,
     @InjectRepository(UserTrackingStatus)
@@ -64,11 +100,21 @@ export class MonitoringUserService {
       .leftJoinAndSelect('uts.shift', 'shift')
       .leftJoinAndSelect('uts.shift_definition', 'sd')
       .leftJoinAndSelect('uts.area', 'area')
-      .leftJoin('area.areaType', 'areaType')
-      .where('uts.shift_id IS NOT NULL');
+      .leftJoin('area.locationType', 'locationType')
+      .where('uts.shift_id IS NOT NULL')
+      // A tracking row can outlive its session: `shift_id` is cleared on
+      // clock-out, so a worker who never clocked out kept rendering as on duty
+      // indefinitely. `endStaleSessions` restores that invariant on a timer;
+      // this is the read-side guard for the window in between, and it tests a
+      // fact (the session is closed) rather than re-deriving the ADR-055 window
+      // in SQL — that rule lives in one place, in the sweep.
+      .andWhere('shift.clock_out_time IS NULL')
+      // Deactivated accounts never appear on the live map, even if a stale
+      // tracking row survives their deactivation.
+      .andWhere('user.is_active = TRUE');
 
-    if (filters?.area_id) {
-      qb.andWhere('uts.area_id = :areaId', { areaId: filters.area_id });
+    if (filters?.location_id) {
+      qb.andWhere('uts.location_id = :locationId', { locationId: filters.location_id });
     }
     // Multi-area scoping (e.g. korlap with several `user_areas` rows).
     const scopedAreaIds = (filters as { area_ids?: string[] } | undefined)?.area_ids;
@@ -76,11 +122,11 @@ export class MonitoringUserService {
       if (scopedAreaIds.length === 0) {
         qb.andWhere('1 = 0');
       } else {
-        qb.andWhere('uts.area_id IN (:...scopedAreaIds)', { scopedAreaIds });
+        qb.andWhere('uts.location_id IN (:...scopedAreaIds)', { scopedAreaIds });
       }
     }
-    if (filters?.rayon_id) {
-      qb.andWhere('area.rayon_id = :rayonId', { rayonId: filters.rayon_id });
+    if (filters?.district_id) {
+      qb.andWhere('area.district_id = :districtId', { districtId: filters.district_id });
     }
     if (filters?.role) {
       qb.andWhere('user.role = :role', { role: filters.role });
@@ -89,19 +135,49 @@ export class MonitoringUserService {
       qb.andWhere('uts.status = :status', { status: filters.status });
     }
 
+    // Server-side search (5.7a): match worker, lokasi, or TEAM name among workers
+    // with a fresh (≤24h) fix. Escape LIKE metacharacters in the term so a stray
+    // % / _ can't turn into a wildcard. `shift_id IS NOT NULL` above already limits
+    // this to clocked-in workers, so ad-hoc (unscheduled) clock-ins surface too.
+    // Team match uses an EXISTS subquery on today's roster (no row duplication).
+    if (filters?.q && filters.q.trim()) {
+      const term = `%${filters.q.trim().replace(/[\\%_]/g, '\\$&')}%`;
+      qb.andWhere(
+        `(user.full_name ILIKE :q OR area.name ILIKE :q OR EXISTS (
+            SELECT 1 FROM schedules s
+            JOIN team_categories tc ON tc.id = s.team_category_id AND tc.is_active
+            WHERE s.user_id = uts.user_id
+              AND s.schedule_date = :teamDate
+              AND s.deleted_at IS NULL
+              AND tc.name ILIKE :q
+          ))`,
+        { q: term, teamDate: TimezoneUtil.jakartaDateString() },
+      ).andWhere("uts.last_location_at >= NOW() - INTERVAL '24 hours'");
+    }
+
     const trackingRecords = await qb.getMany();
 
-    const areaIds = [...new Set(trackingRecords.map((r) => r.area_id).filter(Boolean))];
+    const locationIds = [...new Set(trackingRecords.map((r) => r.location_id).filter(Boolean))];
     const userIds = trackingRecords.map((r) => r.user_id);
+    const regionIds = [
+      ...new Set(trackingRecords.map((r) => r.area?.region_id).filter(Boolean)),
+    ] as string[];
 
-    const [rayonMap, taskMap, thresholds] = await Promise.all([
-      this.buildRayonMap(areaIds as string[]),
-      this.buildCurrentTaskMap(userIds),
-      this.cacheService.getThresholds(),
-    ]);
+    const [districtMap, regionMap, taskMap, thresholds, teamMap, roleMarkerMap] = await Promise.all(
+      [
+        this.buildDistrictMap(locationIds as string[]),
+        this.buildRegionMap(regionIds),
+        this.buildCurrentTaskMap(userIds),
+        this.cacheService.getThresholds(),
+        this.dailySchedulesService
+          ? this.dailySchedulesService.getTeamMembership(userIds, TimezoneUtil.jakartaDateString())
+          : Promise.resolve(new Map()),
+        this.buildRoleMarkerMap(),
+      ],
+    );
 
     const users: LiveUserDto[] = trackingRecords.map((uts) => {
-      const rayonId = uts.area?.rayon_id || null;
+      const districtId = uts.area?.district_id || null;
       const axes = this.statusCalculator.calculateAxes(
         {
           hasActiveShift: !!uts.shift_id,
@@ -115,10 +191,14 @@ export class MonitoringUserService {
         full_name: uts.user.full_name,
         phone: uts.user.phone_number || null,
         role: uts.user.role,
-        area_id: uts.area_id,
-        area_name: uts.area?.name || 'Unknown',
-        rayon_id: rayonId,
-        rayon_name: rayonId ? rayonMap.get(rayonId) || null : null,
+        role_marker_icon: roleMarkerMap.get(uts.user.role)?.icon ?? null,
+        role_marker_color: roleMarkerMap.get(uts.user.role)?.color ?? null,
+        location_id: uts.location_id,
+        location_name: uts.area?.name || 'Unknown',
+        district_id: districtId,
+        district_name: districtId ? districtMap.get(districtId) || null : null,
+        region_id: uts.area?.region_id ?? null,
+        region_name: uts.area?.region_id ? (regionMap.get(uts.area.region_id) ?? null) : null,
         latitude: uts.last_latitude || 0,
         longitude: uts.last_longitude || 0,
         accuracy: uts.last_accuracy_meters,
@@ -128,6 +208,7 @@ export class MonitoringUserService {
         activity: axes.activity,
         location: axes.location,
         is_within_area: uts.is_within_area,
+        ...this.computeLiveLifecycle(uts, thresholds),
         // Overridden by the callers (getLiveUsers / getSnapshot) with the
         // current-shift roster check; default false keeps the type satisfied.
         is_scheduled: false,
@@ -138,6 +219,11 @@ export class MonitoringUserService {
         shift_definition_id: uts.shift_definition_id ?? null,
         current_task_status: taskMap.get(uts.user_id)?.status || null,
         current_task_title: taskMap.get(uts.user_id)?.title || null,
+        team_id: teamMap.get(uts.user_id)?.team_id ?? null,
+        team_name: teamMap.get(uts.user_id)?.team_name ?? null,
+        team_color: teamMap.get(uts.user_id)?.team_color ?? null,
+        team_opacity: teamMap.get(uts.user_id)?.team_opacity ?? null,
+        team_icon: teamMap.get(uts.user_id)?.team_icon ?? null,
       };
     });
 
@@ -146,10 +232,9 @@ export class MonitoringUserService {
 
     return {
       total_active: statusCounts.active,
-      total_inactive: statusCounts.inactive,
-      total_outside_area: statusCounts.outside_area,
-      total_missing: statusCounts.missing,
       total_offline: statusCounts.offline,
+      total_absent: statusCounts.absent,
+      total_outside_area: statusCounts.outside_area,
       total_online: statusCounts.active,
       users,
       ...rosterSummary,
@@ -159,7 +244,7 @@ export class MonitoringUserService {
 
   /**
    * Roster-derived "expected vs actual" for today (ADR-013): compares the
-   * materialized roster to who has clocked in. Rayon-scoped when a rayon_id
+   * materialized roster to who has clocked in. Rayon-scoped when a district_id
    * filter is present; otherwise global. Returns zeros when the roster service
    * isn't wired (legacy specs).
    */
@@ -170,6 +255,7 @@ export class MonitoringUserService {
     on_leave_count: number;
     off_schedule_count: number;
     absent_users: AbsentUserDto[];
+    on_leave_users: AbsentUserDto[];
   }> {
     const empty = {
       expected_count: 0,
@@ -178,49 +264,171 @@ export class MonitoringUserService {
       on_leave_count: 0,
       off_schedule_count: 0,
       absent_users: [] as AbsentUserDto[],
+      on_leave_users: [] as AbsentUserDto[],
     };
     if (!this.dailySchedulesService) return empty;
 
     const today = TimezoneUtil.jakartaDateString();
-    const rayonId = filters?.rayon_id ?? null;
-    const roster = await this.dailySchedulesService.getRosterForMonitoring(today, rayonId);
+    const districtId = filters?.district_id ?? null;
+    const roster = await this.dailySchedulesService.getRosterForMonitoring(today, districtId);
     if (roster.length === 0) return empty;
 
-    const clockedRows = await this.trackingRepository.find({
-      where: { shift_id: Not(IsNull()), ...(rayonId ? { rayon_id: rayonId } : {}) },
-      select: ['user_id'],
-    });
+    // Same guard as the live map: a tracking row pointing at a CLOSED session
+    // is not a clocked-in worker, and counting it here inflated "hadir" against
+    // a roster that had nobody on duty.
+    const clockedQb = this.trackingRepository
+      .createQueryBuilder('uts')
+      .innerJoin('shifts', 'shift', 'shift.id = uts.shift_id')
+      .where('uts.shift_id IS NOT NULL')
+      .andWhere('shift.clock_out_time IS NULL')
+      .select('uts.user_id', 'user_id');
+    if (districtId) {
+      clockedQb.andWhere('uts.district_id = :districtId', { districtId });
+    }
+    const clockedRows = await clockedQb.getRawMany<{ user_id: string }>();
     const clockedIn = new Set(clockedRows.map((r) => r.user_id));
+
+    // Counts are DISTINCT WORKERS, not roster rows — a worker may hold two
+    // non-overlapping shifts a day (ADR-047) and must not be counted twice.
+    const distinctUsers = (rows: typeof roster): number => new Set(rows.map((r) => r.user_id)).size;
 
     const expected = roster.filter(
       (r) => r.status === ScheduleStatus.PLANNED || r.status === ScheduleStatus.PRESENT,
     );
-    const onLeave = roster.filter(
-      (r) =>
-        r.status === ScheduleStatus.LEAVE_SICK ||
-        r.status === ScheduleStatus.LEAVE_ANNUAL ||
-        r.status === ScheduleStatus.LEAVE_PERMIT,
-    ).length;
-    const offSchedule = roster.filter((r) => r.status === ScheduleStatus.OFF).length;
+    const expectedCount = distinctUsers(expected);
+    const onLeave = distinctUsers(
+      roster.filter(
+        (r) =>
+          r.status === ScheduleStatus.LEAVE_SICK ||
+          r.status === ScheduleStatus.LEAVE_ANNUAL ||
+          r.status === ScheduleStatus.LEAVE_PERMIT,
+      ),
+    );
+    const offSchedule = distinctUsers(roster.filter((r) => r.status === ScheduleStatus.OFF));
 
+    // Presence lifecycle for each non-present scheduled worker (ADR-050): the
+    // expected-but-not-clocked (belum_hadir/terlambat/tidak_hadir) AND those on
+    // approved leave (excused, with a reason). derivePresenceState resolves both
+    // from the same facts — we only feed it the right `leave`.
+    const grace = (await this.getRosterGraceMs()) ?? 0;
+    const now = new Date();
+    const leaveRows = roster.filter((r) => r.status in SCHEDULE_STATUS_TO_LEAVE);
     const absentRows = expected.filter((r) => !clockedIn.has(r.user_id));
-    const absent_users: AbsentUserDto[] = absentRows.map((r) => ({
-      user_id: r.user_id,
-      full_name: r.user?.full_name ?? '',
-      role: r.user?.role ?? '',
-      rayon_id: r.rayon_id,
-      shift_definition_id: r.shift_definition_id,
-      shift_name: r.shift_definition?.name ?? null,
-    }));
+
+    const toAbsentUser = (r: (typeof roster)[number], leave: LeaveReason): AbsentUserDto => {
+      const sd = r.shift_definition;
+      let lifecycle: LifecycleState = 'tidak_hadir';
+      let leaveReason: LeaveReason | null = null;
+      if (sd?.start_time && sd?.end_time) {
+        const window = resolveShiftWindow(
+          r.schedule_date,
+          sd.start_time,
+          sd.end_time,
+          sd.crosses_midnight ?? false,
+        );
+        const res = derivePresenceState(
+          {
+            scheduled: true,
+            clockIn: null,
+            clockOut: null,
+            shiftStart: window.start,
+            shiftEnd: window.end,
+            graceMs: grace,
+            overtimeApproved: false,
+            leave,
+          },
+          now,
+        );
+        lifecycle = res.state;
+        leaveReason = res.leaveReason;
+      } else if (leave !== 'none') {
+        // On leave with no resolvable window still reads as excused.
+        const res = derivePresenceState(
+          {
+            scheduled: true,
+            clockIn: null,
+            clockOut: null,
+            shiftStart: null,
+            shiftEnd: null,
+            graceMs: grace,
+            overtimeApproved: false,
+            leave,
+          },
+          now,
+        );
+        lifecycle = res.state;
+        leaveReason = res.leaveReason;
+      }
+      return {
+        user_id: r.user_id,
+        full_name: r.user?.full_name ?? '',
+        role: r.user?.role ?? '',
+        district_id: r.district_id,
+        shift_definition_id: r.shift_definition_id,
+        shift_name: r.shift_definition?.name ?? null,
+        lifecycle_state: lifecycle,
+        leave_reason: leaveReason,
+      };
+    };
+
+    const buildList = (
+      rows: typeof roster,
+      leaveFor: (r: (typeof roster)[number]) => LeaveReason,
+    ) => {
+      const seen = new Set<string>();
+      const out: AbsentUserDto[] = [];
+      for (const r of rows) {
+        if (seen.has(r.user_id)) continue;
+        seen.add(r.user_id);
+        out.push(toAbsentUser(r, leaveFor(r)));
+      }
+      return out;
+    };
+
+    const allAbsent = buildList(absentRows, () => 'none');
+    const allOnLeave = buildList(
+      leaveRows,
+      (r) => SCHEDULE_STATUS_TO_LEAVE[r.status as ScheduleStatus] ?? 'none',
+    );
+
+    // Search (`q`) narrows the two ROSTER LISTS by name, so a worker who is on
+    // today's roster but has not clocked in is still findable — the live query
+    // above can never surface them, because it is rooted in
+    // `user_tracking_status` and they have no open session. Without this, typing
+    // a known satgas's name returns nothing whenever they haven't punched in,
+    // which reads as a broken search rather than as "not here yet".
+    //
+    // The counts below are taken from the UNFILTERED lists on purpose: they are
+    // roster totals, not match totals. Deriving them from the narrowed lists
+    // would make `absent_count` mean something different on the search endpoint
+    // than everywhere else.
+    const term = filters?.q?.trim().toLowerCase();
+    const matchesTerm = (u: AbsentUserDto): boolean =>
+      !term || u.full_name.toLowerCase().includes(term);
+
+    const absent_users = term ? allAbsent.filter(matchesTerm) : allAbsent;
+    const on_leave_users = term ? allOnLeave.filter(matchesTerm) : allOnLeave;
 
     return {
-      expected_count: expected.length,
-      present_count: expected.length - absentRows.length,
-      absent_count: absentRows.length,
+      expected_count: expectedCount,
+      present_count: expectedCount - allAbsent.length,
+      absent_count: allAbsent.length,
       on_leave_count: onLeave,
       off_schedule_count: offSchedule,
       absent_users,
+      on_leave_users,
     };
+  }
+
+  /** Late-grace window in ms from system settings; falls back to null when unavailable. */
+  private async getRosterGraceMs(): Promise<number | null> {
+    if (!this.cacheService) return null;
+    try {
+      const t = await this.cacheService.getThresholds();
+      return t.late_grace_seconds * 1000;
+    } catch {
+      return null;
+    }
   }
 
   async getLocationHistory(
@@ -233,8 +441,8 @@ export class MonitoringUserService {
 
     const dayRange = this.parseDateRange(date);
     const shift = await this.findShiftForHistory(userId, dayRange, shiftId);
-    const area = shift?.area_id
-      ? await this.areaRepository.findOne({ where: { id: shift.area_id } })
+    const area = shift?.location_id
+      ? await this.areaRepository.findOne({ where: { id: shift.location_id } })
       : null;
 
     const shiftDef = shift?.shift_definition_id
@@ -252,8 +460,8 @@ export class MonitoringUserService {
       date,
       shift_id: shift?.id || null,
       shift_name: shiftDef?.name || null,
-      area_id: area?.id || null,
-      area_name: area?.name || null,
+      location_id: area?.id || null,
+      location_name: area?.name || null,
       clock_in_time: shift?.clock_in_time || null,
       clock_out_time: shift?.clock_out_time || null,
       points,
@@ -276,11 +484,13 @@ export class MonitoringUserService {
 
     const area =
       tracking?.area ||
-      (user.area_id ? await this.areaRepository.findOne({ where: { id: user.area_id } }) : null);
+      (user.location_id
+        ? await this.areaRepository.findOne({ where: { id: user.location_id } })
+        : null);
 
-    const effectiveRayonId = area?.rayon_id ?? user.rayon_id ?? null;
-    const rayon = effectiveRayonId
-      ? await this.rayonRepository.findOne({ where: { id: effectiveRayonId } })
+    const effectiveDistrictId = area?.district_id ?? user.district_id ?? null;
+    const district = effectiveDistrictId
+      ? await this.districtRepository.findOne({ where: { id: effectiveDistrictId } })
       : null;
 
     const shiftInfo = await this.buildShiftInfo(tracking);
@@ -299,10 +509,10 @@ export class MonitoringUserService {
       role: user.role,
       phone: user.phone_number || null,
       status: tracking?.status || TrackingStatus.OFFLINE,
-      area_id: area?.id || null,
-      area_name: area?.name || null,
-      rayon_id: rayon?.id || null,
-      rayon_name: rayon?.name || null,
+      location_id: area?.id || null,
+      location_name: area?.name || null,
+      district_id: district?.id || null,
+      district_name: district?.name || null,
       shift: shiftInfo,
       last_location: lastLocation,
       activities_today: activitiesToday,
@@ -313,37 +523,127 @@ export class MonitoringUserService {
 
   // ---- Private helpers ----
 
+  /**
+   * Lifecycle facets for a LIVE (bertugas) worker — every row here is clocked in
+   * and not out, so the state is always `bertugas`; what varies is the flags
+   * (is_late / lupa_clock_out / lembur). `ad_hoc` is NOT decided here — it needs
+   * the current-shift roster check the caller owns, so the snapshot appends it.
+   * Resolves the shift window on the clock-in's WIB service day, which keeps
+   * shift 3 (crosses midnight) correct. Falls back to a bare `bertugas` when the
+   * shift/definition rows are missing, never throwing.
+   */
+  private computeLiveLifecycle(
+    uts: UserTrackingStatus,
+    thresholds: StatusThresholds,
+  ): { lifecycle_state: LifecycleState; is_late: boolean; lifecycle_flags: LifecycleFlag[] } {
+    const clockIn = uts.shift?.clock_in_time ?? null;
+    const sd = uts.shift_definition;
+    if (!clockIn || !sd?.start_time || !sd?.end_time) {
+      return { lifecycle_state: 'bertugas', is_late: false, lifecycle_flags: [] };
+    }
+    const serviceDate = TimezoneUtil.jakartaDateOf(clockIn);
+    const window = resolveShiftWindow(
+      serviceDate,
+      sd.start_time,
+      sd.end_time,
+      sd.crosses_midnight ?? false,
+    );
+    const result = derivePresenceState(
+      {
+        scheduled: true, // placeholder — ad_hoc is appended by the snapshot caller
+        clockIn,
+        clockOut: null,
+        shiftStart: window.start,
+        shiftEnd: window.end,
+        graceMs: thresholds.late_grace_seconds * 1000,
+        // Without this a forgotten clock-out keeps the worker `bertugas` — on the
+        // map and inside the staffing count — indefinitely. Past the shift's
+        // cutoff grace they read `pulang` + `lupa_clock_out` instead.
+        cutoffGraceMs: Math.max(0, sd.cutoff_grace_min ?? 0) * 60_000,
+        overtimeApproved: !!uts.shift?.is_overtime,
+        leave: 'none',
+      },
+      new Date(),
+    );
+    return {
+      lifecycle_state: result.state,
+      is_late: result.flags.includes('is_late'),
+      lifecycle_flags: result.flags,
+    };
+  }
+
+  /**
+   * Tallies for the snapshot. The three statuses partition the workforce;
+   * `outside_area` is an AXIS that overlaps them, so the four do NOT sum to a
+   * headcount — a worker outside their boundary is counted under their status
+   * AND under `outside_area`.
+   */
   private countByStatus(records: UserTrackingStatus[]): Record<string, number> {
     const counts: Record<string, number> = {
       active: 0,
-      inactive: 0,
-      outside_area: 0,
-      missing: 0,
       offline: 0,
+      absent: 0,
+      outside_area: 0,
     };
     for (const r of records) {
-      counts[r.status] = (counts[r.status] || 0) + 1;
+      if (r.status in counts) counts[r.status] = counts[r.status] + 1;
+      // Inside/outside stopped being a status, so it can no longer be read off
+      // the status column — it has to come from the flag. ABSENT rows are skipped:
+      // their `is_within_area` is a leftover from whenever they last reported, and
+      // counting it would report people who are at home as "outside their area".
+      if (r.is_within_area === false && r.status !== TrackingStatus.ABSENT) {
+        counts.outside_area += 1;
+      }
     }
     return counts;
   }
 
-  private async buildRayonMap(areaIds: string[]): Promise<Map<string, string>> {
-    if (areaIds.length === 0) return new Map();
+  private async buildDistrictMap(locationIds: string[]): Promise<Map<string, string>> {
+    if (locationIds.length === 0) return new Map();
 
     const areas = await this.areaRepository
       .createQueryBuilder('area')
-      .where('area.id IN (:...areaIds)', { areaIds })
-      .andWhere('area.rayon_id IS NOT NULL')
+      .where('area.id IN (:...locationIds)', { locationIds })
+      .andWhere('area.district_id IS NOT NULL')
       .getMany();
 
-    const rayonIds = [...new Set(areas.map((a) => a.rayon_id).filter(Boolean))] as string[];
-    if (rayonIds.length === 0) return new Map();
+    const districtIds = [...new Set(areas.map((a) => a.district_id).filter(Boolean))] as string[];
+    if (districtIds.length === 0) return new Map();
 
-    const rayons = await this.rayonRepository.find({
-      where: { id: In(rayonIds) },
+    const districts = await this.districtRepository.find({
+      where: { id: In(districtIds) },
     });
 
-    return new Map(rayons.map((r) => [r.id, r.name]));
+    return new Map(districts.map((r) => [r.id, r.name]));
+  }
+
+  private async buildRegionMap(regionIds: string[]): Promise<Map<string, string>> {
+    if (regionIds.length === 0) return new Map();
+    const regions = await this.regionRepository.find({ where: { id: In(regionIds) } });
+    return new Map(regions.map((r) => [r.id, r.name]));
+  }
+
+  /**
+   * Map each role `code` → its configured `marker_icon` (only rows that set one).
+   * A worker's role glyph on the map falls back to a client-side default when the
+   * role leaves this null, so custom roles / overrides still get their icon.
+   */
+  /**
+   * Per-role map marker: glyph AND colour.
+   *
+   * Both are configured on the role (ADR-044) and both belong on the pin — the
+   * glyph says what kind of worker this is, the colour makes a role legible in a
+   * crowd of pins without reading any glyph at all. The colour used to be loaded
+   * and then dropped here, so the setting existed in the admin UI and changed
+   * nothing on the map.
+   */
+  private async buildRoleMarkerMap(): Promise<Map<string, RoleMarker>> {
+    const roles = await this.roleRepository.find({
+      select: ['code', 'marker_icon', 'marker_color'],
+    });
+    return new Map(
+      roles.map((r) => [r.code, { icon: r.marker_icon ?? null, color: r.marker_color ?? null }]),
+    );
   }
 
   private async buildCurrentTaskMap(
@@ -415,7 +715,10 @@ export class MonitoringUserService {
     return qb.getMany();
   }
 
-  private buildLocationPoints(logs: LocationLog[], area: Area | null): LocationHistoryPointDto[] {
+  private buildLocationPoints(
+    logs: LocationLog[],
+    area: Location | null,
+  ): LocationHistoryPointDto[] {
     return logs.map((log) => ({
       latitude: Number(log.gps_lat),
       longitude: Number(log.gps_lng),
@@ -494,7 +797,7 @@ export class MonitoringUserService {
 
   private buildLastLocation(
     tracking: UserTrackingStatus | null,
-    area: Area | null,
+    area: Location | null,
   ): UserDaySummaryDto['last_location'] {
     if (!tracking?.last_latitude || !tracking?.last_longitude) return null;
 

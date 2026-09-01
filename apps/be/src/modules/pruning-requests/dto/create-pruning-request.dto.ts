@@ -104,7 +104,7 @@ export class CreatePruningRequestDto {
    * Expected date for the pruning work (ISO date string, today or future).
    *
    * **Deprecated as of 2026-05-01 (ADR-035 amendment + ADR-038).** New mobile
-   * builds send `expected_year` + `expected_iso_week` and let `admin_data`
+   * builds send `expected_year` + `expected_iso_week` and let `admin_rayon`
    * pick the concrete day at assign-to-task. Kept accepted for one release
    * so older builds continue to work; when present, the service derives
    * `(expected_year, expected_iso_week)` from this date.
@@ -125,7 +125,7 @@ export class CreatePruningRequestDto {
    * Calendar year of the ISO week the submitter prefers.
    *
    * Pairs with `expected_iso_week`. ADR-035 amendment 2026-05-01: kecamatan
-   * picks a week, server (or admin_data) picks the concrete day inside it.
+   * picks a week, server (or admin_rayon) picks the concrete day inside it.
    *
    * @example 2026
    */
@@ -191,18 +191,18 @@ export class CreatePruningRequestDto {
   notes?: string;
 
   /**
-   * Optional rayon ID. If not provided, the rayon will be resolved by GPS-to-area lookup.
+   * Optional district ID. If not provided, the district will be resolved by GPS-to-area lookup.
    * For now, recommend providing this explicitly to avoid complex geo-resolution logic.
    *
    * @example '11111111-1111-1111-1111-111111111101'
    */
   @ApiPropertyOptional({
-    description: 'Rayon ID (optional; auto-resolved from submitter profile if not provided)',
+    description: 'District ID (optional; auto-resolved from submitter profile if not provided)',
     example: '11111111-1111-1111-1111-111111111101',
   })
   @IsUUID()
   @IsOptional()
-  rayon_id?: string;
+  district_id?: string;
 
   /**
    * Optional kecamatan name. If not provided, server falls back to the

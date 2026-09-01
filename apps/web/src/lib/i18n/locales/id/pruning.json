@@ -90,7 +90,7 @@
     },
     "fields": {
       "kecamatan": "Kecamatan",
-      "rayon": "Rayon",
+      "district": "Rayon",
       "submitter": "Pengirim",
       "expectedWeek": "Minggu Diharapkan",
       "treeCount": "Jumlah Pohon",
@@ -160,7 +160,7 @@
   "columns": {
     "referenceCode": "Kode Referensi",
     "kecamatan": "Kecamatan",
-    "rayon": "Rayon",
+    "district": "Rayon",
     "dateRange": "Minggu / Tanggal",
     "status": "Status",
     "createdAt": "Dibuat",

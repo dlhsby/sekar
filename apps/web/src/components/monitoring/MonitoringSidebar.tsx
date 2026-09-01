@@ -1,34 +1,68 @@
 'use client';
 
 /**
- * MonitoringSidebar — right panel for the monitoring page (mobile parity).
- * Two tabs:
- *  - Petugas: filtered worker list; selecting a worker opens an inline detail
- *    card (snapshot fields only — no extra fetch).
- *  - Area: per-area staffing summary (active/required) with understaffed flags.
- * All data is the unified snapshot; no legacy day-summary call.
+ * MonitoringSidebar — right panel for the monitoring page (mobile parity), shown
+ * at EVERY drill level. Two tabs:
+ *  - Wilayah (first): the current level's child nodes (districts at city, kawasan/
+ *    lokasi deeper) with today's attendance trio; tapping a row drills in.
+ *  - Petugas (second): the scoped worker list; selecting a worker opens the full
+ *    worker detail (shift, location, tugas, aktivitas, kontak, reassignment
+ *    history) — the same content mobile's UserDetailSheet shows, rather than the
+ *    snapshot-only card this panel used to render.
+ *
+ * The detail itself is a SLOT (`workerDetail`). The sidebar stays presentational:
+ * the day-summary and reassignment fetches belong to the page that owns the
+ * selection, and the fallback card below still renders when no slot is supplied.
+ * At lokasi scope there are no child nodes, so only the Petugas tab shows.
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, ArrowRightLeft, Battery, MapPin, AlertTriangle, Users } from 'lucide-react';
+import { ArrowLeft, Battery, MapPin, Users, EyeOff } from 'lucide-react';
 import { Tabs, EmptyState } from '@/components/ui';
 import { cn } from '@/lib/utils/cn';
 import { formatRelativeTime } from '@/lib/utils/formatters';
 import { ROLE_LABELS } from '@/lib/constants/roles';
 import { getStatusLabels, STATUS_DOT_CLASSES, STATUS_BADGE_CLASSES } from '@/lib/constants/monitoring';
-import type { SnapshotWorker, SnapshotAreaSummary } from '@/lib/api/monitoring-v2';
+import { AggregateNodeList } from './AggregateNodeList';
+import type { SnapshotWorker, AggregateNode } from '@/lib/api/monitoring-v2';
 import type { TrackingStatus } from '@/lib/api/monitoring-types';
 import type { UserRole } from '@/types/models';
 
-type SidebarTab = 'petugas' | 'area';
+type SidebarTab = 'wilayah' | 'petugas';
 
 export interface MonitoringSidebarProps {
+  /** True when filters removed someone at this scope — changes the empty-state copy. */
+  workersNarrowedByFilters?: boolean;
   workers: SnapshotWorker[];
-  areaSummaries: SnapshotAreaSummary[];
+  /** The current level's child nodes (empty at lokasi scope → Wilayah tab hidden). */
+  nodes: AggregateNode[];
+  onDrillNode: (node: AggregateNode) => void;
+  /** Opens a node's detail card from the Wilayah row's ⓘ button. */
+  onNodeDetail?: (node: AggregateNode) => void;
+  /** Label + indent each row by tier — used when the list spans the whole subtree. */
+  showNodeTier?: boolean;
+  /** Geo-filter spotlight id — dims non-matching Wilayah rows. */
+  activeGeoId?: string | null;
   selectedId: string | null;
+  /** The selected worker, resolved from the FULL snapshot (not the scoped list) so
+   *  a searched worker still shows their detail even if they sit outside the
+   *  current drill scope. Null when nothing is selected. */
+  selectedWorker: SnapshotWorker | null;
   onSelect: (id: string | null) => void;
-  /** Phase 4-4: opens the bulk-reassign modal targeting the given area (role-gated by the page) */
-  onBulkReassign?: (area: SnapshotAreaSummary) => void;
+  /**
+   * Rich detail for the selected worker. When supplied it replaces the built-in
+   * snapshot card entirely — the caller has already fetched more than the
+   * snapshot carries.
+   */
+  workerDetail?: React.ReactNode;
+  /**
+   * Row-level hide (see `lib/monitoring/hidden.ts`). Applies to BOTH tabs, with
+   * one restore control per tab; hiding is presentation only, so the tab counts
+   * keep reporting what is in scope, not what survived the filter.
+   */
+  isHidden?: (kind: 'nodes' | 'workers', id: string) => boolean;
+  onToggleHidden?: (kind: 'nodes' | 'workers', id: string) => void;
+  onShowAllHidden?: (kind: 'nodes' | 'workers') => void;
   className?: string;
 }
 
@@ -40,10 +74,12 @@ function WorkerRow({
   worker,
   selected,
   onClick,
+  onHide,
 }: {
   worker: SnapshotWorker;
   selected: boolean;
   onClick: () => void;
+  onHide?: () => void;
 }) {
   const { t } = useTranslation();
   const statusLabels = getStatusLabels();
@@ -52,13 +88,14 @@ function WorkerRow({
   const lowBattery = worker.battery_level !== null && worker.battery_level < 20;
 
   return (
+    <div className="flex items-stretch border-b border-nb-gray-200">
     <button
       type="button"
       onClick={onClick}
       aria-current={selected}
       aria-label={`${worker.full_name}, ${statusLabels[worker.status as TrackingStatus] ?? worker.status}`}
       className={cn(
-        'w-full border-b border-nb-gray-200 px-3 py-2.5 text-left transition-colors',
+        'flex-1 px-3 py-2.5 text-left transition-colors',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-nb-primary',
         selected ? 'border-l-4 border-l-nb-primary bg-nb-primary/10' : 'hover:bg-nb-gray-50'
       )}
@@ -73,9 +110,9 @@ function WorkerRow({
             </span>
           </div>
           <div className="mt-0.5 flex items-center gap-1.5 text-xs text-nb-gray-500">
-            <span className="truncate">{worker.area_name ?? '—'}</span>
-            <span className="text-nb-gray-300">·</span>
-            <span className="flex-shrink-0 text-nb-gray-400">
+            <span className="truncate">{worker.location_name ?? '—'}</span>
+            <span className="text-nb-gray-500">·</span>
+            <span className="flex-shrink-0 text-nb-gray-500">
               {formatRelativeTime(worker.last_update)}
             </span>
           </div>
@@ -90,6 +127,18 @@ function WorkerRow({
         )}
       </div>
     </button>
+      {onHide && (
+        <button
+          type="button"
+          onClick={onHide}
+          aria-label={t('monitoring:hidden.hideLabel', { name: worker.full_name })}
+          title={t('monitoring:hidden.hideLabel', { name: worker.full_name })}
+          className="shrink-0 border-l border-nb-gray-200 px-2 text-nb-gray-500 transition-colors hover:bg-nb-gray-50 hover:text-nb-black"
+        >
+          <EyeOff className="h-4 w-4" aria-hidden="true" />
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -133,16 +182,16 @@ function WorkerDetail({ worker, onBack }: { worker: SnapshotWorker; onBack: () =
               {statusLabels[status] ?? worker.status}
             </span>
           </div>
-          {(worker.rayon_name || worker.area_name) && (
+          {(worker.district_name || worker.location_name) && (
             <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-nb-gray-600">
-              {worker.rayon_name && (
+              {worker.district_name && (
                 <span>
-                  {t('monitoring:sidebar.rayonLabel')} <strong className="text-nb-black">{worker.rayon_name}</strong>
+                  {t('monitoring:sidebar.districtLabel')} <strong className="text-nb-black">{worker.district_name}</strong>
                 </span>
               )}
-              {worker.area_name && (
+              {worker.location_name && (
                 <span>
-                  {t('monitoring:sidebar.areaLabel')} <strong className="text-nb-black">{worker.area_name}</strong>
+                  {t('monitoring:sidebar.areaLabel')} <strong className="text-nb-black">{worker.location_name}</strong>
                 </span>
               )}
             </div>
@@ -159,7 +208,7 @@ function WorkerDetail({ worker, onBack }: { worker: SnapshotWorker; onBack: () =
             <div className="font-mono">
               {worker.lat.toFixed(6)}, {worker.lng.toFixed(6)}
             </div>
-            <div className="text-nb-gray-400">{formatRelativeTime(worker.last_update)}</div>
+            <div className="text-nb-gray-500">{formatRelativeTime(worker.last_update)}</div>
             <div
               className={
                 worker.is_within_area
@@ -188,107 +237,85 @@ function WorkerDetail({ worker, onBack }: { worker: SnapshotWorker; onBack: () =
 }
 
 // ---------------------------------------------------------------------------
-// Area staffing list
-// ---------------------------------------------------------------------------
-
-function AreaSummaryList({
-  summaries,
-  onBulkReassign,
-}: {
-  summaries: SnapshotAreaSummary[];
-  onBulkReassign?: (area: SnapshotAreaSummary) => void;
-}) {
-  const { t } = useTranslation();
-
-  if (summaries.length === 0) {
-    return (
-      <div className="p-4">
-        <EmptyState variant="noData" title={t('monitoring:sidebar.noAreasData')} description={t('monitoring:sidebar.noAreasSummary')} />
-      </div>
-    );
-  }
-
-  return (
-    <ul className="space-y-2 p-3">
-      {summaries.map((area) => {
-        const shortage = Math.max(0, area.required_count - area.active_count);
-        const pct =
-          area.required_count > 0
-            ? Math.min(100, Math.round((area.active_count / area.required_count) * 100))
-            : 0;
-        return (
-          <li
-            key={area.area_id}
-            className={cn(
-              'rounded-nb-base border-2 border-nb-black bg-nb-white p-2.5 shadow-nb-sm',
-              area.is_understaffed && 'border-l-4 border-l-[var(--color-status-missing)]'
-            )}
-          >
-            <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-bold text-nb-black">{area.area_name}</p>
-                {area.rayon_name && (
-                  <p className="truncate text-xs text-nb-gray-500">{area.rayon_name}</p>
-                )}
-              </div>
-              <span className="flex-shrink-0 font-mono text-xs tabular-nums text-nb-gray-600">
-                {area.active_count}/{area.required_count}
-              </span>
-            </div>
-            <div className="mt-2 h-1.5 overflow-hidden rounded-full border border-nb-gray-300 bg-nb-gray-200">
-              <div
-                className={cn(
-                  'h-full rounded-full transition-all',
-                  area.is_understaffed
-                    ? 'bg-[var(--color-status-idle)]'
-                    : 'bg-[var(--color-status-active)]'
-                )}
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-            <div className="mt-2 flex items-center justify-between gap-2">
-              {area.is_understaffed && shortage > 0 ? (
-                <span className="inline-flex items-center gap-1 rounded-nb-sm border border-[var(--color-status-missing)] bg-[var(--color-status-missing-bg)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--color-status-missing)]">
-                  <AlertTriangle className="h-2.5 w-2.5" />
-                  {t('monitoring:sidebar.staffingShortage', { shortage })}
-                </span>
-              ) : (
-                <span />
-              )}
-              {onBulkReassign && (
-                <button
-                  type="button"
-                  onClick={() => onBulkReassign(area)}
-                  aria-label={t('monitoring:sidebar.bulkReassignLabel', { area: area.area_name })}
-                  className="inline-flex items-center gap-1 rounded-nb-sm border border-nb-black bg-nb-white px-1.5 py-0.5 text-[10px] font-bold text-nb-black shadow-nb-xs hover:bg-nb-gray-50"
-                >
-                  <ArrowRightLeft className="h-2.5 w-2.5" />
-                  {t('monitoring:sidebar.bulkReassignButton')}
-                </button>
-              )}
-            </div>
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
 export function MonitoringSidebar({
+  workersNarrowedByFilters = false,
   workers,
-  areaSummaries,
+  nodes,
+  onDrillNode,
+  onNodeDetail,
+  showNodeTier,
+  activeGeoId,
   selectedId,
+  selectedWorker,
   onSelect,
-  onBulkReassign,
+  workerDetail,
+  isHidden,
+  onToggleHidden,
+  onShowAllHidden,
   className,
 }: MonitoringSidebarProps) {
   const { t } = useTranslation();
-  const [tab, setTab] = useState<SidebarTab>('petugas');
-  const selectedWorker = selectedId ? workers.find((w) => w.user_id === selectedId) ?? null : null;
+  // Wilayah (child nodes) leads; at lokasi scope there are none, so default to
+  // Petugas and hide the Wilayah tab.
+  const hasNodes = nodes.length > 0;
+  const [tab, setTab] = useState<SidebarTab>(hasNodes ? 'wilayah' : 'petugas');
+  const activeTab: SidebarTab = hasNodes ? tab : 'petugas';
+
+  // Hiding filters the LIST, never the counts: the tab badge below still reports
+  // how many workers are in scope, which is the number the map is answering for.
+  const visibleWorkers = isHidden ? workers.filter((w) => !isHidden('workers', w.user_id)) : workers;
+  const hiddenWorkerCount = workers.length - visibleWorkers.length;
+
+  const workerList =
+    visibleWorkers.length === 0 ? (
+      <div className="p-4">
+        <EmptyState
+          variant="noResults"
+          title={t('monitoring:sidebar.noWorkers')}
+          // Two different facts, and the operator's next move differs: clear a
+          // filter, or accept that nobody is here. Saying "no match" when no
+          // filter is set sends them hunting for one that does not exist.
+          description={t(
+            workersNarrowedByFilters
+              ? 'monitoring:sidebar.noWorkersMatch'
+              : 'monitoring:sidebar.noWorkersHere'
+          )}
+        />
+      </div>
+    ) : (
+      <ul>
+        {visibleWorkers.map((w) => (
+          <li key={w.user_id}>
+            <WorkerRow
+              worker={w}
+              selected={w.user_id === selectedId}
+              onClick={() => onSelect(w.user_id)}
+              onHide={onToggleHidden ? () => onToggleHidden('workers', w.user_id) : undefined}
+            />
+          </li>
+        ))}
+      </ul>
+    );
+
+  // Never silent: a hidden worker is announced with a one-click way back, or an
+  // operator ends up trusting an incomplete list.
+  const workerRestoreBanner = hiddenWorkerCount > 0 && onShowAllHidden && (
+    <div className="flex items-center justify-between gap-2 border-b-2 border-nb-gray-100 bg-nb-gray-50 px-3 py-1.5 text-xs">
+      <span className="font-bold text-nb-gray-600">
+        {t('monitoring:hidden.count', { count: hiddenWorkerCount })}
+      </span>
+      <button
+        type="button"
+        onClick={() => onShowAllHidden('workers')}
+        className="font-bold text-nb-black underline underline-offset-2 hover:text-nb-primary-active"
+      >
+        {t('monitoring:hidden.showAll')}
+      </button>
+    </div>
+  );
 
   return (
     <div
@@ -298,48 +325,43 @@ export function MonitoringSidebar({
       )}
     >
       {selectedWorker ? (
-        <WorkerDetail worker={selectedWorker} onBack={() => onSelect(null)} />
+        (workerDetail ?? <WorkerDetail worker={selectedWorker} onBack={() => onSelect(null)} />)
       ) : (
         <>
-          <div className="flex-shrink-0 border-b-2 border-nb-black p-2">
-            <Tabs
-              fullWidth
-              size="sm"
-              value={tab}
-              onValueChange={(k) => setTab(k as SidebarTab)}
-              aria-label={t("common:a11y.monitoringPanel")}
-              tabs={[
-                { key: 'petugas', label: t('monitoring:sidebar.tabWorkers'), count: workers.length },
-                { key: 'area', label: t('monitoring:sidebar.tabAreas'), count: areaSummaries.length },
-              ]}
-            />
-          </div>
+          {hasNodes && (
+            <div className="flex-shrink-0 border-b-2 border-nb-black p-2">
+              <Tabs
+                fullWidth
+                size="sm"
+                value={activeTab}
+                onValueChange={(k) => setTab(k as SidebarTab)}
+                aria-label={t('common:a11y.monitoringPanel')}
+                tabs={[
+                  { key: 'wilayah', label: t('monitoring:sidebar.tabWilayah'), count: nodes.length },
+                  { key: 'petugas', label: t('monitoring:sidebar.tabWorkers'), count: workers.length },
+                ]}
+              />
+            </div>
+          )}
 
           <div className="flex-1 overflow-y-auto">
-            {tab === 'petugas' ? (
-              workers.length === 0 ? (
-                <div className="p-4">
-                  <EmptyState
-                    variant="noResults"
-                    title={t('monitoring:sidebar.noWorkers')}
-                    description={t('monitoring:sidebar.noWorkersMatch')}
-                  />
-                </div>
-              ) : (
-                <ul>
-                  {workers.map((w) => (
-                    <li key={w.user_id}>
-                      <WorkerRow
-                        worker={w}
-                        selected={w.user_id === selectedId}
-                        onClick={() => onSelect(w.user_id)}
-                      />
-                    </li>
-                  ))}
-                </ul>
-              )
+            {activeTab === 'wilayah' ? (
+              <AggregateNodeList
+                bare
+                nodes={nodes}
+                onDrill={onDrillNode}
+                onDetail={onNodeDetail}
+                showTier={showNodeTier}
+                activeGeoId={activeGeoId}
+                isHidden={isHidden ? (id) => isHidden('nodes', id) : undefined}
+                onToggleHidden={onToggleHidden ? (id) => onToggleHidden('nodes', id) : undefined}
+                onShowAllHidden={onShowAllHidden ? () => onShowAllHidden('nodes') : undefined}
+              />
             ) : (
-              <AreaSummaryList summaries={areaSummaries} onBulkReassign={onBulkReassign} />
+              <>
+                {workerRestoreBanner}
+                {workerList}
+              </>
             )}
           </div>
         </>
@@ -347,7 +369,7 @@ export function MonitoringSidebar({
 
       {/* Footer hint */}
       {!selectedWorker && (
-        <div className="flex-shrink-0 border-t-2 border-nb-gray-200 px-3 py-2 text-[11px] text-nb-gray-400">
+        <div className="flex-shrink-0 border-t-2 border-nb-gray-200 px-3 py-2 text-[11px] text-nb-gray-500">
           <Users className="mr-1 inline h-3 w-3" />
           {t('monitoring:sidebar.clickToFocus')}
         </div>

@@ -26,6 +26,15 @@ import { AuditLogService } from '../audit/audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/entities/notification.entity';
 import { ActivityQueryService, ActivityListFilters } from './services/activity-query.service';
+import { Task } from '../tasks/entities/task.entity';
+import { ScheduleScopeResolverService } from '../schedules/services/schedule-scope-resolver.service';
+import { TimezoneUtil } from '../../common/utils/timezone.util';
+import {
+  AssignmentScope,
+  NO_SCOPE,
+  ResolvedScope,
+  scopeFromIds,
+} from '../../common/enums/assignment-scope.enum';
 
 /** Generate a reference code in the format SEKAR-YYYYMM + 6 random alphanumeric chars. */
 function generateReferenceCode(): string {
@@ -60,6 +69,9 @@ export class ActivitiesService {
     private plantItemRepository: Repository<ActivityPlantItem>,
     @InjectRepository(ActivityTag)
     private activityTagRepository: Repository<ActivityTag>,
+    @InjectRepository(Task)
+    private tasksRepository: Repository<Task>,
+    private readonly scheduleScopeResolver: ScheduleScopeResolverService,
     private readonly usersService: UsersService,
     private readonly auditLogService: AuditLogService,
     // Audit M7 (2026-05-23): validate `custom_fields` against the registry
@@ -91,7 +103,7 @@ export class ActivitiesService {
     this.validateCustomFields(dto);
 
     const savedActivity = await this.activitiesRepository.save(
-      this.buildActivity(userId, activeShift, dto),
+      await this.buildActivity(userId, activeShift, dto),
     );
     this.logger.log(`Activity created successfully: ${savedActivity.id}`);
 
@@ -103,9 +115,13 @@ export class ActivitiesService {
   }
 
   private async getActiveShiftOrFail(userId: string): Promise<Shift> {
+    // ADR-055: a worker can now hold >1 open session (regular + overtime). An
+    // activity is regular work, so attach it deterministically to the regular
+    // session first (is_overtime ASC → false before true), newest open otherwise.
     const activeShift = await this.shiftsRepository.findOne({
       where: { user_id: userId, clock_out_time: IsNull() },
       relations: ['area'],
+      order: { is_overtime: 'ASC', clock_in_time: 'DESC' },
     });
     if (!activeShift) {
       throw new BadRequestException(
@@ -149,11 +165,21 @@ export class ActivitiesService {
     }
   }
 
-  private buildActivity(userId: string, activeShift: Shift, dto: CreateActivityDto): Activity {
+  private async buildActivity(
+    userId: string,
+    activeShift: Shift,
+    dto: CreateActivityDto,
+  ): Promise<Activity> {
+    const scope = await this.resolveActivityScope(userId, activeShift, dto);
     return this.activitiesRepository.create({
       user_id: userId,
       shift_id: activeShift.id,
-      area_id: activeShift.area_id,
+      // Scope + ids come from resolveActivityScope; location_id stays populated
+      // for the common location/shift case (unchanged behaviour).
+      scope: scope.scope,
+      location_id: scope.location_id,
+      region_id: scope.region_id,
+      district_id: scope.district_id,
       activity_type_id: dto.activity_type_id,
       description: dto.description,
       photo_urls: dto.photo_urls,
@@ -166,7 +192,51 @@ export class ActivitiesService {
       photoAfterUrl: dto.photo_after_url ?? null,
       referenceCode: dto.reference_code ?? generateReferenceCode(),
       pruningRequestId: dto.pruning_request_id ?? null,
+      task_id: dto.task_id,
     });
+  }
+
+  /**
+   * Resolve an activity's scope (ADR-046):
+   *   1. Linked to a task (`task_id`) → inherit the task's scope + ids. Submitting
+   *      an activity against a task records it wherever the task is bound, even for
+   *      an unscheduled worker.
+   *   2. Otherwise → derive from the active shift's schedule occurrence today.
+   *   3. Fallback → the shift's own `location_id` as a location binding (an ad-hoc
+   *      clock-in still worked somewhere), else `none`. Submission is never blocked.
+   */
+  private async resolveActivityScope(
+    userId: string,
+    activeShift: Shift,
+    dto: CreateActivityDto,
+  ): Promise<ResolvedScope> {
+    if (dto.task_id) {
+      const task = await this.tasksRepository.findOne({
+        where: { id: dto.task_id },
+        select: ['id', 'scope', 'district_id', 'region_id', 'location_id'],
+      });
+      if (task) {
+        return {
+          scope: task.scope ?? AssignmentScope.NONE,
+          district_id: task.district_id,
+          region_id: task.region_id,
+          location_id: task.location_id,
+        };
+      }
+    }
+
+    const today = TimezoneUtil.jakartaDateString();
+    const derived = await this.scheduleScopeResolver.resolveForUserOnDate(
+      userId,
+      today,
+      activeShift.shift_definition_id,
+    );
+    if (derived.scope !== AssignmentScope.NONE) return derived;
+
+    // Unscheduled: bind to the shift's clock-in location when there is one.
+    return activeShift.location_id
+      ? scopeFromIds({ location_id: activeShift.location_id })
+      : NO_SCOPE;
   }
 
   /** Phase 3: persist plant item line-items when provided. */
@@ -245,7 +315,7 @@ export class ActivitiesService {
         actor_id: userId,
         new_value: {
           activity_type_id: dto.activity_type_id,
-          area_id: activity.area_id,
+          location_id: activity.location_id,
           case_type: dto.case_type,
           reference_code: activity.referenceCode,
         },
@@ -363,7 +433,7 @@ export class ActivitiesService {
 
   /**
    * Approve a pending activity (Phase 2C). Korlap approves satgas/linmas in
-   * their area; Kepala Rayon approves korlap/admin_data in their rayon.
+   * their area; Kepala Rayon approves korlap/admin_rayon in their district.
    */
   async approveActivity(activityId: string, reviewerId: string): Promise<Activity> {
     const activity = await this.loadPendingForReview(activityId, reviewerId);
@@ -429,14 +499,14 @@ export class ActivitiesService {
 
   /**
    * Hierarchy rules (Phase 2C): Korlap approves satgas/linmas within their
-   * area; Kepala Rayon approves korlap/admin_data within their rayon.
+   * area; Kepala Rayon approves korlap/admin_rayon within their district.
    */
   private validateApprovalHierarchy(activity: Activity, reviewer: User): void {
     if (reviewer.role === UserRole.KORLAP) {
       return this.assertKorlapApprovalScope(activity, reviewer);
     }
     if (reviewer.role === UserRole.KEPALA_RAYON) {
-      return this.assertKepalaRayonApprovalScope(activity, reviewer);
+      return this.assertKepalaDistrictApprovalScope(activity, reviewer);
     }
     throw new ForbiddenException('You are not authorized to approve activities');
   }
@@ -445,29 +515,29 @@ export class ActivitiesService {
     if (!['satgas', 'linmas'].includes(activity.user?.role)) {
       throw new ForbiddenException('Korlap can only approve satgas and linmas activities');
     }
-    if (!reviewer.area_id || activity.area_id !== reviewer.area_id) {
+    if (!reviewer.location_id || activity.location_id !== reviewer.location_id) {
       throw new ForbiddenException('You can only approve activities in your area');
     }
   }
 
-  private assertKepalaRayonApprovalScope(activity: Activity, reviewer: User): void {
-    if (!reviewer.rayon_id) {
-      throw new ForbiddenException('Your Kepala Rayon account has no rayon assigned');
+  private assertKepalaDistrictApprovalScope(activity: Activity, reviewer: User): void {
+    if (!reviewer.district_id) {
+      throw new ForbiddenException('Your Kepala Rayon account has no district assigned');
     }
     const submitterRole = activity.user?.role;
-    if (!['korlap', 'admin_data'].includes(submitterRole)) {
+    if (!['korlap', 'admin_rayon'].includes(submitterRole)) {
       throw new ForbiddenException(
         'Kepala Rayon hanya dapat menyetujui aktivitas korlap dan admin data',
       );
     }
-    if (submitterRole === 'korlap' && activity.area?.rayon_id !== reviewer.rayon_id) {
-      throw new ForbiddenException('You can only approve activities in your rayon');
+    if (submitterRole === 'korlap' && activity.area?.district_id !== reviewer.district_id) {
+      throw new ForbiddenException('You can only approve activities in your district');
     }
     if (
-      submitterRole === 'admin_data' &&
-      (!activity.user.rayon_id || activity.user.rayon_id !== reviewer.rayon_id)
+      submitterRole === 'admin_rayon' &&
+      (!activity.user.district_id || activity.user.district_id !== reviewer.district_id)
     ) {
-      throw new ForbiddenException('You can only approve activities in your rayon');
+      throw new ForbiddenException('You can only approve activities in your district');
     }
   }
 

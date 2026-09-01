@@ -71,7 +71,7 @@ Panduan lengkap untuk login ke aplikasi mobile SEKAR dan dashboard web.
 
 ## Akun Test untuk Bereksperimen
 
-Anda dapat menggunakan akun-akun berikut untuk testing (semua dengan password `Password123!`):
+Anda dapat menggunakan akun-akun berikut untuk testing (semua dengan password `12345678`):
 
 | Peran | Username | Nomor Telepon |
 |-------|----------|---------------|

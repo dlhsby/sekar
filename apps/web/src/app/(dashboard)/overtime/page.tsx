@@ -29,7 +29,7 @@ import {
 import type { ColumnDef } from '@/components/ui/data-table';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, Check, X, Eye, Pencil, Trash2, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, X, Eye, Pencil, Trash2 } from 'lucide-react';
 import type { Overtime, OvertimeStatus } from '@/types/models';
 import { MONITORING_ROLES, OVERTIME_APPROVER_ROLES, hasRole } from '@/lib/constants/roles';
 import { getOvertimeStatusLabels } from '@/lib/constants/overtime';
@@ -69,7 +69,7 @@ export default function OvertimePage() {
   const rejectMutation = useRejectOvertime();
   const deleteMutation = useDeleteOvertime();
 
-  const isAdmin = user ? hasRole(user.role, ['top_management', 'admin_system', 'superadmin']) : false;
+  const isAdmin = user ? hasRole(user.role, ['management', 'admin_system', 'superadmin']) : false;
 
   useEffect(() => {
     if (!authLoading && user && !hasRole(user.role, MONITORING_ROLES)) {
@@ -400,19 +400,14 @@ export default function OvertimePage() {
             enablePagination={false}
             getRowId={(r) => r.id}
             rowActions={rowActions}
-            actions={
-              isAdmin ? (
-                <Button
-                  onClick={() => {
-                    setEditingOvertime(null);
-                    setFormOpen(true);
-                  }}
-                  leftIcon={<Plus className="h-5 w-5" />}
-                >
-                  {t('overtime:form.createButtonLabel')}
-                </Button>
-              ) : undefined
-            }
+            createAction={{
+              label: t('overtime:form.createButtonLabel'),
+              hidden: !isAdmin,
+              onClick: () => {
+                setEditingOvertime(null);
+                setFormOpen(true);
+              },
+            }}
             emptyTitle={t('overtime:list.empty.noRequests')}
           />
 

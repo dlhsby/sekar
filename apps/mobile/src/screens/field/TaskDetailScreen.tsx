@@ -29,6 +29,7 @@ import {
   NBText,
 } from '../../components/nb';
 import { nbColors, nbSpacing, nbRadius } from '../../constants/nbTokens';
+import { screenContent } from '../../constants/layout';
 import { PartialCompleteSheet } from '../../components/tasks/PartialCompleteSheet';
 
 import type { MainTabParamList, MainTabScreenProps } from '../../types/navigation.types';
@@ -211,6 +212,15 @@ export function TaskDetailScreen(): React.JSX.Element {
         />
 
         <View style={styles.actionContainer}>
+          {/* Submit Activity button — visible when task is assigned to current user and is in progress */}
+          {task && task.assigned_to === user?.id && ['assigned', 'accepted', 'in_progress'].includes(task.status) && (
+            <NBButton
+              title={t('tasks:detail.submitActivity')}
+              variant="primary"
+              onPress={() => (navigation as any).navigate('ActivitySubmission', { taskId: task.id })}
+            />
+          )}
+
           <NBButton
             title={t('tasks:detail.taskHistory')}
             variant="secondary"
@@ -405,7 +415,7 @@ export function TaskDetailScreen(): React.JSX.Element {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'transparent' },
-  contentContainer: { paddingVertical: nbSpacing.md, paddingBottom: nbSpacing.xl },
+  contentContainer: { ...screenContent, paddingBottom: nbSpacing.xl },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingTextMargin: { marginTop: nbSpacing.md },
   card: { marginHorizontal: nbSpacing.md, marginBottom: nbSpacing.md },

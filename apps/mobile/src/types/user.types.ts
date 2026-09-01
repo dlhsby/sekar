@@ -1,5 +1,5 @@
 /**
- * Users, roles, rayons and areas.
+ * Users, roles, districts and areas.
  * Phase 2C: ADR-009 (8-role system), ADR-010 (terminology cleanup).
  */
 import type { GeoJsonGeometry } from './geo.types';
@@ -10,9 +10,9 @@ export type UserRole =
   | 'satgas'
   | 'linmas'
   | 'korlap'
-  | 'admin_data'
+  | 'admin_rayon'
   | 'kepala_rayon'
-  | 'top_management'
+  | 'management'
   | 'admin_system'
   | 'superadmin'
   | 'staff_kecamatan';
@@ -29,10 +29,11 @@ export interface User {
   username: string;
   full_name: string;
   role: UserRole;
-  rayon_id?: string;
-  rayon?: Rayon;
-  area_id?: string;
+  district_id?: string;
+  district?: District;
+  location_id?: string;
   area?: Area;
+  region_id?: string | null; // Region (Kawasan) scope — korlap's static fallback (ADR-045)
   phone_number?: string | null; // Phase 2E: for phone login
   profile_picture_url?: string | null; // Phase 2E: profile photo
   kecamatan_name?: string | null; // Phase 3 Apr 27: staff_kecamatan attribution
@@ -44,10 +45,15 @@ export interface User {
 }
 
 // Rayon (Sector)
-export interface Rayon {
+export interface District {
   id: string;
   name: string;
   description?: string;
+  // Geometry — present on `GET /districts` (used to geofence a city-scope
+  // worker against every rayon: "inside the city" = inside ANY rayon polygon).
+  center_lat?: number | null;
+  center_lng?: number | null;
+  boundary_polygon?: GeoJsonGeometry | null;
   created_at: string;
   updated_at: string;
 }
@@ -66,12 +72,14 @@ export interface Area {
   id: string;
   name: string;
   area_type_id: string;
-  areaType?: AreaType;
-  rayon_id?: string;
-  rayon?: Rayon;
+  /** From a Shift's `area` relation (backend loads `area.locationType`). */
+  locationType?: AreaType;
+  /** From `/me` `assigned_area` (backend DTO serialises the type as `area_type`). */
+  area_type?: { id: string; name: string } | null;
+  district_id?: string;
+  district?: District;
   gps_lat: number;
   gps_lng: number;
-  radius_meters: number;
   boundary_polygon?: GeoJsonGeometry;
   address?: string;
   created_at: string;

@@ -2,10 +2,10 @@ import type { SeedContext } from '../lib/context';
 
 /**
  * Seed schedules (staging only) — materialize TODAY's daily roster from user
- * + user_areas + shift_definition_id.
+ * + user_locations + shift_definition_id.
  *
- * Staging: 1125 schedules (one per active user) + 378 schedule_areas (join to
- * user_areas with assignment_type = 'permanent'). Materialized once at seed time.
+ * Staging: 1125 schedules (one per active user), each pointed at a lokasi (join to
+ * user_locations with assignment_type = 'permanent'). Materialized once at seed time.
  *
  * Demo: not seeded (transactional data created dynamically in other seeders).
  */
@@ -25,11 +25,11 @@ export async function seedSchedules(ctx: SeedContext): Promise<void> {
   // Status: 'planned' if user has shift_definition_id, 'off' otherwise
   // Source: 'template' (generated from user template, not manually created)
   const result = await ctx.qr.query(
-    `INSERT INTO schedules (user_id, schedule_date, rayon_id, shift_definition_id, status, source)
+    `INSERT INTO schedules (user_id, schedule_date, district_id, shift_definition_id, status, source)
      SELECT
        u.id,
        $1::date,
-       u.rayon_id,
+       u.district_id,
        u.shift_definition_id,
        CASE WHEN u.shift_definition_id IS NOT NULL THEN 'planned' ELSE 'off' END,
        'template'
@@ -44,24 +44,27 @@ export async function seedSchedules(ctx: SeedContext): Promise<void> {
   const schedulesInserted = result.filter((r: any) => r.inserted).length;
   ctx.log(`  ✓ ${schedulesInserted} schedules inserted (1125 target)`);
 
-  // Insert schedule_areas for permanent user_areas assignments (378 target)
-  // Join schedules → user_areas (permanent) to populate area assignments
+  // Point each row at the worker's permanent lokasi. ONE place per row
+  // (ADR-053), so this is a column update rather than the junction insert it used
+  // to be; a worker with several permanent lokasi keeps the lowest id
+  // deterministically, and covering more means more rows.
   const areaResult = await ctx.qr.query(
-    `INSERT INTO schedule_areas (schedule_id, area_id)
-     SELECT DISTINCT
-       s.id,
-       ua.area_id
-     FROM schedules s
-     JOIN user_areas ua ON s.user_id = ua.user_id
-     WHERE s.schedule_date = $1::date
-       AND ua.assignment_type = 'permanent'
-     ON CONFLICT DO NOTHING
-     RETURNING (xmax = 0) AS inserted`,
+    `UPDATE schedules s
+        SET location_id = sub.location_id
+       FROM (
+         SELECT ua.user_id, MIN(ua.location_id::text)::uuid AS location_id
+           FROM user_locations ua
+          WHERE ua.assignment_type = 'permanent'
+          GROUP BY ua.user_id
+       ) sub
+      WHERE sub.user_id = s.user_id
+        AND s.schedule_date = $1::date
+        AND s.location_id IS NULL
+     RETURNING s.id`,
     [scheduleDate],
   );
 
-  const areasInserted = areaResult.filter((r: any) => r.inserted).length;
-  ctx.log(`  ✓ ${areasInserted} schedule_areas inserted (378 target)`);
+  ctx.log(`  ✓ ${areaResult.length} schedules pointed at a lokasi`);
 
   ctx.log('✅ Schedules seeding complete');
 }

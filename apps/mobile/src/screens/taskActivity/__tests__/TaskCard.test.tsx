@@ -13,7 +13,7 @@ const BASE_TASK: Task = {
   updated_at: '2026-02-22T08:00:00Z',
   deadline: '2026-02-25T17:00:00Z',
   area: { id: 'area-1', name: 'Area A' } as any,
-  rayon: { id: 'rayon-1', name: 'Rayon 1' } as any,
+  district: { id: 'district-1', name: 'Rayon 1' } as any,
   assignee: { id: 'user-1', full_name: 'Budi Santoso' } as any,
   tags: [],
 } as unknown as Task;
@@ -59,7 +59,7 @@ describe('TaskCard', () => {
     expect(getByText(/Area A/)).toBeTruthy();
   });
 
-  it('shows rayon name when no area', () => {
+  it('shows district name when no area', () => {
     const { getByText } = render(
       <TaskCard task={{ ...BASE_TASK, area: undefined } as any} onPress={() => {}} />
     );

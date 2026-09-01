@@ -5,15 +5,15 @@ import type { GeoJsonGeometry } from './geo.types';
 import type { Area, UserRole } from './user.types';
 import type { Shift } from './shift.types';
 
-// Tracking status — Phase 2D: server-computed five-status model
-export type TrackingStatus = 'active' | 'inactive' | 'outside_area' | 'missing' | 'offline';
+// Tracking status — three-state model with is_within_area axis
+export type TrackingStatus = 'active' | 'offline' | 'absent';
 
-// Phase 4 M3 (CP6): two-axis presence model. `status` (above) is the legacy
-// flattened enum kept for back-compat; these are the independent axes. Named
-// Presence* to avoid clashing with the activity-submission `ActivityStatus`.
-// - Activity (GPS recency): aktif ≤5min · idle 5min–1hr · missing >1hr/never · offline (no shift)
+// Two-axis presence model — independent axes. Named Presence* to avoid clashing
+// with the activity-submission `ActivityStatus`.
+// - Activity (GPS recency): aktif ≤5min · offline (clocked in but unreachable)
+//   · absent (not clocked in)
 // - Location (geofence): dalam_area · luar_area · unknown (no usable fix)
-export type PresenceActivity = 'aktif' | 'idle' | 'missing' | 'offline';
+export type PresenceActivity = 'aktif' | 'offline' | 'absent';
 export type PresenceLocation = 'dalam_area' | 'luar_area' | 'unknown';
 
 // Active User (for supervisor map, was ActiveWorker)
@@ -21,7 +21,7 @@ export interface ActiveUser {
   user_id: string;
   full_name: string;
   role: UserRole;
-  area_name: string;
+  location_name: string;
   area_type: string;
   current_gps_lat: number;
   current_gps_lng: number;
@@ -33,7 +33,7 @@ export interface ActiveUser {
 export interface AttendanceRecord {
   user_id: string;
   full_name: string;
-  area_name: string;
+  location_name: string;
   area_type: string;
   clock_in_time?: string;
   clock_out_time?: string;
@@ -50,15 +50,24 @@ export interface FieldDashboard {
   pending_sync_count: number;
 }
 
-// Monitoring Stats
+/**
+ * Monitoring stats as the backend ACTUALLY sends them (`CityStatsDto`).
+ *
+ * The previous shape declared `total_users` / `online_users` / `staffed_areas`,
+ * none of which the API returns — reading any of them would have yielded
+ * `undefined`. It went unnoticed because the only types extending this one were
+ * themselves unused. Corrected against `apps/be/.../dto/city-stats.dto.ts`.
+ */
 export interface MonitoringStats {
-  total_users: number;
-  online_users: number;
-  offline_users: number;
+  total_districts: number;
   total_areas: number;
-  staffed_areas: number;
-  understaffed_areas: number;
+  total_workers: number;
+  workers_online: number;
+  workers_offline: number;
+  /** Workers with an open shift — clocked in, not yet clocked out. */
+  active_shifts: number;
   tasks_pending: number;
+  tasks_in_progress: number;
   tasks_completed_today: number;
   activities_submitted_today: number;
 }
@@ -74,16 +83,39 @@ export interface LiveUser {
   // `is_within_area` via `deriveAxes` when the backend payload omits them.
   activity?: PresenceActivity;
   location?: PresenceLocation;
-  area_id: string | null;
-  area_name: string;
-  rayon_id: string | null;
-  rayon_name: string | null;
+  location_id: string | null;
+  location_name: string;
+  district_id: string | null;
+  district_name: string | null;
+  /** Region (Kawasan) the worker belongs to, for the region drill tier (ADR-045). */
+  region_id?: string | null;
+  region_name?: string | null;
+  /**
+   * The SCOPE of the worker's current-shift schedule (ADR-046). Drives which drill
+   * level renders their marker: a worker shows only where `display_scope` matches
+   * the current view (`display_scope_id` matching the drilled node; null at city).
+   * Ad-hoc clock-ins carry `display_scope: 'city'` (rendered "Luar Jadwal").
+   */
+  display_scope?: 'city' | 'district' | 'region' | 'location';
+  display_scope_id?: string | null;
   latitude: number;
   longitude: number;
   accuracy: number | null;
   battery_level: number | null;
   last_update: string;
   is_within_area: boolean;
+  /** Attendance lifecycle (ADR-050). A live pin is always `bertugas`. */
+  lifecycle_state?:
+    | 'tidak_bertugas'
+    | 'belum_hadir'
+    | 'terlambat'
+    | 'bertugas'
+    | 'pulang'
+    | 'tidak_hadir';
+  /** Clocked in after start + grace. */
+  is_late?: boolean;
+  /** Lifecycle flags: is_late | ad_hoc | lupa_clock_out | lembur | early | excused. */
+  lifecycle_flags?: string[];
   /** True if on the current shift roster; false = ad-hoc / off-schedule. */
   is_scheduled?: boolean;
   outside_boundary: boolean;
@@ -93,6 +125,20 @@ export interface LiveUser {
   clock_in_time: string;
   current_task_status: string | null;
   current_task_title: string | null;
+  /** Team membership for grouping into team bubbles (ADR-048). team_id = schedule_event_id ?? team_category_id. */
+  team_id?: string | null;
+  /** Team name (from team_category.name). */
+  team_name?: string | null;
+  /** Marker color in hex format (from team_category.marker_color). */
+  team_color?: string | null;
+  /** Alpha for `team_color` (team category `marker_opacity`); null → opaque. */
+  team_opacity?: number | null;
+  /** Team glyph (from team_category.marker_icon). */
+  team_icon?: string | null;
+  /** Per-role marker glyph override (from the role's marker_icon). */
+  role_marker_icon?: string | null;
+  /** Per-role marker colour (from the role's marker_color) — fills the pin body. */
+  role_marker_color?: string | null;
 }
 
 // Absent User for daily roster monitoring — Phase 3 (roster monitoring)
@@ -100,29 +146,34 @@ export interface AbsentUser {
   user_id: string;
   full_name: string;
   role: string;
-  rayon_id: string | null;
+  district_id: string | null;
   shift_definition_id: string | null;
   shift_name: string | null;
+  /** Roster lifecycle (ADR-050): belum_hadir · terlambat · tidak_hadir · tidak_bertugas. */
+  lifecycle_state?: 'belum_hadir' | 'terlambat' | 'tidak_hadir' | 'tidak_bertugas';
+  /** Excused-leave reason when on leave; null/undefined for a plain absence. */
+  leave_reason?: 'cuti' | 'sakit' | 'izin' | 'libur' | null;
 }
 
-// Live Users Response — Phase 2D + Phase 3 (roster monitoring fields)
+// Live Users Response — three-state status model with roster monitoring fields
 export interface LiveUsersResponse {
   total_active: number;
-  total_inactive: number;
-  total_outside_area: number;
-  total_missing: number;
   total_offline: number;
+  total_absent: number;
+  total_outside_area: number;
   /** @deprecated Use total_active */
   total_online: number;
   users: LiveUser[];
   generated_at: string;
-  // Phase 3: Daily roster monitoring fields (optional during rollout)
+  // Roster monitoring fields (optional during rollout)
   expected_count?: number;
   present_count?: number;
   absent_count?: number;
   on_leave_count?: number;
   off_schedule_count?: number;
   absent_users?: AbsentUser[];
+  /** Scheduled workers on approved leave today (excused), each with its leave_reason. */
+  on_leave_users?: AbsentUser[];
 }
 
 // User Day Summary — Phase 2D
@@ -133,10 +184,10 @@ export interface UserDaySummary {
   role: string;
   phone: string | null;
   status: TrackingStatus;
-  area_id: string | null;
-  area_name: string | null;
-  rayon_id: string | null;
-  rayon_name: string | null;
+  location_id: string | null;
+  location_name: string | null;
+  district_id: string | null;
+  district_name: string | null;
   shift: {
     id: string;
     name: string;
@@ -190,8 +241,8 @@ export interface LocationHistory {
   date: string;
   shift_id: string | null;
   shift_name: string | null;
-  area_id: string | null;
-  area_name: string | null;
+  location_id: string | null;
+  location_name: string | null;
   clock_in_time: string | null;
   clock_out_time: string | null;
   points: LocationHistoryPoint[];
@@ -202,26 +253,24 @@ export interface LocationHistory {
   generated_at: string;
 }
 
-// Staffing Summary Item — Phase 2D
+// Staffing Summary Item — three-state status model
 export interface StaffingSummaryItem {
   id: string;
   name: string;
-  type: 'rayon' | 'area';
+  type: 'district' | 'location';
   roles: {
     role: string;
     active: number;
-    idle: number;
-    outside_area: number;
-    missing: number;
     offline: number;
+    absent: number;
+    outside_area: number;
     total_assigned: number;
     total_required: number;
   }[];
   total_active: number;
-  total_idle: number;
-  total_outside_area: number;
-  total_missing: number;
   total_offline: number;
+  total_absent: number;
+  total_outside_area: number;
   is_fully_staffed: boolean;
 }
 
@@ -230,9 +279,9 @@ export interface UserStatusChangedEvent {
   user_id: string;
   user_name: string;
   role: string;
-  area_id: string | null;
-  area_name: string | null;
-  rayon_id: string | null;
+  location_id: string | null;
+  location_name: string | null;
+  district_id: string | null;
   previous_status: TrackingStatus;
   new_status: TrackingStatus;
   // Two-axis presence (CP6) — optional during backend rollout.
@@ -247,9 +296,9 @@ export interface UserAreaEvent {
   user_id: string;
   user_name: string;
   role: string;
-  area_id: string;
-  area_name: string;
-  rayon_id: string | null;
+  location_id: string;
+  location_name: string;
+  district_id: string | null;
   latitude: number;
   longitude: number;
   timestamp: string;
@@ -264,14 +313,14 @@ export interface UserReassignedEvent {
   previous_area_name: string | null;
   new_area_id: string;
   new_area_name: string;
-  rayon_id: string | null;
+  district_id: string | null;
   timestamp: string;
 }
 
 // Phase 2D: WebSocket area staffing changed event
 export interface AreaStaffingChangedEvent {
-  area_id: string;
-  rayon_id: string | null;
+  location_id: string;
+  district_id: string | null;
   active_count: number;
   required_count: number;
   is_met: boolean;
@@ -291,9 +340,8 @@ export interface AreaBoundary {
   center_lat: number;
   center_lng: number;
   boundary_polygon: GeoJsonGeometry | null;
-  radius_meters: number;
-  rayon_id: string;
-  rayon_name: string;
+  district_id: string;
+  district_name: string;
   assigned_count: number;
   staffing: RoleStaffingItem[];
   is_understaffed: boolean;
@@ -301,40 +349,62 @@ export interface AreaBoundary {
   total_required: number;
 }
 
-export interface RayonBoundary {
+/**
+ * Kawasan outline. The backend has returned these inside every district since
+ * the four-level hierarchy landed (ADR-045); mobile simply had no field for
+ * them, so the geometry was discarded on arrival and the kawasan tier — which
+ * the map drills THROUGH — could never draw its own boundary.
+ */
+export interface RegionBoundary {
+  id: string;
+  name: string;
+  center_lat: number | null;
+  center_lng: number | null;
+  boundary_polygon: GeoJsonGeometry | null;
+  border_color?: string | null;
+  fill_color?: string | null;
+  border_opacity?: number | null;
+  fill_opacity?: number | null;
+}
+
+export interface DistrictBoundary {
   id: string;
   name: string;
   center_lat: number;
   center_lng: number;
   boundary_polygon: GeoJsonGeometry | null;
+  /** Optional: older cached payloads predate the field. */
+  regions?: RegionBoundary[];
   areas: AreaBoundary[];
   area_count: number;
   is_understaffed: boolean;
   understaffed_area_count: number;
-  /** DB-driven hex color for the rayon polygon; falls back to a deterministic palette. */
+  /** DB-driven hex color for the district polygon; falls back to a deterministic palette. */
   color?: string | null;
 }
 
 export interface BoundariesResponse {
-  rayons: RayonBoundary[];
+  districts: DistrictBoundary[];
   generated_at: string;
 }
 
-// Aggregate ("Ringkasan") rollup — lightweight per-rayon/per-area summary
+// Aggregate ("Ringkasan") rollup — lightweight per-district/per-area summary
 // bubbles for the monitoring map (no individual worker coordinates).
 export interface AggregateStatusCounts {
   active: number;
-  inactive: number;
-  outside_area: number;
-  missing: number;
   offline: number;
+  absent: number;
+  outside_area: number;
 }
 
-/** Roster attendance trio for a node (or the whole scope), for today. */
+/** Roster attendance breakdown for a node (or the whole scope), for today (ADR-050).
+ *  `scheduled = clocked_in + belum_hadir + tidak_hadir`. Not-clocked-in is split into
+ *  `belum_hadir` (shift not started / within grace) vs `tidak_hadir` (past grace = no-show). */
 export interface AggregateRosterCounts {
   scheduled: number;
   clocked_in: number;
-  not_clocked_in: number;
+  belum_hadir: number;
+  tidak_hadir: number;
 }
 
 /** Dalam/luar (inside/outside area) split for one activity bucket. */
@@ -352,7 +422,7 @@ export interface PresenceBreakdown {
 export interface AggregateNode {
   id: string;
   name: string;
-  type: 'rayon' | 'area';
+  type: 'district' | 'region' | 'location';
   center_lat: number | null;
   center_lng: number | null;
   counts_by_status: AggregateStatusCounts;
@@ -364,11 +434,16 @@ export interface AggregateNode {
   roster: AggregateRosterCounts;
   presence: PresenceBreakdown;
   area_count?: number;
-  rayon_id?: string | null;
+  /** Number of child lokasi (present on a district/region node). */
+  location_count?: number;
+  district_id?: string | null;
+  /** Region (Kawasan) id — present on region nodes + on lokasi within a kawasan. */
+  region_id?: string | null;
 }
 
 export interface MonitoringAggregateResponse {
-  scope: 'city' | 'rayon';
+  /** `region` = one node per kawasan in a district (id = districtId). */
+  scope: 'city' | 'district' | 'region';
   scope_id: string | null;
   nodes: AggregateNode[];
   totals: AggregateStatusCounts;

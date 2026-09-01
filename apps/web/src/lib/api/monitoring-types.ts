@@ -9,14 +9,14 @@ import type { UserRole } from '@/types/models';
 // Status
 // ---------------------------------------------------------------------------
 
-export type TrackingStatus = 'active' | 'inactive' | 'outside_area' | 'missing' | 'offline';
+export type TrackingStatus = 'active' | 'offline' | 'absent';
 
 // ---------------------------------------------------------------------------
-// City / Rayon / Area Stats (Phase 2C - unchanged)
+// City / District / Area Stats (Phase 2C - unchanged)
 // ---------------------------------------------------------------------------
 
 export interface CityStats {
-  total_rayons: number;
+  total_districts: number;
   total_areas: number;
   total_workers: number;
   workers_online: number;
@@ -29,7 +29,7 @@ export interface CityStats {
   generated_at: string;
 }
 
-export interface RayonMonitoringStats {
+export interface DistrictMonitoringStats {
   id: string;
   name: string;
   total_areas: number;
@@ -49,8 +49,8 @@ export interface AreaMonitoringStats {
   id: string;
   name: string;
   area_type: string;
-  rayon_id: string;
-  rayon_name: string;
+  district_id: string;
+  district_name: string;
   coverage_area: number | null;
   total_users_assigned: number;
   users_online: number;
@@ -74,10 +74,10 @@ export interface LiveUser {
   role: UserRole;
   phone: string | null;
   status: TrackingStatus;
-  area_id: string | null;
-  area_name: string;
-  rayon_id: string | null;
-  rayon_name: string | null;
+  location_id: string | null;
+  location_name: string;
+  district_id: string | null;
+  district_name: string | null;
   latitude: number;
   longitude: number;
   accuracy: number | null;
@@ -97,17 +97,20 @@ export interface AbsentUser {
   user_id: string;
   full_name: string;
   role: string;
-  rayon_id: string | null;
+  district_id: string | null;
   shift_definition_id: string | null;
   shift_name: string | null;
+  /** Roster lifecycle (ADR-050): belum_hadir · terlambat · tidak_hadir · tidak_bertugas. */
+  lifecycle_state?: 'belum_hadir' | 'terlambat' | 'tidak_hadir' | 'tidak_bertugas';
+  /** Excused-leave reason when on leave; null/undefined for a plain absence. */
+  leave_reason?: 'cuti' | 'sakit' | 'izin' | 'libur' | null;
 }
 
 export interface LiveUsersResponse {
   total_active: number;
-  total_inactive: number;
-  total_outside_area: number;
-  total_missing: number;
   total_offline: number;
+  total_absent: number;
+  total_outside_area: number;
   users: LiveUser[];
   // Roster-derived "expected vs actual" for today (optional — present once the
   // daily roster is generated; defaults to 0 otherwise).
@@ -117,12 +120,14 @@ export interface LiveUsersResponse {
   on_leave_count?: number;
   off_schedule_count?: number;
   absent_users?: AbsentUser[];
+  /** Scheduled workers on approved leave today (excused), each with its leave_reason. */
+  on_leave_users?: AbsentUser[];
   generated_at: string;
 }
 
 export interface LiveUsersFilters {
-  rayon_id?: string;
-  area_id?: string;
+  district_id?: string;
+  location_id?: string;
   role?: string;
   status?: TrackingStatus;
   search?: string;
@@ -139,10 +144,10 @@ export interface UserDaySummary {
   role: string;
   phone: string | null;
   status: TrackingStatus;
-  area_id: string | null;
-  area_name: string | null;
-  rayon_id: string | null;
-  rayon_name: string | null;
+  location_id: string | null;
+  location_name: string | null;
+  district_id: string | null;
+  district_name: string | null;
   shift: {
     id: string;
     name: string;
@@ -195,8 +200,8 @@ export interface LocationHistory {
   date: string;
   shift_id: string | null;
   shift_name: string | null;
-  area_id: string | null;
-  area_name: string | null;
+  location_id: string | null;
+  location_name: string | null;
   clock_in_time: string | null;
   clock_out_time: string | null;
   points: LocationHistoryPoint[];
@@ -214,10 +219,9 @@ export interface LocationHistory {
 export interface StaffingRoleBreakdown {
   role: string;
   active: number;
-  idle: number;
-  outside_area: number;
-  missing: number;
   offline: number;
+  absent: number;
+  outside_area: number;
   total_assigned: number;
   total_required: number;
 }
@@ -225,13 +229,12 @@ export interface StaffingRoleBreakdown {
 export interface StaffingSummaryItem {
   id: string;
   name: string;
-  type: 'rayon' | 'area';
+  type: 'district' | 'area';
   roles: StaffingRoleBreakdown[];
   total_active: number;
-  total_idle: number;
-  total_outside_area: number;
-  total_missing: number;
   total_offline: number;
+  total_absent: number;
+  total_outside_area: number;
   is_fully_staffed: boolean;
 }
 
@@ -241,8 +244,8 @@ export interface StaffingSummaryResponse {
 }
 
 export interface StaffingFilters {
-  rayon_id?: string;
-  area_id?: string;
+  district_id?: string;
+  location_id?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -268,9 +271,9 @@ export interface UserStatusChangedEvent {
   user_id: string;
   user_name: string;
   role: string;
-  area_id: string | null;
-  area_name: string | null;
-  rayon_id: string | null;
+  location_id: string | null;
+  location_name: string | null;
+  district_id: string | null;
   previous_status: TrackingStatus;
   new_status: TrackingStatus;
   latitude: number | null;
@@ -282,9 +285,9 @@ export interface UserAreaEvent {
   user_id: string;
   user_name: string;
   role: string;
-  area_id: string;
-  area_name: string;
-  rayon_id: string | null;
+  location_id: string;
+  location_name: string;
+  district_id: string | null;
   latitude: number;
   longitude: number;
   timestamp: string;
@@ -304,32 +307,53 @@ export interface AreaBoundary {
   id: string;
   name: string;
   boundary_polygon: GeoJSON.Geometry | null;
+  /** Per-entity styling (ADR-045) — border + fill drawn separately on the map. */
+  border_color?: string | null;
+  fill_color?: string | null;
+  border_opacity?: number | null;
+  fill_opacity?: number | null;
   center_lat: number;
   center_lng: number;
-  rayon_id: string | null;
-  rayon_name: string;
-  radius_meters: number | null;
+  district_id: string | null;
+  district_name: string;
   assigned_count: number;
   is_understaffed: boolean;
   staffing_summary: RoleStaffingItem[];
 }
 
-export interface RayonBoundary {
+/** Kawasan (region) outline within a district — drawn tinted at district zoom. */
+export interface RegionBoundary {
   id: string;
   name: string;
-  /** Hex color configured for the rayon (Rayon settings) — drives the map fill/border. */
-  color?: string | null;
+  border_color?: string | null;
+  fill_color?: string | null;
+  border_opacity?: number | null;
+  fill_opacity?: number | null;
+  boundary_polygon: GeoJSON.Geometry | null;
+  center_lat: number | null;
+  center_lng: number | null;
+}
+
+export interface DistrictBoundary {
+  id: string;
+  name: string;
+  /** Per-entity styling (ADR-045) — border + fill drawn separately on the map. */
+  border_color?: string | null;
+  fill_color?: string | null;
+  border_opacity?: number | null;
+  fill_opacity?: number | null;
   boundary_polygon: GeoJSON.Geometry | null;
   center_lat: number | null;
   center_lng: number | null;
   area_count: number;
   is_understaffed: boolean;
   understaffed_area_count: number;
+  regions: RegionBoundary[];
   areas: AreaBoundary[];
 }
 
 export interface BoundariesResponse {
-  rayons: RayonBoundary[];
+  districts: DistrictBoundary[];
   generated_at: string;
 }
 

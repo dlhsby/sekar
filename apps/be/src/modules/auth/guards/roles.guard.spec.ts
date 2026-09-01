@@ -99,16 +99,16 @@ describe('RolesGuard', () => {
       expect(guard.canActivate(workerContext)).toBe(false);
     });
 
-    describe('top_management admin_system parity', () => {
-      it('grants top_management access to admin_system-gated routes', () => {
-        const context = mockExecutionContext({ role: UserRole.TOP_MANAGEMENT });
+    describe('management admin_system parity', () => {
+      it('grants management access to admin_system-gated routes', () => {
+        const context = mockExecutionContext({ role: UserRole.MANAGEMENT });
         jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([UserRole.ADMIN_SYSTEM]);
 
         expect(guard.canActivate(context)).toBe(true);
       });
 
-      it('grants top_management access when admin_system is one of several allowed roles', () => {
-        const context = mockExecutionContext({ role: UserRole.TOP_MANAGEMENT });
+      it('grants management access when admin_system is one of several allowed roles', () => {
+        const context = mockExecutionContext({ role: UserRole.MANAGEMENT });
         jest
           .spyOn(reflector, 'getAllAndOverride')
           .mockReturnValue([UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN]);
@@ -116,15 +116,15 @@ describe('RolesGuard', () => {
         expect(guard.canActivate(context)).toBe(true);
       });
 
-      it('does NOT grant top_management access to routes that only allow other roles', () => {
-        const context = mockExecutionContext({ role: UserRole.TOP_MANAGEMENT });
+      it('does NOT grant management access to routes that only allow other roles', () => {
+        const context = mockExecutionContext({ role: UserRole.MANAGEMENT });
         jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([UserRole.KORLAP]);
 
         expect(guard.canActivate(context)).toBe(false);
       });
 
       it('does not elevate other roles to admin_system', () => {
-        const context = mockExecutionContext({ role: UserRole.ADMIN_DATA });
+        const context = mockExecutionContext({ role: UserRole.ADMIN_RAYON });
         jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([UserRole.ADMIN_SYSTEM]);
 
         expect(guard.canActivate(context)).toBe(false);

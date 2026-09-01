@@ -4,6 +4,7 @@
  * enum. Add a namespace on BOTH platforms + here (parity guardrail enforces).
  */
 import idCommon from './locales/id/common.json';
+import idAccessControl from './locales/id/access-control.json';
 import idAuth from './locales/id/auth.json';
 import idErrors from './locales/id/errors.json';
 import idValidation from './locales/id/validation.json';
@@ -68,10 +69,12 @@ import enLocation from './locales/en/location.json';
 import idWelcome from './locales/id/welcome.json';
 import enWelcome from './locales/en/welcome.json';
 import enComponents from './locales/en/components.json';
+import enAccessControl from './locales/en/access-control.json';
 
 export const resources = {
   id: {
     common: idCommon,
+    'access-control': idAccessControl,
     auth: idAuth,
     errors: idErrors,
     validation: idValidation,
@@ -106,6 +109,7 @@ export const resources = {
   },
   en: {
     common: enCommon,
+    'access-control': enAccessControl,
     auth: enAuth,
     errors: enErrors,
     validation: enValidation,
@@ -142,6 +146,7 @@ export const resources = {
 
 export const NAMESPACES = [
   'common',
+  'access-control',
   'auth',
   'errors',
   'validation',

@@ -15,6 +15,7 @@ import { NBAlert, NBButton, NBPasswordInput, NBText, NBToast } from '../../compo
 import { RequirementChecklist } from '../../components/common/RequirementChecklist';
 import { SuccessOverlay } from '../../components/common/SuccessOverlay';
 import { nbColors, nbSpacing } from '../../constants/nbTokens';
+import { screenContent } from '../../constants/layout';
 import { useAppDispatch } from '../../store/hooks';
 import { setUser, logout } from '../../store/slices/authSlice';
 import { changePasswordAndRotate } from '../../services/api/authApi';
@@ -39,8 +40,7 @@ export function ChangePasswordScreen(): React.JSX.Element {
   // it); the server gates the forced change on the JWT + password_must_change flag
   // and rejects re-using the temp password.
   const rules = [
-    { label: t('profile:changePassword.rules.minLength'), met: newPassword.length >= 8 },
-    { label: t('profile:changePassword.rules.alphanumeric'), met: /[A-Za-z]/.test(newPassword) && /\d/.test(newPassword) },
+    { label: t('profile:changePassword.rules.minLength'), met: newPassword.length >= 6 },
     { label: t('profile:changePassword.rules.match'), met: confirmPassword.length > 0 && newPassword === confirmPassword },
   ];
   const allValid = rules.every((r) => r.met);
@@ -153,7 +153,7 @@ export function ChangePasswordScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: nbColors.bgCanvas },
   flex: { flex: 1 },
-  content: { padding: nbSpacing.lg, gap: nbSpacing.md },
+  content: { ...screenContent, gap: nbSpacing.md },
 });
 
 export default ChangePasswordScreen;

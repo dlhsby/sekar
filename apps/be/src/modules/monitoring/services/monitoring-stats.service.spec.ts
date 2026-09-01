@@ -1,62 +1,65 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { MonitoringStatsService } from './monitoring-stats.service';
 import { DayTypeService } from './day-type.service';
-import { Area } from '../../areas/entities/area.entity';
+import { Location } from '../../locations/entities/location.entity';
 import { Shift } from '../../shifts/entities/shift.entity';
 import { Task, TaskStatus } from '../../tasks/entities/task.entity';
 import { Activity } from '../../activities/entities/activity.entity';
 import { LocationLog } from '../../location/entities/location-log.entity';
-import { Rayon } from '../../rayons/entities/rayon.entity';
+import { District, StaffingLevel } from '../../districts/entities/district.entity';
+import { Region } from '../../regions/entities/region.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
 import {
-  AreaStaffRequirement,
+  LocationStaffRequirement,
   DayType,
-} from '../../area-staff-requirements/entities/area-staff-requirement.entity';
+} from '../../location-staff-requirements/entities/location-staff-requirement.entity';
 import { UserTrackingStatus, TrackingStatus } from '../entities/user-tracking-status.entity';
 import { Schedule } from '../../schedules/entities/schedule.entity';
-import { ScheduleArea } from '../../schedules/entities/schedule-area.entity';
 import { User } from '../../users/entities/user.entity';
 
 describe('MonitoringStatsService', () => {
   let service: MonitoringStatsService;
-  let areaRepository: jest.Mocked<Repository<Area>>;
+  let areaRepository: jest.Mocked<Repository<Location>>;
   let shiftRepository: jest.Mocked<Repository<Shift>>;
   let taskRepository: jest.Mocked<Repository<Task>>;
   let activityRepository: jest.Mocked<Repository<Activity>>;
   let locationRepository: jest.Mocked<Repository<LocationLog>>;
-  let rayonRepository: jest.Mocked<Repository<Rayon>>;
+  let districtRepository: jest.Mocked<Repository<District>>;
+  let regionRepository: jest.Mocked<Repository<Region>>;
   let shiftDefinitionRepository: jest.Mocked<Repository<ShiftDefinition>>;
-  let staffRequirementRepository: jest.Mocked<Repository<AreaStaffRequirement>>;
+  let staffRequirementRepository: jest.Mocked<Repository<LocationStaffRequirement>>;
   let trackingRepository: jest.Mocked<Repository<UserTrackingStatus>>;
   let dayTypeService: jest.Mocked<DayTypeService>;
 
-  const mockRayon: Rayon = {
-    id: 'rayon-1',
-    name: 'Rayon 1',
+  const mockDistrict: District = {
+    id: 'district-1',
+    name: 'District 1',
     code: 'R1',
-    color: '#7FBC8C',
+    border_color: '#7FBC8C',
+    staffing_level: StaffingLevel.REGION,
+    is_active: true,
     created_at: new Date(),
     updated_at: new Date(),
-  } as Rayon;
+  } as District;
 
-  const mockArea: Area = {
+  const mockArea: Location = {
     id: 'area-1',
-    name: 'Area 1',
-    rayon_id: 'rayon-1',
+    name: 'Location 1',
+    district_id: 'district-1',
     gps_lat: -7.25,
     gps_lng: 112.75,
     coverage_area: 100,
     is_active: true,
-    areaType: { id: 'type-1', name: 'Park', category: 'active' } as any,
-  } as Area;
+    locationType: { id: 'type-1', name: 'Park', category: 'active' } as any,
+  } as Location;
 
   const mockShift: Shift = {
     id: 'shift-1',
     user_id: 'user-1',
-    area_id: 'area-1',
+    location_id: 'area-1',
     clock_in_time: new Date(),
     clock_out_time: null,
     clock_in_outside_boundary: false,
@@ -86,7 +89,7 @@ describe('MonitoringStatsService', () => {
       providers: [
         MonitoringStatsService,
         {
-          provide: getRepositoryToken(Area),
+          provide: getRepositoryToken(Location),
           useValue: {
             find: jest.fn(),
             findOne: jest.fn(),
@@ -123,7 +126,15 @@ describe('MonitoringStatsService', () => {
           },
         },
         {
-          provide: getRepositoryToken(Rayon),
+          provide: getRepositoryToken(District),
+          useValue: {
+            find: jest.fn(),
+            findOne: jest.fn(),
+            createQueryBuilder: jest.fn(),
+          },
+        },
+        {
+          provide: getRepositoryToken(Region),
           useValue: {
             find: jest.fn(),
             findOne: jest.fn(),
@@ -138,7 +149,7 @@ describe('MonitoringStatsService', () => {
           },
         },
         {
-          provide: getRepositoryToken(AreaStaffRequirement),
+          provide: getRepositoryToken(LocationStaffRequirement),
           useValue: {
             find: jest.fn(),
             createQueryBuilder: jest.fn(),
@@ -158,10 +169,6 @@ describe('MonitoringStatsService', () => {
           useValue: { find: jest.fn(), createQueryBuilder: jest.fn() },
         },
         {
-          provide: getRepositoryToken(ScheduleArea),
-          useValue: { find: jest.fn(), createQueryBuilder: jest.fn() },
-        },
-        {
           provide: DayTypeService,
           useValue: {
             getCurrentDayType: jest.fn().mockResolvedValue(DayType.WEEKDAY),
@@ -172,7 +179,7 @@ describe('MonitoringStatsService', () => {
     }).compile();
 
     service = module.get<MonitoringStatsService>(MonitoringStatsService);
-    areaRepository = module.get<jest.Mocked<Repository<Area>>>(getRepositoryToken(Area));
+    areaRepository = module.get<jest.Mocked<Repository<Location>>>(getRepositoryToken(Location));
     shiftRepository = module.get<jest.Mocked<Repository<Shift>>>(getRepositoryToken(Shift));
     taskRepository = module.get<jest.Mocked<Repository<Task>>>(getRepositoryToken(Task));
     activityRepository = module.get<jest.Mocked<Repository<Activity>>>(
@@ -181,12 +188,15 @@ describe('MonitoringStatsService', () => {
     locationRepository = module.get<jest.Mocked<Repository<LocationLog>>>(
       getRepositoryToken(LocationLog),
     );
-    rayonRepository = module.get<jest.Mocked<Repository<Rayon>>>(getRepositoryToken(Rayon));
+    districtRepository = module.get<jest.Mocked<Repository<District>>>(
+      getRepositoryToken(District),
+    );
+    regionRepository = module.get<jest.Mocked<Repository<Region>>>(getRepositoryToken(Region));
     shiftDefinitionRepository = module.get<jest.Mocked<Repository<ShiftDefinition>>>(
       getRepositoryToken(ShiftDefinition),
     );
-    staffRequirementRepository = module.get<jest.Mocked<Repository<AreaStaffRequirement>>>(
-      getRepositoryToken(AreaStaffRequirement),
+    staffRequirementRepository = module.get<jest.Mocked<Repository<LocationStaffRequirement>>>(
+      getRepositoryToken(LocationStaffRequirement),
     );
     trackingRepository = module.get<jest.Mocked<Repository<UserTrackingStatus>>>(
       getRepositoryToken(UserTrackingStatus),
@@ -200,10 +210,10 @@ describe('MonitoringStatsService', () => {
         getMany: jest.fn().mockResolvedValue([]),
         count: jest.fn().mockResolvedValue(0),
       };
-      rayonRepository.find.mockResolvedValue([mockRayon]);
-      jest.spyOn(service, 'getRayonSummary').mockResolvedValue({
-        id: 'rayon-1',
-        name: 'Rayon 1',
+      districtRepository.find.mockResolvedValue([mockDistrict]);
+      jest.spyOn(service, 'getDistrictSummary').mockResolvedValue({
+        id: 'district-1',
+        name: 'District 1',
         area_count: 1,
         worker_count: 10,
         workers_online: 5,
@@ -218,18 +228,18 @@ describe('MonitoringStatsService', () => {
       const result = await service.getCityStats();
 
       expect(result).toBeDefined();
-      expect(result.total_rayons).toBe(1);
+      expect(result.total_districts).toBe(1);
       expect(result.active_shifts).toBe(2);
     });
   });
 
-  describe('getRayonStats', () => {
-    it('should return rayon statistics', async () => {
-      rayonRepository.findOne.mockResolvedValue(mockRayon);
+  describe('getDistrictStats', () => {
+    it('should return district statistics', async () => {
+      districtRepository.findOne.mockResolvedValue(mockDistrict);
       areaRepository.find.mockResolvedValue([mockArea]);
       jest.spyOn(service, 'getAreaSummary').mockResolvedValue({
         id: 'area-1',
-        name: 'Area 1',
+        name: 'Location 1',
         area_type_category: 'active',
         workers_required: 5,
         workers_online: 3,
@@ -248,24 +258,24 @@ describe('MonitoringStatsService', () => {
       jest.spyOn(service, 'countOnlineWorkersByAreaIds').mockResolvedValue(0);
       jest.spyOn(service, 'countOfflineWorkersByAreaIds').mockResolvedValue(0);
 
-      const result = await service.getRayonStats('rayon-1');
+      const result = await service.getDistrictStats('district-1');
 
       expect(result).toBeDefined();
-      expect(result.id).toBe('rayon-1');
-      expect(result.name).toBe('Rayon 1');
+      expect(result.id).toBe('district-1');
+      expect(result.name).toBe('District 1');
     });
 
-    it('should throw NotFoundException when rayon not found', async () => {
-      rayonRepository.findOne.mockResolvedValue(null);
+    it('should throw NotFoundException when district not found', async () => {
+      districtRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.getRayonStats('invalid-id')).rejects.toThrow(NotFoundException);
+      await expect(service.getDistrictStats('invalid-id')).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('getAreaStats', () => {
     it('should return area statistics', async () => {
       areaRepository.findOne.mockResolvedValue(mockArea);
-      rayonRepository.findOne.mockResolvedValue(mockRayon);
+      districtRepository.findOne.mockResolvedValue(mockDistrict);
       jest.spyOn(service, 'getAreaWorkers').mockResolvedValue([
         {
           id: 'user-1',
@@ -291,7 +301,7 @@ describe('MonitoringStatsService', () => {
 
       expect(result).toBeDefined();
       expect(result.id).toBe('area-1');
-      expect(result.name).toBe('Area 1');
+      expect(result.name).toBe('Location 1');
     });
 
     it('should throw NotFoundException when area not found', async () => {
@@ -307,7 +317,7 @@ describe('MonitoringStatsService', () => {
         id: 'tracking-1',
         user: mockUser,
         user_id: 'user-1',
-        area_id: 'area-1',
+        location_id: 'area-1',
         shift_id: 'shift-1',
         shift: mockShift,
         shift_definition: mockShiftDef,
@@ -336,6 +346,48 @@ describe('MonitoringStatsService', () => {
       const result = await service.getAreaWorkers('area-1');
 
       expect(result).toEqual([]);
+    });
+
+    // The lokasi tier had no liveness guard, so a tracking row still pointing at
+    // a shift closed days earlier kept the worker on this list. "Remembers a
+    // shift" is not "on duty now" — the session must still be open.
+    it('asks only for tracking rows whose session is still open', async () => {
+      trackingRepository.find.mockResolvedValue([]);
+      shiftRepository.find.mockResolvedValue([]);
+
+      await service.getAreaWorkers('area-1');
+
+      expect(trackingRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            location_id: 'area-1',
+            shift: { clock_out_time: IsNull() },
+          }),
+        }),
+      );
+    });
+  });
+
+  describe('clockedInUserSet (drives the off-schedule "Luar jadwal" count)', () => {
+    // The worst place for a phantom: a stale session is by definition absent
+    // from today's roster, so every one of them was counted as off-schedule.
+    it('excludes tracking rows whose session is already closed', async () => {
+      trackingRepository.find.mockResolvedValue([]);
+
+      await (
+        service as unknown as {
+          clockedInUserSet: (o: { districtId?: string }) => Promise<Set<string>>;
+        }
+      ).clockedInUserSet({ districtId: 'district-1' });
+
+      expect(trackingRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            district_id: 'district-1',
+            shift: { clock_out_time: IsNull() },
+          }),
+        }),
+      );
     });
   });
 
@@ -504,8 +556,8 @@ describe('MonitoringStatsService', () => {
   });
 
   describe('getBoundaries', () => {
-    it('should return boundaries for all rayons', async () => {
-      rayonRepository.find.mockResolvedValue([mockRayon]);
+    it('should return boundaries for all districts', async () => {
+      districtRepository.find.mockResolvedValue([mockDistrict]);
       areaRepository.find.mockResolvedValue([mockArea]);
       shiftDefinitionRepository.find.mockResolvedValue([mockShiftDef]);
       const mockQueryBuilder = {
@@ -515,6 +567,7 @@ describe('MonitoringStatsService', () => {
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
         innerJoin: jest.fn().mockReturnThis(),
+        leftJoin: jest.fn().mockReturnThis(),
         groupBy: jest.fn().mockReturnThis(),
         addGroupBy: jest.fn().mockReturnThis(),
         getRawMany: jest.fn().mockResolvedValue([]),
@@ -526,11 +579,11 @@ describe('MonitoringStatsService', () => {
       const result = await service.getBoundaries();
 
       expect(result).toBeDefined();
-      expect(result.rayons).toHaveLength(1);
+      expect(result.districts).toHaveLength(1);
     });
 
-    it('should filter by rayon ID', async () => {
-      rayonRepository.find.mockResolvedValue([mockRayon]);
+    it('should filter by district ID', async () => {
+      districtRepository.find.mockResolvedValue([mockDistrict]);
       areaRepository.find.mockResolvedValue([mockArea]);
       shiftDefinitionRepository.find.mockResolvedValue([mockShiftDef]);
       const mockQueryBuilder = {
@@ -539,6 +592,7 @@ describe('MonitoringStatsService', () => {
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
         innerJoin: jest.fn().mockReturnThis(),
+        leftJoin: jest.fn().mockReturnThis(),
         groupBy: jest.fn().mockReturnThis(),
         addGroupBy: jest.fn().mockReturnThis(),
         getRawMany: jest.fn().mockResolvedValue([]),
@@ -547,9 +601,112 @@ describe('MonitoringStatsService', () => {
       trackingRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
       staffRequirementRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
 
-      const result = await service.getBoundaries({ rayon_id: 'rayon-1' });
+      const result = await service.getBoundaries({ district_id: 'district-1' });
 
       expect(result).toBeDefined();
+    });
+
+    describe('bbox (viewport mode)', () => {
+      const qb = () =>
+        ({
+          select: jest.fn().mockReturnThis(),
+          addSelect: jest.fn().mockReturnThis(),
+          where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockReturnThis(),
+          innerJoin: jest.fn().mockReturnThis(),
+          leftJoin: jest.fn().mockReturnThis(),
+          groupBy: jest.fn().mockReturnThis(),
+          addGroupBy: jest.fn().mockReturnThis(),
+          getRawMany: jest.fn().mockResolvedValue([]),
+          getMany: jest.fn().mockResolvedValue([]),
+        }) as any;
+
+      beforeEach(() => {
+        districtRepository.find.mockResolvedValue([mockDistrict]);
+        areaRepository.find.mockResolvedValue([mockArea]);
+        shiftDefinitionRepository.find.mockResolvedValue([mockShiftDef]);
+        trackingRepository.createQueryBuilder.mockReturnValue(qb());
+        staffRequirementRepository.createQueryBuilder.mockReturnValue(qb());
+      });
+
+      it('keeps a lokasi whose centre is inside the box', async () => {
+        const result = await service.getBoundaries({ bbox: [112.7, -7.3, 112.8, -7.2] });
+        expect(result.districts[0].areas.map((a) => a.id)).toEqual(['area-1']);
+      });
+
+      it('drops a rayon with nothing on camera — no outline, no kawasan, no lokasi', async () => {
+        const result = await service.getBoundaries({ bbox: [113.5, -8.5, 113.6, -8.4] });
+        expect(result.districts).toEqual([]);
+      });
+
+      it('keeps `area_count` at the rayon TRUE size, not the visible count', async () => {
+        // The number labels the rayon ("12 lokasi"); one that shrank as the
+        // operator panned would read as data vanishing rather than a viewport.
+        areaRepository.find.mockResolvedValue([
+          mockArea,
+          { ...mockArea, id: 'area-2', gps_lat: -8.4, gps_lng: 113.5 } as any,
+        ]);
+        const result = await service.getBoundaries({ bbox: [112.7, -7.3, 112.8, -7.2] });
+        expect(result.districts[0].areas).toHaveLength(1);
+        expect(result.districts[0].area_count).toBe(2);
+      });
+
+      it('returns everything when no bbox is given, so drill and zoom are unchanged', async () => {
+        const result = await service.getBoundaries({});
+        expect(result.districts).toHaveLength(1);
+        expect(result.districts[0].areas).toHaveLength(1);
+      });
+    });
+  });
+
+  describe('korlap coverage resolvers (PR0b)', () => {
+    it('occurrenceCoverageForCurrentShift collects distinct location/region/district ids, uncollapsed', async () => {
+      const qb = {
+        leftJoin: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([
+          { location_id: 'loc-1', region_id: null, district_id: 'd1' },
+          { location_id: 'loc-2', region_id: null, district_id: 'd1' },
+          { location_id: null, region_id: 'reg-1', district_id: 'd1' },
+          { location_id: null, region_id: null, district_id: 'd2' },
+        ]),
+      };
+      (service as any).scheduleRepository.createQueryBuilder = jest.fn().mockReturnValue(qb);
+
+      const res = await service.occurrenceCoverageForCurrentShift('korlap-1', 'shift-1');
+
+      // Multiple lokasi at the same shift are ALL kept (uncollapsed, unlike
+      // scheduleScopesForCurrentShift). A region- or district-scoped occurrence
+      // (no sl.location_id) records its coarser scope instead.
+      expect(res.locationIds.sort()).toEqual(['loc-1', 'loc-2']);
+      expect(res.regionIds).toEqual(['reg-1']);
+      expect(res.districtIds).toEqual(['d2']);
+    });
+
+    it('occurrenceCoverageForCurrentShift returns empty without a shift', async () => {
+      const res = await service.occurrenceCoverageForCurrentShift('korlap-1', undefined);
+      expect(res).toEqual({ locationIds: [], regionIds: [], districtIds: [] });
+    });
+
+    it('locationIdsForRegions expands to active member lokasi', async () => {
+      areaRepository.find.mockResolvedValue([{ id: 'a1' }, { id: 'a2' }] as any);
+
+      const ids = await service.locationIdsForRegions(['reg-1']);
+
+      expect(ids).toEqual(['a1', 'a2']);
+      expect(areaRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ is_active: true }) }),
+      );
+    });
+
+    it('region/district expansion short-circuits on empty input (no query)', async () => {
+      areaRepository.find.mockClear();
+      expect(await service.locationIdsForRegions([])).toEqual([]);
+      expect(await service.locationIdsForDistricts([])).toEqual([]);
+      expect(areaRepository.find).not.toHaveBeenCalled();
     });
   });
 });

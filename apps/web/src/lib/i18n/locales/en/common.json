@@ -53,12 +53,15 @@
     "sortTooltip": "Click to sort · Shift+click for multiple columns",
     "openMapLink": "Open in Google Maps",
     "fullscreen": "Fullscreen",
-    "exitFullscreen": "Exit Fullscreen"
+    "exitFullscreen": "Exit Fullscreen",
+    "apply": "Apply",
+    "decrease": "Decrease",
+    "increase": "Increase"
   },
   "entities": {
     "user": "User",
     "area": "Area",
-    "rayon": "Rayon",
+    "district": "District",
     "task": "Task",
     "activity": "Activity",
     "schedule": "Schedule",
@@ -127,7 +130,8 @@
       "placeholder": "Select…",
       "searchPlaceholder": "Search…",
       "noResults": "Not found",
-      "clearSelection": "Clear selection"
+      "clearSelection": "Clear selection",
+      "loadMore": "Load more"
     },
     "timePicker": {
       "selectTime": "Select time",
@@ -136,7 +140,10 @@
     "multiCombobox": {
       "selected": "{{count}} selected",
       "removeItem": "Remove {{label}}"
-    }
+    },
+    "photoPreview": "Photo preview",
+    "photoPrevious": "Previous photo",
+    "photoNext": "Next photo"
   },
   "app": {
     "install": {
@@ -159,9 +166,11 @@
     "pruningRequests": "Pruning Requests",
     "usersAccess": "Users & Access",
     "users": "Users",
+    "roles": "Roles",
     "masterData": "Master Data",
-    "areas": "Areas",
-    "rayons": "Rayons",
+    "locations": "Locations",
+    "districts": "Districts",
+    "regions": "Regions",
     "plants": "Plants",
     "seeds": "Seeds",
     "assets": "Assets",
@@ -184,7 +193,8 @@
     "guide": "Guide",
     "districtNav": "District navigation",
     "mainNav": "Main navigation",
-    "breadcrumbAria": "Breadcrumb navigation"
+    "breadcrumbAria": "Breadcrumb navigation",
+    "teams": "Team Categories"
   },
   "pagination": {
     "previous": "Previous",
@@ -251,5 +261,38 @@
     "noPermission": {
       "short": "Access denied"
     }
+  },
+  "color": "Color",
+  "marker": {
+    "label": "Map Marker",
+    "upload": "Upload image",
+    "clear": "Clear marker",
+    "custom": "Custom marker",
+    "preset": "Marker option {{n}}",
+    "hint": "Pick a preset marker or upload an image (SVG/PNG, max 200KB).",
+    "tooLarge": "Image must be 200KB or smaller",
+    "readError": "Failed to read image",
+    "change": "Change",
+    "reset": "Reset to default",
+    "default": "Default",
+    "done": "Done",
+    "current": "Current marker",
+    "usingDefault": "Using system default",
+    "colorHint": "Pin/label color on the map — does not recolor the icon image."
+  },
+  "loading": "Loading…",
+  "messages": {
+    "saved": "Changes saved",
+    "created": "Created",
+    "updated": "Updated",
+    "deleted": "Deleted",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "assigned": "Assigned",
+    "verified": "Verified",
+    "revisionRequested": "Revision requested",
+    "removed": "Removed",
+    "markedRead": "Marked as read",
+    "converted": "Converted"
   }
 }

@@ -11,7 +11,7 @@ import {
  */
 export class SubscribeAreaDto {
   @IsUUID()
-  area_id: string;
+  location_id: string;
 }
 
 /**
@@ -19,23 +19,39 @@ export class SubscribeAreaDto {
  */
 export class UnsubscribeAreaDto {
   @IsUUID()
-  area_id: string;
+  location_id: string;
 }
 
 /**
- * Subscribe to rayon events
+ * Subscribe to district events
  */
-export class SubscribeRayonDto {
+export class SubscribeDistrictDto {
   @IsUUID()
-  rayon_id: string;
+  district_id: string;
 }
 
 /**
- * Unsubscribe from rayon events
+ * Unsubscribe from district events
  */
-export class UnsubscribeRayonDto {
+export class UnsubscribeDistrictDto {
   @IsUUID()
-  rayon_id: string;
+  district_id: string;
+}
+
+/**
+ * Subscribe to region events (Phase 5.5b)
+ */
+export class SubscribeRegionDto {
+  @IsUUID()
+  region_id: string;
+}
+
+/**
+ * Unsubscribe from region events (Phase 5.5b)
+ */
+export class UnsubscribeRegionDto {
+  @IsUUID()
+  region_id: string;
 }
 
 /**
@@ -60,14 +76,18 @@ export class UserLocationEvent {
   shift_name: string;
 
   @IsUUID()
-  area_id: string;
+  location_id: string;
 
   @IsString()
-  area_name: string;
+  location_name: string;
 
   @IsUUID()
   @IsOptional()
-  rayon_id: string | null;
+  district_id?: string | null;
+
+  @IsUUID()
+  @IsOptional()
+  region_id?: string | null;
 
   @IsNumber()
   latitude: number;
@@ -77,11 +97,11 @@ export class UserLocationEvent {
 
   @IsNumber()
   @IsOptional()
-  accuracy: number | null;
+  accuracy?: number | null;
 
   @IsNumber()
   @IsOptional()
-  battery_level: number | null;
+  battery_level?: number | null;
 
   @IsEnum(TrackingStatus)
   status: TrackingStatus;
@@ -115,14 +135,18 @@ export class UserClockInEvent {
   shift_id: string;
 
   @IsUUID()
-  area_id: string;
+  location_id: string;
 
   @IsString()
-  area_name: string;
+  location_name: string;
 
   @IsUUID()
   @IsOptional()
-  rayon_id: string | null;
+  district_id?: string | null;
+
+  @IsUUID()
+  @IsOptional()
+  region_id?: string | null;
 
   @IsNumber()
   latitude: number;
@@ -147,14 +171,18 @@ export class UserClockOutEvent {
   shift_id: string;
 
   @IsUUID()
-  area_id: string;
+  location_id: string;
 
   @IsString()
-  area_name: string;
+  location_name: string;
 
   @IsUUID()
   @IsOptional()
-  rayon_id: string | null;
+  district_id?: string | null;
+
+  @IsUUID()
+  @IsOptional()
+  region_id?: string | null;
 
   timestamp: Date;
 
@@ -163,18 +191,18 @@ export class UserClockOutEvent {
 }
 
 /**
- * Area staffing update event
+ * Location staffing update event
  */
 export class AreaStaffingEvent {
   @IsUUID()
-  area_id: string;
+  location_id: string;
 
   @IsString()
-  area_name: string;
+  location_name: string;
 
   @IsUUID()
   @IsOptional()
-  rayon_id: string | null;
+  district_id: string | null;
 
   workers_required: number;
   workers_online: number;
@@ -196,14 +224,14 @@ export class TaskAssignedEvent {
   title: string;
 
   @IsUUID()
-  area_id: string;
+  location_id: string;
 
   @IsString()
-  area_name: string;
+  location_name: string;
 
   @IsUUID()
   @IsOptional()
-  rayon_id: string | null;
+  district_id: string | null;
 
   @IsUUID()
   assigned_to: string;
@@ -230,14 +258,14 @@ export class TaskCompletedEvent {
   title: string;
 
   @IsUUID()
-  area_id: string;
+  location_id: string;
 
   @IsString()
-  area_name: string;
+  location_name: string;
 
   @IsUUID()
   @IsOptional()
-  rayon_id: string | null;
+  district_id: string | null;
 
   @IsUUID()
   completed_by: string;
@@ -252,7 +280,7 @@ export class TaskCompletedEvent {
  * User status changed event (Phase 2D)
  *
  * Emitted when a user's tracking status transitions between states.
- * Broadcast to: area room, rayon room, city room
+ * Broadcast to: area room, district room, region room, city room
  */
 export class UserStatusChangedEvent {
   @IsUUID()
@@ -266,15 +294,19 @@ export class UserStatusChangedEvent {
 
   @IsUUID()
   @IsOptional()
-  area_id: string | null;
+  location_id?: string | null;
 
   @IsString()
   @IsOptional()
-  area_name: string | null;
+  location_name?: string | null;
 
   @IsUUID()
   @IsOptional()
-  rayon_id: string | null;
+  district_id?: string | null;
+
+  @IsUUID()
+  @IsOptional()
+  region_id?: string | null;
 
   @IsEnum(TrackingStatus)
   previous_status: TrackingStatus;
@@ -284,11 +316,11 @@ export class UserStatusChangedEvent {
 
   @IsNumber()
   @IsOptional()
-  latitude: number | null;
+  latitude?: number | null;
 
   @IsNumber()
   @IsOptional()
-  longitude: number | null;
+  longitude?: number | null;
 
   @IsString()
   activity: ActivityStatus;
@@ -303,7 +335,7 @@ export class UserStatusChangedEvent {
  * User left area / entered area event (Phase 2D)
  *
  * Emitted when boundary crossing is detected.
- * Broadcast to: area room, rayon room, city room
+ * Broadcast to: area room, district room, region room, city room
  */
 export class UserAreaEvent {
   @IsUUID()
@@ -316,14 +348,18 @@ export class UserAreaEvent {
   role: UserRole;
 
   @IsUUID()
-  area_id: string;
+  location_id: string;
 
   @IsString()
-  area_name: string;
+  location_name: string;
 
   @IsUUID()
   @IsOptional()
-  rayon_id: string | null;
+  district_id?: string | null;
+
+  @IsUUID()
+  @IsOptional()
+  region_id?: string | null;
 
   @IsNumber()
   latitude: number;
@@ -349,11 +385,11 @@ export class UserReassignedEvent {
 
   @IsUUID()
   @IsOptional()
-  previous_area_id: string | null;
+  previous_area_id?: string | null;
 
   @IsString()
   @IsOptional()
-  previous_area_name: string | null;
+  previous_area_name?: string | null;
 
   @IsUUID()
   new_area_id: string;
@@ -363,18 +399,26 @@ export class UserReassignedEvent {
 
   @IsUUID()
   @IsOptional()
-  rayon_id: string | null;
+  district_id?: string | null;
+
+  @IsUUID()
+  @IsOptional()
+  region_id?: string | null;
 
   timestamp: Date;
 }
 
 export class AreaStaffingChangedEvent {
   @IsUUID()
-  area_id: string;
+  location_id: string;
 
   @IsUUID()
   @IsOptional()
-  rayon_id: string | null;
+  district_id?: string | null;
+
+  @IsUUID()
+  @IsOptional()
+  region_id?: string | null;
 
   @IsNumber()
   active_count: number;

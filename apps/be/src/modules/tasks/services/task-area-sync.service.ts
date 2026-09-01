@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { Task, TaskStatus } from '../entities/task.entity';
-import { UserAreasService } from '../../user-areas/user-areas.service';
+import { UserLocationsService } from '../../user-locations/user-locations.service';
 
 /**
  * Keeps a worker's `task_based` area assignments (ADR-013 §5) in sync with the
@@ -29,7 +29,7 @@ export class TaskAreaSyncService {
   constructor(
     @InjectRepository(Task)
     private readonly taskRepository: Repository<Task>,
-    private readonly userAreasService: UserAreasService,
+    private readonly userAreasService: UserLocationsService,
   ) {}
 
   /**
@@ -41,10 +41,12 @@ export class TaskAreaSyncService {
     try {
       const tasks = await this.taskRepository.find({
         where: { assigned_to: userId, status: In(TaskAreaSyncService.ACTIVE_STATUSES) },
-        select: ['id', 'area_id'],
+        select: ['id', 'location_id'],
       });
-      const areaIds = [...new Set(tasks.map((t) => t.area_id).filter((id): id is string => !!id))];
-      await this.userAreasService.syncTaskBasedAreas(userId, areaIds);
+      const locationIds = [
+        ...new Set(tasks.map((t) => t.location_id).filter((id): id is string => !!id)),
+      ];
+      await this.userAreasService.syncTaskBasedLocations(userId, locationIds);
     } catch (error) {
       this.logger.error(
         `Failed to sync task-based areas for user ${userId}: ${

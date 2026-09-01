@@ -3,8 +3,15 @@
  * Operational daily roster management
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  type QueryClient,
+} from '@tanstack/react-query';
 import { apiClient } from './client';
+import { scheduleOccurrenceKeys } from './schedule-events';
+import { unscheduledKeys } from './unscheduled';
 
 import type { UserRole } from '@/types/models';
 
@@ -12,7 +19,9 @@ export type AddScheduleInput = {
   user_id: string;
   date: string;
   shift_definition_id?: string | null;
-  area_ids?: string[];
+  location_ids?: string[];
+  district_id?: string | null;
+  region_id?: string | null;
 };
 
 /**
@@ -28,7 +37,7 @@ export interface Schedule {
   id: string;
   user_id: string;
   schedule_date: string; // YYYY-MM-DD
-  rayon_id: string;
+  district_id: string;
   shift_definition_id: string | null;
   status:
     | 'planned'
@@ -41,7 +50,7 @@ export interface Schedule {
     | 'off';
   replacement_user_id: string | null;
   original_user_id: string | null;
-  source: 'template' | 'manual';
+  source: 'template' | 'manual' | 'event';
   is_overtime: boolean;
   notes: string | null;
   user: {
@@ -61,15 +70,15 @@ export interface Schedule {
     full_name: string;
     username: string;
   } | null;
-  schedule_areas: Array<{
+  /** Lokasi this occurrence is scoped to — ADR-053: exactly one place per row. */
+  location_id?: string | null;
+  location?: {
     id: string;
-    area_id: string;
-    area: {
-      id: string;
-      name: string;
-      code: string;
-    };
-  }>;
+    name: string;
+    code?: string;
+  } | null;
+  /** Kawasan this occurrence is scoped to (ADR-053: at most one). */
+  region_id?: string | null;
 }
 
 /**
@@ -78,20 +87,21 @@ export interface Schedule {
 export const dailyScheduleKeys = {
   all: ['schedules'] as const,
   lists: () => [...dailyScheduleKeys.all, 'list'] as const,
-  byDate: (date: string, rayonId?: string) =>
-    [...dailyScheduleKeys.lists(), { date, rayonId }] as const,
+  byDate: (date: string, districtId?: string) =>
+    [...dailyScheduleKeys.lists(), { date, districtId }] as const,
+  detail: (id: string) => [...dailyScheduleKeys.all, 'detail', id] as const,
   myRoster: (date?: string) => [...dailyScheduleKeys.all, 'my', date] as const,
 };
 
 /**
- * Fetch daily schedules for a given date (optionally filtered by rayon)
+ * Fetch daily schedules for a given date (optionally filtered by district)
  */
 async function fetchSchedules(
   date: string,
-  rayonId?: string,
+  districtId?: string,
 ): Promise<Schedule[]> {
   const params = new URLSearchParams();
-  params.append('rayonId', rayonId || '');
+  params.append('districtId', districtId || '');
   const response = await apiClient.get<Schedule[]>(
     `/schedules/date/${date}?${params.toString()}`,
   );
@@ -153,9 +163,18 @@ async function replaceWorker(
 /**
  * Update areas assigned to a daily schedule
  */
-async function updateAreas(id: string, area_ids: string[]): Promise<Schedule> {
+async function updateAreas(
+  id: string,
+  location_ids: string[],
+  district_id?: string | null,
+  region_id?: string | null,
+): Promise<Schedule> {
+  // The endpoint sets the occurrence's whole scope, not just lokasi: omitting a
+  // field leaves it unchanged, so callers that switch scope must send all three.
   const response = await apiClient.patch<Schedule>(`/schedules/${id}/areas`, {
-    area_ids,
+    area_ids: location_ids,
+    ...(district_id !== undefined ? { district_id } : {}),
+    ...(region_id !== undefined ? { region_id } : {}),
   });
   return response.data;
 }
@@ -184,11 +203,30 @@ async function addSchedule(input: AddScheduleInput): Promise<Schedule> {
 /**
  * Hook to fetch daily schedules for a specific date
  */
-export function useDailyRoster(date: string, rayonId?: string) {
+export function useDailyRoster(date: string, districtId?: string) {
   return useQuery({
-    queryKey: dailyScheduleKeys.byDate(date, rayonId),
-    queryFn: () => fetchSchedules(date, rayonId),
+    queryKey: dailyScheduleKeys.byDate(date, districtId),
+    queryFn: () => fetchSchedules(date, districtId),
     enabled: !!date,
+  });
+}
+
+/**
+ * One roster row by id.
+ *
+ * A projected occurrence has no row in the table — its id is
+ * `projected:<event>:<user>:<date>` — so those are skipped here and read from the
+ * range payload the board already holds. Only materialized rows are fetched.
+ */
+export function useSchedule(id?: string | null) {
+  const isMaterialized = !!id && !id.startsWith('projected:');
+  return useQuery({
+    queryKey: dailyScheduleKeys.detail(id ?? ''),
+    queryFn: async () => {
+      const response = await apiClient.get<Schedule>(`/schedules/${id}`);
+      return response.data;
+    },
+    enabled: isMaterialized,
   });
 }
 
@@ -203,6 +241,24 @@ export function useMyRoster(date?: string) {
 }
 
 /**
+ * What a roster-row write invalidates.
+ *
+ * These hooks only ever invalidated `dailyScheduleKeys` — the `/schedules/date`
+ * cache — which the calendar does not read. The board's rows, its summary counts
+ * and the gap panel all live under other keys, so every one of them had to be
+ * refreshed by hand from the page afterwards. Awaited, so `mutateAsync` resolves
+ * with the board already correct and the success toast cannot beat the row onto
+ * the screen.
+ */
+async function invalidateRosterRowWrites(queryClient: QueryClient): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: dailyScheduleKeys.lists() }),
+    queryClient.invalidateQueries({ queryKey: scheduleOccurrenceKeys.all }),
+    queryClient.invalidateQueries({ queryKey: unscheduledKeys.all }),
+  ]);
+}
+
+/**
  * Hook to generate daily schedules for a date
  */
 export function useGenerateRoster() {
@@ -210,10 +266,7 @@ export function useGenerateRoster() {
 
   return useMutation({
     mutationFn: generateRoster,
-    onSuccess: () => {
-      // Invalidate the daily roster cache
-      queryClient.invalidateQueries({ queryKey: dailyScheduleKeys.lists() });
-    },
+    onSuccess: () => invalidateRosterRowWrites(queryClient),
   });
 }
 
@@ -226,9 +279,7 @@ export function useSetLeave() {
   return useMutation({
     mutationFn: ({ id, leave_type, notes }: { id: string; leave_type: LeaveType; notes?: string }) =>
       setLeave(id, leave_type, notes),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: dailyScheduleKeys.lists() });
-    },
+    onSuccess: () => invalidateRosterRowWrites(queryClient),
   });
 }
 
@@ -241,9 +292,7 @@ export function useReplaceWorker() {
   return useMutation({
     mutationFn: ({ id, replacement_user_id, notes }: { id: string; replacement_user_id: string; notes?: string }) =>
       replaceWorker(id, replacement_user_id, notes),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: dailyScheduleKeys.lists() });
-    },
+    onSuccess: () => invalidateRosterRowWrites(queryClient),
   });
 }
 
@@ -254,11 +303,18 @@ export function useUpdateRosterAreas() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, area_ids }: { id: string; area_ids: string[] }) =>
-      updateAreas(id, area_ids),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: dailyScheduleKeys.lists() });
-    },
+    mutationFn: ({
+      id,
+      location_ids,
+      district_id,
+      region_id,
+    }: {
+      id: string;
+      location_ids: string[];
+      district_id?: string | null;
+      region_id?: string | null;
+    }) => updateAreas(id, location_ids, district_id, region_id),
+    onSuccess: () => invalidateRosterRowWrites(queryClient),
   });
 }
 
@@ -271,9 +327,7 @@ export function useUpdateRosterShift() {
   return useMutation({
     mutationFn: ({ id, shift_definition_id }: { id: string; shift_definition_id: string | null }) =>
       updateShift(id, shift_definition_id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: dailyScheduleKeys.lists() });
-    },
+    onSuccess: () => invalidateRosterRowWrites(queryClient),
   });
 }
 
@@ -285,9 +339,7 @@ export function useAddSchedule() {
 
   return useMutation({
     mutationFn: addSchedule,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: dailyScheduleKeys.lists() });
-    },
+    onSuccess: () => invalidateRosterRowWrites(queryClient),
   });
 }
 
@@ -306,8 +358,6 @@ export function useDeleteSchedule() {
 
   return useMutation({
     mutationFn: deleteSchedule,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: dailyScheduleKeys.lists() });
-    },
+    onSuccess: () => invalidateRosterRowWrites(queryClient),
   });
 }

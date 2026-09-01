@@ -6,7 +6,7 @@ SEKAR Web Dashboard is a Next.js 16.1.4 application with React 19 using the **Ne
 
 ## Phase 3 Planning (Apr 24, 2026)
 
-New pages planned for Phase 3 (Plants Management + Monitoring Rebuild + Public Intake — see `specs/phases/phase-3-plants-monitoring-rebuild/`):
+New pages planned for Phase 3 (Plants Management + Monitoring Rebuild + Public Intake — see history/CHANGELOG.md):
 - `/monitoring` v2 — supercluster layer, incremental WS patches, virtualized worker list, hierarchy filter panel, plant + overdue overlays, area detail drawer (ADR-029)
 - `/plants/` and `/plants/[areaId]/` — plant species catalog and per-area aggregate inventory (ADR-030)
 - `/tasks/new` — dynamic form per `task_type` with species multi-select + quantities (ADR-031)
@@ -15,7 +15,7 @@ New pages planned for Phase 3 (Plants Management + Monitoring Rebuild + Public I
 - `/seeds/*` — plant-seed inventory ledger
 - Sidebar updated to 9 roles: 8 existing + new `staff_kecamatan`
 
-Nothing is built yet. Start from `specs/phases/phase-3-plants-monitoring-rebuild/web.md` when implementing.
+Nothing is built yet. Start from history/CHANGELOG.md when implementing.
 
 ## Tech Stack
 
@@ -79,7 +79,7 @@ npm run test:e2e                  # Playwright E2E tests
 ### ⚠️ Tokens are generated — never hand-edit
 
 From Phase 3 M1-R sub-phase **3-R2** onward (planned):
-- **Source of truth:** [`specs/ui-ux/tokens.json`](../../specs/ui-ux/tokens.json)
+- **Source of truth:** [`specs/design-system/tokens.json`](../../specs/design-system/tokens.json)
 - **Generated consumer:** `apps/web/src/app/generated/tokens.css` (emitted by `scripts/build-tokens.ts`; CI validates drift via `tokens-verify`)
 - **`@import` wrapper:** `apps/web/src/app/globals.css` becomes `@import './generated/tokens.css';` plus utility classes (`.nb-focus-ring`, `.shadow-nb-*` Tailwind utilities, etc.)
 - **Brand fonts:** `next/font/google` in `apps/web/src/app/layout.tsx` loads Space Grotesk, Inter, JetBrains Mono with `display: 'swap'` and CSS variables `--font-display|body|mono`
@@ -416,7 +416,7 @@ npm run test:e2e:ui       # With UI
 5. **48px touch targets** - All buttons and interactive elements
 6. **Use CVA for variants** - class-variance-authority for component variants
 7. **i18n every UI string (MANDATORY)** - never hardcode display text; use `t('<ns>:<key>')` (react-i18next) and add the key to BOTH `src/lib/i18n/locales/{id,en}/<ns>.json` (id = Indonesian, en = English). Reuse `common`/`status`/`roles`/`validation`/`errors`. Zod → `useMemo(() => z.object(...), [t])`. New namespace → register in `src/lib/i18n/resources.ts`. Verify with `npm run i18n:check` (root). Default language is Indonesian; English is the alternate. See root `CLAUDE.md` §Internationalization.
-8. **Role values MUST be lowercase** - Use `'admin'`, `'worker'`, `'top_management'`, etc. (never PascalCase)
+8. **Role values MUST be lowercase** - Use the current codes, e.g. `'satgas'`, `'korlap'`, `'admin_rayon'`, `'management'` (never PascalCase; `worker`/`admin`/`top_management`/`admin_data` are removed — see root CLAUDE.md §Role Values Convention)
 9. **FormSelect placeholders** - Use `'none'` or `'all'` sentinel values, never empty string `''`
 10. **Type safety** - Avoid `any` type; use proper types from `@/types/models`
 
@@ -446,3 +446,13 @@ npx playwright test 07-schedules # Single file
 - **Unit tests**: `src/components/ui/__tests__/*.test.tsx`
 - **E2E tests**: `e2e/*.spec.ts`
 - **E2E fixtures**: `e2e/fixtures/mock-api.ts`
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

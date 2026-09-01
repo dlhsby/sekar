@@ -1,7 +1,7 @@
 /**
  * CarouselScenePanel — the bordered illustration box that is the only swiping
  * element of the pre-login carousel (one per WL-2…WL-5 slide). Mirrors the
- * `.scene-illust` primitive in design/project/hifi-mobile.html.
+ * `.scene-illust` primitive in specs/design-system/mockups/project/hifi-mobile.html.
  */
 
 import React from 'react';

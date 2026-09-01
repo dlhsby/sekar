@@ -23,6 +23,8 @@ import { ShiftsService } from './shifts.service';
 import { ClockInDto } from './dto/clock-in.dto';
 import { ClockOutDto } from './dto/clock-out.dto';
 import { AttendanceDaySummaryDto, AttendanceDayDetailDto } from './dto/attendance-day.dto';
+import { AttendanceCurrentDto } from './dto/attendance-current.dto';
+import { PunchLogDayDto } from './dto/punch-log.dto';
 import { AttendanceFilterDto } from './dto/attendance-filter.dto';
 import { Shift } from './entities/shift.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -52,7 +54,7 @@ export class ShiftsController {
   @ApiOperation({
     summary: 'Clock in to start a shift',
     description:
-      'User clocks in to start a shift. Area can be auto-detected from schedule or provided manually. ' +
+      'User clocks in to start a shift. Location can be auto-detected from schedule or provided manually. ' +
       'Only one active shift allowed per user.',
   })
   @ApiBody({ type: ClockInDto })
@@ -128,6 +130,21 @@ export class ShiftsController {
   })
   async getCurrentShift(@GetUser() user: User): Promise<Shift | null> {
     return this.shiftsService.findActiveShift(user.id);
+  }
+
+  @Get('current-state')
+  @Roles(...CLOCKABLE_ROLES)
+  @ApiOperation({
+    summary: 'Current attendance state + shift options (ADR-055)',
+    description:
+      'Returns the open session (Jam Masuk + context) or null, plus the shift ' +
+      'options a clock-in could target now (best-first, is_default flags the top). ' +
+      'Drives the mobile Rekam Waktu screen: disable Clock Out when nothing is ' +
+      'open, and offer the shift picker near midnight or for a dangling shift.',
+  })
+  @ApiResponse({ status: HttpStatus.OK, type: AttendanceCurrentDto })
+  async getCurrentState(@GetUser() user: User): Promise<AttendanceCurrentDto> {
+    return this.shiftsService.getCurrentAttendance(user.id);
   }
 
   @Get('my-shifts')
@@ -224,6 +241,28 @@ export class ShiftsController {
     return { date, shifts };
   }
 
+  @Get('attendance/:date/punches')
+  @Roles(...CLOCKABLE_ROLES)
+  @ApiOperation({
+    summary: 'Punch timeline for a day (ADR-055)',
+    description:
+      "The raw append-only punch log behind the authenticated user's attendance on " +
+      'the given WIB service-day, grouped into sessions with their derived Jam Masuk / ' +
+      'Keluar / worked-minutes. Powers the mobile Detail Pencatatan Waktu screen.',
+  })
+  @ApiParam({ name: 'date', description: 'WIB service-day (YYYY-MM-DD)', example: '2026-06-22' })
+  @ApiResponse({ status: HttpStatus.OK, type: PunchLogDayDto })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Invalid date format' })
+  async getMyPunchLogForDate(
+    @GetUser() user: User,
+    @Param('date') date: string,
+  ): Promise<PunchLogDayDto> {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      throw new BadRequestException('date must be in YYYY-MM-DD format');
+    }
+    return this.shiftsService.getPunchLogForDate(user.id, date);
+  }
+
   @Get('active')
   @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON)
   @ApiOperation({
@@ -243,7 +282,7 @@ export class ShiftsController {
           {
             id: 'shift-uuid',
             user_id: 'user-uuid',
-            area_id: 'area-uuid',
+            location_id: 'area-uuid',
             clock_in_time: '2026-01-16T08:00:00.000Z',
             clock_out_time: null,
             user: {

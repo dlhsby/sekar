@@ -10,6 +10,14 @@ import { Semaphore } from './semaphore';
 const PROFILE_PREFIX = 'puppeteer_dev_chrome_profile-';
 /** Hard cap on how long we wait for a graceful browser close before force-killing. */
 const CLOSE_TIMEOUT_MS = 5000;
+/**
+ * How often to sweep orphaned profile dirs while the service is running. The
+ * startup sweep + guarded close handle the common cases; this periodic pass is a
+ * RAM-free backstop for profiles orphaned by a crash that happens mid-run (the
+ * process stays up, so the startup sweep never fires). Chosen over a RAM-backed
+ * `/tmp` tmpfs, which would consume the box's scarce memory.
+ */
+const SWEEP_INTERVAL_MS = 30 * 60 * 1000;
 
 /**
  * PDF Generator Service
@@ -29,6 +37,10 @@ export class PdfGeneratorService implements OnModuleInit, OnModuleDestroy {
   private renderCount = 0;
   private readonly recycleThreshold = 100;
   private readonly templatesDir = path.join(__dirname, 'templates');
+  /** Profile dir name of the currently-live browser; never swept while in use. */
+  private currentProfile: string | null = null;
+  /** Handle for the periodic background sweep, cleared on shutdown. */
+  private sweepTimer: ReturnType<typeof setInterval> | null = null;
 
   async onModuleInit(): Promise<void> {
     // Sweep any Chrome profile dirs orphaned by a previous ungraceful exit
@@ -38,13 +50,7 @@ export class PdfGeneratorService implements OnModuleInit, OnModuleDestroy {
     this.cleanupStaleProfiles();
 
     try {
-      const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium-browser';
-      this.browser = await puppeteer.launch({
-        executablePath,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
-        headless: true,
-      });
-      this.logger.log(`PDF generator initialized with browser at ${executablePath}`);
+      await this.launchBrowser();
     } catch (error) {
       // Do NOT crash the whole API if the headless browser is unavailable (e.g. the
       // Chromium binary is missing). PDF generation degrades gracefully — generatePdf()
@@ -56,14 +62,43 @@ export class PdfGeneratorService implements OnModuleInit, OnModuleDestroy {
           'Report PDF generation will be disabled until a Chromium binary is present.',
       );
     }
+
+    // Background backstop: periodically drop profiles orphaned mid-run. unref() so
+    // it never keeps the process alive on shutdown.
+    this.sweepTimer = setInterval(() => this.cleanupStaleProfiles(), SWEEP_INTERVAL_MS);
+    this.sweepTimer.unref?.();
   }
 
   async onModuleDestroy(): Promise<void> {
+    if (this.sweepTimer) {
+      clearInterval(this.sweepTimer);
+      this.sweepTimer = null;
+    }
     if (this.browser) {
       await this.closeBrowserSafely(this.browser);
       this.browser = null;
       this.logger.log('PDF generator browser closed');
     }
+  }
+
+  /**
+   * Launch the singleton browser and record which temp profile dir it owns.
+   *
+   * Puppeteer creates a fresh `puppeteer_dev_chrome_profile-*` dir per launch; we
+   * diff the temp dir before/after so the periodic sweep never deletes the dir the
+   * live browser is actively using.
+   */
+  private async launchBrowser(): Promise<void> {
+    const before = this.listProfiles();
+    const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium-browser';
+    this.browser = await puppeteer.launch({
+      executablePath,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      headless: true,
+    });
+    const after = this.listProfiles();
+    this.currentProfile = after.find((p) => !before.includes(p)) ?? null;
+    this.logger.log(`PDF generator initialized with browser at ${executablePath}`);
   }
 
   /**
@@ -138,14 +173,10 @@ export class PdfGeneratorService implements OnModuleInit, OnModuleDestroy {
         // if Chrome hangs; a plain close() that times out would orphan an ~82MB dir.
         await this.closeBrowserSafely(this.browser);
         this.browser = null;
+        this.currentProfile = null;
       }
 
-      const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium-browser';
-      this.browser = await puppeteer.launch({
-        executablePath,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
-        headless: true,
-      });
+      await this.launchBrowser();
 
       this.renderCount = 0;
     } catch (error) {
@@ -189,12 +220,23 @@ export class PdfGeneratorService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  /** List `puppeteer_dev_chrome_profile-*` dir names currently in the OS temp dir. */
+  private listProfiles(): string[] {
+    try {
+      return fs.readdirSync(os.tmpdir()).filter((e) => e.startsWith(PROFILE_PREFIX));
+    } catch {
+      return [];
+    }
+  }
+
   /**
-   * Remove leftover `puppeteer_dev_chrome_profile-*` dirs from the OS temp dir.
+   * Remove leftover `puppeteer_dev_chrome_profile-*` dirs from the OS temp dir,
+   * except the one the live browser is currently using (`this.currentProfile`).
    *
    * Puppeteer normally removes the temp profile it created on a clean close(), so
-   * these only exist when a prior process died ungracefully. Called at startup
-   * (no browser running → safe to remove all matches).
+   * leftovers only exist when a process died ungracefully. Called at startup (no
+   * browser yet → `currentProfile` is null → removes all) and periodically while
+   * running (keeps the live profile).
    */
   private cleanupStaleProfiles(): void {
     const tmpDir = os.tmpdir();
@@ -202,6 +244,7 @@ export class PdfGeneratorService implements OnModuleInit, OnModuleDestroy {
     try {
       for (const entry of fs.readdirSync(tmpDir)) {
         if (!entry.startsWith(PROFILE_PREFIX)) continue;
+        if (entry === this.currentProfile) continue;
         try {
           fs.rmSync(path.join(tmpDir, entry), { recursive: true, force: true });
           removed++;

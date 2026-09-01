@@ -30,6 +30,10 @@ const eslintConfig = defineConfig([
       "sekar-design/prefer-nb-shadow-utility": "error",
       // i18n discipline — no hardcoded user-facing strings (CLAUDE.md §Internationalization)
       "sekar-design/no-untranslated-literal": "error",
+      // ...and no t(key, 'English') fallback: i18n:check compares key SETS, so a
+      // fallback renders English to id users with the check still green.
+      "sekar-design/no-i18n-literal-fallback": "error",
+      "sekar-design/no-low-contrast-text": "error",
     },
   },
   // ClusterLayer — conditional map-canvas shadows must be inline (no utility class equivalent for dynamic values);

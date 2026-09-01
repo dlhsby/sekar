@@ -94,7 +94,7 @@ export class LoggingInterceptor implements NestInterceptor {
   "userId": "8127dc81-97cf-4c6e-a1b4-b1ace284ea78",
   "metadata": {
     "shiftId": "shift-uuid",
-    "areaId": "area-uuid",
+    "locationId": "area-uuid",
     "clockInTime": "2026-01-16T14:30:00Z"
   }
 }

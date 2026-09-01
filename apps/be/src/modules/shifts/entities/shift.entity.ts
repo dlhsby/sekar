@@ -10,7 +10,7 @@ import {
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { User } from '../../users/entities/user.entity';
-import { Area } from '../../areas/entities/area.entity';
+import { Location } from '../../locations/entities/location.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
 
 /**
@@ -44,21 +44,21 @@ export class Shift {
   user: User;
 
   @ApiProperty({
-    description: 'Area UUID (foreign key to areas table) - Phase 2C: optional (auto-detected)',
+    description: 'Location UUID (foreign key to areas table) - Phase 2C: optional (auto-detected)',
     example: 'b2c3d4e5-f6a7-8901-bcde-f12345678901',
     nullable: true,
   })
   @Column({ type: 'uuid', nullable: true })
-  area_id: string | null;
+  location_id: string | null;
 
   @ApiProperty({
-    description: 'Area details',
-    type: () => Area,
+    description: 'Location details',
+    type: () => Location,
     nullable: true,
   })
-  @ManyToOne(() => Area, { eager: true, nullable: true, onDelete: 'RESTRICT' })
-  @JoinColumn({ name: 'area_id' })
-  area?: Area;
+  @ManyToOne(() => Location, { eager: true, nullable: true, onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'location_id' })
+  area?: Location;
 
   @ApiProperty({
     description: 'Shift definition ID (Phase 2D)',
@@ -66,6 +66,21 @@ export class Shift {
   })
   @Column({ type: 'uuid', nullable: true })
   shift_definition_id: string | null;
+
+  /**
+   * The WIB service-day this session belongs to (ADR-055) — the session key,
+   * stored EXPLICITLY rather than derived from `clock_in_time`. They differ when
+   * the attribution window puts a first punch on another day: a night worker's
+   * first clock-in at 00:30 belongs to the PREVIOUS day's crossing shift, so its
+   * `service_day` is yesterday even though `clock_in_time` is today. Nullable for
+   * historical rows backfilled before this column existed.
+   */
+  @ApiProperty({
+    description: 'WIB service-day the session belongs to (YYYY-MM-DD)',
+    nullable: true,
+  })
+  @Column({ type: 'date', nullable: true })
+  service_day?: string | null;
 
   @ManyToOne(() => ShiftDefinition, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'shift_definition_id' })
@@ -107,7 +122,7 @@ export class Shift {
       from: (value: string | null) => (value ? parseFloat(value) : null),
     },
   })
-  clock_in_gps_lat: number;
+  clock_in_gps_lat: number | null;
 
   @ApiProperty({
     description: 'GPS longitude at clock-in',
@@ -124,7 +139,7 @@ export class Shift {
       from: (value: string | null) => (value ? parseFloat(value) : null),
     },
   })
-  clock_in_gps_lng: number;
+  clock_in_gps_lng: number | null;
 
   @ApiProperty({
     description: 'S3 URL of selfie photo taken at clock-in',
@@ -141,7 +156,7 @@ export class Shift {
     nullable: true,
   })
   @Column({ type: 'timestamp with time zone', nullable: true })
-  clock_out_time: Date;
+  clock_out_time: Date | null;
 
   @ApiProperty({
     description: 'GPS latitude at clock-out',
@@ -158,7 +173,7 @@ export class Shift {
       from: (value: string | null) => (value ? parseFloat(value) : null),
     },
   })
-  clock_out_gps_lat: number;
+  clock_out_gps_lat: number | null;
 
   @ApiProperty({
     description: 'GPS longitude at clock-out',
@@ -175,7 +190,7 @@ export class Shift {
       from: (value: string | null) => (value ? parseFloat(value) : null),
     },
   })
-  clock_out_gps_lng: number;
+  clock_out_gps_lng: number | null;
 
   @ApiProperty({
     description: 'S3 URL of selfie photo taken at clock-out',
@@ -184,7 +199,7 @@ export class Shift {
     nullable: true,
   })
   @Column({ type: 'text', nullable: true })
-  clock_out_photo_url?: string;
+  clock_out_photo_url?: string | null;
 
   @ApiProperty({
     description: 'Whether this shift is an overtime shift',

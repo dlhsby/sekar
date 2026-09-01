@@ -26,7 +26,7 @@ Implement a **dual-identifier authentication** approach:
 3. **Detection logic** — The auth service detects whether the identifier looks like a phone number (starts with `0` or `+`) and queries the appropriate column first, with a fallback OR query to handle ambiguous cases.
 
 4. **Role-based enforcement**:
-   - Clockable roles (satgas, linmas, korlap, admin_data, kepala_rayon) and top_management: phone_number is recommended but not database-enforced (nullable). Frontend enforces input on user creation/edit for these roles.
+   - Clockable roles (satgas, linmas, korlap, admin_rayon, kepala_rayon) and management: phone_number is recommended but not database-enforced (nullable). Frontend enforces input on user creation/edit for these roles.
    - admin_system and superadmin: phone_number is optional, login remains username-based.
 
 5. **Separate column rationale** — We chose to add `phone_number` as a new column rather than reusing the existing `phone` column because:

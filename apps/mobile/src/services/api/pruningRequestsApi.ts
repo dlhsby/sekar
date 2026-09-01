@@ -25,7 +25,7 @@ export async function submitPruningRequest(
     target_count?: number;
     photo_keys: string[]; // Array of S3 keys from photo upload (min 1, max 5)
     notes?: string;
-    rayon_id?: string;
+    district_id?: string;
     kecamatan_name?: string;
     // Phase 3 Apr 27 — staff_kecamatan redesign fields
     tree_count?: number;
@@ -84,12 +84,12 @@ export async function getPruningRequestById(
 
 /**
  * Get pruning requests for admin review (unscoped list)
- * Accepts filters for status, rayon, date range, and pagination
+ * Accepts filters for status, district, date range, and pagination
  */
 export async function getAdminPruningRequests(
   filters?: {
     status?: string;
-    rayonId?: string;
+    districtId?: string;
     from?: string; // ISO date string
     to?: string; // ISO date string
     page?: number;

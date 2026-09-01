@@ -9,17 +9,18 @@ import { HomeSectionDivider } from '../../components/home/HomeSectionDivider';
 import { HomeStatTile } from '../../components/home/HomeStatTile';
 import { HomeListRow } from '../../components/home/HomeListRow';
 import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows } from '../../constants/nbTokens';
+import { screenContentGrow } from '../../constants/layout';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { fetchLiveUsers } from '../../store/slices/monitoringSlice';
 
 /**
  * Exec Home Screen (Phase 4 M3 Checkpoint 5) — city-wide overview for the
- * monitoring-first roles (top_management, admin_system, superadmin). No hi-fi
+ * monitoring-first roles (management, admin_system, superadmin). No hi-fi
  * frame exists; composed from the role-scoped monitoring slice (the backend
  * returns city scope for these roles), reusing the Home widgets.
  */
 
-interface RayonRow {
+interface DistrictRow {
   key: string;
   name: string;
   active: number;
@@ -62,12 +63,12 @@ export function ExecHomeScreen(): React.JSX.Element {
   const total = liveUsers.length;
   const active = statusCounts.active;
 
-  // Per-rayon active/total roll-up (the city-distinctive section).
-  const rayonRows = useMemo<RayonRow[]>(() => {
-    const map = new Map<string, RayonRow>();
+  // Per-district active/total roll-up (the city-distinctive section).
+  const districtRows = useMemo<DistrictRow[]>(() => {
+    const map = new Map<string, DistrictRow>();
     liveUsers.forEach((u) => {
-      const key = u.rayon_id ?? u.rayon_name ?? 'unknown';
-      const name = u.rayon_name ?? t('home:fallbacks.noRayon');
+      const key = u.district_id ?? u.district_name ?? 'unknown';
+      const name = u.district_name ?? t('home:fallbacks.noDistrict');
       const entry = map.get(key) ?? { key, name, active: 0, total: 0 };
       entry.total += 1;
       if (u.status === 'active') entry.active += 1;
@@ -94,7 +95,7 @@ export function ExecHomeScreen(): React.JSX.Element {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[nbColors.primary]} />}
         >
           {/* Ringkasan hari ini — city-wide overview */}
-          <HomeSectionDivider label={t('home:exec.sections.summary')} />
+          <HomeSectionDivider label={t('home:exec.sections.summary')} first />
 
           {/* City-overview hero */}
           <View style={styles.hero} testID="city-hero">
@@ -121,23 +122,23 @@ export function ExecHomeScreen(): React.JSX.Element {
             <HomeStatTile label={t('home:exec.kpi.outOfArea')} value={statusCounts.outside_area} variant="bad" testID="city-outside" />
           </View>
           <View style={styles.tilesRow}>
-            <HomeStatTile label={t('home:exec.kpi.absent')} value={statusCounts.missing} variant="warn" testID="city-missing" />
+            <HomeStatTile label={t('home:exec.kpi.absent')} value={statusCounts.absent} variant="warn" testID="city-absent" />
             <HomeStatTile label={t('home:exec.kpi.offline')} value={statusCounts.offline} variant="neutral" testID="city-offline" />
           </View>
 
-          {/* Per-rayon roll-up */}
-          {rayonRows.length > 0 && (
+          {/* Per-district roll-up */}
+          {districtRows.length > 0 && (
             <>
-              <HomeSectionDivider label={t('home:exec.sections.perRayon')} />
+              <HomeSectionDivider label={t('home:exec.sections.perDistrict')} />
               <View style={styles.list}>
-                {rayonRows.slice(0, 6).map((r) => (
+                {districtRows.slice(0, 6).map((r) => (
                   <HomeListRow
                     key={r.key}
-                    pill={<StatusPill tone={r.active > 0 ? 'ok' : 'neutral'} label={t('home:exec.rayon.status', { active: r.active, total: r.total })} />}
+                    pill={<StatusPill tone={r.active > 0 ? 'ok' : 'neutral'} label={t('home:exec.district.status', { active: r.active, total: r.total })} />}
                     title={r.name}
-                    subMeta={t('home:exec.rayon.detail', { active: r.active, total: r.total })}
+                    subMeta={t('home:exec.district.detail', { active: r.active, total: r.total })}
                     onPress={goToMonitoring}
-                    testID={`rayon-${r.key}`}
+                    testID={`district-${r.key}`}
                   />
                 ))}
               </View>
@@ -152,7 +153,7 @@ export function ExecHomeScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'transparent' },
   scrollView: { flex: 1 },
-  content: { paddingHorizontal: nbSpacing.md, paddingTop: nbSpacing.sm, paddingBottom: nbSpacing.md, flexGrow: 1 },
+  content: screenContentGrow,
 
   hero: {
     backgroundColor: nbColors.bgAccentMint,
@@ -160,7 +161,8 @@ const styles = StyleSheet.create({
     borderColor: nbColors.black,
     borderRadius: nbRadius.md,
     padding: nbSpacing.md,
-    marginBottom: nbSpacing.md,
+    // Intra-section gap to the tile rows below (same summary section).
+    marginBottom: nbSpacing.sm,
     ...nbShadows.md,
   },
   heroTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

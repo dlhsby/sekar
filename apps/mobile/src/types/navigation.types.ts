@@ -28,7 +28,6 @@ export type MainStackParamList = {
   Settings: undefined;
   NotificationPreferences: undefined;
   ShiftHistory: undefined;
-  MySchedule: undefined;
   Diagnostics: undefined;
   // Phase 4 M3d (NOTIF-1) — in-app notifications inbox; slide-in like Profile.
   // `origin` records the tab the bell was tapped from so back returns there.
@@ -48,9 +47,14 @@ export type MainTabParamList = {
   Menu: undefined;
   Profile: undefined;
   // Feature screens — reached from the Menu launcher (registered as hidden tab screens)
-  Attendance: undefined;             // attendance history list (day-grouped) — the "Kehadiran" tile
+  TimeRecordHub: undefined;          // ADR-055: the single "Pencatatan Waktu" hub (Menu tile)
+  Attendance: undefined;             // attendance history list (day-grouped) — reached from the hub
   AttendanceDetail: { date: string }; // one day's attendance detail (date = YYYY-MM-DD, WIB)
-  Absensi: undefined;                // clock in/out page (reached from home + the attendance list action)
+  // `shiftDefinitionId`/`serviceDay` carry a shift chosen on the hub/home card
+  // (Ubah Shift) into the punch, so the selection survives the navigation.
+  Absensi:
+    | { action?: 'clock_in' | 'clock_out'; shiftDefinitionId?: string; serviceDay?: string }
+    | undefined; // clock in/out page (from hub + home)
   Lembur: undefined;                 // overtime list page
   Tasks: undefined;                  // standalone tasks list (split from TasksActivities)
   Activities: undefined;             // standalone activities list (split from TasksActivities)
@@ -63,7 +67,7 @@ export type MainTabParamList = {
   // Phase 5-3 Assets
   Assets: undefined;                 // assets list
   // Hidden stack screens
-  ActivitySubmission: undefined;
+  ActivitySubmission: { taskId?: string } | undefined;
   ActivityDetail: { activityId: string; from?: string; fromParams?: Record<string, unknown> };
   TaskDetail: { taskId: string; from?: string; fromParams?: Record<string, unknown> };
   TaskComplete: { taskId: string };
@@ -81,7 +85,7 @@ export type MainTabParamList = {
   QRScanner: undefined;
   AssetCheckout: { assetId: string };
   AssetReturn: { assetId: string };
-  // Pruning Requests (admin_data flow)
+  // Pruning Requests (admin_rayon flow)
   PruningReviewQueue: undefined;
   PruningDetail: {
     requestId: string;

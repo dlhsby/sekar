@@ -11,12 +11,11 @@ import { ApiProperty } from '@nestjs/swagger';
 /**
  * ShiftDefinition Entity
  *
- * Represents fixed shift time definitions.
- *
- * Phase 2: 3 Fixed Shifts
- * - Shift 1: 06:00 - 15:00 (morning)
- * - Shift 2: 15:00 - 23:00 (afternoon)
- * - Shift 3: 21:00 - 05:00 (night, crosses midnight)
+ * Represents a configurable shift time definition (ADR-055). The day's shifts
+ * are operator-managed at runtime — any number (a single all-day shift, two,
+ * five, …), each with its own attribution window and reminder timing. Seed data
+ * ships three defaults (06:00–15:00, 15:00–23:00, 21:00–05:00) but nothing in
+ * the app assumes exactly three.
  */
 @Entity('shift_definitions')
 export class ShiftDefinition {
@@ -33,13 +32,6 @@ export class ShiftDefinition {
   })
   @Column({ length: 50, unique: true })
   name: string;
-
-  @ApiProperty({
-    description: 'Unique code for the shift',
-    example: 'SHIFT1',
-  })
-  @Column({ length: 10, unique: true })
-  code: string;
 
   @ApiProperty({
     description: 'Start time of the shift',
@@ -70,6 +62,51 @@ export class ShiftDefinition {
   })
   @Column({ default: true })
   is_active: boolean;
+
+  /**
+   * Attribution window (ADR-055). A clock-in is attributed to this shift from
+   * `early_window_min` BEFORE its start until `cutoff_grace_min` AFTER its end;
+   * past the cutoff the shift drops out of the picker and anything left open is
+   * a dangling `lupa_clock_out`. Configurable per shift-definition (the night
+   * shift wants a longer grace than the day shift). Default 60 min each.
+   */
+  @ApiProperty({
+    description: 'Minutes BEFORE start that a clock-in still attributes to this shift',
+    example: 60,
+    default: 60,
+  })
+  @Column({ name: 'early_window_min', type: 'int', default: 60 })
+  early_window_min?: number;
+
+  @ApiProperty({
+    description: 'Minutes AFTER end that a clock-in/out still attributes; past it → dangling',
+    example: 60,
+    default: 60,
+  })
+  @Column({ name: 'cutoff_grace_min', type: 'int', default: 60 })
+  cutoff_grace_min?: number;
+
+  /**
+   * Reminder timing (ADR-055). `start_reminder_min` = minutes BEFORE the shift
+   * starts to push a "your shift starts soon" reminder (default 15, matching the
+   * legacy fixed window); `end_reminder_min` = minutes before the shift ends to
+   * push a clock-out reminder (null/0 = off). Both 0..1440.
+   */
+  @ApiProperty({
+    description: 'Minutes before start to push a shift-start reminder (0 = off)',
+    example: 15,
+    default: 15,
+  })
+  @Column({ name: 'start_reminder_min', type: 'int', default: 15 })
+  start_reminder_min?: number;
+
+  @ApiProperty({
+    description: 'Minutes before end to push a shift-end reminder (null/0 = off)',
+    example: 10,
+    nullable: true,
+  })
+  @Column({ name: 'end_reminder_min', type: 'int', nullable: true })
+  end_reminder_min?: number | null;
 
   @ApiProperty({
     description: 'Timestamp when the shift definition was created',

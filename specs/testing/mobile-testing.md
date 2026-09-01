@@ -393,7 +393,7 @@ describe('authSlice thunks', () => {
     (apiClient.post as jest.Mock).mockResolvedValue(mockResponse);
 
     const store = mockStore({});
-    const credentials = { username: 'worker1', password: 'Password123!' };
+    const credentials = { username: 'worker1', password: '12345678' };
 
     await store.dispatch(loginUser(credentials) as any);
 
@@ -555,7 +555,7 @@ describe('OfflineQueue', () => {
 
   it('should add item to queue', async () => {
     const queue = new OfflineQueue();
-    const item = { type: 'CLOCK_IN', data: { area_id: '123' } };
+    const item = { type: 'CLOCK_IN', data: { location_id: '123' } };
 
     await queue.add(item);
 
@@ -566,7 +566,7 @@ describe('OfflineQueue', () => {
 
   it('should remove item from queue', async () => {
     const queue = new OfflineQueue();
-    const item = { type: 'CLOCK_IN', data: { area_id: '123' } };
+    const item = { type: 'CLOCK_IN', data: { location_id: '123' } };
 
     const id = await queue.add(item);
     await queue.remove(id);
@@ -601,7 +601,7 @@ describe('Sync Service', () => {
   it('should sync queued shifts', async () => {
     const queuedShift = {
       type: 'CLOCK_IN',
-      data: { area_id: '123', gps_lat: -7.2905, gps_lng: 112.7398 },
+      data: { location_id: '123', gps_lat: -7.2905, gps_lng: 112.7398 },
     };
 
     (apiClient.post as jest.Mock).mockResolvedValue({ shift_id: '456' });
@@ -762,12 +762,12 @@ describe('Auth Service Integration', () => {
 
     (axios.post as jest.Mock).mockResolvedValue(mockResponse);
 
-    const result = await loginUser('worker1', 'Password123!');
+    const result = await loginUser('worker1', '12345678');
 
     expect(result.access_token).toBe('jwt.token');
     expect(axios.post).toHaveBeenCalledWith(
       expect.stringContaining('/api/auth/login'),
-      { username: 'worker1', password: 'Password123!' },
+      { username: 'worker1', password: '12345678' },
     );
   });
 });
@@ -792,7 +792,7 @@ describe('Clock In Flow', () => {
 
     // 4. Send to API
     const result = await clockIn({
-      area_id: '123',
+      location_id: '123',
       gps_lat: location.latitude,
       gps_lng: location.longitude,
       selfie_photo: photo.uri,
@@ -862,7 +862,7 @@ describe('Login Flow', () => {
 
   it('should login successfully', async () => {
     await element(by.id('username-input')).typeText('worker1');
-    await element(by.id('password-input')).typeText('Password123!');
+    await element(by.id('password-input')).typeText('12345678');
     await element(by.id('login-button')).tap();
 
     await expect(element(by.text('Welcome, Pekerja Satu'))).toBeVisible();

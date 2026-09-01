@@ -2,30 +2,61 @@
 
 /**
  * SimpleMonitoringMap — the live monitoring map on Google Maps. Renders:
- *   - rayon + area boundary overlays (always, independent of live workers),
+ *   - district + area boundary overlays (always, independent of live workers),
  *   - area centre markers (overdue-plant count badge when set),
  *   - worker pins coloured by status, with selection (highlight + pan-to).
  *
  * Wrapped in GoogleMapsGate so it degrades to a placeholder when no key is set.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { GoogleMap, Marker, Polygon, InfoWindow } from '@react-google-maps/api';
+import { GoogleMap, Polygon, Polyline, InfoWindow } from '@react-google-maps/api';
 import { useTranslation } from 'react-i18next';
 import { GoogleMapsGate } from '@/components/maps/GoogleMapsGate';
+import { AdvancedMarker } from '@/components/maps/AdvancedMarker';
+import { useMapId } from '@/lib/api/config';
 import { POLYGON_STYLES } from '@/lib/constants/monitoring';
+import { geometryToPaths } from '@/lib/maps/geometry';
 import type { BoundariesResponse } from '@/lib/api/monitoring-types';
-import { type MonitoringLayers, DEFAULT_LAYERS } from '@/lib/monitoring/layers';
+import { type MonitoringMode, DEFAULT_MODE, isZoomLike } from '@/lib/monitoring/mapMode';
+import { tiersFor, type TierVisibility } from '@/lib/monitoring/zoomTiers';
+import { useProgressiveReveal } from '@/lib/monitoring/useProgressiveReveal';
+import { useAffinity } from '@/lib/monitoring/affinity';
+import {
+  type MonitoringLayers,
+  DEFAULT_LAYERS,
+  showsBoundary,
+  showsFill,
+  showsPolygon,
+  showsNodeMarker,
+  showsNodeLabel,
+  showsWorkerPins,
+  showsTeamBubbles,
+  teamMembersOnly,
+} from '@/lib/monitoring/layers';
 import { NodeMarkerLayer, type NodeMarker } from './NodeMarkerLayer';
+import { NodeHoverPreview } from './NodeHoverPreview';
 import { WorkerClusterLayer, type MapBounds } from './WorkerClusterLayer';
-import { nodeDetailIcon } from '@/lib/monitoring/markers';
+import { PlantMarkerLayer } from './PlantMarkerLayer';
+import type { NotablePlantRow } from '@/lib/api/plants';
+import type { TeamGroup } from '@/lib/monitoring/teamGrouping';
+import {
+  pinElement,
+  KIND_DEFAULT_GLYPH,
+  MARKER_NEUTRAL_OUTLINE,
+  NODE_LABEL_PLACEMENT,
+} from '@/lib/monitoring/markers';
+import { useThemeStore } from '@/stores/theme';
 
-/** The current node's own pin (selected rayon at rayon scope / area at area scope). */
+/** The current node's own pin (selected district at district scope / area at area scope). */
 export interface CurrentNodeMarker {
-  variant: 'rayon' | 'area';
+  variant: 'district' | 'region' | 'location';
   id: string;
   name: string;
   lat: number;
   lng: number;
+  /** The node's own fill_color — fills the drilled-in pin (matches the drill-node
+   *  markers); null → white. */
+  fill_color?: string | null;
 }
 
 export interface SimpleWorker {
@@ -35,52 +66,96 @@ export interface SimpleWorker {
   lng: number;
   status: string;
   role: string;
+  /** The role's configured marker icon (null → the client default glyph for the role). */
+  role_marker_icon?: string | null;
+  /** The role's configured marker colour — fills the pin body (null → white). */
+  role_marker_color?: string | null;
   is_within_area: boolean;
   is_scheduled: boolean;
+  /** Presence axes (ADR-050) — drive the pin colour via the shared standard. */
+  lifecycle_state?: string | null;
+  leave_reason?: 'cuti' | 'sakit' | 'izin' | 'libur' | null;
+  team_id?: string | null;
+  team_name?: string | null;
+  team_color?: string | null;
+  team_opacity?: number | null;
+  team_icon?: string | null;
 }
 
 export interface SimpleMonitoringMapProps {
-  /**
-   * `true` (area scope) → cluster individual worker pins. `false` → draw the
-   * drill-down node markers (Surabaya / rayons / areas) from `nodeMarkers`.
-   */
-  showWorkers: boolean;
   /** Current drill scope — gates which boundary layers draw. */
-  scope?: 'surabaya' | 'city' | 'rayon' | 'area';
+  scope?: 'surabaya' | 'city' | 'district' | 'region' | 'location';
   nodeMarkers?: NodeMarker[];
+  /** Geo id selected in the filter (district/kawasan/lokasi). Non-matching node
+   *  bubbles are dimmed to spotlight the selection. Null = no geo filter. */
+  activeGeoId?: string | null;
   onDrillNode?: (node: NodeMarker) => void;
-  /** The current node's own pin (rayon/area) — opens detail on click, no drill. */
+  /** The current node's own pin (district/location) — opens detail on click, no drill. */
   currentNode?: CurrentNodeMarker | null;
   onNodeDetail?: (node: CurrentNodeMarker) => void;
-  /** Selected area id — at area scope only its boundary is drawn (on demand). */
+  /** Node whose detail card is open — never culled, so the card and its pin agree. */
+  openNodeId?: string | null;
+  /** Selected location id — at location scope only its boundary is drawn (on demand). */
   areaId?: string | null;
+  /** Selected kawasan id — at region scope only this kawasan's boundary is drawn
+   *  (other kawasan hidden), matching the drill-down narrowing. */
+  regionId?: string | null;
   workers: SimpleWorker[];
   boundaries?: BoundariesResponse | null;
   selectedId?: string | null;
   onSelect?: (userId: string) => void;
-  /** Phase 3-8: per-area overdue plant counts — area markers with overdue
-   *  species turn danger-tinted and show the count. */
-  overdueByArea?: Record<string, number> | null;
-  /** Which overlays to draw (rayon border/fill, area border/pins, petugas). */
+  /** Which overlays to draw (district/kawasan/lokasi boundaries, petugas, team bubbles). */
   layers?: MonitoringLayers;
+  /** Monitoring mode. `zoom` draws every tier in the subtree instead of one level. */
+  mode?: MonitoringMode;
   /** Imperative focus target (from search / drill). `exact` sets the zoom
    *  absolutely (used to zoom OUT on drill-back); otherwise it only zooms in. */
   focusTarget?: { lat: number; lng: number; zoom?: number; exact?: boolean; key: number } | null;
+  /** Selected worker's location trail (today) — drawn as a polyline when set. */
+  trail?: google.maps.LatLngLiteral[] | null;
+  /** Clicking a team marker opens its member list (no zoom-to-reveal). */
+  onTeamClick?: (team: TeamGroup) => void;
+  /**
+   * Camera bounds, emitted on idle. Viewport mode turns these into the server's
+   * `bbox`; the map itself already uses them for culling, so this only lifts a
+   * value it was computing anyway.
+   */
+  onBoundsChange?: (bounds: MapBounds, zoom: number | undefined) => void;
+  /**
+   * Notable plants for the drilled lokasi. Empty at every other scope — the
+   * endpoint is per-location, so there is nothing to draw until you are inside
+   * one. See `PlantMarkerLayer`.
+   */
+  plants?: NotablePlantRow[];
+  onSelectPlant?: (plant: NotablePlantRow) => void;
 }
 
 const SURABAYA = { lat: -7.2575, lng: 112.7521 };
 
 // Concrete colors for Google overlay options (can't read CSS custom props).
-/* eslint-disable sekar-design/no-inline-hex-colors -- Google overlay options, not rendered style tokens */
-const BLACK = '#1C1917';
-const WHITE = '#FFFFFF';
-const AREA_MARKER = '#D97706';
-const AREA_MARKER_OVERDUE = '#DC2626';
-/* eslint-enable sekar-design/no-inline-hex-colors */
-
 // Native Google Maps gesture UX: greedy scroll/pinch zoom + drag pan (the camera
 // controls are enough, so the +/- zoom buttons are off). The only on-map control
 // is a single My-Location button (added natively in createLocateControl).
+// Declutter the base map: hide third-party POIs (businesses, restaurants,
+// buildings) and transit so only our own area markers + labels stand out. Park
+// geometry stays visible (green context matters for a parks dept); only its
+// labels/icons are muted.
+// NOTE: JSON `styles` are IGNORED on a vector map (one with a `mapId`), which the
+// AdvancedMarker layers require. These rules only take effect on the raster
+// fallback (no Map ID configured). On the vector map the decluttering lives in the
+// cloud Map Style(s) bound to the Map ID — both the light and dark styles carry it,
+// so the map stays decluttered in either colorScheme.
+const DECLUTTER_STYLES: google.maps.MapTypeStyle[] = [
+  { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.business', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.attraction', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.medical', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.place_of_worship', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.school', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.sports_complex', stylers: [{ visibility: 'off' }] },
+  { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+];
+
 const MAP_OPTIONS: google.maps.MapOptions = {
   streetViewControl: false,
   fullscreenControl: false,
@@ -89,38 +164,93 @@ const MAP_OPTIONS: google.maps.MapOptions = {
   gestureHandling: 'greedy',
   clickableIcons: false,
   mapTypeId: 'roadmap',
+  styles: DECLUTTER_STYLES,
 };
 
 const DEFAULT_ZOOM = 11;
-// Alpha for the rayon fill when tinted with its configured color.
+
+/**
+ * Start / end dot for a movement trail.
+ *
+ * Built as raw DOM rather than a React marker because the whole trail layer is
+ * imperative (`AdvancedMarkerElement` takes an element, not a component), and
+ * two small circles do not warrant their own component file.
+ */
+function trailEndpointEl(kind: 'start' | 'end'): HTMLElement {
+  const el = document.createElement('div');
+  el.className = `trail-endpoint trail-endpoint--${kind}`;
+  return el;
+}
+/** Drill and zoom mode gate nothing by zoom — every tier is always eligible. */
+const ALL_TIERS: TierVisibility = {
+  district: true,
+  region: true,
+  location: true,
+  workers: true,
+};
+// Alpha for the district fill when tinted with its configured color.
 const RAYON_FILL_ALPHA = 0.18;
 
-/** GeoJSON Polygon/MultiPolygon → array of Google outer-ring paths. */
-function geometryToPaths(geom: GeoJSON.Geometry | null): google.maps.LatLngLiteral[][] {
-  if (!geom) return [];
-  if (geom.type === 'Polygon') {
-    return [geom.coordinates[0].map(([lng, lat]) => ({ lat, lng }))];
+/** Per-entity boundary styling (ADR-045) — border + fill drawn separately. */
+type PolyStyle = {
+  border_color: string | null;
+  fill_color: string | null;
+  border_opacity: number | null;
+  fill_opacity: number | null;
+};
+const boundaryStyle = (e: {
+  border_color?: string | null;
+  fill_color?: string | null;
+  border_opacity?: number | null;
+  fill_opacity?: number | null;
+}): PolyStyle => ({
+  border_color: e.border_color ?? null,
+  fill_color: e.fill_color ?? null,
+  border_opacity: e.border_opacity ?? null,
+  fill_opacity: e.fill_opacity ?? null,
+});
+
+/**
+ * Viewport culling — skip overlays the camera cannot see.
+ *
+ * Zoom mode draws every rayon, kawasan and lokasi at once, and the polygons cost
+ * more than the pins. Culling makes zooming IN progressively cheaper, which is
+ * the mode's actual interaction; a fully zoomed-out city view culls nothing by
+ * definition, and that remains the worst case on purpose.
+ *
+ * Deliberately NOT clustering. Clustering was removed from this map on request
+ * ("it hid people and confused operators"), so nothing here may hide a worker —
+ * culling only defers what is off-screen, which panning brings straight back.
+ */
+type Extent = { south: number; west: number; north: number; east: number };
+
+function extentOf(paths: google.maps.LatLngLiteral[]): Extent | null {
+  if (paths.length === 0) return null;
+  let south = Infinity;
+  let west = Infinity;
+  let north = -Infinity;
+  let east = -Infinity;
+  for (const p of paths) {
+    if (p.lat < south) south = p.lat;
+    if (p.lat > north) north = p.lat;
+    if (p.lng < west) west = p.lng;
+    if (p.lng > east) east = p.lng;
   }
-  if (geom.type === 'MultiPolygon') {
-    return geom.coordinates.map((poly) => poly[0].map(([lng, lat]) => ({ lat, lng })));
-  }
-  return [];
+  return { south, west, north, east };
 }
 
-interface AreaPin {
-  id: string;
-  name: string;
-  lat: number;
-  lng: number;
-  understaffed: boolean;
+/** Bounding-box overlap. Surabaya never crosses the antimeridian, so a plain
+ *  comparison is exact here; a wrapped viewport (west > east) disables culling
+ *  rather than guessing. */
+function intersects(e: Extent | null, b: MapBounds): boolean {
+  if (!e) return true;
+  if (b.west > b.east) return true;
+  return e.south <= b.north && e.north >= b.south && e.west <= b.east && e.east >= b.west;
 }
 
-/** Convert a hex color to an `rgba()` string with the given alpha (for fills). */
-function hexToRgba(hex: string, alpha: number): string | null {
-  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
-  if (!m) return null;
-  const int = parseInt(m[1], 16);
-  return `rgba(${(int >> 16) & 255}, ${(int >> 8) & 255}, ${int & 255}, ${alpha})`;
+function pointInBounds(lat: number, lng: number, b: MapBounds): boolean {
+  if (b.west > b.east) return true;
+  return lat >= b.south && lat <= b.north && lng >= b.west && lng <= b.east;
 }
 
 /**
@@ -157,66 +287,150 @@ function createLocateControl(map: google.maps.Map, onClick: () => void, ariaLabe
 }
 
 function MonitoringMapInner({
-  showWorkers,
   scope,
   nodeMarkers,
+  activeGeoId,
   onDrillNode,
   currentNode,
   onNodeDetail,
+  plants,
+  onSelectPlant,
+  openNodeId,
   areaId,
+  regionId,
   workers,
   boundaries,
   selectedId,
   onSelect,
-  overdueByArea,
   layers = DEFAULT_LAYERS,
+  mode = DEFAULT_MODE,
   focusTarget,
+  trail,
+  onTeamClick,
+  onBoundsChange,
 }: SimpleMonitoringMapProps) {
   const { t } = useTranslation();
+  // Vector Map ID — required for AdvancedMarkers (the node/worker layers). When
+  // unset the map falls back to raster (JSON declutter styles apply) but the
+  // marker layers won't render, so a Map ID must be configured for monitoring.
+  const mapId = useMapId();
+  // Light/dark base map: one Map ID carries both cloud styles; the map picks via
+  // `colorScheme`. It can only be set at construction, so the map remounts when
+  // the theme flips (keyed below). Falls back gracefully if the Map ID has no dark
+  // style bound (Google just serves the light one).
+  const theme = useThemeStore((s) => s.theme);
+  const colorScheme = theme === 'dark' ? 'DARK' : 'LIGHT';
+  const mapOptions = useMemo<google.maps.MapOptions>(
+    () => ({ ...MAP_OPTIONS, mapId: mapId ?? undefined, colorScheme }),
+    [mapId, colorScheme]
+  );
   const mapRef = useRef<google.maps.Map | null>(null);
   const locateMeRef = useRef<() => void>(() => {});
-  const locateAddedRef = useRef(false);
+  // The map instance that already has the My-Location control, so we add it once
+  // per instance (a theme swap remounts the map → a fresh instance needs it again).
+  const controlMapRef = useRef<google.maps.Map | null>(null);
   const didFitRef = useRef(false);
-  const [hoverAreaId, setHoverAreaId] = useState<string | null>(null);
+  // Last camera (center + zoom), captured on idle, so a Map-ID remount (theme
+  // toggle) can restore the viewport instead of snapping back to the city. It is
+  // read only inside handleMapLoad (a callback), never during render.
+  const viewportRef = useRef<{ center: google.maps.LatLngLiteral; zoom: number } | null>(null);
   const [zoom, setZoom] = useState(DEFAULT_ZOOM);
+  // Current viewport, or null until the map first settles. Null means "draw
+  // everything" — which is what keeps this invisible in tests and on first paint.
   const [bounds, setBounds] = useState<MapBounds | null>(null);
+  // Read through a ref inside `handleIdle`: listing the callback as a dependency
+  // would rebuild the idle handler whenever the parent re-rendered, and the
+  // handler is attached to the live map instance.
+  const onBoundsChangeRef = useRef(onBoundsChange);
+  useEffect(() => {
+    onBoundsChangeRef.current = onBoundsChange;
+  }, [onBoundsChange]);
 
-  // Track viewport zoom + bounds so supercluster recomputes on pan/zoom.
+  // Workers render at EVERY level (city → district → kawasan → lokasi) as soon as
+  // the personnel layer shows them — no scope/zoom gate. The geo node bubbles are
+  // drawn alongside (never replaced), so the city view shows the district bubbles
+  // AND the people on the ground at once.
+  // Workers are the densest layer, so viewport mode reveals them last — at the
+  // zoom where a lokasi fills enough of the screen for its people to be legible.
+  // Viewport mode adds DEPTH to the bbox: a box at city zoom is the whole city,
+  // so "only what is on screen" still drew every kawasan and lokasi at once.
+  // Tiers now arrive as there is room for them (see `zoomTiers`). Zoom mode is
+  // untouched — drawing everything at every zoom is the trade chosen there.
+  const tiers = useMemo(
+    // Scope, not just zoom: drilling into a rayon reveals its subtree at any
+    // zoom (see `tiersFor`). A rayon that spans the whole city otherwise leaves
+    // the camera at city zoom and shows nothing at all.
+    () => (mode === 'viewport' ? tiersFor({ zoom, scope }) : ALL_TIERS),
+    [mode, zoom, scope]
+  );
+
+  const renderWorkers = showsWorkerPins(layers.personnel) && tiers.workers;
+
+  // "Tim saja" means only people who are ON a team; the other options show
+  // everyone. Filtering here rather than inside the cluster layer keeps that
+  // layer about RENDERING and this component about what is in scope.
+  const personnelWorkers = useMemo(
+    () => (teamMembersOnly(layers.personnel) ? workers.filter((w) => w.team_id) : workers),
+    [workers, layers.personnel]
+  );
+
+  // Node markers carry their tier in `variant`, so the per-tier marker options
+  // filter the list and NodeMarkerLayer stays unaware of layer settings.
+  const visibleNodeMarkers = useMemo(() => {
+    const allowed: Record<string, boolean> = {
+      // Two gates, both must pass: the operator's layer facet AND the zoom tier.
+      district: showsNodeMarker(layers.district) && tiers.district,
+      region: showsNodeMarker(layers.kawasan) && tiers.region,
+      location: showsNodeMarker(layers.lokasi) && tiers.location,
+      // No city row exists (Surabaya has no boundary polygon), so the summary
+      // node is never gated.
+      surabaya: true,
+    };
+    return (nodeMarkers ?? []).filter((n) => allowed[n.variant] !== false);
+  }, [nodeMarkers, layers.district, layers.kawasan, layers.lokasi, tiers]);
+
+  // Labels are a SEPARATE facet from the pin: at city zoom every lokasi name
+  // printing at once is unreadable while the pins still carry the counts. Passed
+  // per tier rather than filtered, since a hidden label still leaves a marker.
+  const nodeLabels = useMemo(
+    () => ({
+      district: showsNodeLabel(layers.district),
+      region: showsNodeLabel(layers.kawasan),
+      location: showsNodeLabel(layers.lokasi),
+      surabaya: true,
+    }),
+    [layers.district, layers.kawasan, layers.lokasi]
+  );
+
+  // Track viewport zoom so team-bubble collapse recomputes on pan/zoom.
   const syncViewport = useCallback((map: google.maps.Map) => {
     const z = map.getZoom();
     if (typeof z === 'number') setZoom(z);
-    const b = map.getBounds();
-    if (b) {
-      const ne = b.getNorthEast();
-      const sw = b.getSouthWest();
-      setBounds({ north: ne.lat(), east: ne.lng(), south: sw.lat(), west: sw.lng() });
-    }
   }, []);
 
   // Flatten boundary geometry into renderable pieces. Rayon polygons keep their
   // configured color so the map can tint the fill/border per rayon.
-  const { rayonPolys, areaPaths, areaPins } = useMemo(() => {
-    const rayonPolys: { paths: google.maps.LatLngLiteral[]; color: string | null }[] = [];
-    const areaPaths: { id: string; paths: google.maps.LatLngLiteral[] }[] = [];
-    const areaPins: AreaPin[] = [];
-    for (const rayon of boundaries?.rayons ?? []) {
-      geometryToPaths(rayon.boundary_polygon).forEach((p) =>
-        rayonPolys.push({ paths: p, color: rayon.color ?? null })
-      );
-      for (const area of rayon.areas) {
-        geometryToPaths(area.boundary_polygon).forEach((p) => areaPaths.push({ id: area.id, paths: p }));
-        if (typeof area.center_lat === 'number' && typeof area.center_lng === 'number') {
-          areaPins.push({
-            id: area.id,
-            name: area.name,
-            lat: area.center_lat,
-            lng: area.center_lng,
-            understaffed: area.is_understaffed,
-          });
-        }
+  const { districtPolys, regionPolys, areaPaths } = useMemo(() => {
+    const districtPolys: (PolyStyle & { paths: google.maps.LatLngLiteral[] })[] = [];
+    const regionPolys: (PolyStyle & { id: string; paths: google.maps.LatLngLiteral[] })[] = [];
+    const areaPaths: (PolyStyle & { id: string; paths: google.maps.LatLngLiteral[] })[] = [];
+    for (const district of boundaries?.districts ?? []) {
+      const rs = boundaryStyle(district);
+      geometryToPaths(district.boundary_polygon).forEach((p) => districtPolys.push({ paths: p, ...rs }));
+      for (const region of district.regions ?? []) {
+        const gs = boundaryStyle(region);
+        geometryToPaths(region.boundary_polygon).forEach((p) =>
+          regionPolys.push({ id: region.id, paths: p, ...gs })
+        );
+      }
+      for (const area of district.areas) {
+        const as = boundaryStyle(area);
+        geometryToPaths(area.boundary_polygon).forEach((p) =>
+          areaPaths.push({ id: area.id, paths: p, ...as })
+        );
       }
     }
-    return { rayonPolys, areaPaths, areaPins };
+    return { districtPolys, regionPolys, areaPaths };
   }, [boundaries]);
 
   // Fit the map to the served region once geometry/markers are available.
@@ -229,35 +443,68 @@ function MonitoringMapInner({
         bounds.extend(p);
         has = true;
       };
-      rayonPolys.forEach((poly) => poly.paths.forEach(extend));
+      // GEOGRAPHY ONLY — worker positions are deliberately excluded.
+      //
+      // A single worker outside the city drags the initial fit out to contain
+      // them: one satgas standing in Jakarta turned the opening view into the
+      // whole of Java, with Surabaya an unreadable smudge. The served region is
+      // a property of the DATA (which rayon and lokasi this role can see), not
+      // of where somebody happens to be standing, and an out-of-area worker is
+      // the case where the operator most needs the city legible. They are still
+      // reachable — search or the Petugas list pans to them.
+      districtPolys.forEach((poly) => poly.paths.forEach(extend));
       areaPaths.forEach((area) => area.paths.forEach(extend));
-      areaPins.forEach((a) => extend({ lat: a.lat, lng: a.lng }));
-      workers.forEach((w) => w.lat && w.lng && extend({ lat: w.lat, lng: w.lng }));
       if (has) {
         map.fitBounds(bounds, 48);
         didFitRef.current = true;
       }
     },
-    [rayonPolys, areaPaths, areaPins, workers]
+    [districtPolys, areaPaths]
   );
 
   const handleMapLoad = useCallback(
     (map: google.maps.Map) => {
       mapRef.current = map;
-      fitToContent(map);
+      // A remount (theme → Map ID swap) has a saved viewport → restore it so the
+      // map doesn't snap back to the city; skip the content fit. First-ever load
+      // has none → fit to content.
+      if (viewportRef.current) {
+        map.setCenter(viewportRef.current.center);
+        map.setZoom(viewportRef.current.zoom);
+        didFitRef.current = true;
+      } else {
+        fitToContent(map);
+      }
       syncViewport(map);
-      // Add the single My-Location control once (onLoad can fire again on a
-      // remount / Strict-Mode double-invoke — guard against duplicate buttons).
-      if (!locateAddedRef.current) {
+      // Add the My-Location control once per map INSTANCE. onLoad can fire twice
+      // for the same map (Strict-Mode double-invoke) — guarded by identity — and a
+      // theme remount yields a new instance whose control stack starts empty.
+      if (controlMapRef.current !== map) {
         createLocateControl(map, () => locateMeRef.current(), t('monitoring:map.locateMeAriaLabel'));
-        locateAddedRef.current = true;
+        controlMapRef.current = map;
       }
     },
     [fitToContent, syncViewport, t]
   );
 
   const handleIdle = useCallback(() => {
-    if (mapRef.current) syncViewport(mapRef.current);
+    const map = mapRef.current;
+    if (!map) return;
+    syncViewport(map);
+    // Remember the camera so a Map-ID remount can restore it.
+    const c = map.getCenter();
+    const z = map.getZoom();
+    if (c && typeof z === 'number') viewportRef.current = { center: { lat: c.lat(), lng: c.lng() }, zoom: z };
+    // Viewport bounds drive culling (below). Captured on idle rather than on
+    // every camera event so panning doesn't re-render the overlay per frame.
+    const b = map.getBounds();
+    if (b) {
+      const sw = b.getSouthWest();
+      const ne = b.getNorthEast();
+      const next = { south: sw.lat(), west: sw.lng(), north: ne.lat(), east: ne.lng() };
+      setBounds(next);
+      onBoundsChangeRef.current?.(next, map.getZoom());
+    }
   }, [syncViewport]);
 
   // Fit once content arrives after the map already loaded (async boundaries).
@@ -304,38 +551,145 @@ function MonitoringMapInner({
   }, [focusTarget]);
 
   const selectedWorker =
-    showWorkers && selectedId ? workers.find((w) => w.user_id === selectedId) : null;
-  const hoverArea = hoverAreaId ? areaPins.find((a) => a.id === hoverAreaId) : null;
-  // Area centre pins only clutter the node view (node markers already carry
-  // counts); keep them for the drilled worker view or when the plant overlay is
-  // on — and only when the areaPins layer is enabled.
-  // Area centre pins are now only the plant-overdue overlay — the drill markers
-  // (node bubbles above / the current-node pin) carry the area context, so we no
-  // longer scatter a dot on every area. At area scope, restrict even the overdue
-  // pins to the SELECTED area so siblings don't reappear.
-  const showAreaPins = layers.areaPins && !!overdueByArea;
-  // Scope-gate boundary polygons: rayon outlines from the city view down, area
-  // outlines only once inside a rayon. At the top (Surabaya) the map shows just
+    renderWorkers && selectedId ? workers.find((w) => w.user_id === selectedId) : null;
+  // Scope-gate boundary polygons: district outlines from the city view down, area
+  // outlines only once inside a district. At the top (Surabaya) the map shows just
   // the Surabaya node bubble.
-  const showRayonPolys = scope !== 'surabaya';
-  // Area outlines are on-demand: only at area scope, and only the SELECTED area's
-  // polygon (mirrors mobile — never all of a rayon's areas at once).
-  const showAreaBorders = scope === 'area';
-  const visibleAreaPaths = useMemo(
-    () => (scope === 'area' && areaId ? areaPaths.filter((a) => a.id === areaId) : areaPaths),
-    [areaPaths, scope, areaId]
+  // Viewport mode draws exactly what zoom draws — the server already narrowed
+  // the payload, so nothing here needs to know which of the two it is.
+  const isZoom = isZoomLike(mode);
+  const showDistrictPolys = scope !== 'surabaya';
+  // Kawasan outlines: all of a district's kawasan at district scope; ONLY the drilled
+  // kawasan once you're inside one (region scope) — the others hide so the view
+  // narrows to that kawasan.
+  // Zoom mode draws every tier of the subtree, so kawasan outlines are on from
+  // the city view down rather than appearing only once you're inside a rayon.
+  const showRegionPolys = tiers.region && (isZoom || scope === 'district' || scope === 'region');
+  const visibleRegionPolys = useMemo(
+    () => (scope === 'region' && regionId ? regionPolys.filter((r) => r.id === regionId) : regionPolys),
+    [regionPolys, scope, regionId]
   );
-  const visibleAreaPins = useMemo(
-    () => (scope === 'area' && areaId ? areaPins.filter((a) => a.id === areaId) : areaPins),
-    [areaPins, scope, areaId]
+  // Lokasi outlines: the SELECTED location at location scope; at district/kawasan scope the
+  // lokasi shown as node markers (direct lokasi under the district, or the kawasan's
+  // lokasi) get their boundary drawn too, so drilling in reveals location shapes
+  // immediately — not just after zooming to a single location.
+  const showAreaBorders =
+    tiers.location && (isZoom || scope === 'location' || scope === 'district' || scope === 'region');
+  // Ids of the lokasi currently drawn as node markers (variant 'location'); used to
+  // draw exactly those lokasi's boundaries at district/kawasan scope.
+  const nodeAreaIds = useMemo(
+    () => new Set((nodeMarkers ?? []).filter((n) => n.variant === 'location').map((n) => n.id)),
+    [nodeMarkers]
+  );
+  const visibleAreaPaths = useMemo(() => {
+    if (scope === 'location' && areaId) return areaPaths.filter((a) => a.id === areaId);
+    // Both modes draw exactly the lokasi that have a node marker, so the outlines
+    // and the pins can never disagree about which lokasi are "in view". In zoom
+    // mode that set is the whole subtree; in drill mode it is one level.
+    // NB this reads the RAW `nodeMarkers`, not the layer-filtered list — hiding
+    // markers must not take the boundaries with them.
+    if (isZoom || scope === 'district' || scope === 'region')
+      return areaPaths.filter((a) => nodeAreaIds.has(a.id));
+    return areaPaths;
+  }, [areaPaths, isZoom, scope, areaId, nodeAreaIds]);
+
+  // ── Viewport culling ───────────────────────────────────────────────────────
+  // Applied to what is DRAWN only; the un-culled arrays still drive fitToContent
+  // and the boundary/marker agreement above, so panning never changes which
+  // lokasi are considered in view — only which are currently painted.
+  const cullPolys = useCallback(
+    <T extends { paths: google.maps.LatLngLiteral[] }>(polys: T[]): T[] => {
+      if (!bounds) return polys;
+      return polys.filter((p) => intersects(extentOf(p.paths), bounds));
+    },
+    [bounds]
   );
 
-  // At area scope, frame the SELECTED area's boundary once it loads — a reliable
-  // "focus in" that beats a fixed zoom (areas vary in size). Runs once per area.
+  const drawnDistrictPolys = useMemo(() => cullPolys(districtPolys), [cullPolys, districtPolys]);
+  const drawnRegionPolys = useMemo(() => cullPolys(visibleRegionPolys), [cullPolys, visibleRegionPolys]);
+  const drawnAreaPaths = useMemo(() => cullPolys(visibleAreaPaths), [cullPolys, visibleAreaPaths]);
+
+  // Worker pins: cull off-screen people, but NEVER the selected one — it can be
+  // selected from the sidebar while off-camera, and the map pans to it right
+  // after; dropping it would make the pin flicker out and back.
+  const drawnWorkers = useMemo(() => {
+    if (!bounds) return personnelWorkers;
+    return personnelWorkers.filter(
+      (w) => w.user_id === selectedId || pointInBounds(w.lat, w.lng, bounds)
+    );
+  }, [personnelWorkers, bounds, selectedId]);
+
+  const drawnNodeMarkers = useMemo(() => {
+    if (!bounds) return visibleNodeMarkers;
+    // Same exemption as the selected worker: a node with its detail card open
+    // must keep its pin even off-camera, or the card describes something the
+    // map is no longer showing.
+    return visibleNodeMarkers.filter(
+      (n) => n.id === openNodeId || pointInBounds(n.lat, n.lng, bounds)
+    );
+  }, [visibleNodeMarkers, bounds, openNodeId]);
+
+  // ── Progressive reveal (viewport mode only) ────────────────────────────────
+  // Culling decided what is ON SCREEN; this decides which of those earn a full
+  // pin and which draw as a dot. Ranking the DRAWN sets rather than the raw ones
+  // is deliberate: the budget is a property of the screen, so panning to a
+  // quieter part of the city promotes what is there rather than keeping slots
+  // reserved for markers the operator cannot see.
+  const { affinityOf, visit } = useAffinity();
+  const reveal = useProgressiveReveal({
+    enabled: mode === 'viewport',
+    zoom,
+    nodes: drawnNodeMarkers,
+    workers: drawnWorkers,
+    affinityOf,
+    // Whatever the sidebar is currently describing must be drawn in full, or the
+    // card would document something the map is showing as an anonymous dot.
+    exemptNodeIds: [openNodeId, activeGeoId],
+    exemptWorkerIds: [selectedId],
+  });
+
+  // Engaging with something is what makes it familiar (see `affinity.ts`). Each
+  // of these is an explicit operator choice — never a hover, never a pan — so
+  // the history reflects attention rather than mouse travel.
+  // Hover preview (parity W5). Node + cursor travel together so the card can
+  // sit beside the pointer without projecting lat/lng to screen space.
+  const [hovered, setHovered] = useState<{
+    node: NodeMarker | null;
+    cursor: { x: number; y: number } | null;
+  }>({ node: null, cursor: null });
+  const setHoveredNode = useCallback(
+    (node: NodeMarker | null, cursor: { x: number; y: number } | null) =>
+      setHovered({ node, cursor }),
+    [],
+  );
+
+  const drillNode = useCallback(
+    (node: NodeMarker) => {
+      visit(node.id);
+      onDrillNode?.(node);
+    },
+    [visit, onDrillNode]
+  );
+  const selectWorker = useCallback(
+    (userId: string) => {
+      visit(userId);
+      onSelect?.(userId);
+    },
+    [visit, onSelect]
+  );
+
+  /** Did this node lose its full-pin slot? Gates the heaviest paint on the map. */
+  const nodeDemoted = useCallback(
+    (id: string): boolean => reveal.promotedNodes != null && !reveal.promotedNodes.has(id),
+    [reveal.promotedNodes]
+  );
+
+  // At location scope, frame the SELECTED location's boundary once it loads — a reliable
+  // "focus in" that beats a fixed zoom (locations vary in size). Runs once per location.
   const fittedAreaRef = useRef<string | null>(null);
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || scope !== 'area' || !areaId) {
+    if (!map || scope !== 'location' || !areaId) {
       fittedAreaRef.current = null;
       return;
     }
@@ -353,137 +707,200 @@ function MonitoringMapInner({
     fittedAreaRef.current = areaId;
   }, [scope, areaId, visibleAreaPaths]);
 
-  const handleClusterZoom = useCallback((lat: number, lng: number, expansionZoom: number) => {
-    const map = mapRef.current;
-    if (!map) return;
-    map.panTo({ lat, lng });
-    map.setZoom(expansionZoom);
-  }, []);
+  // The current-node pin as a stable AdvancedMarker element (rebuilt only when the
+  // node's identity/variant/name changes), so drilling doesn't recreate it.
+  const currentNodeEl = useMemo(() => {
+    if (!currentNode) return null;
+    // WHITE body + neutral ring, the same as every other geo pin — the drilled-in
+    // node must not be the one marker still wearing the area's colour.
+    return pinElement(
+      KIND_DEFAULT_GLYPH[currentNode.variant],
+      { outline: MARKER_NEUTRAL_OUTLINE, big: true },
+      nodeLabels[currentNode.variant]
+        ? {
+            text: currentNode.name,
+            className: 'node-marker-label',
+            color: MARKER_NEUTRAL_OUTLINE,
+            // Same side as the node layer draws this tier, or the name would
+            // jump across the pin the moment you drilled into it.
+            placement: NODE_LABEL_PLACEMENT[currentNode.variant],
+          }
+        : undefined
+    );
+  }, [currentNode, nodeLabels]);
 
   return (
     <div style={{ position: 'absolute', inset: 0 }}>
       <GoogleMap
+        // Remount when the Map ID or colorScheme changes: both are immutable after
+        // construction, so a light↔dark theme flip needs a fresh map. handleMapLoad
+        // restores the preserved viewport so it doesn't snap back to the city.
+        key={`${mapId ?? 'no-map-id'}-${colorScheme}`}
         mapContainerStyle={{ width: '100%', height: '100%' }}
         center={SURABAYA}
         zoom={DEFAULT_ZOOM}
         onLoad={handleMapLoad}
         onIdle={handleIdle}
-        options={MAP_OPTIONS}
+        options={mapOptions}
       >
-        {/* Rayon boundaries — outline + tinted fill (one `rayon` toggle). */}
-        {layers.rayon && showRayonPolys &&
-          rayonPolys.map((poly, i) => {
-            const stroke = poly.color ?? POLYGON_STYLES.rayon.stroke;
-            const fill =
-              (poly.color && hexToRgba(poly.color, RAYON_FILL_ALPHA)) ??
-              POLYGON_STYLES.rayon.fill;
-            return (
-              <Polygon
-                key={`rayon-${i}`}
-                paths={poly.paths}
-                options={{
-                  strokeColor: stroke,
-                  strokeWeight: POLYGON_STYLES.rayon.strokeWidth,
-                  strokeOpacity: 0.9,
-                  fillColor: fill,
-                  fillOpacity: RAYON_FILL_ALPHA,
-                  clickable: false,
-                  zIndex: 1,
-                }}
-              />
-            );
-          })}
-
-        {/* Area boundaries — outline + fill (one `area` toggle); only the
-            selected area at area scope (on-demand). */}
-        {layers.area && showAreaBorders &&
-          visibleAreaPaths.map((area, i) => (
+        {/* Rayon boundaries — the district's own border_color + fill_color (ADR-045),
+            drawn separately; sensible defaults only when unset. */}
+        {showsPolygon(layers.district) && showDistrictPolys &&
+          drawnDistrictPolys.map((poly, i) => (
             <Polygon
-              key={`area-${area.id}-${i}`}
-              paths={area.paths}
+              key={`district-${i}`}
+              paths={poly.paths}
               options={{
-                strokeColor: POLYGON_STYLES.area.stroke,
-                strokeWeight: POLYGON_STYLES.area.strokeWidth,
-                strokeOpacity: 1,
-                fillColor: POLYGON_STYLES.area.fill,
-                fillOpacity: POLYGON_STYLES.area.fillOpacity,
+                strokeColor: poly.border_color ?? POLYGON_STYLES.district.stroke,
+                // Outline and fill are separate facets: zero the one that is off
+                // rather than dropping the Polygon, so the other still draws.
+                strokeWeight: showsBoundary(layers.district)
+                  ? POLYGON_STYLES.district.strokeWidth
+                  : 0,
+                strokeOpacity: showsBoundary(layers.district) ? (poly.border_opacity ?? 0.9) : 0,
+                fillColor: poly.fill_color ?? POLYGON_STYLES.district.fill,
+                fillOpacity: showsFill(layers.district) ? (poly.fill_opacity ?? RAYON_FILL_ALPHA) : 0,
+                clickable: false,
+                zIndex: 1,
+              }}
+            />
+          ))}
+
+        {/* Kawasan (region) boundaries — the kawasan's own border_color +
+            fill_color; drawn once you're inside a district. */}
+        {showsPolygon(layers.kawasan) && showRegionPolys &&
+          drawnRegionPolys.map((poly, i) => (
+            <Polygon
+              key={`region-${i}`}
+              paths={poly.paths}
+              options={{
+                strokeColor: poly.border_color ?? POLYGON_STYLES.district.stroke,
+                strokeWeight: showsBoundary(layers.kawasan) ? 1.5 : 0,
+                strokeOpacity: showsBoundary(layers.kawasan) ? (poly.border_opacity ?? 0.85) : 0,
+                fillColor: poly.fill_color ?? POLYGON_STYLES.district.fill,
+                // A demoted kawasan keeps its outline and loses its wash. The
+                // fill is the heaviest thing this map paints and the least
+                // informative at low priority, so it is the first thing the
+                // budget takes back — the shape still reads, the colour stops
+                // competing with the pins that won a slot.
+                fillOpacity:
+                  showsFill(layers.kawasan) && !nodeDemoted(poly.id)
+                    ? (poly.fill_opacity ?? RAYON_FILL_ALPHA * 0.6)
+                    : 0,
                 clickable: false,
                 zIndex: 2,
               }}
             />
           ))}
 
-        {/* Area centre markers */}
-        {showAreaPins &&
-          visibleAreaPins.map((area) => {
-          const overdue = overdueByArea?.[area.id] ?? 0;
-          const danger = overdue > 0 || area.understaffed;
-          return (
-            <Marker
-              key={`area-pin-${area.id}`}
-              position={{ lat: area.lat, lng: area.lng }}
-              onMouseOver={() => setHoverAreaId(area.id)}
-              onMouseOut={() => setHoverAreaId((cur) => (cur === area.id ? null : cur))}
-              icon={{
-                path: google.maps.SymbolPath.CIRCLE,
-                scale: 9,
-                fillColor: danger ? AREA_MARKER_OVERDUE : AREA_MARKER,
-                fillOpacity: 1,
-                strokeColor: BLACK,
-                strokeWeight: 2,
+        {/* Lokasi boundaries — the lokasi's own border_color + fill_color (one
+            `lokasi` toggle); only the selected area at area scope (on-demand). */}
+        {showsPolygon(layers.lokasi) && showAreaBorders &&
+          drawnAreaPaths.map((area, i) => (
+            <Polygon
+              key={`area-${area.id}-${i}`}
+              paths={area.paths}
+              options={{
+                strokeColor: area.border_color ?? POLYGON_STYLES.area.stroke,
+                strokeWeight: showsBoundary(layers.lokasi) ? POLYGON_STYLES.area.strokeWidth : 0,
+                strokeOpacity: showsBoundary(layers.lokasi) ? (area.border_opacity ?? 1) : 0,
+                fillColor: area.fill_color ?? POLYGON_STYLES.area.fill,
+                fillOpacity:
+                  showsFill(layers.lokasi) && !nodeDemoted(area.id)
+                    ? (area.fill_opacity ?? POLYGON_STYLES.area.fillOpacity)
+                    : 0,
+                clickable: false,
+                zIndex: 3,
               }}
-              label={{
-                text: overdue > 0 ? String(overdue) : 'A',
-                color: WHITE,
-                fontSize: '10px',
-                fontWeight: '700',
-              }}
-              zIndex={3}
             />
-          );
-        })}
+          ))}
 
-        {/* Drill-down node markers (Surabaya / rayon / area) or clustered worker pins. */}
-        {!showWorkers ? (
-          <NodeMarkerLayer nodes={nodeMarkers ?? []} onDrill={onDrillNode} />
-        ) : layers.petugas ? (
-          <WorkerClusterLayer
-            workers={workers}
-            zoom={zoom}
-            bounds={bounds}
-            selectedId={selectedId}
-            onSelect={onSelect}
-            onClusterClick={handleClusterZoom}
-          />
-        ) : null}
+        {/* Geo node markers (Surabaya / district / kawasan / lokasi bubbles) — always
+            drawn (the marker layer can't be hidden). At location scope nodeMarkers is
+            empty, so nothing renders there. */}
+        <NodeMarkerLayer
+          nodes={drawnNodeMarkers}
+          onDrill={drillNode}
+          onHoverNode={setHoveredNode}
+          zoom={zoom}
+          activeGeoId={activeGeoId}
+          showLabels={nodeLabels}
+          promoted={reveal.promotedNodes}
+          labelled={reveal.labelledNodes}
+        />
 
-        {/* Current-node pin (selected rayon at rayon scope / area at area scope):
-            an icon marker that opens the node's detail — never drills. */}
-        {currentNode && (
-          <Marker
-            key={`current-node-${currentNode.id}`}
-            position={{ lat: currentNode.lat, lng: currentNode.lng }}
-            onClick={() => onNodeDetail?.(currentNode)}
-            icon={nodeDetailIcon(currentNode.variant)}
-            zIndex={50}
-            title={currentNode.name}
+        {/* Notable plants — lokasi scope only, and only when the layer is on. */}
+        {scope === 'location' && showsNodeMarker(layers.plants) && plants && plants.length > 0 && (
+          <PlantMarkerLayer plants={plants} onSelect={onSelectPlant} />
+        )}
+
+        {/* Movement trail (today) — a dashed path under the pins, drawn only on
+            an explicit "Lihat jejak". Start and end are marked, matching the
+            mobile trail view: a bare line says where someone went but not which
+            way, and the first point is the one a supervisor reads for "when did
+            the day start". */}
+        {trail && trail.length >= 2 && (
+          <>
+            <AdvancedMarker
+              position={trail[0]}
+              content={trailEndpointEl('start')}
+              zIndex={4}
+              title={t('monitoring:trail.start')}
+            />
+            <AdvancedMarker
+              position={trail[trail.length - 1]}
+              content={trailEndpointEl('end')}
+              zIndex={4}
+              title={t('monitoring:trail.end')}
+            />
+          </>
+        )}
+        {trail && trail.length >= 2 && (
+          <Polyline
+            path={trail}
+            options={{
+              strokeColor: POLYGON_STYLES.district.stroke,
+              strokeOpacity: 0.9,
+              strokeWeight: 3,
+              icons: [
+                {
+                  icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 3 },
+                  offset: '0',
+                  repeat: '12px',
+                },
+              ],
+              clickable: false,
+              zIndex: 3,
+            }}
           />
         )}
 
-        {/* Info windows */}
-        {hoverArea && (
-          <InfoWindow
-            position={{ lat: hoverArea.lat, lng: hoverArea.lng }}
-            onCloseClick={() => setHoverAreaId(null)}
-            options={{ disableAutoPan: true }}
-          >
-            <div className="text-xs font-semibold text-nb-black">
-              {hoverArea.name}
-              {(overdueByArea?.[hoverArea.id] ?? 0) > 0 && (
-                <> · {t('monitoring:map.overduePlantLabel', { count: overdueByArea?.[hoverArea.id] })}</>
-              )}
-            </div>
-          </InfoWindow>
+        {/* Worker pins (individual + optional team bubbles) — drawn ALONGSIDE the
+            node bubbles at district/kawasan/location scope, no clustering. */}
+        {renderWorkers && (
+          <WorkerClusterLayer
+            workers={drawnWorkers}
+            zoom={zoom}
+            selectedId={selectedId}
+            onSelect={selectWorker}
+            onTeamClick={onTeamClick}
+            teamBubbles={showsTeamBubbles(layers.personnel)}
+            promoted={reveal.promotedWorkers}
+            labelled={reveal.labelledWorkers}
+          />
+        )}
+
+        {/* Current-node pin (the district/location you drilled into): a glyph teardrop
+            (kind default glyph) that opens the node's detail — never drills. */}
+        {currentNode && currentNodeEl && (
+          <AdvancedMarker
+            key={`current-node-${currentNode.id}`}
+            position={{ lat: currentNode.lat, lng: currentNode.lng }}
+            content={currentNodeEl}
+            onClick={() => onNodeDetail?.(currentNode)}
+            zIndex={50}
+            title={currentNode.name}
+          />
         )}
 
         {selectedWorker?.lat && selectedWorker?.lng && (
@@ -497,6 +914,11 @@ function MonitoringMapInner({
         )}
         {/* My-Location is a native map control (stacked with zoom, bottom-right). */}
       </GoogleMap>
+
+      {/* Rendered OUTSIDE <GoogleMap> and fixed to the viewport: it follows the
+          cursor, not the map, so it must not be clipped by the map container or
+          repositioned by a pan. */}
+      <NodeHoverPreview node={hovered.node} cursor={hovered.cursor} />
     </div>
   );
 }

@@ -119,7 +119,7 @@ describe('offlineSlice', () => {
     it('should add shift to queue and increment pendingShiftsCount', () => {
       const queueItem = {
         type: 'shift' as const,
-        data: { area_id: 1, gps_lat: -7.250445, gps_lng: 112.768845 },
+        data: { location_id: 1, gps_lat: -7.250445, gps_lng: 112.768845 },
         timestamp: Date.now(),
       };
 
@@ -161,7 +161,7 @@ describe('offlineSlice', () => {
 
       const shiftItem = {
         type: 'shift' as const,
-        data: { area_id: 1 },
+        data: { location_id: 1 },
         timestamp: Date.now(),
       };
 
@@ -404,7 +404,7 @@ describe('offlineSlice', () => {
         state,
         addToQueue({
           type: 'shift',
-          data: { area_id: 1 },
+          data: { location_id: 1 },
           timestamp: Date.now(),
         })
       );

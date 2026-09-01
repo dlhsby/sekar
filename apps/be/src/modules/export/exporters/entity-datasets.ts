@@ -1,8 +1,8 @@
 import type { CellValue, Dataset } from './dataset';
 import type { KmlPlacemark } from './kmz.exporter';
 import type { User } from '../../users/entities/user.entity';
-import type { Area } from '../../areas/entities/area.entity';
-import type { Rayon } from '../../rayons/entities/rayon.entity';
+import type { Location } from '../../locations/entities/location.entity';
+import { District } from '../../districts/entities/district.entity';
 import type { Task } from '../../tasks/entities/task.entity';
 import type { Activity } from '../../activities/entities/activity.entity';
 import type { Overtime } from '../../overtime/entities/overtime.entity';
@@ -28,29 +28,28 @@ export function usersDataset(rows: User[]): Dataset {
     { header: 'full_name', value: (u) => u.full_name },
     { header: 'phone_number', value: (u) => u.phone_number ?? '' },
     { header: 'role', value: (u) => u.role },
-    { header: 'rayon_id', value: (u) => u.rayon_id ?? '' },
-    { header: 'area_id', value: (u) => u.area_id ?? '' },
+    { header: 'district_id', value: (u) => u.district_id ?? '' },
+    { header: 'location_id', value: (u) => u.location_id ?? '' },
     { header: 'is_active', value: (u) => u.is_active },
     { header: 'created_at', value: (u) => iso(u.created_at) },
   ]);
 }
 
-export function areasDataset(rows: Area[]): Dataset {
+export function areasDataset(rows: Location[]): Dataset {
   return build(rows, [
     { header: 'id', value: (a) => a.id },
     { header: 'name', value: (a) => a.name },
-    { header: 'area_type_id', value: (a) => a.area_type_id },
-    { header: 'rayon_id', value: (a) => a.rayon_id ?? '' },
+    { header: 'location_type_id', value: (a) => a.location_type_id },
+    { header: 'district_id', value: (a) => a.district_id ?? '' },
     { header: 'gps_lat', value: (a) => a.gps_lat },
     { header: 'gps_lng', value: (a) => a.gps_lng },
-    { header: 'radius_meters', value: (a) => a.radius_meters },
     { header: 'address', value: (a) => a.address ?? '' },
     { header: 'coverage_area', value: (a) => a.coverage_area ?? '' },
     { header: 'is_active', value: (a) => a.is_active },
   ]);
 }
 
-export function rayonsDataset(rows: Rayon[]): Dataset {
+export function districtDataset(rows: District[]): Dataset {
   return build(rows, [
     { header: 'id', value: (r) => r.id },
     { header: 'name', value: (r) => r.name },
@@ -69,8 +68,8 @@ export function tasksDataset(rows: Task[]): Dataset {
     { header: 'status', value: (t) => t.status },
     { header: 'priority', value: (t) => t.priority },
     { header: 'task_type', value: (t) => t.taskType },
-    { header: 'area_id', value: (t) => t.area_id ?? '' },
-    { header: 'rayon_id', value: (t) => t.rayon_id ?? '' },
+    { header: 'location_id', value: (t) => t.location_id ?? '' },
+    { header: 'district_id', value: (t) => t.district_id ?? '' },
     { header: 'assigned_to', value: (t) => t.assigned_to ?? '' },
     { header: 'created_by', value: (t) => t.created_by },
     { header: 'deadline', value: (t) => iso(t.deadline) },
@@ -83,7 +82,7 @@ export function activitiesDataset(rows: Activity[]): Dataset {
   return build(rows, [
     { header: 'id', value: (a) => a.id },
     { header: 'user_id', value: (a) => a.user_id },
-    { header: 'area_id', value: (a) => a.area_id ?? '' },
+    { header: 'location_id', value: (a) => a.location_id ?? '' },
     { header: 'activity_type_id', value: (a) => a.activity_type_id },
     { header: 'description', value: (a) => a.description },
     { header: 'status', value: (a) => a.status },
@@ -98,7 +97,7 @@ export function overtimeDataset(rows: Overtime[]): Dataset {
   return build(rows, [
     { header: 'id', value: (o) => o.id },
     { header: 'user_id', value: (o) => o.user_id },
-    { header: 'area_id', value: (o) => o.area_id ?? '' },
+    { header: 'location_id', value: (o) => o.location_id ?? '' },
     { header: 'start_datetime', value: (o) => iso(o.start_datetime) },
     { header: 'end_datetime', value: (o) => iso(o.end_datetime) },
     { header: 'status', value: (o) => o.status },
@@ -125,7 +124,7 @@ function extractRing(boundary: unknown): Array<{ latitude: number; longitude: nu
   return points.length >= 3 ? points : null;
 }
 
-export function areasPlacemarks(rows: Area[]): KmlPlacemark[] {
+export function areasPlacemarks(rows: Location[]): KmlPlacemark[] {
   return rows.map((a) => ({
     name: a.name,
     description: a.address ?? null,

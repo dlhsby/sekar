@@ -1,6 +1,6 @@
 /**
  * AttendanceFilterModal — status + date-range filter for the Kehadiran list.
- * The personal-list subset of OvertimeFilterModal (no rayon/area/user).
+ * The personal-list subset of OvertimeFilterModal (no district/area/user).
  */
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';

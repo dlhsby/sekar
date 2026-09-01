@@ -12,12 +12,12 @@ import { test, expect, request, APIRequestContext } from '@playwright/test';
 
 const API_URL = process.env.API_URL || 'http://localhost:3000';
 const API = `${API_URL}/api/v1`;
-/** A city-level admin login (dev seed: admin/Password123!; staging: superadmin) */
+/** A city-level admin login (dev seed: admin/12345678; staging: superadmin) */
 const ADMIN_USER = process.env.E2E_ADMIN_USER || 'admin';
 
 let backendUp = false;
 
-async function loginAs(api: APIRequestContext, identifier: string, password = 'Password123!') {
+async function loginAs(api: APIRequestContext, identifier: string, password = '12345678') {
   const res = await api.post(`${API}/auth/login`, { data: { identifier, password } });
   expect(res.status(), `login as ${identifier}`).toBe(200);
   const body = await res.json();

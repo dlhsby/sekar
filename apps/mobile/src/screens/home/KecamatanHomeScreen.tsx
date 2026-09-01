@@ -9,6 +9,7 @@ import { HomeSectionDivider } from '../../components/home/HomeSectionDivider';
 import { HomeStatTile } from '../../components/home/HomeStatTile';
 import { HomeListRow } from '../../components/home/HomeListRow';
 import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows } from '../../constants/nbTokens';
+import { screenContentGrow } from '../../constants/layout';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { fetchMyPruningRequests } from '../../store/slices/pruningRequestsSlice';
 import { formatDate } from '../../utils/dateUtils';
@@ -122,7 +123,7 @@ export function KecamatanHomeScreen(): React.JSX.Element {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[nbColors.primary]} />}
         >
           {/* Ringkasan hari ini — request overview */}
-          <HomeSectionDivider label={t('home:kecamatan.sections.summary')} />
+          <HomeSectionDivider label={t('home:kecamatan.sections.summary')} first />
 
           {/* My-requests hero */}
           <View style={styles.hero} testID="kecamatan-hero">
@@ -191,7 +192,7 @@ export function KecamatanHomeScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'transparent' },
   scrollView: { flex: 1 },
-  content: { paddingHorizontal: nbSpacing.md, paddingTop: nbSpacing.sm, paddingBottom: nbSpacing.md, flexGrow: 1 },
+  content: screenContentGrow,
 
   hero: {
     backgroundColor: nbColors.bgAccentYellow,
@@ -199,7 +200,8 @@ const styles = StyleSheet.create({
     borderColor: nbColors.black,
     borderRadius: nbRadius.md,
     padding: nbSpacing.md,
-    marginBottom: nbSpacing.md,
+    // Intra-section gap to the tile rows below (same summary section).
+    marginBottom: nbSpacing.sm,
     ...nbShadows.md,
   },
   heroTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

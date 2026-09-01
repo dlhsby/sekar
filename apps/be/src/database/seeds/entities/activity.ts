@@ -29,7 +29,9 @@ export async function seedActivities(ctx: SeedContext): Promise<void> {
   );
   const actKorlap = await ctx.qr.query(`SELECT id FROM users WHERE role = 'korlap' LIMIT 1`);
   const actShift = await ctx.qr.query(`SELECT id FROM shifts LIMIT 1`);
-  const actArea = await ctx.qr.query(`SELECT id FROM areas WHERE name ILIKE '%bungkul%' LIMIT 1`);
+  const actArea = await ctx.qr.query(
+    `SELECT id FROM locations WHERE name ILIKE '%bungkul%' LIMIT 1`,
+  );
 
   if (
     actSatgas1.length === 0 ||
@@ -97,7 +99,7 @@ export async function seedActivities(ctx: SeedContext): Promise<void> {
 
       // 12 Satgas activities spanning 4 weeks
       await ctx.qr.query(`
-        INSERT INTO activities (id, user_id, shift_id, area_id, activity_type_id, description, photo_urls, gps_lat, gps_lng, created_at) VALUES
+        INSERT INTO activities (id, user_id, shift_id, location_id, activity_type_id, description, photo_urls, gps_lat, gps_lng, created_at) VALUES
           ('${ACT_SAT_1_ID}',  '${aS1}', '${aSh}', '${aAr}', '${perawatanId}',    'Perawatan area playground - pembersihan dan pengecatan pagar.',    ARRAY['https://sekar-media-dev.s3.amazonaws.com/activities/sat1-perawatan.jpg'],                                                                         ${lat(1)},  ${lng(1)},  ${dAgo(27)}),
           ('${ACT_SAT_2_ID}',  '${aS1}', '${aSh}', '${aAr}', '${penanamanId}',    'Penanaman 20 pohon bunga musiman di area taman utama.',            ARRAY['https://sekar-media-dev.s3.amazonaws.com/activities/sat2-penanaman-1.jpg','https://sekar-media-dev.s3.amazonaws.com/activities/sat2-penanaman-2.jpg'], ${lat(2)},  ${lng(2)},  ${dAgo(25)}),
           ('${ACT_SAT_3_ID}',  '${aS2}', '${aSh}', '${aAr}', '${penyiramanId}',   'Penyiraman tanaman pagi hari - seluruh area taman.',               ARRAY['https://sekar-media-dev.s3.amazonaws.com/activities/sat3-penyiraman.jpg'],                                                                           ${lat(-1)}, ${lng(-1)}, ${dAgo(23)}),
@@ -116,7 +118,7 @@ export async function seedActivities(ctx: SeedContext): Promise<void> {
 
       // 5 Linmas activities
       await ctx.qr.query(`
-        INSERT INTO activities (id, user_id, shift_id, area_id, activity_type_id, description, photo_urls, gps_lat, gps_lng, created_at) VALUES
+        INSERT INTO activities (id, user_id, shift_id, location_id, activity_type_id, description, photo_urls, gps_lat, gps_lng, created_at) VALUES
           ('${ACT_LIN_1_ID}', '${aL1}', '${aSh}', '${aAr}', '${patroliId}',       'Patroli keamanan malam - area jogging track dan playground.',       ARRAY['https://sekar-media-dev.s3.amazonaws.com/activities/lin1-patroli.jpg'],         ${lat(8)},  ${lng(8)},  ${dAgo(26)}),
           ('${ACT_LIN_2_ID}', '${aL2}', '${aSh}', '${aAr}', '${insidenId}',       'Laporan insiden: PKL masuk area taman - sudah ditangani.',          ARRAY['https://sekar-media-dev.s3.amazonaws.com/activities/lin2-insiden-1.jpg','https://sekar-media-dev.s3.amazonaws.com/activities/lin2-insiden-2.jpg'], ${lat(-6)}, ${lng(-6)}, ${dAgo(19)}),
           ('${ACT_LIN_3_ID}', '${aL1}', '${aSh}', '${aAr}', '${periksaFasId}',    'Pengecekan fasilitas: lampu, bangku, pagar - kondisi baik.',        ARRAY['https://sekar-media-dev.s3.amazonaws.com/activities/lin3-periksa-fasilitas.jpg'], ${lat(9)}, ${lng(9)}, ${dAgo(14)}),
@@ -128,7 +130,7 @@ export async function seedActivities(ctx: SeedContext): Promise<void> {
 
       // 3 Korlap activities
       await ctx.qr.query(`
-        INSERT INTO activities (id, user_id, shift_id, area_id, activity_type_id, description, photo_urls, gps_lat, gps_lng, created_at) VALUES
+        INSERT INTO activities (id, user_id, shift_id, location_id, activity_type_id, description, photo_urls, gps_lat, gps_lng, created_at) VALUES
           ('${ACT_KOR_1_ID}', '${aK}', '${aSh}', '${aAr}', '${cekKendaraanId}',  'Pengecekan kendaraan operasional - semua dalam kondisi baik.',  ARRAY['https://sekar-media-dev.s3.amazonaws.com/activities/kor1-kendaraan.jpg'],  ${lat(-8)}, ${lng(-8)}, ${dAgo(21)}),
           ('${ACT_KOR_2_ID}', '${aK}', '${aSh}', '${aAr}', '${patroliKorlapId}', 'Patroli area kerja dan koordinasi dengan satgas.',               ARRAY['https://sekar-media-dev.s3.amazonaws.com/activities/kor2-patroli.jpg'],    ${lat(11)}, ${lng(11)}, ${dAgo(11)}),
           ('${ACT_KOR_3_ID}', '${aK}', '${aSh}', '${aAr}', '${cekAlatId}',       'Pengecekan alat kerja - menemukan 2 cangkul yang perlu diganti.', ARRAY['https://sekar-media-dev.s3.amazonaws.com/activities/kor3-alat.jpg'],     ${lat(-9)}, ${lng(-9)}, ${dAgo(4)})
@@ -138,7 +140,7 @@ export async function seedActivities(ctx: SeedContext): Promise<void> {
 
       // 30 extended activities for scroll testing (IDs via gen_random_uuid — Section C DELETE clears first)
       await ctx.qr.query(`
-        INSERT INTO activities (id, user_id, shift_id, area_id, activity_type_id, description, photo_urls, gps_lat, gps_lng, created_at)
+        INSERT INTO activities (id, user_id, shift_id, location_id, activity_type_id, description, photo_urls, gps_lat, gps_lng, created_at)
         SELECT
           gen_random_uuid(),
           CASE gs.n % 3
@@ -163,7 +165,7 @@ export async function seedActivities(ctx: SeedContext): Promise<void> {
       // "Ringkasan hari ini" tile shows a non-zero count on a fresh dev install
       // and the TodayActivitiesModal has enough rows to test sheet scrollability.
       await ctx.qr.query(`
-        INSERT INTO activities (id, user_id, shift_id, area_id, activity_type_id, description, photo_urls, gps_lat, gps_lng, created_at)
+        INSERT INTO activities (id, user_id, shift_id, location_id, activity_type_id, description, photo_urls, gps_lat, gps_lng, created_at)
         SELECT
           gen_random_uuid(),
           '${aS1}'::UUID,

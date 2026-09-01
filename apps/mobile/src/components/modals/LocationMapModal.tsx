@@ -5,13 +5,15 @@
  */
 
 import React, { useMemo } from 'react';
+import { calculateDistance, formatDistance } from '../../utils/gpsUtils';
 import {
   View,
   StyleSheet,
   TouchableOpacity,
+  ActivityIndicator,
   Platform,
 } from 'react-native';
-import MapView, { Circle, Marker, Polygon, PROVIDER_GOOGLE, Region } from 'react-native-maps';
+import MapView, { Marker, Polygon, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTranslation } from 'react-i18next';
 import { NBText } from '../nb/NBText';
@@ -28,7 +30,6 @@ import type { GeoJsonGeometry } from '../../types/models.types';
 interface AreaBoundary {
   gps_lat: number;
   gps_lng: number;
-  radius_meters: number;
   boundary_polygon?: GeoJsonGeometry | null;
   name?: string;
 }
@@ -72,6 +73,31 @@ interface LocationMapModalProps {
    * Marker title shown when the user taps the pin. Defaults to "Lokasi Anda".
    */
   markerTitle?: string;
+  /**
+   * Custom pin for the USER marker (glyph + colour) — e.g. the worker's role
+   * icon, matching the monitoring map. Omitted → the default red Google pin.
+   */
+  workerMarker?: { iconName: string; color: string };
+  /**
+   * Custom pin for the AREA marker (glyph + colour) — e.g. a rayon/kawasan/lokasi
+   * icon. Omitted → the default green Google pin.
+   */
+  areaMarker?: { iconName: string; color: string };
+  /** When provided, a refresh button appears in the header to re-read the GPS. */
+  onRefresh?: () => void;
+  refreshing?: boolean;
+}
+
+/** A small teardrop pin (circle badge + downward tip) for react-native-maps. */
+function MapPin({ iconName, color }: { iconName: string; color: string }): React.JSX.Element {
+  return (
+    <View style={pinStyles.wrap}>
+      <View style={[pinStyles.badge, { backgroundColor: color }]}>
+        <MaterialCommunityIcons name={iconName} size={16} color={nbColors.white} />
+      </View>
+      <View style={[pinStyles.tip, { borderTopColor: color }]} />
+    </View>
+  );
 }
 
 function formatUpdatedAt(date: Date | null, t: (key: string, options?: Record<string, any>) => string): string {
@@ -121,8 +147,13 @@ function fitRegion(points: { latitude: number; longitude: number }[]): Region {
 }
 
 // Map area boundary overlay — blue-700 tone; closest token is requestUnderReview (#2563EB)
-const AREA_FILL = withAlpha(nbColors.requestUnderReview, 0.12);
-const AREA_STROKE = nbColors.requestUnderReview;
+// Boundary styling matches the monitoring map (`markerSpec` / BoundaryOverlay)
+// rather than borrowing the pruning-request palette, so the polygon a worker sees
+// around their own lokasi is the same one a supervisor sees around it.
+const AREA_FILL_INSIDE = withAlpha(nbColors.statusActive, 0.12);
+const AREA_FILL_OUTSIDE = withAlpha(nbColors.statusIdle, 0.12);
+const AREA_STROKE_INSIDE = nbColors.statusActive;
+const AREA_STROKE_OUTSIDE = nbColors.statusIdle;
 
 export function LocationMapModal({
   visible,
@@ -135,6 +166,10 @@ export function LocationMapModal({
   hideAreaStatus = false,
   hideUpdatedAt = false,
   markerTitle,
+  workerMarker,
+  areaMarker,
+  onRefresh,
+  refreshing = false,
 }: LocationMapModalProps) {
   const { t } = useTranslation();
   const defaultTitle = title ?? t('components:locationMap.defaultTitle');
@@ -156,6 +191,33 @@ export function LocationMapModal({
       : null;
   const hasCoords = lat !== null && lng !== null && !isNaN(lat) && !isNaN(lng);
   const accuracyWarning = location.accuracy !== null && location.accuracy > 50;
+
+  // Distance from the assigned area's centre. Only when both ends are known —
+  // a scope with no centre (rayon whose center_* was never computed) has nothing
+  // to measure against, and a fabricated "0 m" would be worse than silence.
+  const distanceText = useMemo(() => {
+    if (location.latitude == null || location.longitude == null) return null;
+    if (area?.gps_lat == null || area?.gps_lng == null) return null;
+    const metres = calculateDistance(
+      location.latitude,
+      location.longitude,
+      Number(area.gps_lat),
+      Number(area.gps_lng),
+    );
+    return t('components:locationMap.distanceFrom', {
+      distance: formatDistance(metres),
+      area: area.name ?? '',
+    });
+  }, [location.latitude, location.longitude, area?.gps_lat, area?.gps_lng, area?.name, t]);
+
+  // Coerce the AREA centre too — TypeORM emits decimal columns (e.g. a district's
+  // center_lat/lng) as STRINGS, and react-native-maps' <Marker> throws "Value for
+  // latitude cannot be cast from String to double" on a string coordinate. Doing
+  // it here keeps every caller (clock-in, clock-out, home) safe.
+  const areaLat = area?.gps_lat != null ? Number(area.gps_lat) : null;
+  const areaLng = area?.gps_lng != null ? Number(area.gps_lng) : null;
+  const hasAreaCoords =
+    areaLat !== null && areaLng !== null && !isNaN(areaLat) && !isNaN(areaLng);
 
   const polygonCoords = useMemo(() => {
     const bp = area?.boundary_polygon;
@@ -180,18 +242,10 @@ export function LocationMapModal({
       // Polygon available → use all vertices for precise bounding box
       points.push(...polygonCoords);
     } else if (area) {
-      // Radius fallback → expand bounding box to circle's cardinal edges
-      const lat = Number(area.gps_lat);
-      const lng = Number(area.gps_lng);
-      const radius = Number(area.radius_meters);
-      const latDeg = radius / 111320;
-      const lngDeg = radius / (111320 * Math.cos((lat * Math.PI) / 180));
-      points.push(
-        { latitude: lat + latDeg, longitude: lng },
-        { latitude: lat - latDeg, longitude: lng },
-        { latitude: lat, longitude: lng + lngDeg },
-        { latitude: lat, longitude: lng - lngDeg },
-      );
+      // No polygon → the centre point is all we can frame. The radius circle
+      // that used to stand in here is retired (`radius_meters` is gone); drawing
+      // one would invent a geofence the server does not share.
+      points.push({ latitude: Number(area.gps_lat), longitude: Number(area.gps_lng) });
     }
 
     if (points.length === 0) return undefined;
@@ -242,22 +296,31 @@ export function LocationMapModal({
             pitchEnabled={false}
             rotateEnabled={false}
           >
-            {/* Area boundary — polygon if available, circle as fallback */}
+            {/* Area boundary. Polygon or nothing: the radius circle that used to
+                stand in as a fallback is retired (`radius_meters` is gone), and
+                drawing one would invent a geofence the server does not share. */}
             {polygonCoords ? (
               <Polygon
                 coordinates={polygonCoords}
-                fillColor={AREA_FILL}
-                strokeColor={AREA_STROKE}
+                // Tinted by whether the worker is inside it — the same question
+                // the badge above the map answers, so the two cannot disagree.
+                fillColor={location.isWithinArea ? AREA_FILL_INSIDE : AREA_FILL_OUTSIDE}
+                strokeColor={location.isWithinArea ? AREA_STROKE_INSIDE : AREA_STROKE_OUTSIDE}
                 strokeWidth={2}
               />
-            ) : area ? (
-              <Circle
-                center={{ latitude: Number(area.gps_lat), longitude: Number(area.gps_lng) }}
-                radius={Number(area.radius_meters)}
-                fillColor={AREA_FILL}
-                strokeColor={AREA_STROKE}
-                strokeWidth={2}
-              />
+            ) : null}
+
+            {/* The area's own pin, so the boundary is identifiable even when
+                the worker is far outside it (or the polygon is off-screen). */}
+            {hasAreaCoords ? (
+              <Marker
+                coordinate={{ latitude: areaLat!, longitude: areaLng! }}
+                title={area?.name}
+                anchor={areaMarker ? { x: 0.5, y: 1 } : undefined}
+                pinColor={areaMarker ? undefined : nbColors.statusActive}
+              >
+                {areaMarker ? <MapPin iconName={areaMarker.iconName} color={areaMarker.color} /> : undefined}
+              </Marker>
             ) : null}
 
             {/* User location marker */}
@@ -265,12 +328,15 @@ export function LocationMapModal({
               <Marker
                 coordinate={{ latitude: lat!, longitude: lng! }}
                 title={defaultMarkerTitle}
+                anchor={workerMarker ? { x: 0.5, y: 1 } : undefined}
                 description={
                   location.accuracy !== null
                     ? t('components:locationMap.accuracy', { value: Math.round(location.accuracy) })
                     : undefined
                 }
-              />
+              >
+                {workerMarker ? <MapPin iconName={workerMarker.iconName} color={workerMarker.color} /> : undefined}
+              </Marker>
             )}
           </MapView>
         ) : (
@@ -289,16 +355,51 @@ export function LocationMapModal({
 
       {/* Info strip — with padding since noPadding applies to the sheet container */}
       <View style={styles.infoStrip}>
+        {area?.name ? (
+          <View style={styles.areaNameRow}>
+            <MaterialCommunityIcons name="map-marker-outline" size={16} color={nbColors.gray700} />
+            <NBText variant="body" color="black" style={styles.areaNameText} numberOfLines={1}>
+              {area.name}
+            </NBText>
+            {/* How far off the worker is. "Di luar area" alone does not say
+                whether that is 20 m or 700 km — the distance is what makes the
+                badge actionable. */}
+            {distanceText ? (
+              <NBText variant="body-sm" color="gray700" style={styles.distanceText}>
+                {distanceText}
+              </NBText>
+            ) : null}
+          </View>
+        ) : null}
         {hasCoords ? (
           <>
-            <NBText
-              variant="mono-sm"
-              color="black"
-              style={styles.coordsFont}
-              accessibilityLabel={t('components:locationMap.coordAria', { lat: lat!.toFixed(6), lng: lng!.toFixed(6) })}
-            >
-              {lat!.toFixed(6)}, {lng!.toFixed(6)}
-            </NBText>
+            <View style={styles.coordsRow}>
+              <NBText
+                variant="mono-sm"
+                color="black"
+                style={[styles.coordsFont, styles.coordsText]}
+                accessibilityLabel={t('components:locationMap.coordAria', { lat: lat!.toFixed(6), lng: lng!.toFixed(6) })}
+              >
+                {lat!.toFixed(6)}, {lng!.toFixed(6)}
+              </NBText>
+              {onRefresh ? (
+                <TouchableOpacity
+                  onPress={onRefresh}
+                  disabled={refreshing}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('attendance:infoCard.refreshLocation')}
+                  testID="location-map-refresh"
+                  style={styles.refreshButton}
+                >
+                  {refreshing ? (
+                    <ActivityIndicator size="small" color={nbColors.black} />
+                  ) : (
+                    <MaterialCommunityIcons name="refresh" size={18} color={nbColors.black} />
+                  )}
+                </TouchableOpacity>
+              ) : null}
+            </View>
 
             {(location.accuracy !== null || !hideAreaStatus) ? (
               <View style={styles.infoRow}>
@@ -379,17 +480,45 @@ const styles = StyleSheet.create({
   infoStrip: {
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.sm,
-    gap: nbSpacing.xs,
+    gap: nbSpacing.sm,
   },
   coordsFont: {
     // override mono-sm with platform monospace fallback
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
+  areaNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nbSpacing.xs,
+  },
+  distanceText: { marginLeft: 'auto' },
+  areaNameText: {
+    flexShrink: 1,
+    fontWeight: '700',
+  },
+  coordsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: nbSpacing.sm,
+  },
+  coordsText: {
+    flexShrink: 1,
+  },
+  refreshButton: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: nbColors.white,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.black,
+    borderRadius: nbRadius.sm,
+  },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: nbSpacing.xs,
   },
   accuracyText: {
     color: nbColors.gray700,
@@ -420,7 +549,28 @@ const styles = StyleSheet.create({
   areaBadgeTextOutside: {
     color: nbColors.statusIdle,
   },
-  updatedTopMargin: {
-    marginTop: nbSpacing.xs,
+  updatedTopMargin: {},
+});
+
+const pinStyles = StyleSheet.create({
+  wrap: { alignItems: 'center' },
+  badge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.black,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tip: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 5,
+    borderRightWidth: 5,
+    borderTopWidth: 7,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    marginTop: -2,
   },
 });

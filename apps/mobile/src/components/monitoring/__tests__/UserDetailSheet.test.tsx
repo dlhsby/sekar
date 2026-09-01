@@ -33,13 +33,14 @@ jest.mock('../../../services/api/usersApi');
 jest.mock('../../../services/api/monitoringApi');
 
 import { getTasks } from '../../../services/api/tasksApi';
-import { getActivities } from '../../../services/api/activitiesApi';
+import { getActivities, getActivityById } from '../../../services/api/activitiesApi';
 import { getOvertimes } from '../../../services/api/overtimeApi';
 import { getUserById } from '../../../services/api/usersApi';
 import { getReassignmentHistory } from '../../../services/api/monitoringApi';
 
 const mockGetTasks = getTasks as jest.MockedFunction<typeof getTasks>;
 const mockGetActivities = getActivities as jest.MockedFunction<typeof getActivities>;
+const mockGetActivityById = getActivityById as jest.MockedFunction<typeof getActivityById>;
 const mockGetOvertimes = getOvertimes as jest.MockedFunction<typeof getOvertimes>;
 const mockGetUserById = getUserById as jest.MockedFunction<typeof getUserById>;
 const mockGetReassignmentHistory = getReassignmentHistory as jest.MockedFunction<typeof getReassignmentHistory>;
@@ -61,10 +62,10 @@ const createUser = (overrides?: Partial<LiveUser>): LiveUser => ({
   role: 'satgas',
   phone: '08123456789',
   status: 'active',
-  area_id: 'area-1',
-  area_name: 'Taman Bungkul',
-  rayon_id: 'rayon-1',
-  rayon_name: 'Rayon 1',
+  location_id: 'area-1',
+  location_name: 'Taman Bungkul',
+  district_id: 'district-1',
+  district_name: 'Rayon 1',
   latitude: -7.250445,
   longitude: 112.768845,
   accuracy: 8,
@@ -88,10 +89,10 @@ const createDaySummary = (overrides?: Partial<UserDaySummary>): UserDaySummary =
   role: 'satgas',
   phone: '08123456789',
   status: 'active',
-  area_id: 'area-1',
-  area_name: 'Taman Bungkul',
-  rayon_id: 'rayon-1',
-  rayon_name: 'Rayon 1',
+  location_id: 'area-1',
+  location_name: 'Taman Bungkul',
+  district_id: 'district-1',
+  district_name: 'Rayon 1',
   shift: {
     id: 'shift-1',
     name: 'Pagi',
@@ -117,7 +118,7 @@ const fullTask = (overrides?: Partial<Task>): Task => ({
   status: 'in_progress',
   priority: 'high',
   deadline: today(17),
-  area_id: 'area-1',
+  location_id: 'area-1',
   area: { id: 'area-1', name: 'Taman Bungkul' } as any,
   assigned_to: 'user-123',
   created_by: 'sup-1',
@@ -130,7 +131,7 @@ const fullActivity = (overrides?: Partial<Activity>): Activity => ({
   id: 'act-1',
   user_id: 'user-123',
   shift_id: 'shift-1',
-  area_id: 'area-1',
+  location_id: 'area-1',
   area: { id: 'area-1', name: 'Taman Bungkul' } as any,
   activity_type_id: 'at-1',
   activityType: { id: 'at-1', name: 'Penyiraman' } as any,
@@ -161,8 +162,8 @@ const userFixture: User = {
   full_name: 'Ahmad Satgas',
   role: 'satgas',
   is_active: true,
-  area_id: 'area-1',
-  rayon_id: 'rayon-1',
+  location_id: 'area-1',
+  district_id: 'district-1',
   profile_picture_url: 'data:image/png;base64,iVBORw0KGgo=',
   created_at: today(0),
   updated_at: today(0),
@@ -233,16 +234,15 @@ describe('UserDetailSheet (CP1)', () => {
     });
 
     it.each([
-      ['active',       'Aktif'],
-      ['inactive',     'Tidak aktif'],
-      ['outside_area', 'Luar area'],
-      ['missing',      'Tidak terdeteksi'],
-      ['offline',      'Offline'],
+      ['active',   'Aktif'],
+      ['offline',  'Tidak Aktif'],
+      ['absent',   'Tidak Hadir'],
     ] as const)('renders the presencePill label "%s" → "%s"', async (status, label) => {
       const { getByText } = render(
-        <UserDetailSheet {...defaultProps()} user={createUser({ status })} />
+        <UserDetailSheet {...defaultProps()} user={createUser({ status: status as any })} />
       );
       await flushAll();
+      // The label is from presenceActivityPill which maps to i18n keys
       expect(getByText(label)).toBeTruthy();
     });
 
@@ -277,7 +277,7 @@ describe('UserDetailSheet (CP1)', () => {
     });
 
     it('falls back to "—" when area name is missing', async () => {
-      const u = createUser({ area_name: '' });
+      const u = createUser({ location_name: '' });
       const { getAllByText } = render(
         <UserDetailSheet {...defaultProps()} user={u} />
       );
@@ -381,6 +381,70 @@ describe('UserDetailSheet (CP1)', () => {
       expect(getByText('Penyiraman')).toBeTruthy();
       expect(getByText('Sirami semua pot depan')).toBeTruthy();
       expect(getByText('2 foto')).toBeTruthy();
+    });
+
+    /**
+     * W2 (parity). `PhotoGallery` shipped in Phase 3 exported, unit-tested and
+     * rendered by NO screen, so the card could show "2 foto" and do nothing when
+     * tapped. The list response carries `photo_count` with an EMPTY `photo_urls`,
+     * so opening them needs a detail fetch.
+     */
+    describe('verification photos', () => {
+      const openActivities = async (activity: Activity) => {
+        mockGetActivities.mockResolvedValueOnce(okList([activity]) as any);
+        const utils = render(<UserDetailSheet {...defaultProps()} />);
+        await flushAll();
+        fireEvent.press(utils.getByText('Aktivitas'));
+        await flushAll();
+        return utils;
+      };
+
+      it('fetches the detail and shows the gallery when a card with photos is tapped', async () => {
+        // The list shape: a count, but no URLs.
+        const listRow = fullActivity({ photo_urls: [], photo_count: 2 } as any);
+        mockGetActivityById.mockResolvedValue({
+          data: fullActivity({ photo_urls: ['a.jpg', 'b.jpg'] }),
+        } as any);
+
+        const { getByTestId } = await openActivities(listRow);
+        fireEvent.press(getByTestId('user-activity-act-1'));
+        await flushAll();
+
+        expect(mockGetActivityById).toHaveBeenCalledWith('act-1');
+        expect(getByTestId('activity-photos')).toBeTruthy();
+        expect(getByTestId('activity-photos-thumbnail-0')).toBeTruthy();
+        expect(getByTestId('activity-photos-thumbnail-1')).toBeTruthy();
+      });
+
+      it('skips the fetch when the row already carries its URLs', async () => {
+        const { getByTestId } = await openActivities(fullActivity());
+        fireEvent.press(getByTestId('user-activity-act-1'));
+        await flushAll();
+
+        expect(mockGetActivityById).not.toHaveBeenCalled();
+        expect(getByTestId('activity-photos')).toBeTruthy();
+      });
+
+      it('does not make a card without photos pressable into a dead end', async () => {
+        const noPhotos = fullActivity({ photo_urls: [], photo_count: 0 } as any);
+        const { getByTestId, queryByTestId } = await openActivities(noPhotos);
+        fireEvent.press(getByTestId('user-activity-act-1'));
+        await flushAll();
+
+        expect(mockGetActivityById).not.toHaveBeenCalled();
+        expect(queryByTestId('activity-photos')).toBeNull();
+      });
+
+      it('falls back to the gallery empty state when the detail fetch fails', async () => {
+        const listRow = fullActivity({ photo_urls: [], photo_count: 2 } as any);
+        mockGetActivityById.mockRejectedValue(new Error('network'));
+
+        const { getByTestId } = await openActivities(listRow);
+        fireEvent.press(getByTestId('user-activity-act-1'));
+        await flushAll();
+
+        expect(getByTestId('activity-photos-empty')).toBeTruthy();
+      });
     });
 
     it('shows empty copy when no activities returned', async () => {

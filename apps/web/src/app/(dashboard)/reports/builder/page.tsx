@@ -32,7 +32,7 @@ interface BuilderState {
   startDate: string;
   endDate: string;
   areaId: string;
-  rayonId: string;
+  districtId: string;
   workerId: string;
 }
 
@@ -59,21 +59,29 @@ export default function ReportBuilderPage() {
     { value: ReportFormat.XLSX, label: t('formats.xlsx') },
   ], [t]);
 
-  const [state, setState] = useState<BuilderState>({
-    reportType: '',
-    format: '',
-    startDate: '',
-    endDate: '',
-    areaId: '',
-    rayonId: '',
-    workerId: '',
+  // Lazy initializer, not an effect: the default range is INITIAL state, and
+  // setting it after mount rendered one frame with empty date inputs and then
+  // replaced them. The function form also keeps `new Date()` from running on
+  // every render.
+  const [state, setState] = useState<BuilderState>(() => {
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+    return {
+      reportType: '',
+      format: '',
+      startDate: thirtyDaysAgo.toISOString().split('T')[0],
+      endDate: today.toISOString().split('T')[0],
+      areaId: '',
+      districtId: '',
+      workerId: '',
+    };
   });
 
   const REPORTING_VIEWERS: UserRole[] = [
     'korlap',
     'kepala_rayon',
-    'admin_data',
-    'top_management',
+    'admin_rayon',
+    'management',
     'admin_system',
     'superadmin',
   ];
@@ -86,18 +94,6 @@ export default function ReportBuilderPage() {
 
   const { data: templates, isLoading: templatesLoading } = useReportTemplates();
   const generateReportMutation = useGenerateReport();
-
-  // Get today's date in YYYY-MM-DD format and 30 days ago
-  useEffect(() => {
-    const today = new Date();
-    const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-    setState((s) => ({
-      ...s,
-      endDate: today.toISOString().split('T')[0],
-      startDate: thirtyDaysAgo.toISOString().split('T')[0],
-    }));
-  }, []);
 
   const handleSubmit = async () => {
     // Validate form
@@ -114,7 +110,7 @@ export default function ReportBuilderPage() {
           start_date: state.startDate || undefined,
           end_date: state.endDate || undefined,
           area_id: state.areaId || undefined,
-          rayon_id: state.rayonId || undefined,
+          district_id: state.districtId || undefined,
           worker_id: state.workerId || undefined,
         },
       });
@@ -188,11 +184,11 @@ export default function ReportBuilderPage() {
           />
 
           <FormInput
-            label={t('builder.rayonLabel')}
+            label={t('builder.districtLabel')}
             type="text"
-            placeholder={t('builder.rayonPlaceholder')}
-            value={state.rayonId}
-            onChange={(e) => setState((s) => ({ ...s, rayonId: e.target.value }))}
+            placeholder={t('builder.districtPlaceholder')}
+            value={state.districtId}
+            onChange={(e) => setState((s) => ({ ...s, districtId: e.target.value }))}
           />
 
           {showWorkerSelect && (

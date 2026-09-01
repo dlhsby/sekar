@@ -7,10 +7,14 @@
  * - `applyPatch` uses Immer's draft mutation (enabled by RTK's createSlice) to
  *   update a single worker in-place without rebuilding the full array.
  * - `fetchSnapshot` hits GET /monitoring/snapshot and stores the full response.
- * - `toggleLayer` flips a single boolean in `visibleLayers`.
+ * - `setLayer` sets one entry in `visibleLayers` (four-way for the geo tiers).
  */
 
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
+import {
+  DEFAULT_VISIBLE_LAYERS,
+  type MonitoringV2VisibleLayers as VisibleLayers,
+} from '../../utils/layerVisibility';
 import type { LiveUser, AggregateNode, MonitoringAggregateResponse } from '../../types/models.types';
 import { getMonitoringAggregate } from '../../services/api/monitoringApi';
 import apiClient from '../../services/api/apiClient';
@@ -19,53 +23,87 @@ import i18n from '../../i18n/config';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface MonitoringV2Snapshot {
-  scope: 'city' | 'rayon' | 'area';
+  scope: 'city' | 'district' | 'location';
   scope_id: string | null;
   workers: LiveUser[];
   generated_at: string | null;
 }
 
-export interface MonitoringV2VisibleLayers {
-  workers: boolean;
-  plants: boolean;
-  overdue: boolean;
-  rayons: boolean;
-  areas: boolean;
-}
+// Layer vocabulary + predicates live in a plain module (not the store): they are
+// pure functions about a VALUE, and keeping them here forced every test that
+// mocked this slice to stub them as well.
+/**
+ * Monitoring map mode (ADR-060) — the mobile twin of web's `mapMode`.
+ *
+ * `viewport` draws exactly what `zoom` draws; it asks the SERVER for only the
+ * geometry intersecting the camera (`?bbox=`), so the city-wide boundary payload
+ * is never produced for regions off-screen. Panning or zooming out fetches more.
+ */
+export type MonitoringMode = 'drill' | 'zoom' | 'viewport';
 
-export type MonitoringScope = 'surabaya' | 'city' | 'rayon' | 'area';
+/** Zoom and viewport draw the same thing; they differ in how much they fetch. */
+export const isZoomLike = (m: MonitoringMode): boolean => m === 'zoom' || m === 'viewport';
 
-/** Current drill position on the map (Surabaya → rayon → area). */
+export type {
+  GeoFacet,
+  PersonnelFacet,
+  GeoLayer,
+  PersonnelLayer,
+  MonitoringV2VisibleLayers,
+} from '../../utils/layerVisibility';
+
+export type MonitoringScope = 'city' | 'district' | 'region' | 'location';
+
+/**
+ * Current drill position on the map: city → district (rayon) → region (kawasan) →
+ * location (lokasi) → workers. The top level is `city` (the Surabaya summary bubble
+ * was retired in PR2, matching web — the map opens directly on the district bubbles).
+ * A district with no kawasan (e.g. Taman Aktif) drills district → location directly;
+ * `regionId` is null in that region-less bucket and drives the back-drill target.
+ */
 export interface MonitoringView {
   scope: MonitoringScope;
   id: string | null;
-  rayonId: string | null;
+  districtId: string | null;
+  /** Kawasan context — set at region scope and carried into a location inside a kawasan. */
+  regionId: string | null;
   name: string | null;
 }
 
 export interface MonitoringV2State {
   snapshot: MonitoringV2Snapshot;
-  visibleLayers: MonitoringV2VisibleLayers;
+  visibleLayers: VisibleLayers;
+  /**
+   * How much of the hierarchy the map shows at once (ADR-060). `drill` renders a
+   * worker at their own schedule tier and one level of children; `zoom` renders
+   * every tier in the subtree and everyone standing in it. Modes change what is
+   * DRAWN, never what is counted.
+   */
+  mode: MonitoringMode;
   selectedUserId: string | null;
   selectedAreaId: string | null;
   clusterZoomThreshold: number;
   loading: boolean;
   error: string | null;
-  // Unified drill-down state (Surabaya → rayon → area → workers).
+  // Unified drill-down state (Surabaya → district → area → workers).
   view: MonitoringView;
   /** The scope the user's role can never drill above. */
   floor: MonitoringScope;
+  /** City/district rollup (scope=city → districts; scope=district → lokasi). */
   aggregate: MonitoringAggregateResponse | null;
+  /** Kawasan rollup for the current district (scope=region), kept separate so a
+   *  district can render regions ∪ region-less lokasi together (PR2-visual). */
+  aggregateRegion: MonitoringAggregateResponse | null;
   aggregateLoading: boolean;
 }
 
 export interface FetchSnapshotParams {
-  scope: 'city' | 'rayon' | 'area';
+  scope: 'city' | 'district' | 'location';
   id?: string;
 }
 
 export interface FetchAggregateParams {
-  scope: 'city' | 'rayon';
+  scope: 'city' | 'district' | 'region';
   id?: string;
 }
 
@@ -78,22 +116,20 @@ const initialState: MonitoringV2State = {
     workers: [],
     generated_at: null,
   },
-  visibleLayers: {
-    workers: true,
-    plants: false,
-    overdue: false,
-    rayons: true,
-    areas: true,
-  },
+  visibleLayers: { ...DEFAULT_VISIBLE_LAYERS },
+  // Drill stays the default so nobody's map gets heavier without asking — the
+  // same choice web makes.
+  mode: 'drill',
   selectedUserId: null,
   selectedAreaId: null,
   /** lat-delta threshold below which individual markers are shown instead of clusters */
   clusterZoomThreshold: 0.05,
   loading: false,
   error: null,
-  view: { scope: 'surabaya', id: null, rayonId: null, name: null },
-  floor: 'surabaya',
+  view: { scope: 'city', id: null, districtId: null, regionId: null, name: null },
+  floor: 'city',
   aggregate: null,
+  aggregateRegion: null,
   aggregateLoading: false,
 };
 
@@ -101,7 +137,7 @@ const initialState: MonitoringV2State = {
 
 /**
  * Fetch a fresh monitoring snapshot from the server.
- * Endpoint: GET /monitoring/snapshot?scope=city|rayon|area[&id=<uuid>]
+ * Endpoint: GET /monitoring/snapshot?scope=city|district|location[&id=<uuid>]
  */
 export const fetchSnapshot = createAsyncThunk(
   'monitoringV2/fetchSnapshot',
@@ -112,7 +148,7 @@ export const fetchSnapshot = createAsyncThunk(
         : `?scope=${params.scope}`;
       const response = await apiClient.get<{
         data?: {
-          scope: 'city' | 'rayon' | 'area';
+          scope: 'city' | 'district' | 'location';
           scope_id: string | null;
           workers: LiveUser[];
           generated_at: string;
@@ -138,7 +174,7 @@ export const fetchSnapshot = createAsyncThunk(
 
 /**
  * Fetch the aggregate ("Ringkasan") rollup for the current scope.
- * Endpoint: GET /monitoring/aggregate?scope=city|rayon[&id=<uuid>]
+ * Endpoint: GET /monitoring/aggregate?scope=city|district[&id=<uuid>]
  */
 export const fetchAggregate = createAsyncThunk(
   'monitoringV2/fetchAggregate',
@@ -190,11 +226,29 @@ const monitoringV2Slice = createSlice({
     /**
      * Toggle a single layer's visibility in the map toggle sheet.
      */
-    toggleLayer(
+    /** Switch between tap-to-drill and zoom mode (ADR-060). */
+    setMode(state, action: PayloadAction<MonitoringMode>) {
+      state.mode = action.payload;
+    },
+
+    /**
+     * Set one layer's facets. Takes the whole SET rather than a delta, so the
+     * caller never has to merge and two equal selections are always equal
+     * arrays (`toggleFacet` keeps canonical order).
+     *
+     * `plants` stays a plain boolean — it is a single overlay, not a tier with
+     * an outline, a fill and a marker.
+     */
+    setLayer(
       state,
-      action: PayloadAction<keyof MonitoringV2VisibleLayers>,
+      action: PayloadAction<{ key: keyof VisibleLayers; value: string[] | boolean }>,
     ) {
-      state.visibleLayers[action.payload] = !state.visibleLayers[action.payload];
+      const { key, value } = action.payload;
+      if (key === 'plants') {
+        state.visibleLayers.plants = Boolean(value);
+        return;
+      }
+      (state.visibleLayers[key] as string[]) = Array.isArray(value) ? [...value] : [];
     },
 
     /**
@@ -223,7 +277,8 @@ const monitoringV2Slice = createSlice({
 
     /**
      * Initialise the drill view + floor from the viewer's role.
-     * korlap → area; kepala_rayon/admin_data → rayon; city roles → surabaya.
+     * korlap → location (their kawasan/lokasi); kepala_rayon/admin_rayon → district;
+     * city roles (management/admin_system/superadmin) → city (the district bubbles).
      */
     initMonitoringView(
       state,
@@ -232,47 +287,103 @@ const monitoringV2Slice = createSlice({
       state.view = action.payload.view;
       state.floor = action.payload.floor;
       state.selectedUserId = null;
+      state.aggregateRegion = null;
     },
 
-    /** Surabaya → the rayon list (city scope). */
+    /** Reset to the top (city scope = the district bubbles). */
     enterCity(state) {
-      state.view = { scope: 'city', id: null, rayonId: null, name: null };
+      state.view = { scope: 'city', id: null, districtId: null, regionId: null, name: null };
       state.selectedUserId = null;
+      // The kawasan rollup is district-specific — drop it so the next district
+      // never briefly shows the previous one's kawasan (refetched on district drill).
+      state.aggregateRegion = null;
     },
 
-    /** Drill one level deeper from a tapped rayon/area node. */
+    /**
+     * Drill one level deeper from a tapped node. The node's `type` (from the
+     * aggregate) decides the target scope, so the caller doesn't special-case the
+     * region-less bucket: a district with kawasan yields `region` child nodes, a
+     * district without (Taman Aktif) yields `location` nodes directly.
+     */
     drillTo(
       state,
-      action: PayloadAction<{ id: string; type: 'rayon' | 'area'; name: string; rayonId: string | null }>,
+      action: PayloadAction<{
+        id: string;
+        type: 'district' | 'region' | 'location';
+        name: string;
+        districtId: string | null;
+      }>,
     ) {
       const n = action.payload;
-      if (n.type === 'rayon') {
-        state.view = { scope: 'rayon', id: n.id, rayonId: n.id, name: n.name };
+      if (n.type === 'district') {
+        state.view = {
+          scope: 'district',
+          id: n.id,
+          districtId: n.id,
+          regionId: null,
+          name: n.name,
+        };
+        // Entering a NEW district — drop the previous district's kawasan rollup so
+        // it can't render on this one before the fresh scope=region fetch lands.
+        state.aggregateRegion = null;
+      } else if (n.type === 'region') {
+        state.view = {
+          scope: 'region',
+          id: n.id,
+          districtId: n.districtId ?? state.view.districtId,
+          regionId: n.id,
+          name: n.name,
+        };
       } else {
         state.view = {
-          scope: 'area',
+          scope: 'location',
           id: n.id,
-          rayonId: n.rayonId ?? state.view.rayonId,
+          districtId: n.districtId ?? state.view.districtId,
+          // Carry the kawasan context so the back-drill returns to the region (if
+          // the lokasi was reached via a kawasan) rather than skipping to district.
+          regionId: state.view.scope === 'region' ? state.view.regionId : null,
           name: n.name,
         };
       }
       state.selectedUserId = null;
     },
 
-    /** Drill back up one level, never above the role floor. */
+    /**
+     * Drill back up one level, never above the role floor. A lokasi returns to its
+     * kawasan when it has one (`regionId` set), else to the district — the region-less
+     * fallback. Region → district → city. There is no level above city (Surabaya
+     * bubble retired).
+     */
     drillBack(state) {
       if (state.view.scope === state.floor) return;
-      if (state.view.scope === 'area') {
+      if (state.view.scope === 'location') {
+        state.view = state.view.regionId
+          ? {
+              scope: 'region',
+              id: state.view.regionId,
+              districtId: state.view.districtId,
+              regionId: state.view.regionId,
+              name: null,
+            }
+          : {
+              scope: 'district',
+              id: state.view.districtId,
+              districtId: state.view.districtId,
+              regionId: null,
+              name: null,
+            };
+      } else if (state.view.scope === 'region') {
         state.view = {
-          scope: 'rayon',
-          id: state.view.rayonId,
-          rayonId: state.view.rayonId,
+          scope: 'district',
+          id: state.view.districtId,
+          districtId: state.view.districtId,
+          regionId: null,
           name: null,
         };
-      } else if (state.view.scope === 'rayon') {
-        state.view = { scope: 'city', id: null, rayonId: null, name: null };
-      } else if (state.view.scope === 'city') {
-        state.view = { scope: 'surabaya', id: null, rayonId: null, name: null };
+      } else if (state.view.scope === 'district') {
+        state.view = { scope: 'city', id: null, districtId: null, regionId: null, name: null };
+        // Back at city — the kawasan rollup no longer applies.
+        state.aggregateRegion = null;
       }
       state.selectedUserId = null;
     },
@@ -283,7 +394,15 @@ const monitoringV2Slice = createSlice({
     });
     builder.addCase(fetchAggregate.fulfilled, (state, action) => {
       state.aggregateLoading = false;
-      state.aggregate = action.payload;
+      // Region rollups live in their own slot so the district view can hold the
+      // kawasan nodes AND the lokasi nodes at once (PR2-visual). Fall back to the
+      // response's own scope when the thunk meta is absent (e.g. hand-built actions).
+      const scope = action.meta?.arg?.scope ?? action.payload?.scope;
+      if (scope === 'region') {
+        state.aggregateRegion = action.payload;
+      } else {
+        state.aggregate = action.payload;
+      }
     });
     builder.addCase(fetchAggregate.rejected, state => {
       state.aggregateLoading = false;
@@ -311,7 +430,8 @@ const monitoringV2Slice = createSlice({
 export const {
   setSnapshot,
   applyPatch,
-  toggleLayer,
+  setLayer,
+  setMode,
   setSelectedUser,
   setSelectedArea,
   setClusterZoomThreshold,

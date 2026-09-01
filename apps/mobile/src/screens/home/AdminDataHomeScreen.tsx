@@ -13,6 +13,7 @@ import { AttendanceSummaryRow } from '../../components/home/AttendanceSummaryRow
 import { ShiftDetailModal, TodayActivitiesModal, TodayWorkHoursModal, TodayTasksModal } from '../../components/modals';
 import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows } from '../../constants/nbTokens';
 import { TASK_RECEIVERS } from '../../constants/roles';
+import { screenContentGrow } from '../../constants/layout';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { fetchAdminPruningRequests } from '../../store/slices/pruningRequestsSlice';
 import { setCurrentShift, setShiftHistory, setError } from '../../store/slices/shiftSlice';
@@ -30,8 +31,8 @@ const pad = (n: number): string => String(n).padStart(2, '0');
 
 /**
  * Admin Data Home Screen (hi-fi HOME-3) — perantingan-disposition dashboard for
- * admin_data. Selected by the role-aware `HomeScreen` dispatcher. Reads the
- * rayon-scoped `pruningRequests.adminList`.
+ * admin_rayon. Selected by the role-aware `HomeScreen` dispatcher. Reads the
+ * district-scoped `pruningRequests.adminList`.
  */
 
 const EMPTY_COUNTS = {
@@ -247,7 +248,7 @@ export function AdminDataHomeScreen(): React.JSX.Element {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[nbColors.primary]} />}
         >
           {/* Kehadiran saya — clock-in card (matches FieldHomeScreen structure) */}
-          <HomeSectionDivider label={t('home:adminData.sections.attendance')} />
+          <HomeSectionDivider label={t('home:adminData.sections.attendance')} first />
           {currentShift ? (
             <TouchableOpacity
               style={[styles.absensi, currentShift.is_overtime ? styles.absensiLembur : styles.absensiActive]}
@@ -441,7 +442,7 @@ export function AdminDataHomeScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'transparent' },
   scrollView: { flex: 1 },
-  content: { paddingHorizontal: nbSpacing.md, paddingTop: nbSpacing.sm, paddingBottom: nbSpacing.md, flexGrow: 1 },
+  content: screenContentGrow,
 
   hero: {
     backgroundColor: nbColors.bgAccentLilac,
@@ -449,7 +450,8 @@ const styles = StyleSheet.create({
     borderColor: nbColors.black,
     borderRadius: nbRadius.md,
     padding: nbSpacing.md,
-    marginBottom: nbSpacing.md,
+    // Intra-section gap (same summary section as the tiles below).
+    marginBottom: nbSpacing.sm,
     ...nbShadows.md,
   },
   heroTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -459,7 +461,7 @@ const styles = StyleSheet.create({
   heroButton: { marginTop: nbSpacing.md },
 
   tilesRow: { flexDirection: 'row', gap: nbSpacing.sm, marginBottom: nbSpacing.sm },
-  statTiles: { flexDirection: 'row', gap: nbSpacing.sm, marginBottom: nbSpacing.md },
+  statTiles: { flexDirection: 'row', gap: nbSpacing.sm, marginBottom: nbSpacing.sm },
   list: { gap: nbSpacing.sm },
 
   absensi: {
@@ -467,7 +469,6 @@ const styles = StyleSheet.create({
     borderColor: nbColors.black,
     borderRadius: nbRadius.md,
     padding: nbSpacing.md,
-    marginBottom: nbSpacing.md,
     ...nbShadows.md,
   },
   absensiActive: { backgroundColor: nbColors.statusActiveBg },

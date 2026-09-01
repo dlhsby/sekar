@@ -21,7 +21,7 @@ export interface PruningRequestDraft {
   target_count: number;
   photo_keys: string[]; // S3 keys from upload
   notes: string;
-  rayon_id?: string;
+  district_id?: string;
 }
 
 interface PruningRequestsState {
@@ -90,7 +90,7 @@ export const submitPruningRequest = createAsyncThunk(
       target_count?: number;
       photo_keys: string[];
       notes?: string;
-      rayon_id?: string;
+      district_id?: string;
       kecamatan_name?: string;
       // Phase 3 Apr 27 — staff_kecamatan redesign fields
       tree_count?: number;
@@ -174,7 +174,7 @@ export const fetchAdminPruningRequests = createAsyncThunk(
   async (
     filters: {
       status?: string;
-      rayonId?: string;
+      districtId?: string;
       from?: string;
       to?: string;
       page?: number;

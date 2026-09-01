@@ -1,6 +1,7 @@
 {
   "tiles": {
     "attendance": "Attendance",
+    "timeRecord": "Attendance",
     "overtime": "Overtime",
     "tasks": "Tasks",
     "activities": "Activities",
@@ -11,7 +12,8 @@
     "monitoring": "Monitoring",
     "reports": "Reports",
     "seeds": "Seeds",
-    "pruning": "Pruning"
+    "pruning": "Pruning",
+    "mySchedule": "Schedule"
   },
   "sections": {
     "operations": "Operations",

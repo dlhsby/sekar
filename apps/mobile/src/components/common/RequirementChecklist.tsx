@@ -1,7 +1,7 @@
 /**
  * RequirementChecklist — live rule list (e.g. password requirements on AS-5).
  * Each rule shows a sage check when met, an empty circle when not.
- * Mirrors the "SYARAT SANDI" box in design/project/hifi-mobile.html · AS-5.
+ * Mirrors the "SYARAT SANDI" box in specs/design-system/mockups/project/hifi-mobile.html · AS-5.
  */
 
 import React from 'react';

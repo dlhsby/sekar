@@ -1,6 +1,6 @@
 /**
  * Recent monitoring searches — persists the user's recently-selected results
- * (petugas / area / rayon) to localStorage so they can jump back quickly.
+ * (petugas / area / district) to localStorage so they can jump back quickly.
  * FIFO, max 10, de-duplicated by type+id (mirrors the mobile implementation).
  */
 import type { MonitoringSearchResult } from './useMonitoringSearch';

@@ -197,7 +197,7 @@ describe('ApiExceptionHelpers', () => {
   describe('notFound', () => {
     it('should create NotFound exception with code', () => {
       const code = ApiErrorCode.AREA_NOT_FOUND;
-      const message = 'Area not found';
+      const message = 'Location not found';
       const details = { areaId: 'area-uuid-123' };
 
       const exception = ApiExceptionHelpers.notFound(code, message, details);
@@ -213,7 +213,7 @@ describe('ApiExceptionHelpers', () => {
   describe('conflict', () => {
     it('should create Conflict exception with code', () => {
       const code = ApiErrorCode.AREA_CODE_DUPLICATE;
-      const message = 'Area code already exists';
+      const message = 'Location code already exists';
       const details = { code: 'TBK-001' };
 
       const exception = ApiExceptionHelpers.conflict(code, message, details);

@@ -1,6 +1,7 @@
 {
   "tiles": {
     "attendance": "Kehadiran",
+    "timeRecord": "Kehadiran",
     "overtime": "Lembur",
     "tasks": "Tugas",
     "activities": "Aktivitas",
@@ -11,7 +12,8 @@
     "monitoring": "Monitoring",
     "reports": "Laporan",
     "seeds": "Bibit",
-    "pruning": "Perantingan"
+    "pruning": "Perantingan",
+    "mySchedule": "Jadwal"
   },
   "sections": {
     "operations": "Operasional",

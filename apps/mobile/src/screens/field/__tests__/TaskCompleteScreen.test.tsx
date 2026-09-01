@@ -39,6 +39,8 @@ jest.mock('../../../services/api/tasksApi');
 // Mock media service (used by PhotoUploader component)
 jest.mock('../../../services/media', () => ({
   mediaService: {
+    // Gallery available by default so the existing chooser specs still apply.
+    isGalleryAllowed: jest.fn(() => true),
     capturePhoto: jest.fn().mockResolvedValue({
       id: 'photo-1',
       uri: 'file:///test-photo.jpg',
@@ -62,7 +64,7 @@ const mockTask = {
   status: 'in_progress' as const,
   priority: 'high' as const,
   area: { id: 'area-1', name: 'Taman Bungkul' },
-  rayon: { id: 'rayon-1', name: 'Rayon 1' }, // Phase 2C: Added rayon
+  district: { id: 'district-1', name: 'Rayon 1' }, // Phase 2C: Added district
 };
 
 describe('TaskCompleteScreen', () => {
@@ -112,7 +114,7 @@ describe('TaskCompleteScreen', () => {
     expect(getByText('Area: Taman Bungkul')).toBeTruthy();
   }, 15000);
 
-  it('shows rayon when present (Phase 2C)', async () => {
+  it('shows district when present (Phase 2C)', async () => {
     const { getByText } = render(
       <NavigationContainer>
         <TaskCompleteScreen />

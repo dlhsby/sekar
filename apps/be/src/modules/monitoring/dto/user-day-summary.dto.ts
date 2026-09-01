@@ -100,16 +100,16 @@ export class UserDaySummaryDto {
   status: TrackingStatus;
 
   @ApiPropertyOptional({ example: 'area-uuid' })
-  area_id: string | null;
+  location_id: string | null;
 
   @ApiPropertyOptional({ example: 'Taman Bungkul' })
-  area_name: string | null;
+  location_name: string | null;
 
-  @ApiPropertyOptional({ example: 'rayon-uuid' })
-  rayon_id: string | null;
+  @ApiPropertyOptional({ example: 'district-uuid' })
+  district_id: string | null;
 
   @ApiPropertyOptional({ example: 'Rayon Selatan' })
-  rayon_name: string | null;
+  district_name: string | null;
 
   @ApiPropertyOptional({ type: ShiftInfoDto })
   shift: ShiftInfoDto | null;

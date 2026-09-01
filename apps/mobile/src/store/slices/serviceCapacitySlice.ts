@@ -1,6 +1,6 @@
 /**
  * Service Capacity Slice
- * State management for rayon capacity calendars
+ * State management for district capacity calendars
  * Phase 3 sub-phase 3-10
  */
 
@@ -11,31 +11,31 @@ import * as serviceCapacityApi from '../../services/api/serviceCapacityApi';
 type ThunkError = { error: string; code?: string };
 
 interface ServiceCapacityState {
-  calendarByRayon: Record<string, CapacityRow[]>;
+  calendarByDistrict: Record<string, CapacityRow[]>;
   loading: boolean;
   error: { error: string; code?: string } | null;
 }
 
 const initialState: ServiceCapacityState = {
-  calendarByRayon: {},
+  calendarByDistrict: {},
   loading: false,
   error: null,
 };
 
 /**
- * Fetch capacity calendar for a rayon
+ * Fetch capacity calendar for a district
  */
 export const fetchCapacity = createAsyncThunk(
   'serviceCapacity/fetch',
   async (
     {
-      rayonId,
+      districtId,
       year,
       fromWeek,
       toWeek,
       serviceType,
     }: {
-      rayonId: string;
+      districtId: string;
       year?: number;
       fromWeek?: number;
       toWeek?: number;
@@ -44,7 +44,7 @@ export const fetchCapacity = createAsyncThunk(
     { rejectWithValue },
   ) => {
     try {
-      const response = await serviceCapacityApi.getCapacityCalendar(rayonId, {
+      const response = await serviceCapacityApi.getCapacityCalendar(districtId, {
         year,
         fromWeek,
         toWeek,
@@ -53,7 +53,7 @@ export const fetchCapacity = createAsyncThunk(
       if (response.error) {
         return rejectWithValue(response.error);
       }
-      return { rayonId, data: response.data || [] };
+      return { districtId, data: response.data || [] };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       const code = (err as { code?: string })?.code;
@@ -80,8 +80,8 @@ const serviceCapacitySlice = createSlice({
       })
       .addCase(fetchCapacity.fulfilled, (state, action) => {
         state.loading = false;
-        const { rayonId, data } = action.payload;
-        state.calendarByRayon[rayonId] = data;
+        const { districtId, data } = action.payload;
+        state.calendarByDistrict[districtId] = data;
         state.error = null;
       })
       .addCase(fetchCapacity.rejected, (state, action) => {

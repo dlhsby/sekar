@@ -2,20 +2,22 @@ import type { SeedContext } from '../lib/context';
 
 /**
  * Seed 31 kecamatans (administrative districts of Surabaya).
- * Maps each kecamatan to its rayon and region using runtime rayon lookup.
- * Uses ON CONFLICT DO UPDATE to heal misaligned rayon assignments (May 9 realignment).
+ * Maps each kecamatan to its district and region using runtime district lookup.
+ * Uses ON CONFLICT DO UPDATE to heal misaligned district assignments (May 9 realignment).
  */
 export async function seedKecamatans(ctx: SeedContext): Promise<void> {
   ctx.log('🏘️  Seeding Kecamatans…');
 
-  // Build rayon lookup: rayon_code → rayon_id via database query
-  const rayonIdByName = (await ctx.qr.query(`SELECT id, name FROM rayons ORDER BY name`)) as Array<{
+  // Build district lookup: district_code → district_id via database query
+  const districtIdByName = (await ctx.qr.query(
+    `SELECT id, name FROM districts ORDER BY name`,
+  )) as Array<{
     id: string;
     name: string;
   }>;
 
-  // Map rayon code to rayon name (static reference)
-  const codeToRayonName: Record<string, string> = {
+  // Map district code to district name (static reference)
+  const codeToDistrictName: Record<string, string> = {
     SELATAN: 'Rayon Selatan',
     UTARA: 'Rayon Utara',
     PUSAT: 'Rayon Pusat',
@@ -26,17 +28,17 @@ export async function seedKecamatans(ctx: SeedContext): Promise<void> {
     TAMAN_AKTIF: 'Rayon Taman Aktif',
   };
 
-  // Build reverse lookup: code → rayon_id
+  // Build reverse lookup: code → district_id
   const rIdx: Record<string, string> = {};
-  for (const r of rayonIdByName) {
-    for (const [code, name] of Object.entries(codeToRayonName)) {
+  for (const r of districtIdByName) {
+    for (const [code, name] of Object.entries(codeToDistrictName)) {
       if (name === r.name) {
         rIdx[code] = r.id;
       }
     }
   }
 
-  // Kecamatan blueprint: [name, code, rayon_code, region]
+  // Kecamatan blueprint: [name, code, district_code, region]
   const kecBlueprint: Array<[string, string, string, string]> = [
     // ── Surabaya Pusat (4) ──
     ['Bubutan', 'bubutan', 'PUSAT', 'pusat'],
@@ -81,10 +83,10 @@ export async function seedKecamatans(ctx: SeedContext): Promise<void> {
     const rid = rIdx[rcode];
     if (!rid) continue;
     const r = await ctx.qr.query(
-      `INSERT INTO kecamatans (name, code, rayon_id, region)
+      `INSERT INTO kecamatans (name, code, district_id, region)
        VALUES ($1, $2, $3, $4)
        ON CONFLICT (code) DO UPDATE
-         SET rayon_id = EXCLUDED.rayon_id,
+         SET district_id = EXCLUDED.district_id,
              region   = EXCLUDED.region,
              name     = EXCLUDED.name`,
       [name, code, rid, region],

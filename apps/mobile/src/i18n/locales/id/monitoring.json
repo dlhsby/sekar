@@ -5,7 +5,10 @@
   "aggregate": {
     "scheduledLabel": "Terjadwal",
     "clockedInLabel": "Hadir",
-    "notClockedInLabel": "Belum Hadir"
+    "notClockedInLabel": "Belum Hadir",
+    "belumHadirLabel": "Belum Hadir",
+    "tidakHadirLabel": "Tidak Hadir",
+    "detailLabel": "Detail {{name}}"
   },
   "surabaya": {
     "title": "Surabaya",
@@ -33,11 +36,25 @@
     "allAreas": "Semua Area"
   },
   "layers": {
-    "workers": "Petugas",
     "plants": "Tanaman",
     "overdue": "Jatuh Tempo",
-    "rayons": "Batas Rayon",
-    "areas": "Batas Area"
+    "districts": "Rayon",
+    "areas": "Lokasi",
+    "kawasan": "Kawasan",
+    "personnel": "Petugas & Tim",
+    "option": {
+      "all": "Semua",
+      "none": "Sembunyikan"
+    },
+    "facet": {
+      "boundary": "Batas",
+      "fill": "Isian",
+      "marker": "Marker",
+      "label": "Nama",
+      "petugas": "Petugas",
+      "tim": "Tim"
+    },
+    "workers": "Petugas"
   },
   "fab": {
     "status": "Ringkasan status",
@@ -58,18 +75,19 @@
   },
   "markerPreview": {
     "typeOfficer": "Petugas",
-    "typeRayon": "Rayon",
+    "typeDistrict": "Rayon",
     "typeArea": "Area",
     "viewDetail": "Lihat detail"
   },
   "entityTypes": {
     "area": "Area",
-    "rayon": "Rayon"
+    "district": "Rayon"
   },
   "status": {
     "title": "Status Pemantauan",
     "sections": {
       "attendance": "Kehadiran",
+      "onLeave": "Berhalangan",
       "operations": "Operasional",
       "staffList": "Daftar Petugas"
     },
@@ -85,7 +103,8 @@
     "attendance": {
       "clockedIn": "Sudah Clock In",
       "notClockedIn": "Belum Clock In"
-    }
+    },
+    "adhoc": "Luar jadwal"
   },
   "userDetail": {
     "location": "Lokasi",
@@ -135,10 +154,12 @@
       "medium": "Sedang",
       "high": "Tinggi",
       "urgent": "Mendesak"
-    }
+    },
+    "photosTitle": "Foto Verifikasi"
   },
   "search": {
     "title": "Pencarian",
+    "offline": "Tidak ada koneksi — menampilkan data tersimpan",
     "placeholder": "Cari petugas, area, rayon…",
     "searchLabel": "Pencarian: {{value}}",
     "clearLabel": "Hapus pencarian",
@@ -178,7 +199,7 @@
     "apply": "Terapkan",
     "sections": {
       "location": "Lokasi",
-      "rayon": "Rayon",
+      "district": "Rayon",
       "area": "Area",
       "role": "Jabatan",
       "user": "Cari Pengguna",
@@ -187,13 +208,13 @@
     },
     "placeholders": {
       "location": "Pilih Lokasi",
-      "rayon": "Pilih Rayon",
+      "district": "Pilih Rayon",
       "area": "Pilih Area",
       "role": "Pilih Jabatan",
       "user": "Pilih pengguna",
       "layers": "Pilih lapisan"
     },
-    "fixedRayon": "Rayon Anda"
+    "fixedDistrict": "Rayon Anda"
   },
   "reassignWorkerModal": {
     "title": "Pindah Petugas",
@@ -238,7 +259,8 @@
     "running": "Berjalan",
     "outsideBoundary": "Di luar area",
     "yes": "Ya",
-    "defaultName": "Petugas"
+    "defaultName": "Petugas",
+    "session": "Sesi {{index}}"
   },
   "mapError": {
     "title": "Gagal Memuat Peta",
@@ -247,7 +269,7 @@
     "retryLabel": "Coba lagi memuat peta"
   },
   "boundaryDetail": {
-    "understaffed": "Understaffed",
+    "understaffed": "Kekurangan personel",
     "sufficient": "Cukup",
     "areaLabel": "Area",
     "understaffedLabel": "Kurang Staf",
@@ -260,7 +282,7 @@
     "understaffedCount": "Kurang",
     "staffingTitle": "Kebutuhan per Jabatan",
     "noStaffingMessage": "Belum ada kebutuhan jabatan",
-    "reassignButton": "Reassign Petugas",
+    "reassignButton": "Pindahkan Petugas",
     "plantsTrigger": "Lihat tanaman",
     "plantsLabel": "Tanaman",
     "plantsLoading": "Memuat data tanaman…",
@@ -296,7 +318,7 @@
     "location": "Lokasi",
     "checkIn": "Masuk",
     "workDuration": "Durasi kerja",
-    "locationUpdate": "Update lokasi",
+    "locationUpdate": "Perbarui lokasi",
     "viewDetail": "Lihat Detail"
   },
   "workerTile": {
@@ -305,5 +327,52 @@
   },
   "location": {
     "noPoints": "Tidak ada titik lokasi"
+  },
+  "team": {
+    "chip": "Tim: {{name}}",
+    "exit": "Keluar dari tampilan tim"
+  },
+  "lifecycle": {
+    "late": "Terlambat",
+    "luarJadwal": "Luar Jadwal",
+    "lembur": "Lembur",
+    "lupaClockOut": "Lupa Clock-out",
+    "state": {
+      "tidak_bertugas": "Tidak Bertugas",
+      "belum_hadir": "Belum Hadir",
+      "terlambat": "Terlambat",
+      "bertugas": "Bertugas",
+      "pulang": "Pulang",
+      "tidak_hadir": "Tidak Hadir"
+    },
+    "leave": {
+      "cuti": "Cuti",
+      "sakit": "Sakit",
+      "izin": "Izin",
+      "libur": "Libur"
+    }
+  },
+  "mode": {
+    "title": "Mode Monitoring",
+    "drill": "Ketuk & Telusuri",
+    "zoom": "Zoom (semua)",
+    "drillHint": "Ketuk wilayah untuk masuk satu tingkat. Petugas tampil di tingkat jadwalnya.",
+    "zoomHint": "Tampilkan semua rayon, kawasan, lokasi, dan petugas sekaligus. Ketuk wilayah untuk membatasi ke wilayah itu.",
+    "viewport": "Zoom (layar)",
+    "viewportHint": "Sama seperti Zoom, tetapi hanya memuat area yang terlihat di layar. Geser atau perkecil peta untuk memuat lebih banyak.",
+    "revealHint": "Titik kecil = penanda lain. Ketuk, atau perbesar untuk melihat detailnya."
+  },
+  "hidden": {
+    "count": "{{count}} disembunyikan",
+    "showAll": "Tampilkan semua",
+    "hideLabel": "Sembunyikan {{name}}"
+  },
+  "sidebar": {
+    "noNodes": "Tidak ada wilayah di tingkat ini.",
+    "tabWilayah": "Wilayah",
+    "tabWorkers": "Petugas"
+  },
+  "breadcrumb": {
+    "city": "Surabaya"
   }
 }

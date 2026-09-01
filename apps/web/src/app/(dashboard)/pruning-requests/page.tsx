@@ -1,7 +1,7 @@
 /**
  * Pruning Requests dashboard list page (Phase 3 — admin disposition)
  *
- * Lets admin / admin_data / kepala_rayon / top_management triage kecamatan
+ * Lets admin / admin_rayon / kepala_rayon / management triage kecamatan
  * pruning requests from the desktop. Full DataTable with toolbar (search, column
  * filters, column toggle, refresh) + row actions (View, Edit, Cancel).
  */
@@ -122,12 +122,12 @@ export default function PruningRequestsPage() {
         ),
       },
       {
-        id: 'rayon',
-        accessorFn: (r) => r.rayon?.name ?? '',
-        header: t('pruning:columns.rayon'),
+        id: 'district',
+        accessorFn: (r) => r.district?.name ?? '',
+        header: t('pruning:columns.district'),
         enableSorting: false,
-        meta: { label: t('pruning:columns.rayon'), filterVariant: 'text' },
-        cell: ({ row }) => <div className="text-sm">{row.original.rayon?.name ?? '-'}</div>,
+        meta: { label: t('pruning:columns.district'), filterVariant: 'text' },
+        cell: ({ row }) => <div className="text-sm">{row.original.district?.name ?? '-'}</div>,
       },
       {
         id: 'expected',
@@ -243,17 +243,13 @@ export default function PruningRequestsPage() {
         enablePagination={false}
         searchPlaceholder={t('pruning:page.searchPlaceholder')}
         rowActions={rowActions}
-        actions={
-          <Button
-            onClick={() => {
-              setEditingRequest(null);
-              setFormOpen(true);
-            }}
-            leftIcon={<Plus className="h-5 w-5" />}
-          >
-            {t('pruning:page.buttonCreate')}
-          </Button>
-        }
+        createAction={{
+          label: t('pruning:page.buttonCreate'),
+          onClick: () => {
+            setEditingRequest(null);
+            setFormOpen(true);
+          },
+        }}
         emptyTitle={t('pruning:page.emptyTitle')}
         emptyDescription={t('pruning:page.emptyDescription')}
         emptyAction={

@@ -1,6 +1,6 @@
 /**
  * TaskCreateScreen Tests
- * Tests for Phase 2C task creation with NB design, role-based access, and rayon/area selection
+ * Tests for Phase 2C task creation with NB design, role-based access, and district/area selection
  */
 
 import React from 'react';
@@ -15,7 +15,7 @@ import authReducer from '../../../store/slices/authSlice';
 import type { User } from '../../../types/models.types';
 import * as tasksApi from '../../../services/api/tasksApi';
 import * as usersApi from '../../../services/api/usersApi';
-import * as rayonsApi from '../../../services/api/rayonsApi';
+import * as districtsApi from '../../../services/api/districtsApi';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Mock Alert
@@ -31,7 +31,7 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
 // Mock APIs
 jest.mock('../../../services/api/tasksApi');
 jest.mock('../../../services/api/usersApi');
-jest.mock('../../../services/api/rayonsApi');
+jest.mock('../../../services/api/districtsApi');
 
 // Mock NBBackgroundPattern
 jest.mock('../../../components/nb/NBBackgroundPattern', () => ({
@@ -149,9 +149,9 @@ const createTestStore = (overrides?: Record<string, any>) => {
           username: 'korlap1',
           full_name: 'Test Korlap',
           role: 'korlap' as any,
-          rayon_id: 'rayon-1',
-          rayon: { id: 'rayon-1', name: 'Rayon 1' },
-          area_id: 'area-1',
+          district_id: 'district-1',
+          district: { id: 'district-1', name: 'Rayon 1' },
+          location_id: 'area-1',
           area: { id: 'area-1', name: 'Taman Bungkul' },
           ...overrides,
         },
@@ -192,21 +192,21 @@ describe('TaskCreateScreen', () => {
     // Mock users API
     (usersApi.getUsers as jest.Mock).mockResolvedValue({
       data: [
-        { id: 'u1', full_name: 'Satgas 1', role: 'satgas', area_id: 'area-1' },
-        { id: 'u2', full_name: 'Satgas 2', role: 'satgas', area_id: 'area-1' },
-        { id: 'u3', full_name: 'Satgas 3', role: 'satgas', area_id: 'area-2' },
+        { id: 'u1', full_name: 'Satgas 1', role: 'satgas', location_id: 'area-1' },
+        { id: 'u2', full_name: 'Satgas 2', role: 'satgas', location_id: 'area-1' },
+        { id: 'u3', full_name: 'Satgas 3', role: 'satgas', location_id: 'area-2' },
       ],
     });
 
-    // Mock rayons API
-    (rayonsApi.getRayons as jest.Mock).mockResolvedValue({
+    // Mock districts API
+    (districtsApi.getDistricts as jest.Mock).mockResolvedValue({
       data: [
-        { id: 'rayon-1', name: 'Rayon 1' },
-        { id: 'rayon-2', name: 'Rayon 2' },
+        { id: 'district-1', name: 'Rayon 1' },
+        { id: 'district-2', name: 'Rayon 2' },
       ],
     });
 
-    (rayonsApi.getAreasByRayonId as jest.Mock).mockResolvedValue({
+    (districtsApi.getAreasByDistrictId as jest.Mock).mockResolvedValue({
       data: [
         { id: 'area-1', name: 'Taman Bungkul' },
         { id: 'area-2', name: 'Taman Harmoni' },
@@ -240,7 +240,7 @@ describe('TaskCreateScreen', () => {
     });
   });
 
-  it('renders rayon/area location section', async () => {
+  it('renders district/area location section', async () => {
     const store = createTestStore();
 
     const { getByText } = render(
@@ -374,7 +374,7 @@ describe('TaskCreateScreen', () => {
     });
   });
 
-  it('korlap has fixed rayon and area from profile', async () => {
+  it('korlap has fixed district and area from profile', async () => {
     const store = createTestStore();
 
     const { getByText } = render(
@@ -386,7 +386,7 @@ describe('TaskCreateScreen', () => {
     );
 
     await waitFor(() => {
-      // Korlap should see their rayon/area name displayed (disabled selects show value)
+      // Korlap should see their district/area name displayed (disabled selects show value)
       expect(getByText('Rayon 1')).toBeTruthy();
       expect(getByText('Taman Bungkul')).toBeTruthy();
     });
@@ -596,9 +596,9 @@ describe('TaskCreateScreen', () => {
     });
   });
 
-  it('top_management can select rayon and area', async () => {
+  it('management can select district and area', async () => {
     mockUseRoleAccess.mockReturnValue({
-      role: 'top_management' as any,
+      role: 'management' as any,
       canClock: false,
       canSubmitActivity: false,
       canCreateTask: true,
@@ -606,10 +606,10 @@ describe('TaskCreateScreen', () => {
       canSubmitOvertime: false,
       canApproveOvertime: false,
       canMonitor: true,
-      monitoringScope: 'rayon',
+      monitoringScope: 'district',
     });
 
-    const store = createTestStore({ role: 'top_management', rayon_id: undefined, area_id: undefined });
+    const store = createTestStore({ role: 'management', district_id: undefined, location_id: undefined });
 
     render(
       <Provider store={store}>
@@ -619,9 +619,9 @@ describe('TaskCreateScreen', () => {
       </Provider>
     );
 
-    // Should fetch rayons for top_management
+    // Should fetch districts for management
     await waitFor(() => {
-      expect(rayonsApi.getRayons).toHaveBeenCalled();
+      expect(districtsApi.getDistricts).toHaveBeenCalled();
     });
   });
 
@@ -704,7 +704,7 @@ describe('TaskCreateScreen', () => {
     });
   });
 
-  it('kepala_rayon has fixed rayon but can select area', async () => {
+  it('kepala_rayon has fixed district but can select area', async () => {
     mockUseRoleAccess.mockReturnValue({
       role: 'kepala_rayon' as any,
       canClock: false,
@@ -714,10 +714,10 @@ describe('TaskCreateScreen', () => {
       canSubmitOvertime: false,
       canApproveOvertime: false,
       canMonitor: true,
-      monitoringScope: 'rayon',
+      monitoringScope: 'district',
     });
 
-    const store = createTestStore({ role: 'kepala_rayon', area_id: undefined, area: undefined });
+    const store = createTestStore({ role: 'kepala_rayon', location_id: undefined, area: undefined });
 
     render(
       <Provider store={store}>
@@ -727,12 +727,12 @@ describe('TaskCreateScreen', () => {
       </Provider>
     );
 
-    // Should fetch areas for their rayon
+    // Should fetch areas for their district
     await waitFor(() => {
-      expect(rayonsApi.getAreasByRayonId).toHaveBeenCalledWith('rayon-1');
+      expect(districtsApi.getAreasByDistrictId).toHaveBeenCalledWith('district-1');
     });
 
-    // Should NOT fetch all rayons (rayon is fixed)
-    expect(rayonsApi.getRayons).not.toHaveBeenCalled();
+    // Should NOT fetch all districts (district is fixed)
+    expect(districtsApi.getDistricts).not.toHaveBeenCalled();
   });
 });

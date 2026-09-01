@@ -25,6 +25,33 @@ That's it! Services run at:
 - `satgas1/12345678`
 - `081200000006/12345678` (phone login)
 
+### Test the web from your phone (same Wi-Fi)
+
+`./scripts/start.sh` **exposes the web on your LAN by default** — just open
+`http://<LAN_IP>:3001` on the phone (the IP is printed on start).
+
+```bash
+./scripts/start.sh                  # localhost + LAN (prints the phone URL)
+./scripts/start.sh 192.168.1.5      # force the advertised LAN IP
+./scripts/start.sh --local          # localhost only (opt out of LAN exposure)
+```
+
+How it stays safe for localhost: the browser bundle uses an **empty
+`NEXT_PUBLIC_API_URL`, i.e. the same origin that served the page**, and the web
+dev server proxies `/api` + `/socket.io` to the backend (`next.config` rewrites,
+gated by `SEKAR_LAN_PROXY`). So the **one build works on `localhost:3001` AND
+`<LAN_IP>:3001`** with no baked IP, **no CORS**, and nothing breaks when you're
+offline or your IP changes. The phone only needs the **web port** reachable. The
+script also sets `SEKAR_ALLOWED_DEV_ORIGINS` so Next 16 serves its dev bundle to
+the LAN host (otherwise the page hangs on the loading gate).
+
+- **WSL2:** your phone reaches the *Windows* host IP, not WSL. The script prints
+  a one-time `netsh portproxy` + firewall command (also saved to
+  `logs/windows-lan-setup.ps1`) — run it once in an elevated PowerShell.
+- **CORS** stays env-driven via `CORS_ORIGIN` (`apps/be/.env.local`); you only
+  add an origin there if a browser hits `http://<LAN_IP>:3000` directly (not the
+  default same-origin proxy path).
+
 ---
 
 ## Table of Contents
@@ -46,12 +73,19 @@ SEKAR uses Docker Compose to run all local infrastructure. Services are defined 
 
 | Service | Purpose | Port | Credentials | Data Location |
 |---------|---------|------|-------------|---|
-| **PostgreSQL 14** | Primary database | 5432 | postgres/postgres, db: sekar_db | `infra/data/` |
+| **PostgreSQL 15** | Primary database | 5432 | postgres/postgres, db: sekar_db | `infra/data/` |
 | **Adminer** | Web database UI | 8080 | (use DB creds above) | — |
 | **MinIO** | S3-compatible object storage | 9000 (API), 9001 (console) | minioadmin/minioadmin | `sekar-minio-data` volume |
 | **Redis 7** | In-memory cache, streaming | 16379 | — | `sekar-redis-data` volume |
 
 **Note:** MinIO replaces LocalStack (the production stack also uses MinIO, so dev and prod behave identically). Adminer is the lightweight database UI (alternative to pgAdmin).
+
+> **PostgreSQL 15 (matches staging).** Dev was bumped from 14 → 15 so local and staging run the same major (a PG15 dump won't restore into PG14, and behaviour now matches). **A pre-existing PG14 data volume will not start under the 15 image** — Postgres refuses to boot on a v14 data dir. Reset once when you adopt this:
+> ```bash
+> ./scripts/stop.sh --infra          # stop containers
+> rm -rf infra/data                  # drop the PG14 data dir (local dev data only — bind mount)
+> ./scripts/setup.sh --yes           # infra up (PG15) + migrate + reseed
+> ```
 
 ### Starting & Stopping Services
 
@@ -380,8 +414,10 @@ npm run android
 # Or: build for all connected/running devices
 npm run android:all
 
-# Rebuild cache if stale
+# Drop Metro's transform cache — REQUIRED after editing .env.local (see below)
 npm start -- --reset-cache
+# or, via the helper that also sets up the adb reverses:
+./scripts/start-mobile.sh --reset-cache
 ```
 
 **Running on iOS (macOS only):**
@@ -419,7 +455,34 @@ GOOGLE_MAPS_API_KEY=          # Leave blank for dev, or add your key
 FEATURE_PLANTS_ENABLED=false
 FEATURE_PRUNING_REQUESTS_ENABLED=false
 FEATURE_PLANT_SEEDS_ENABLED=false
+
+# Anti-spoofing dev overrides (ADR-059). The Android emulator supplies location
+# through a MOCK PROVIDER, so without these the app blocks on a non-dismissable
+# "Lokasi Palsu Terdeteksi" overlay and every GPS ping is refused server-side —
+# you can punch, but the worker never appears on the monitoring map.
+ALLOW_MOCK_LOCATION=true      # accept mocked GPS
+ALLOW_GALLERY_UPLOAD=true     # allow the gallery in evidence flows
 ```
+
+Both are double-gated on `__DEV__` (`src/config/integrity.ts`), so a release
+bundle constant-folds the bypass away and cannot honour a misconfigured
+`.env.production`.
+
+**The backend needs its own half.** The client flags only stop the *app* from
+blocking; `verifiedPosition` still reports `mocked` truthfully and the server
+applies its own policy. Set this in **`apps/be/.env.local`** too, or the ping
+stream is refused and the worker reads as inactive:
+
+```bash
+ALLOW_MOCKED_LOCATION=true    # ignored when NODE_ENV=production
+```
+
+> **After editing `apps/mobile/.env.local`, you MUST clear Metro's cache:**
+> `./scripts/start-mobile.sh --reset-cache` (or `npm start -- --reset-cache`).
+> `react-native-dotenv` is a *babel* plugin, so `import { X } from '@env'` is
+> replaced with a literal at transform time — a warm cache keeps serving the OLD
+> value while the file on disk shows the new one. The failure looks like the app
+> ignoring your config, and it has cost a CI run and an emulator session.
 
 ---
 
@@ -722,6 +785,45 @@ This mirrors the Windows network to WSL2, making `localhost` work without port f
 
 ## Troubleshooting
 
+### `npm audit` reports 4 high advisories in apps/mobile
+
+**Symptom:** `npm audit` in `apps/mobile` reports 4 high-severity advisories —
+`image-size`, `metro`, `metro-config`, `metro-transform-worker`.
+
+**This is expected, and the underlying defect is already fixed locally.** Do not
+spend time re-investigating it; the situation is:
+
+- All four are the *same* advisory pair reported through the dependency chain
+  `metro → image-size` ([GHSA-w3rx-r6r6-pgpr](https://github.com/advisories/GHSA-w3rx-r6r6-pgpr),
+  [GHSA-5p2g-fcmc-qvqq](https://github.com/advisories/GHSA-5p2g-fcmc-qvqq)) — infinite loops in the
+  ICNS and HEIF/JXL parsers.
+- **There is no upstream fix to move to.** `image-size@2.0.2` is the latest published
+  version and is itself inside the vulnerable range (`<=2.0.2`), and every Metro from
+  0.85 to 0.87 still depends on `image-size@^1.0.2`. Upgrading cannot clear it.
+- **The real bug is patched here** via `patch-package`
+  (`apps/mobile/patches/image-size+1.2.1.patch`, reapplied by the `postinstall` script on
+  every `npm install` / `npm ci`). The HEIF/JXL half was already fixed upstream in 1.2.1;
+  the ICNS loop was not, and the patch adds the missing guard.
+- **`npm audit` will keep reporting all four anyway.** It matches package *name and
+  version* against registry metadata and never reads file contents, so a patched
+  1.2.1 is indistinguishable from an unpatched one to the auditor.
+- **Exposure is build-time only.** `image-size` runs inside Metro, reading image assets
+  from this repository — it is never present in a shipped APK, and triggering it would
+  require committing a malformed `.icns` into our own source tree.
+
+**What clears the report:** a published `image-size` above 2.0.2, or a Metro release that
+drops the dependency. Re-check on any React Native / Metro upgrade with:
+
+```bash
+cd apps/mobile
+npm view image-size dist-tags.latest        # >2.0.2 means a real fix exists
+npm view metro@<new-version> dependencies.image-size
+```
+
+When that lands, take the upgrade and delete `patches/image-size+1.2.1.patch`. If the patch
+ever fails to apply after a dependency bump, that is the signal the file changed upstream —
+re-check the advisory rather than force-regenerating the patch.
+
 ### Docker & Infrastructure
 
 #### Port Already in Use
@@ -976,7 +1078,7 @@ Run the automated setup script (`setup-wsl-network.ps1`) after WSL2 restarts, or
 
 ## Related Documentation
 
-- **[deployment-guide.md](./deployment-guide.md)** — Production deployment (self-hosted Docker + AWS)
+- **[README.md](./README.md)** — Production deployment (self-hosted Docker + AWS)
 - **[environment-variables.md](./environment-variables.md)** — Complete env var reference for all workspaces
 - **[credentials-setup.md](./credentials-setup.md)** — Firebase, Google Maps, and other API credentials
 - **[ios-release-guide.md](./ios-release-guide.md)** — iOS app release checklist
@@ -1005,4 +1107,4 @@ For physical mobile device testing on WSL2, follow [WSL2 Network Setup](#wsl2-ne
 ---
 
 **Last Updated:** June 19, 2026  
-**Related:** [deployment-guide.md](./deployment-guide.md), [environment-variables.md](./environment-variables.md), [WSL2 Network Setup](#wsl2-network-setup-physical-mobile-devices)
+**Related:** [README.md](./README.md), [environment-variables.md](./environment-variables.md), [WSL2 Network Setup](#wsl2-network-setup-physical-mobile-devices)

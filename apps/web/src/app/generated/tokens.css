@@ -1,6 +1,6 @@
 /*
  * GENERATED FILE — DO NOT EDIT.
- * Source of truth: specs/ui-ux/tokens.json
+ * Source of truth: specs/design-system/tokens.json
  * Run `npm run tokens:build` from the repo root to regenerate.
  * CI rejects drift via the `tokens-verify` job (ADR-036).
  */
@@ -29,6 +29,7 @@
   --color-nb-success-dark: #15803D;
   --color-nb-success-light: #BAFCA2;
   --color-nb-warning: #E3A018;
+  --color-nb-warning-dark: #8A5A00;
   --color-nb-warning-light: #FFDB58;
   --color-status-active: #15803D;
   --color-status-active-bg: #DCFCE7;

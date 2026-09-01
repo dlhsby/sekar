@@ -1,8 +1,8 @@
 /**
  * Shift Definitions API Service
  *
- * Handles shift definition API calls for Phase 2.
- * Provides fixed shift configurations (Shift 1, 2, 3).
+ * Handles shift definition API calls. Shifts are configurable at runtime
+ * (ADR-055) — fetched dynamically, not a fixed set.
  */
 
 import { get } from './apiClient';

@@ -1,5 +1,5 @@
 /**
- * ExecHomeScreen tests — city-overview hero, personnel KPI grid, per-rayon
+ * ExecHomeScreen tests — city-overview hero, personnel KPI grid, per-district
  * roll-up (from the role-scoped monitoring slice).
  */
 import React from 'react';
@@ -24,10 +24,10 @@ const liveUser = (over: Record<string, unknown>) => ({
   role: 'satgas',
   phone: null,
   status: 'active',
-  area_id: 'a1',
-  area_name: 'Zona A',
-  rayon_id: 'r1',
-  rayon_name: 'Rayon Pusat',
+  location_id: 'a1',
+  location_name: 'Zona A',
+  district_id: 'r1',
+  district_name: 'Rayon Pusat',
   latitude: -7.25,
   longitude: 112.75,
   accuracy: 10,
@@ -49,7 +49,7 @@ const renderScreen = () => {
     preloadedState: {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy test preloadedState
       auth: {
-        user: { id: 't1', username: 'mgmt', full_name: 'Bu Kepala', role: 'top_management' },
+        user: { id: 't1', username: 'mgmt', full_name: 'Bu Kepala', role: 'management' },
         assignedArea: null,
         isAuthenticated: true,
         isLoading: false,
@@ -61,7 +61,7 @@ const renderScreen = () => {
       monitoring: {
         liveUsers: [],
         cityStats: null,
-        rayonStats: {},
+        districtStats: {},
         areaStats: {},
         filters: { statuses: [] },
         selectedUser: null,
@@ -95,16 +95,15 @@ describe('ExecHomeScreen', () => {
     (monitoringApi.getLiveUsers as jest.Mock).mockResolvedValue({
       data: {
         total_active: 2,
-        total_inactive: 0,
-        total_outside_area: 1,
-        total_missing: 0,
         total_offline: 0,
+        total_absent: 0,
+        total_outside_area: 1,
         total_online: 2,
         generated_at: new Date().toISOString(),
         users: [
-          liveUser({ id: 'u1', status: 'active', rayon_id: 'r1', rayon_name: 'Rayon Pusat' }),
-          liveUser({ id: 'u2', status: 'active', rayon_id: 'r1', rayon_name: 'Rayon Pusat' }),
-          liveUser({ id: 'u3', status: 'outside_area', rayon_id: 'r2', rayon_name: 'Rayon Timur', outside_boundary: true }),
+          liveUser({ id: 'u1', status: 'active', district_id: 'r1', district_name: 'Rayon Pusat' }),
+          liveUser({ id: 'u2', status: 'active', district_id: 'r1', district_name: 'Rayon Pusat' }),
+          liveUser({ id: 'u3', status: 'absent', district_id: 'r2', district_name: 'Rayon Timur', outside_boundary: true }),
         ],
       },
     });
@@ -127,7 +126,7 @@ describe('ExecHomeScreen', () => {
     await waitFor(() => {
       expect(getByTestId('city-active')).toBeTruthy();
       expect(getByTestId('city-outside')).toBeTruthy();
-      expect(getByTestId('city-missing')).toBeTruthy();
+      expect(getByTestId('city-absent')).toBeTruthy();
       expect(getByTestId('city-offline')).toBeTruthy();
     });
   });
@@ -136,8 +135,8 @@ describe('ExecHomeScreen', () => {
     const { getByText, getByTestId } = renderScreen();
     await waitFor(() => {
       expect(getByText('Per rayon')).toBeTruthy();
-      expect(getByTestId('rayon-r1')).toBeTruthy();
-      expect(getByTestId('rayon-r2')).toBeTruthy();
+      expect(getByTestId('district-r1')).toBeTruthy();
+      expect(getByTestId('district-r2')).toBeTruthy();
       expect(getByText('Rayon Pusat')).toBeTruthy();
     });
   });

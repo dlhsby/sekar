@@ -1,7 +1,7 @@
 /**
  * SceneRequests — WL-4 ("Permohonan kecamatan") carousel illustration.
  * Two stacked, tilted permohonan cards (one approved, one in-progress) to convey
- * the request queue. Mirrors design/project/hifi-mobile.html · WL-4.
+ * the request queue. Mirrors specs/design-system/mockups/project/hifi-mobile.html · WL-4.
  */
 
 import React from 'react';

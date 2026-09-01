@@ -317,20 +317,14 @@ describe('GpsUtil', () => {
       expect(GpsUtil.isWithinAreaBoundary(-7.295, 112.74, area)).toBe(false);
     });
 
-    it('should fall back to radius when no polygon', () => {
-      const area = {
-        gps_lat: -7.29,
-        gps_lng: 112.74,
-        radius_meters: 100,
-      };
-      // Same point
-      expect(GpsUtil.isWithinAreaBoundary(-7.29, 112.74, area)).toBe(true);
-      // Far away
-      expect(GpsUtil.isWithinAreaBoundary(-7.3, 112.74, area)).toBe(false);
-    });
-
-    it('should return true when no boundary defined', () => {
+    // The radius fallback is retired (migration 17504000000000 turned the
+    // radius-only lokasi into real polygons). Geofencing is polygon-only now, so
+    // gps/radius on the area are simply ignored.
+    it('fails OPEN when a lokasi has no polygon — by design', () => {
+      // An un-mapped lokasi must not mark every worker standing in it as
+      // outside-area. The trade is that "no polygon" is silently ungeofenced.
       expect(GpsUtil.isWithinAreaBoundary(-7.29, 112.74, {})).toBe(true);
+      expect(GpsUtil.isWithinAreaBoundary(-7.3, 112.9, {})).toBe(true);
     });
 
     it('should return true when polygon has empty coordinates', () => {

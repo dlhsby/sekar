@@ -50,8 +50,8 @@ export class RecordTransactionDto {
 
   @IsOptional()
   @IsUUID()
-  @ApiProperty({ description: 'Target rayon ID for distribution', required: false })
-  toRayonId?: string;
+  @ApiProperty({ description: 'Target district ID for distribution', required: false })
+  toDistrictId?: string;
 
   @IsOptional()
   @IsUUID()

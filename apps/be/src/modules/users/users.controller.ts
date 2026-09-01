@@ -27,7 +27,7 @@ import {
   ApiQuery,
   ApiConsumes,
 } from '@nestjs/swagger';
-import { UsersService } from './users.service';
+import { UsersService, type UserLookup } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateMyProfileDto } from './dto/update-my-profile.dto';
@@ -37,13 +37,15 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { UserRole } from './entities/user.entity';
-import { PaginationDto, PaginatedResponseDto } from '../../common/dto/pagination.dto';
+import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
+import { FindUsersQueryDto } from './dto/find-users-query.dto';
 import { normalizePhone, isValidIndonesianMobile } from '../../common/utils/phone.util';
 import { User } from './entities/user.entity';
-import { Area } from '../areas/entities/area.entity';
+import { Location } from '../locations/entities/location.entity';
 import { USER_MANAGERS } from './constants/role-groups';
-import { UserAreasService } from '../user-areas/user-areas.service';
+import { UserLocationsService } from '../../modules/user-locations/user-locations.service';
 import { UserValidationService } from './services/user-validation.service';
+import { PhotoStorageService } from '../../shared/services/photo-storage.service';
 
 /**
  * User Management Controller
@@ -60,8 +62,9 @@ import { UserValidationService } from './services/user-validation.service';
 export class UsersController {
   constructor(
     private readonly usersService: UsersService,
-    private readonly userAreasService: UserAreasService,
+    private readonly userAreasService: UserLocationsService,
     private readonly userValidationService: UserValidationService,
+    private readonly photos: PhotoStorageService,
   ) {}
 
   /**
@@ -76,7 +79,29 @@ export class UsersController {
   @ApiOperation({ summary: "Get the authenticated user's assigned areas" })
   @ApiResponse({ status: HttpStatus.OK, description: 'List of assigned areas.' })
   getMyAreas(@GetUser() user: User) {
-    return this.userAreasService.getEffectiveAreas(user.id);
+    return this.userAreasService.getEffectiveLocations(user.id);
+  }
+
+  /**
+   * Every user as a bare id/name/role tuple, unpaginated.
+   *
+   * Declared before `@Get(':id')` so the literal path is not swallowed.
+   *
+   * The schedules search box and filter chips resolve only a worker's name and
+   * role, but paged the full user entity twice to get it — 928 KB on every page
+   * load of a 1 173-person workforce.
+   */
+  @Get('lookup')
+  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON, UserRole.ADMIN_RAYON)
+  @ApiOperation({
+    summary: 'Minimal user list for pickers and name labels',
+    description:
+      'Every ACTIVE user as { id, full_name, username, role }. Unpaginated, district-scoped like ' +
+      'GET /users. No profile pictures, no relations.',
+  })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Users retrieved successfully' })
+  findAllForLookup(@GetUser() user: User): Promise<UserLookup[]> {
+    return this.usersService.findAllForLookup(user);
   }
 
   /**
@@ -200,7 +225,7 @@ export class UsersController {
    * @returns Paginated users (without passwords)
    */
   @Get()
-  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON, UserRole.ADMIN_DATA)
+  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON, UserRole.ADMIN_RAYON)
   @ApiOperation({
     summary: 'Get all users with pagination',
     description:
@@ -208,6 +233,9 @@ export class UsersController {
   })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 50 })
+  @ApiQuery({ name: 'search', required: false, description: 'Filter by name or username (ILIKE)' })
+  @ApiQuery({ name: 'roles', required: false, description: 'Comma-separated role codes' })
+  @ApiQuery({ name: 'role', required: false, description: 'Single role code' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'List of users retrieved successfully with pagination.',
@@ -245,10 +273,24 @@ export class UsersController {
     description: 'Unauthorized. Admin or Korlap role required.',
   })
   findAll(
-    @Query() paginationDto: PaginationDto,
+    @Query() query: FindUsersQueryDto,
     @GetUser() user: User,
   ): Promise<PaginatedResponseDto<User>> {
-    return this.usersService.findAllPaginated(paginationDto.page, paginationDto.limit, user);
+    // `roles` (comma-separated) or a single `role`; used by dropdowns to load
+    // only relevant users (e.g. schedulable satgas/linmas/korlap).
+    const roleList = query.roles
+      ? query.roles
+          .split(',')
+          .map((r) => r.trim())
+          .filter(Boolean)
+      : query.role
+        ? [query.role]
+        : undefined;
+    return this.usersService.findAllPaginated(query.page, query.limit, user, {
+      search: query.search,
+      roles: roleList,
+      isActive: query.is_active === undefined ? undefined : query.is_active === 'true',
+    });
   }
 
   /**
@@ -258,22 +300,22 @@ export class UsersController {
    * @route GET /api/users/:id
    * Get a specific user's permanent assigned areas.
    *
-   * Backs the user-management grid's Area column (summary count + slide-over
+   * Backs the user-management grid's Location column (summary count + slide-over
    * list) and the `useUserAreas` hook. Manager/supervisor access mirrors
    * `GET /users/:id`. Declared before `@Get(':id')` so the sub-path wins.
    *
    * @route GET /api/users/:id/areas
    */
   @Get(':id/areas')
-  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON, UserRole.ADMIN_DATA)
+  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON, UserRole.ADMIN_RAYON)
   @ApiOperation({ summary: "Get a user's permanent assigned areas" })
   @ApiParam({ name: 'id', description: 'User UUID' })
   @ApiResponse({ status: HttpStatus.OK, description: 'List of assigned areas.' })
-  async getUserAreas(@Param('id') id: string): Promise<Area[]> {
-    const userAreas = await this.userAreasService.getPermanentAreas(id);
+  async getUserAreas(@Param('id') id: string): Promise<Location[]> {
+    const userAreas = await this.userAreasService.getPermanentLocations(id);
     return userAreas
       .map((ua) => ua.area)
-      .filter((a): a is Area => Boolean(a))
+      .filter((a): a is Location => Boolean(a))
       .sort((a, b) => a.name.localeCompare(b.name));
   }
 
@@ -283,7 +325,7 @@ export class UsersController {
    * @throws NotFoundException if user not found
    */
   @Get(':id')
-  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON, UserRole.ADMIN_DATA)
+  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON, UserRole.ADMIN_RAYON)
   @ApiOperation({
     summary: 'Get user by ID',
     description:
@@ -571,7 +613,7 @@ export class UsersController {
     const isAdmin = [
       UserRole.ADMIN_SYSTEM,
       UserRole.SUPERADMIN,
-      UserRole.TOP_MANAGEMENT, // full admin_system parity
+      UserRole.MANAGEMENT, // full admin_system parity
     ].includes(currentUser.role as UserRole);
     if (currentUser.id !== id && !isAdmin) {
       throw new ForbiddenException('You can only update your own profile picture');
@@ -591,12 +633,27 @@ export class UsersController {
       throw new BadRequestException('File size must not exceed 5MB');
     }
 
-    // Store as base64 data URI directly — avoids LocalStack URL accessibility issues on physical devices
-    const base64 = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+    // Upload to object storage; the column holds a URL, never the bytes.
+    //
+    // This used to persist `data:<mime>;base64,…` straight into
+    // `users.profile_picture_url`, to work around a since-resolved LocalStack
+    // URL-reachability problem on physical devices (MinIO's split-horizon
+    // `AWS_PUBLIC_ENDPOINT_URL` handles that now). The global
+    // `PhotoUrlInterceptor` could not save us here: it rewrites known photo
+    // FIELDS on the request body, and this is a multipart upload assembled
+    // inside the handler, after the interceptor has run.
+    //
+    // The cost was not theoretical — 163 avatars, 28 MB, one row 5.4 MB — and
+    // because roster queries joined the whole user entity, a single avatar was
+    // re-serialized onto every one of that worker's schedule rows.
+    const url = await this.photos.upload(file.buffer, file.mimetype, 'profiles');
 
-    await this.usersService.updateProfilePicture(id, base64);
+    await this.usersService.updateProfilePicture(id, url);
 
-    return { profile_picture_url: base64 };
+    // Presigned so the client can render it immediately — the stored value is
+    // private, and the response interceptor only presigns on the way out of
+    // handlers it walks.
+    return { profile_picture_url: (await this.photos.presign(url)) ?? url };
   }
 
   @Patch('me/change-password')

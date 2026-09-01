@@ -305,16 +305,14 @@ describe('GPS Utils', () => {
       expect(gpsUtils.isWithinAreaBoundary(-7.285, 112.7398, area as any)).toBe(false);
     });
 
-    it('should fallback to radius when no polygon', () => {
-      const area = {
-        gps_lat: -7.2905,
-        gps_lng: 112.7398,
-        radius_meters: 100,
-      };
-      // Within radius
-      expect(gpsUtils.isWithinAreaBoundary(-7.2905, 112.7398, area)).toBe(true);
-      // Outside radius
-      expect(gpsUtils.isWithinAreaBoundary(-7.295, 112.7398, area)).toBe(false);
+    it('fails OPEN when there is no usable ring — matching the backend', () => {
+      // The radius arm is retired (migration 17504000000000 turned every
+      // radius-only lokasi into a real polygon). An un-mapped lokasi must not
+      // mark a worker standing in it as outside-area.
+      expect(gpsUtils.isWithinAreaBoundary(-7.25, 112.76, { boundary_polygon: null })).toBe(true);
+      expect(
+        gpsUtils.isWithinAreaBoundary(-7.9, 112.9, { gps_lat: -7.25, gps_lng: 112.76 }),
+      ).toBe(true);
     });
 
     it('should return true when no boundary defined', () => {

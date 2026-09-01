@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { ConfigService } from '@nestjs/config';
 import { StaleStatusSweeperService } from './stale-status-sweeper.service';
 import { StatusCalculatorService } from './status-calculator.service';
+import { SystemConfigService } from '../../settings/services/system-config.service';
 import { UserTrackingStatus, TrackingStatus } from '../entities/user-tracking-status.entity';
 
 const mockFind = jest.fn();
@@ -31,10 +31,10 @@ describe('StaleStatusSweeperService', () => {
           useValue: mockTrackingRepository,
         },
         {
-          provide: ConfigService,
+          provide: SystemConfigService,
           useValue: {
-            get: jest.fn((key: string, def?: number) =>
-              key === 'MISSING_THRESHOLD_SECONDS' ? 900 : def,
+            getNumber: jest.fn((key: string, def?: number) =>
+              key === 'monitoring.active_max_age_sec' ? 300 : def,
             ),
           },
         },
@@ -55,7 +55,7 @@ describe('StaleStatusSweeperService', () => {
       expect(mockSave).not.toHaveBeenCalled();
     });
 
-    it('should flip ACTIVE workers older than threshold to MISSING', async () => {
+    it('should flip ACTIVE workers older than threshold to OFFLINE', async () => {
       const staleWorker = {
         user_id: 'user-1',
         status: TrackingStatus.ACTIVE,
@@ -68,15 +68,15 @@ describe('StaleStatusSweeperService', () => {
 
       await service.sweep();
 
-      expect(staleWorker.status).toBe(TrackingStatus.MISSING);
+      expect(staleWorker.status).toBe(TrackingStatus.OFFLINE);
       expect(mockSave).toHaveBeenCalledWith([staleWorker]);
     });
 
     it('alerts korlap + kepala_rayon for each worker it flips (§C1 #8)', async () => {
       const staleWorker = {
         user_id: 'user-1',
-        area_id: 'area-1',
-        rayon_id: 'rayon-1',
+        location_id: 'area-1',
+        district_id: 'district-1',
         status: TrackingStatus.ACTIVE,
         last_location_at: new Date(Date.now() - 1000 * 1000),
         updated_at: new Date(),
@@ -86,7 +86,7 @@ describe('StaleStatusSweeperService', () => {
 
       await service.sweep();
 
-      expect(mockNotifyMissingWorker).toHaveBeenCalledWith('user-1', 'area-1', 'rayon-1');
+      expect(mockNotifyMissingWorker).toHaveBeenCalledWith('user-1', 'area-1', 'district-1');
     });
 
     it('should only query for ACTIVE workers (not MISSING/OFFLINE)', async () => {
@@ -111,7 +111,7 @@ describe('StaleStatusSweeperService', () => {
       await service.sweep();
 
       expect(mockSave).toHaveBeenCalledTimes(1);
-      staleWorkers.forEach((w) => expect(w.status).toBe(TrackingStatus.MISSING));
+      staleWorkers.forEach((w) => expect(w.status).toBe(TrackingStatus.OFFLINE));
     });
 
     it('should set updated_at on each flipped worker to a current timestamp', async () => {
@@ -154,8 +154,8 @@ describe('StaleStatusSweeperService', () => {
       // Two find calls and two save calls
       expect(mockFind).toHaveBeenCalledTimes(2);
       expect(mockSave).toHaveBeenCalledTimes(2);
-      batch1.forEach((w) => expect(w.status).toBe(TrackingStatus.MISSING));
-      batch2.forEach((w) => expect(w.status).toBe(TrackingStatus.MISSING));
+      batch1.forEach((w) => expect(w.status).toBe(TrackingStatus.OFFLINE));
+      batch2.forEach((w) => expect(w.status).toBe(TrackingStatus.OFFLINE));
     });
   });
 });

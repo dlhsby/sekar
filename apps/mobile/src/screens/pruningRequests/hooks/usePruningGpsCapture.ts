@@ -4,7 +4,8 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import Geolocation from 'react-native-geolocation-service';
+import { readPosition } from '../../../services/location/verifiedPosition';
+import { describeLocationError } from '../../../services/location/locationErrors';
 import i18n from '../../../i18n/config';
 import {
   requestLocationPermission,
@@ -29,19 +30,20 @@ export function usePruningGpsCapture() {
         setGpsLoading(false);
         return;
       }
-      Geolocation.getCurrentPosition(
-        (pos) => {
-          setGpsLat(pos.coords.latitude);
-          setGpsLng(pos.coords.longitude);
-          setGpsAccuracy(pos.coords.accuracy);
+      // A pruning request pins a real tree to a real coordinate, so a mocked fix
+      // is refused. maximumAge falls back to the reader's default of 0 — a
+      // cached fix can predate a mock provider being switched off.
+      await readPosition({ geoOptions: { timeout: 15000 } })
+        .then((pos) => {
+          setGpsLat(pos.latitude);
+          setGpsLng(pos.longitude);
+          setGpsAccuracy(pos.accuracy ?? 0);
           setGpsLoading(false);
-        },
-        (err) => {
-          setGpsError(`${i18n.t('location:errors.getFailed')} ${err.message}`);
+        })
+        .catch((err) => {
+          setGpsError(describeLocationError(err));
           setGpsLoading(false);
-        },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 },
-      );
+        });
     } catch (e) {
       setGpsError(e instanceof Error ? e.message : i18n.t('location:errors.captureFailed'));
       setGpsLoading(false);

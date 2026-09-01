@@ -14,7 +14,7 @@ import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as activitiesApi from '@/lib/api/activities';
 import * as activityTypesApi from '@/lib/api/activity-types';
-import * as areasApi from '@/lib/api/areas';
+import * as areasApi from '@/lib/api/locations';
 
 // ─── Next.js Mocks ────────────────────────────────────────────────────────────
 
@@ -53,7 +53,7 @@ jest.mock('@/lib/auth/hooks', () => ({
 
 jest.mock('@/lib/api/activities');
 jest.mock('@/lib/api/activity-types');
-jest.mock('@/lib/api/areas');
+jest.mock('@/lib/api/locations');
 
 // ─── Test Users ───────────────────────────────────────────────────────────────
 
@@ -71,11 +71,11 @@ const mockKorlapUser = {
   username: 'korlap1',
   full_name: 'Koordinator Lapangan',
   role: 'korlap' as const,
-  area_id: 'area-1',
+  location_id: 'area-1',
   created_at: '2026-01-01T00:00:00Z',
 };
 
-const mockKepalaRayonUser = {
+const mockKepalaDistrictUser = {
   id: 'user-kepala',
   username: 'kepala_rayon1',
   full_name: 'Kepala Rayon',
@@ -86,9 +86,9 @@ const mockKepalaRayonUser = {
 
 const mockAdminDataUser = {
   id: 'user-admin-data',
-  username: 'admin_data1',
+  username: 'admin_rayon1',
   full_name: 'Admin Data',
-  role: 'admin_data' as const,
+  role: 'admin_rayon' as const,
   area_id: null,
   created_at: '2026-01-01T00:00:00Z',
 };
@@ -145,13 +145,11 @@ const mockActivityTypes = [
   { id: 'type-2', code: 'WATERING', name: 'Penyiraman' },
 ];
 
-const mockAreasData = {
-  data: [
-    { id: 'area-1', name: 'Taman Bungkul', code: 'TB' },
-    { id: 'area-2', name: 'Taman Mundu', code: 'TM' },
-  ],
-  meta: { total: 2, page: 1, limit: 20, totalPages: 1 },
-};
+// The lookup returns a flat array, not a paginated envelope.
+const mockAreasData = [
+  { id: 'area-1', name: 'Taman Bungkul' },
+  { id: 'area-2', name: 'Taman Mundu' },
+];
 
 const mockMutate = jest.fn();
 const mockApproveMutation = { mutateAsync: mockMutate, isPending: false };
@@ -199,7 +197,7 @@ describe('ActivitiesPage', () => {
       isLoading: false,
     });
 
-    (areasApi.useAreas as jest.Mock).mockReturnValue({
+    (areasApi.useLocationLookup as jest.Mock).mockReturnValue({
       data: mockAreasData,
       isLoading: false,
     });
@@ -244,7 +242,7 @@ describe('ActivitiesPage', () => {
     });
 
     it('should allow kepala_rayon role to access the page', () => {
-      mockUseAuth.mockReturnValue({ user: mockKepalaRayonUser, loading: false });
+      mockUseAuth.mockReturnValue({ user: mockKepalaDistrictUser, loading: false });
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
@@ -252,7 +250,7 @@ describe('ActivitiesPage', () => {
       expect(mockPush).not.toHaveBeenCalled();
     });
 
-    it('should allow admin_data role to access the page', () => {
+    it('should allow admin_rayon role to access the page', () => {
       mockUseAuth.mockReturnValue({ user: mockAdminDataUser, loading: false });
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
@@ -602,7 +600,7 @@ describe('ActivitiesPage', () => {
 
     it('should show Setujui and Tolak menuitems for kepala_rayon when an activity is pending', async () => {
       const user = userEvent.setup();
-      mockUseAuth.mockReturnValue({ user: mockKepalaRayonUser, loading: false });
+      mockUseAuth.mockReturnValue({ user: mockKepalaDistrictUser, loading: false });
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
@@ -786,7 +784,7 @@ describe('ActivitiesPage', () => {
       expect(screen.queryByRole('menuitem', { name: /^tolak$/i })).not.toBeInTheDocument();
     });
 
-    it('should NOT show Setujui menuitem for admin_data role', async () => {
+    it('should NOT show Setujui menuitem for admin_rayon role', async () => {
       const user = userEvent.setup();
       mockUseAuth.mockReturnValue({ user: mockAdminDataUser, loading: false });
 
@@ -798,7 +796,7 @@ describe('ActivitiesPage', () => {
       expect(screen.queryByRole('menuitem', { name: /setujui/i })).not.toBeInTheDocument();
     });
 
-    it('should NOT show Tolak menuitem for admin_data role', async () => {
+    it('should NOT show Tolak menuitem for admin_rayon role', async () => {
       const user = userEvent.setup();
       mockUseAuth.mockReturnValue({ user: mockAdminDataUser, loading: false });
 
@@ -918,16 +916,16 @@ describe('ActivitiesPage', () => {
   // ── korlap Area Auto-scope ─────────────────────────────────────────────────
 
   describe('korlap Area Auto-scope', () => {
-    it('should call useActivities with korlap area_id when user is korlap', async () => {
+    it('should call useActivities with korlap location_id when user is korlap', async () => {
       mockUseAuth.mockReturnValue({ user: mockKorlapUser, loading: false });
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      // After the auto-scope effect fires, the API should be called with the korlap's area_id
+      // After the auto-scope effect fires, the API should be called with the korlap's location_id
       await waitFor(() => {
         const calls = (activitiesApi.useActivities as jest.Mock).mock.calls;
         const lastCallFilters = calls[calls.length - 1][0];
-        expect(lastCallFilters.area_id).toBe('area-1');
+        expect(lastCallFilters.location_id).toBe('area-1');
       });
     });
   });
@@ -959,7 +957,7 @@ describe('ActivitiesPage', () => {
     });
 
     it('should handle undefined areas data gracefully without throwing', () => {
-      (areasApi.useAreas as jest.Mock).mockReturnValue({
+      (areasApi.useLocationLookup as jest.Mock).mockReturnValue({
         data: undefined,
         isLoading: false,
       });

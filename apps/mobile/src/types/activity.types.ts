@@ -22,13 +22,15 @@ export interface Activity {
   id: string;
   user_id: string;
   shift_id: string;
-  area_id?: string;
+  location_id?: string;
   area?: Area;
   task_id?: string;
   activity_type_id: string;
   activityType?: ActivityType;
   description: string;
   photo_urls: string[];
+  /** Photo count on LIST responses (photo_urls is empty there; photos load on detail). */
+  photo_count?: number;
   gps_lat?: number;
   gps_lng?: number;
   user?: User;

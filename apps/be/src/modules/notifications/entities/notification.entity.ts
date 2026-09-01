@@ -18,6 +18,7 @@ export enum NotificationType {
   TASK_COMPLETED = 'task_completed',
   TASK_DECLINED = 'task_declined',
   SHIFT_REMINDER = 'shift_reminder',
+  SHIFT_END_REMINDER = 'shift_end_reminder',
   REPORT_SUBMITTED = 'report_submitted',
   ANNOUNCEMENT = 'announcement',
   SYSTEM = 'system',

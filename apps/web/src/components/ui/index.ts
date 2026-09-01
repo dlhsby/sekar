@@ -7,6 +7,7 @@
 
 // Core Components
 export { Button, buttonVariants, type ButtonProps } from './button';
+export { CreateButton, type CreateButtonProps } from './create-button';
 export {
   Card,
   CardHeader,
@@ -43,6 +44,7 @@ export { NotificationBell, NotificationPanel, type NotificationPanelProps } from
 // Form Components
 export { FormInput, type FormInputProps } from './form-input';
 export { FormSelect, type FormSelectOption, type FormSelectProps } from './form-select';
+export { MapStyleSwatch, mapStyleColorColumn, type MapStyleColors } from './MapStyleSwatch';
 export { FormCombobox, type FormComboboxProps } from './form-combobox';
 export { FormMultiCombobox, type FormMultiComboboxProps } from './form-multi-combobox';
 export { CoordinateLink } from './coordinate-link';
@@ -60,6 +62,7 @@ export { DateTimePicker, type DateTimePickerProps } from './date-time-picker';
 
 // Popover
 export { Popover, PopoverTrigger, PopoverAnchor, PopoverContent } from './popover';
+export { MultiSelect, type MultiSelectProps, type MultiSelectOption } from './multi-select';
 
 // Tooltip
 export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from './tooltip';
@@ -118,6 +121,19 @@ export {
   DialogTitle,
   DialogDescription,
 } from './dialog';
+// Sheet (side panel / right drawer)
+export {
+  Sheet,
+  SheetTrigger,
+  SheetClose,
+  SheetOverlay,
+  SheetContent,
+  SheetHeader,
+  SheetBody,
+  SheetFooter,
+  SheetTitle,
+  SheetDescription,
+} from './sheet';
 export { ConfirmDialog, type ConfirmDialogProps } from './confirm-dialog';
 export { DetailModal, type DetailModalProps, type DetailModalRow } from './detail-modal';
 

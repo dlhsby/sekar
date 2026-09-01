@@ -1,6 +1,6 @@
 /**
  * Service Capacity API Hooks (Phase 3-R4)
- * Weekly capacity calendar for rayons.
+ * Weekly capacity calendar for districts.
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -12,7 +12,7 @@ import { apiClient } from './client';
 
 export interface CapacityRow {
   id: string;
-  rayonId: string;
+  districtId: string;
   year: number;
   isoWeek: number;
   serviceType: string;
@@ -27,8 +27,8 @@ export interface CapacityRow {
 // ---------------------------------------------------------------------------
 
 export const capacityKeys = {
-  calendar: (rayonId: string, year: number, fromWeek?: number, toWeek?: number, serviceType?: string) =>
-    ['capacity', rayonId, year, fromWeek, toWeek, serviceType] as const,
+  calendar: (districtId: string, year: number, fromWeek?: number, toWeek?: number, serviceType?: string) =>
+    ['capacity', districtId, year, fromWeek, toWeek, serviceType] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -36,11 +36,11 @@ export const capacityKeys = {
 // ---------------------------------------------------------------------------
 
 /**
- * Fetch capacity calendar for a rayon over a date range.
+ * Fetch capacity calendar for a district over a date range.
  * Fills missing weeks with placeholders (0 capacity, 0 booked).
  */
 export function useCapacityCalendar(
-  rayonId: string | null | undefined,
+  districtId: string | null | undefined,
   options?: {
     year?: number;
     fromWeek?: number;
@@ -51,8 +51,8 @@ export function useCapacityCalendar(
   const { year = new Date().getFullYear(), fromWeek, toWeek, serviceType } = options ?? {};
 
   return useQuery({
-    queryKey: rayonId
-      ? capacityKeys.calendar(rayonId, year, fromWeek, toWeek, serviceType)
+    queryKey: districtId
+      ? capacityKeys.calendar(districtId, year, fromWeek, toWeek, serviceType)
       : ['capacity', 'null'],
     queryFn: async (): Promise<CapacityRow[]> => {
       const params: Record<string, string | number> = { year };
@@ -60,19 +60,19 @@ export function useCapacityCalendar(
       if (toWeek) params.toWeek = toWeek;
       if (serviceType) params.serviceType = serviceType;
 
-      const { data } = await apiClient.get(`/rayons/${rayonId}/capacity`, { params });
+      const { data } = await apiClient.get(`/districts/${districtId}/capacity`, { params });
       return Array.isArray(data) ? data : (data?.data ?? []);
     },
-    enabled: !!rayonId,
+    enabled: !!districtId,
     staleTime: 30_000,
   });
 }
 
 /**
- * Mutation to upsert a single capacity record (PUT /rayons/:rayonId/capacity).
+ * Mutation to upsert a single capacity record (PUT /districts/:districtId/capacity).
  * Invalidates the calendar query after success.
  */
-export function useUpsertCapacity(rayonId: string | null | undefined) {
+export function useUpsertCapacity(districtId: string | null | undefined) {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -82,13 +82,13 @@ export function useUpsertCapacity(rayonId: string | null | undefined) {
       serviceType: string;
       capacityUnits: number;
     }): Promise<CapacityRow> => {
-      const { data } = await apiClient.put(`/rayons/${rayonId}/capacity`, dto);
+      const { data } = await apiClient.put(`/districts/${districtId}/capacity`, dto);
       return data;
     },
     onSuccess: () => {
-      // Invalidate all capacity queries for this rayon
+      // Invalidate all capacity queries for this district
       queryClient.invalidateQueries({
-        queryKey: ['capacity', rayonId],
+        queryKey: ['capacity', districtId],
       });
     },
   });

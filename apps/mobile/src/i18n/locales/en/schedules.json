@@ -8,7 +8,32 @@
     "loadFailed": "Failed to load schedule",
     "retryLabel": "Retry",
     "emptyTitle": "No schedule for today",
-    "emptyDescription": "You don't have a schedule for today (you may be working ad-hoc by assignment). You can still clock in."
+    "emptyDescription": "You don't have a schedule for today (you may be working ad-hoc by assignment). You can still clock in.",
+    "prevDay": "Previous day",
+    "nextDay": "Next day",
+    "team": "Team: {{name}}",
+    "projected": "Planned",
+    "statusHint": {
+      "planned": "Scheduled to work — not clocked in yet.",
+      "present": "Clocked in today.",
+      "absent": "Absent — the shift ended with no clock-in.",
+      "leave_sick": "Approved sick leave — not counted as absent.",
+      "leave_annual": "Approved annual leave — not counted as absent.",
+      "leave_permit": "Approved permit — not counted as absent.",
+      "replaced": "Replaced by another worker for the day.",
+      "off": "Day off — no shift today."
+    }
+  },
+  "scheduleDetail": {
+    "title": "Schedule Detail",
+    "date": "Date",
+    "shift": "Shift",
+    "area": "Area",
+    "district": "District",
+    "region": "Region",
+    "team": "Team",
+    "status": "Status",
+    "openHint": "Tap to view schedule detail"
   },
   "status": {
     "present": "Present",

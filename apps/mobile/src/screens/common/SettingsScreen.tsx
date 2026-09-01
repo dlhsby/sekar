@@ -34,6 +34,7 @@ import {
   nbBorders,
   nbShadows,
 } from '../../constants/nbTokens';
+import { screenContent } from '../../constants/layout';
 
 type SettingsScreenProps = NativeStackScreenProps<{ Settings: undefined }, 'Settings'>;
 
@@ -316,10 +317,10 @@ export function SettingsScreen(_props: SettingsScreenProps): React.JSX.Element {
         </View>
 
         <View style={styles.appInfo}>
-          <NBText variant="caption" color="gray400" align="center">
+          <NBText variant="caption" color="gray500" align="center">
             {t('settings:screen.tagline')}
           </NBText>
-          <NBText variant="caption" color="gray400" align="center">
+          <NBText variant="caption" color="gray500" align="center">
             {t('settings:screen.org')}
           </NBText>
         </View>
@@ -330,7 +331,7 @@ export function SettingsScreen(_props: SettingsScreenProps): React.JSX.Element {
 
 const styles = StyleSheet.create({
   content: {
-    padding: nbSpacing.md,
+    ...screenContent,
     paddingBottom: nbSpacing['2xl'],
   },
   sectionTitle: {

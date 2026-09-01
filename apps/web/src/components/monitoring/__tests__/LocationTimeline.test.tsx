@@ -24,8 +24,8 @@ const MOCK_HISTORY: LocationHistory = {
   date: '2026-03-05',
   shift_id: 'shift-1',
   shift_name: 'Pagi',
-  area_id: 'area-1',
-  area_name: 'Taman Bungkul',
+  location_id: 'area-1',
+  location_name: 'Taman Bungkul',
   clock_in_time: POINT_1_ISO,
   clock_out_time: null,
   points: [
@@ -340,6 +340,57 @@ describe('LocationTimeline', () => {
       await user.click(screen.getByRole('button', { name: /kembali ke detail petugas/i }));
 
       expect(handleBack).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  /**
+   * W4 (parity). The audit claimed web showed today only; it always had a full
+   * DatePicker. What it lacked was one-click day stepping, so these cover the
+   * stepper and the one rule it must enforce: no forward past today, because
+   * there is no future GPS.
+   */
+  describe('Day stepping', () => {
+    it('steps back one day', async () => {
+      const user = userEvent.setup();
+      const handleDateChange = jest.fn();
+      render(<LocationTimeline {...defaultProps} onDateChange={handleDateChange} />);
+
+      await user.click(screen.getByTestId('timeline-prev-day'));
+
+      expect(handleDateChange).toHaveBeenCalledWith('2026-03-04');
+    });
+
+    it('steps forward one day when the date is in the past', async () => {
+      const user = userEvent.setup();
+      const handleDateChange = jest.fn();
+      render(<LocationTimeline {...defaultProps} onDateChange={handleDateChange} />);
+
+      await user.click(screen.getByTestId('timeline-next-day'));
+
+      expect(handleDateChange).toHaveBeenCalledWith('2026-03-06');
+    });
+
+    it('crosses a month boundary correctly', async () => {
+      const user = userEvent.setup();
+      const handleDateChange = jest.fn();
+      render(
+        <LocationTimeline {...defaultProps} selectedDate="2026-03-01" onDateChange={handleDateChange} />,
+      );
+
+      await user.click(screen.getByTestId('timeline-prev-day'));
+
+      expect(handleDateChange).toHaveBeenCalledWith('2026-02-28');
+    });
+
+    it('disables stepping forward once the date is today', () => {
+      jest.useFakeTimers().setSystemTime(new Date('2026-03-05T03:00:00Z'));
+      try {
+        render(<LocationTimeline {...defaultProps} selectedDate="2026-03-05" />);
+        expect(screen.getByTestId('timeline-next-day')).toBeDisabled();
+        expect(screen.getByTestId('timeline-prev-day')).not.toBeDisabled();
+      } finally {
+        jest.useRealTimers();
+      }
     });
   });
 });

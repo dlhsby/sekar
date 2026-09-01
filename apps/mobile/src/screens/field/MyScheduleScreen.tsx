@@ -1,12 +1,25 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, ScrollView, StyleSheet, RefreshControl } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, {useState, useEffect, useCallback, useMemo} from 'react';
+import {
+  View,
+  ScrollView,
+  StyleSheet,
+  RefreshControl,
+  Pressable,
+} from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useTranslation } from 'react-i18next';
-import { NBEmptyState, NBBackgroundPattern, NBText, NBSkeleton } from '../../components/nb';
-import { StatusPill } from '../../components/home/StatusPill';
-import { getMyRoster } from '../../services/api/schedulesApi';
-import { useAppSelector } from '../../store/hooks';
+import {useTranslation} from 'react-i18next';
+import {
+  NBEmptyState,
+  NBBackgroundPattern,
+  NBText,
+  NBSkeleton,
+  NBDatePicker,
+} from '../../components/nb';
+import {StatusPill} from '../../components/home/StatusPill';
+import {ScheduleDetailSheet} from '../../components/modals/ScheduleDetailSheet';
+import {getMyRange} from '../../services/api/schedulesApi';
+import {useAppSelector} from '../../store/hooks';
 import {
   nbColors,
   nbSpacing,
@@ -14,86 +27,208 @@ import {
   nbShadows,
   nbBorders,
 } from '../../constants/nbTokens';
-import type { Schedule, ScheduleStatus } from '../../types/shift.types';
+import { screenContent } from '../../constants/layout';
+import type {Schedule} from '../../types/shift.types';
+import {resolveScheduleScope} from '../../utils/scheduleScope';
+import {presenceTone} from '../../utils/statusHelpers';
+import {effectiveScheduleStatus} from '../../utils/scheduleStatus';
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
+// ─── Date helpers (WIB-naive YYYY-MM-DD, matching the API's DATE columns) ─────
 
-/** WIB-naive local YYYY-MM-DD (matches the DATE columns the API returns). */
-function todayKey(): string {
-  const d = new Date();
+function keyOf(d: Date): string {
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${d.getFullYear()}-${m}-${day}`;
 }
-
-const getRosterStatusPill = (t: ReturnType<typeof useTranslation>['t']) => ({
-  present: { tone: 'ok' as const, label: t('schedules:status.present') },
-  planned: { tone: 'ok' as const, label: t('schedules:status.planned') },
-  absent: { tone: 'bad' as const, label: t('schedules:status.absent') },
-  leave_sick: { tone: 'warn' as const, label: t('schedules:status.leave_sick') },
-  leave_annual: { tone: 'warn' as const, label: t('schedules:status.leave_annual') },
-  replaced: { tone: 'neutral' as const, label: t('schedules:status.replaced') },
-  off: { tone: 'neutral' as const, label: t('schedules:status.off') },
-});
-
-/** Strip "HH:MM:SS" → "HH:MM". */
+function todayKey(): string {
+  return keyOf(new Date());
+}
+function parseKey(k: string): Date {
+  return new Date(`${k}T00:00:00`);
+}
+function addDays(d: Date, n: number): Date {
+  const r = new Date(d);
+  r.setDate(r.getDate() + n);
+  return r;
+}
 const hhmm = (t?: string): string => (t ? t.slice(0, 5) : '--:--');
 
-// ─── Row ──────────────────────────────────────────────────────────────────────
+const getRosterStatusPill = (t: ReturnType<typeof useTranslation>['t']) => ({
+  present: {tone: 'ok' as const, label: t('schedules:status.present')},
+  planned: {tone: 'ok' as const, label: t('schedules:status.planned')},
+  absent: {tone: 'bad' as const, label: t('schedules:status.absent')},
+  leave_sick: {tone: 'warn' as const, label: t('schedules:status.leave_sick')},
+  leave_annual: {
+    tone: 'warn' as const,
+    label: t('schedules:status.leave_annual'),
+  },
+  leave_permit: {
+    tone: 'warn' as const,
+    label: t('schedules:status.leave_permit'),
+  },
+  replaced: {tone: 'neutral' as const, label: t('schedules:status.replaced')},
+  off: {tone: 'neutral' as const, label: t('schedules:status.off')},
+});
 
-function RosterRow({ roster, t }: { roster: Schedule; t: ReturnType<typeof useTranslation>['t'] }): React.JSX.Element {
+// ─── Roster card ──────────────────────────────────────────────────────────────
+
+function RosterRow({
+  roster,
+  t,
+  onPress,
+}: {
+  roster: Schedule;
+  t: ReturnType<typeof useTranslation>['t'];
+  onPress: () => void;
+}): React.JSX.Element {
   const ROSTER_STATUS_PILL = getRosterStatusPill(t);
-  const pill = ROSTER_STATUS_PILL[roster.status];
   const shift = roster.shift_definition;
+  // A past no-show still stored as `planned` reads as `absent` immediately (the
+  // backend cron persists the same within the hour) — see effectiveScheduleStatus.
+  const status = effectiveScheduleStatus(roster.status, shift, roster.schedule_date);
+  // Label from the (effective) roster status, TONE from the shared presence
+  // standard, so a schedule card, the map and the monitoring roster all agree.
+  const label =
+    ROSTER_STATUS_PILL[status as keyof typeof ROSTER_STATUS_PILL]?.label ?? status;
+  const pill = {
+    // The FULL fact set, not just the roster status. Feeding `scheduleStatus`
+    // alone collapsed every reading to planned/present/absent/leave, so "on duty
+    // but outside the area" and "terlambat" were invisible on mobile even once
+    // the backend started sending them (ADR-050).
+    tone: presenceTone({
+      lifecycleState: roster.lifecycle_state,
+      scheduleStatus: status,
+      leaveReason: roster.leave_reason,
+      isWithinArea: roster.is_within_area,
+      isAdHoc: roster.is_scheduled === false,
+    }),
+    label,
+  };
+  // "Area belum ditetapkan" was shown for every kawasan/rayon/kota assignment —
+  // those name no lokasi by design, but they are still assignments. Fall back to
+  // the scope label instead of implying nothing was assigned.
+  const scope = resolveScheduleScope(roster);
   const areasText =
-    roster.schedule_areas.map((a) => a.area.name).join(', ') || t('schedules:mySchedule.noAreasAssigned');
+    roster.location?.name ||
+    (scope.scope !== 'none' && scope.scope !== 'location'
+      ? t(`attendance:clockInOut.scope.${scope.scope}`, {name: scope.name ?? ''})
+      : t('schedules:mySchedule.noAreasAssigned'));
 
+  const team = roster.team_category;
   return (
-    <View style={[styles.card, styles.rosterCard]} testID={`roster-${roster.id}`}>
+    <Pressable
+      style={[styles.card, styles.rosterCard]}
+      testID={`roster-${roster.id}`}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={t('schedules:scheduleDetail.openHint')}>
       <View style={styles.cardHeader}>
-        <NBText variant="mono-sm" color="gray700" uppercase style={styles.rosterLabel}>
-          {t('schedules:mySchedule.todayLabel')}
-        </NBText>
+        <View style={styles.headerLeft}>
+          <NBText variant="mono-sm" color="gray700" uppercase>
+            {shift ? shift.name : t('schedules:mySchedule.noShiftDefined')}
+          </NBText>
+          {roster.is_projected && (
+            <View style={styles.projectedTag}>
+              <NBText variant="caption" uppercase color="gray600">
+                {t('schedules:mySchedule.projected')}
+              </NBText>
+            </View>
+          )}
+        </View>
         <StatusPill dot tone={pill.tone} label={pill.label} />
       </View>
 
+      {team && (
+        <View style={styles.districtRow}>
+          <MaterialCommunityIcons
+            name="account-group-outline"
+            size={16}
+            color={nbColors.gray600}
+          />
+          <NBText variant="body-sm" color="gray700" style={styles.shiftText}>
+            {t('schedules:mySchedule.team', {name: team.name})}
+          </NBText>
+        </View>
+      )}
+
       <View style={styles.shiftRow}>
-        <MaterialCommunityIcons name="clock-outline" size={16} color={nbColors.gray600} />
+        <MaterialCommunityIcons
+          name="clock-outline"
+          size={16}
+          color={nbColors.gray600}
+        />
         <NBText variant="body-sm" color="gray700" style={styles.shiftText}>
-          {shift ? `${shift.name} · ${hhmm(shift.start_time)}–${hhmm(shift.end_time)}` : t('schedules:mySchedule.noShiftDefined')}
+          {shift
+            ? `${hhmm(shift.start_time)}–${hhmm(shift.end_time)}`
+            : t('schedules:mySchedule.noShiftDefined')}
         </NBText>
       </View>
 
       <View style={styles.areaRow}>
-        <MaterialCommunityIcons name="map-marker-outline" size={16} color={nbColors.gray600} />
+        <MaterialCommunityIcons
+          name="map-marker-outline"
+          size={16}
+          color={nbColors.gray600}
+        />
         <NBText variant="body-sm" color="gray700" style={styles.shiftText}>
           {areasText}
         </NBText>
       </View>
 
-      {roster.rayon && (
-        <View style={styles.rayonRow}>
-          <MaterialCommunityIcons name="map-outline" size={16} color={nbColors.gray600} />
+      {roster.district && (
+        <View style={styles.districtRow}>
+          <MaterialCommunityIcons
+            name="map-outline"
+            size={16}
+            color={nbColors.gray600}
+          />
           <NBText variant="caption" color="gray600" style={styles.shiftText}>
-            {roster.rayon.name}
+            {roster.district.name}
           </NBText>
         </View>
       )}
-    </View>
+
+      {/* What the status actually MEANS. "Direncanakan" on its own tells a
+          worker nothing — spell out the consequence for the day. */}
+      <View style={styles.statusHint}>
+        <NBText variant="caption" color="gray600">
+          {t(`schedules:mySchedule.statusHint.${status}`)}
+        </NBText>
+      </View>
+    </Pressable>
   );
 }
 
-// ─── Screen ─────────────────────────────────────────────────────────────────
+// ─── Screen — daily view with a date picker ───────────────────────────────────
 
 export function MyScheduleScreen(): React.JSX.Element {
-  const { t } = useTranslation();
-  const userId = useAppSelector((state) => state.auth.user?.id);
-  const [roster, setRoster] = useState<Schedule | null>(null);
+  const {t, i18n} = useTranslation();
+  const userId = useAppSelector(state => state.auth.user?.id);
+  const localeCode = i18n.language?.startsWith('en') ? 'en-US' : 'id-ID';
+
+  const today = useMemo(() => todayKey(), []);
+  const [selectedDate, setSelectedDate] = useState<string>(today);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [rows, setRows] = useState<Schedule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [detailRoster, setDetailRoster] = useState<Schedule | null>(null);
 
-  const today = useMemo(() => todayKey(), []);
+  const stepDay = useCallback((dir: number) => {
+    setSelectedDate(cur => keyOf(addDays(parseKey(cur), dir)));
+  }, []);
+
+  const dateLabel = useMemo(
+    () =>
+      parseKey(selectedDate).toLocaleDateString(localeCode, {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      }),
+    [selectedDate, localeCode],
+  );
 
   const fetchRoster = useCallback(async () => {
     if (!userId) {
@@ -103,19 +238,24 @@ export function MyScheduleScreen(): React.JSX.Element {
     }
     try {
       setError(null);
-      const res = await getMyRoster(today);
+      // A day range so a worker with multiple non-overlapping shifts sees all.
+      const res = await getMyRange(selectedDate, selectedDate);
       if (res.error) {
         setError(res.error);
         return;
       }
-      setRoster(res.data ?? null);
+      setRows(res.data ?? []);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : t('schedules:mySchedule.loadFailed'));
+      setError(
+        err instanceof Error
+          ? err.message
+          : t('schedules:mySchedule.loadFailed'),
+      );
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [userId, today]);
+  }, [userId, selectedDate, t]);
 
   useEffect(() => {
     void fetchRoster();
@@ -128,49 +268,178 @@ export function MyScheduleScreen(): React.JSX.Element {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <NBBackgroundPattern />
+      {/* WRAPS the content: this component is `flex: 1`, so rendering it as a
+          childless sibling made it claim half the screen — which is what pushed
+          the date nav into the middle of the page and left the day's card
+          colliding with the "Hari ini" chip. */}
+      <NBBackgroundPattern pattern="grid" backgroundColor={nbColors.bgCanvas}>
+      <View style={styles.navRow}>
+        <Pressable
+          onPress={() => stepDay(-1)}
+          accessibilityLabel={t('schedules:mySchedule.prevDay')}
+          hitSlop={8}
+          style={styles.navBtn}
+          testID="prev-day">
+          <MaterialCommunityIcons
+            name="chevron-left"
+            size={22}
+            color={nbColors.black}
+          />
+        </Pressable>
+
+        <View style={styles.navCenter}>
+          {/* Tap the date to jump to any day via the picker. */}
+          <Pressable
+            onPress={() => setPickerOpen(true)}
+            style={styles.dateBtn}
+            accessibilityRole="button"
+            testID="date-picker-trigger">
+            <MaterialCommunityIcons
+              name="calendar-month-outline"
+              size={16}
+              color={nbColors.gray700}
+            />
+            <NBText variant="body" style={styles.navDate}>
+              {dateLabel}
+            </NBText>
+          </Pressable>
+        </View>
+
+        <Pressable
+          onPress={() => stepDay(1)}
+          accessibilityLabel={t('schedules:mySchedule.nextDay')}
+          hitSlop={8}
+          style={styles.navBtn}
+          testID="next-day">
+          <MaterialCommunityIcons
+            name="chevron-right"
+            size={22}
+            color={nbColors.black}
+          />
+        </Pressable>
+      </View>
+
       {isLoading ? (
         <View style={styles.listContent}>
           <NBSkeleton height={96} style={styles.skeleton} />
           <NBSkeleton height={96} style={styles.skeleton} />
         </View>
       ) : error ? (
-        <View style={styles.stateWrap}>
+        // Same inline empty-state layout as Tugas/Aktivitas: a full-width state
+        // that sits in the scroll below the day nav (no floating centered card).
+        <ScrollView
+          contentContainerStyle={styles.emptyListContent}
+          refreshControl={
+            <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={nbColors.primary} />
+          }>
           <NBEmptyState
-            icon={<MaterialCommunityIcons name="alert-circle-outline" size={48} color={nbColors.danger} />}
+            variant="error"
+            illustration="illo-offline"
+            style={styles.emptyStateStretch}
             title={t('schedules:mySchedule.loadFailed')}
             description={error}
             ctaLabel={t('schedules:mySchedule.retryLabel')}
             onCTA={onRefresh}
           />
-        </View>
-      ) : !roster ? (
-        <View style={styles.stateWrap}>
+        </ScrollView>
+      ) : rows.length === 0 ? (
+        <ScrollView
+          contentContainerStyle={styles.emptyListContent}
+          refreshControl={
+            <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={nbColors.primary} />
+          }>
           <NBEmptyState
-            icon={<MaterialCommunityIcons name="calendar-blank-outline" size={48} color={nbColors.gray500} />}
+            variant="noData"
+            illustration="illo-shifts"
+            style={styles.emptyStateStretch}
             title={t('schedules:mySchedule.emptyTitle')}
             description={t('schedules:mySchedule.emptyDescription')}
           />
-        </View>
+        </ScrollView>
       ) : (
         <ScrollView
           contentContainerStyle={styles.listContent}
           refreshControl={
-            <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={nbColors.primary} />
-          }
-        >
-          <RosterRow roster={roster} t={t} />
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={onRefresh}
+              tintColor={nbColors.primary}
+            />
+          }>
+          {rows.map(r => (
+            <RosterRow
+              key={r.id}
+              roster={r}
+              t={t}
+              onPress={() => setDetailRoster(r)}
+            />
+          ))}
         </ScrollView>
       )}
+
+      <NBDatePicker
+        triggerless
+        visible={pickerOpen}
+        value={parseKey(selectedDate)}
+        onChange={d => {
+          setSelectedDate(keyOf(d));
+          setPickerOpen(false);
+        }}
+        onRequestClose={() => setPickerOpen(false)}
+      />
+
+      <ScheduleDetailSheet
+        visible={detailRoster !== null}
+        onClose={() => setDetailRoster(null)}
+        roster={detailRoster}
+      />
+      </NBBackgroundPattern>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: nbColors.bgCanvas },
-  listContent: { padding: nbSpacing.md, gap: nbSpacing.sm },
-  stateWrap: { flex: 1, justifyContent: 'center', padding: nbSpacing.xl },
-  skeleton: { borderRadius: nbRadius.base, marginBottom: nbSpacing.sm },
+  container: {flex: 1, backgroundColor: nbColors.bgCanvas},
+  navRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: nbSpacing.md,
+    paddingVertical: nbSpacing.sm,
+    gap: nbSpacing.sm,
+  },
+  navBtn: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.black,
+    borderRadius: nbRadius.base,
+    backgroundColor: nbColors.white,
+    ...nbShadows.sm,
+  },
+  navCenter: {flex: 1, alignItems: 'center', gap: nbSpacing.xs},
+  dateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nbSpacing.xs,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.black,
+    borderRadius: nbRadius.base,
+    backgroundColor: nbColors.white,
+    paddingHorizontal: nbSpacing.sm,
+    paddingVertical: nbSpacing.xs,
+    ...nbShadows.sm,
+  },
+  navDate: {textAlign: 'center'},
+  listContent: {...screenContent, gap: nbSpacing.sm},
+  // Inline empty/error state — mirrors Tugas/Aktivitas: the scroll content grows
+  // to fill the space below the day nav and the state stretches full-width, so it
+  // reads as an inline state rather than a floating centered card.
+  emptyListContent: {flexGrow: 1, justifyContent: 'center', padding: nbSpacing.md},
+  emptyStateStretch: {flex: 0, alignItems: 'stretch', paddingHorizontal: 0, paddingVertical: 0},
+  skeleton: {borderRadius: nbRadius.base, marginBottom: nbSpacing.sm},
   card: {
     backgroundColor: nbColors.white,
     borderWidth: nbBorders.widthBase,
@@ -180,13 +449,41 @@ const styles = StyleSheet.create({
     gap: nbSpacing.sm,
     ...nbShadows.sm,
   },
-  rosterCard: { borderColor: nbColors.primary },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: nbSpacing.sm },
-  rosterLabel: { color: nbColors.gray600 },
-  areaRow: { flexDirection: 'row', alignItems: 'center', gap: nbSpacing.xs, flexShrink: 1 },
-  shiftRow: { flexDirection: 'row', alignItems: 'center', gap: nbSpacing.xs },
-  shiftText: { flexShrink: 1 },
-  rayonRow: { flexDirection: 'row', alignItems: 'center', gap: nbSpacing.xs },
+  rosterCard: {borderColor: nbColors.primary},
+  statusHint: {
+    borderTopWidth: nbBorders.widthBase,
+    borderTopColor: nbColors.gray200,
+    paddingTop: nbSpacing.xs,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: nbSpacing.sm,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nbSpacing.xs,
+    flexShrink: 1,
+  },
+  projectedTag: {
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.gray300,
+    borderStyle: 'dashed',
+    borderRadius: nbRadius.sm,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+  },
+  areaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nbSpacing.xs,
+    flexShrink: 1,
+  },
+  shiftRow: {flexDirection: 'row', alignItems: 'center', gap: nbSpacing.xs},
+  shiftText: {flexShrink: 1},
+  districtRow: {flexDirection: 'row', alignItems: 'center', gap: nbSpacing.xs},
 });
 
 export default MyScheduleScreen;

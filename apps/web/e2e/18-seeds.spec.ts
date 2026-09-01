@@ -131,7 +131,8 @@ async function openSeeds(page: Page) {
   });
 }
 
-test.describe('Seeds (Plant Seeds Inventory)', () => {
+// PARKED (built, hidden from nav) — see specs/features/_archived/. Re-enable when the feature is restored.
+test.describe.skip('Seeds (Plant Seeds Inventory)', () => {
   test('list page renders seeds table with low-stock badge', async ({ page }) => {
     await openSeeds(page);
 

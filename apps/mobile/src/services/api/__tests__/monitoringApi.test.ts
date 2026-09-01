@@ -28,7 +28,7 @@ describe('monitoringApi', () => {
           total_areas: 10,
           staffed_areas: 8,
           understaffed_areas: 2,
-          rayons: [],
+          districts: [],
         },
       };
       mockGet.mockResolvedValue(mockResponse);
@@ -51,38 +51,38 @@ describe('monitoringApi', () => {
     });
   });
 
-  describe('getRayonMonitoring', () => {
-    it('gets rayon monitoring stats', async () => {
-      const rayonId = 'rayon-123';
+  describe('getDistrictMonitoring', () => {
+    it('gets district monitoring stats', async () => {
+      const districtId = 'district-123';
       const mockResponse = {
         data: {
-          rayon_id: rayonId,
-          rayon_name: 'Rayon Selatan',
+          district_id: districtId,
+          district_name: 'Rayon Selatan',
           total_users: 50,
           areas: [],
         },
       };
       mockGet.mockResolvedValue(mockResponse);
 
-      const result = await monitoringApi.getRayonMonitoring(rayonId);
+      const result = await monitoringApi.getDistrictMonitoring(districtId);
 
       expect(mockGet).toHaveBeenCalledWith(
-        `/monitoring/rayon/${rayonId}`,
+        `/monitoring/district/${districtId}`,
         undefined,
       );
       expect(result).toEqual(mockResponse);
     });
 
-    it('gets rayon monitoring stats with filters', async () => {
-      const rayonId = 'rayon-123';
+    it('gets district monitoring stats with filters', async () => {
+      const districtId = 'district-123';
       const filters = { date: '2026-01-25' };
-      const mockResponse = { data: { rayon_id: rayonId } };
+      const mockResponse = { data: { district_id: districtId } };
       mockGet.mockResolvedValue(mockResponse);
 
-      const result = await monitoringApi.getRayonMonitoring(rayonId, filters);
+      const result = await monitoringApi.getDistrictMonitoring(districtId, filters);
 
       expect(mockGet).toHaveBeenCalledWith(
-        `/monitoring/rayon/${rayonId}`,
+        `/monitoring/district/${districtId}`,
         filters,
       );
       expect(result).toEqual(mockResponse);
@@ -94,8 +94,8 @@ describe('monitoringApi', () => {
       const areaId = 'area-123';
       const mockResponse = {
         data: {
-          area_id: areaId,
-          area_name: 'Taman Bungkul',
+          location_id: areaId,
+          location_name: 'Taman Bungkul',
           staffing_status: 'adequate',
           users: [],
         },
@@ -114,7 +114,7 @@ describe('monitoringApi', () => {
     it('gets area monitoring stats with filters', async () => {
       const areaId = 'area-123';
       const filters = { date: '2026-01-25' };
-      const mockResponse = { data: { area_id: areaId } };
+      const mockResponse = { data: { location_id: areaId } };
       mockGet.mockResolvedValue(mockResponse);
 
       const result = await monitoringApi.getAreaMonitoring(areaId, filters);
@@ -149,7 +149,7 @@ describe('monitoringApi', () => {
     });
 
     it('gets live users with area filter', async () => {
-      const filters = { area_id: 'area-123' };
+      const filters = { location_id: 'area-123' };
       const mockResponse = {
         data: {
           total_online: 1,
@@ -168,8 +168,8 @@ describe('monitoringApi', () => {
       expect(result).toEqual(mockResponse);
     });
 
-    it('gets live users with rayon filter', async () => {
-      const filters = { rayon_id: 'rayon-123' };
+    it('gets live users with district filter', async () => {
+      const filters = { district_id: 'district-123' };
       const mockResponse = {
         data: {
           total_online: 0,
@@ -187,48 +187,12 @@ describe('monitoringApi', () => {
     });
   });
 
-  describe('getActiveUsers', () => {
-    it('should call get with correct endpoint', async () => {
-      const mockResponse = {
-        data: {
-          users: [
-            {
-              id: 'uuid-1',
-              username: 'user1',
-              full_name: 'John Doe',
-              shift: {
-                id: 'shift-1',
-                clock_in_time: '2026-01-19T08:00:00Z',
-                area: { id: 'area-1', name: 'Park A' },
-              },
-              latest_location: { gps_lat: -7.25, gps_lng: 112.75, logged_at: '2026-01-19T10:00:00Z' },
-            },
-          ],
-        },
-      };
-      mockGet.mockResolvedValue(mockResponse);
-
-      const result = await monitoringApi.getActiveUsers();
-
-      expect(mockGet).toHaveBeenCalledWith('/supervisor/active-users');
-      expect(result).toEqual(mockResponse);
-    });
-
-    it('should return error on failure', async () => {
-      const mockError = { error: 'Failed to fetch active users' };
-      mockGet.mockResolvedValue(mockError);
-
-      const result = await monitoringApi.getActiveUsers();
-
-      expect(result).toEqual(mockError);
-    });
-  });
 
   describe('getAllActivities', () => {
     it('should call get with /activities endpoint and empty params', async () => {
       const mockResponse = {
         data: [
-          { id: 'uuid-1', user_name: 'John', area_name: 'Park A', activity_time: '2026-01-19T10:00:00Z' },
+          { id: 'uuid-1', user_name: 'John', location_name: 'Park A', activity_time: '2026-01-19T10:00:00Z' },
         ],
       };
       mockGet.mockResolvedValue(mockResponse);
@@ -248,13 +212,13 @@ describe('monitoringApi', () => {
       expect(mockGet).toHaveBeenCalledWith('/activities', { user_id: 'uuid-123' });
     });
 
-    it('should call get with area_id filter', async () => {
+    it('should call get with location_id filter', async () => {
       const mockResponse = { data: [] };
       mockGet.mockResolvedValue(mockResponse);
 
-      const result = await monitoringApi.getAllActivities({ area_id: 'uuid-456' });
+      const result = await monitoringApi.getAllActivities({ location_id: 'uuid-456' });
 
-      expect(mockGet).toHaveBeenCalledWith('/activities', { area_id: 'uuid-456' });
+      expect(mockGet).toHaveBeenCalledWith('/activities', { location_id: 'uuid-456' });
     });
 
     it('should return error on failure', async () => {
@@ -312,7 +276,7 @@ describe('monitoringApi', () => {
 
       const result = await monitoringApi.getAttendance();
 
-      expect(mockGet).toHaveBeenCalledWith('/supervisor/attendance', {});
+      expect(mockGet).toHaveBeenCalledWith('/monitoring/attendance', {});
       expect(result).toEqual(mockResponse);
     });
 
@@ -322,7 +286,7 @@ describe('monitoringApi', () => {
 
       const result = await monitoringApi.getAttendance({ date: '2026-01-18' });
 
-      expect(mockGet).toHaveBeenCalledWith('/supervisor/attendance', { date: '2026-01-18' });
+      expect(mockGet).toHaveBeenCalledWith('/monitoring/attendance', { date: '2026-01-18' });
     });
 
     it('should return error on failure', async () => {
@@ -450,15 +414,15 @@ describe('monitoringApi', () => {
       expect(result).toEqual(mockResponse);
     });
 
-    it('gets staffing summary with area_id filter', async () => {
-      const filters = { area_id: 'area-456' };
+    it('gets staffing summary with location_id filter', async () => {
+      const filters = { location_id: 'area-456' };
       const mockResponse = {
         data: {
           total_areas: 1,
           adequately_staffed: 1,
           understaffed: 0,
           overstaffed: 0,
-          areas: [{ area_id: 'area-456', area_name: 'Taman Bungkul', status: 'adequate' }],
+          areas: [{ location_id: 'area-456', location_name: 'Taman Bungkul', status: 'adequate' }],
         },
       };
       mockGet.mockResolvedValue(mockResponse);
@@ -469,8 +433,8 @@ describe('monitoringApi', () => {
       expect(result).toEqual(mockResponse);
     });
 
-    it('gets staffing summary with rayon_id filter', async () => {
-      const filters = { rayon_id: 'rayon-789' };
+    it('gets staffing summary with district_id filter', async () => {
+      const filters = { district_id: 'district-789' };
       const mockResponse = {
         data: {
           total_areas: 5,
@@ -493,10 +457,9 @@ describe('monitoringApi', () => {
     it('exports all functions', () => {
       const defaultExport = monitoringApi.default;
       expect(defaultExport.getCityMonitoring).toBeDefined();
-      expect(defaultExport.getRayonMonitoring).toBeDefined();
+      expect(defaultExport.getDistrictMonitoring).toBeDefined();
       expect(defaultExport.getAreaMonitoring).toBeDefined();
       expect(defaultExport.getLiveUsers).toBeDefined();
-      expect(defaultExport.getActiveUsers).toBeDefined();
       expect(defaultExport.getAllActivities).toBeDefined();
       expect(defaultExport.getActivityDetails).toBeDefined();
       expect(defaultExport.getAttendance).toBeDefined();

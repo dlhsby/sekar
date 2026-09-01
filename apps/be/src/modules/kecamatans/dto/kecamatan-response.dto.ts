@@ -12,10 +12,10 @@ export class KecamatanResponseDto {
   code: string;
 
   @ApiProperty()
-  rayon_id: string;
+  district_id: string;
 
   @ApiProperty({ required: false })
-  rayon_name?: string;
+  district_name?: string;
 
   @ApiProperty({ enum: ['pusat', 'timur', 'barat', 'utara', 'selatan'] })
   region: KecamatanRegion;
@@ -25,8 +25,8 @@ export class KecamatanResponseDto {
       id: k.id,
       name: k.name,
       code: k.code,
-      rayon_id: k.rayon_id,
-      rayon_name: k.rayon?.name,
+      district_id: k.district_id,
+      district_name: k.district?.name,
       region: k.region,
     };
   }

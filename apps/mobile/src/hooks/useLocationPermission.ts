@@ -7,7 +7,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { AppState, AppStateStatus, Alert, Linking, Platform } from 'react-native';
 import { check, PERMISSIONS, RESULTS, PermissionStatus } from 'react-native-permissions';
-import Geolocation from 'react-native-geolocation-service';
+import { readPosition } from '../services/location/verifiedPosition';
 import i18n from '../i18n/config';
 import { requestLocationPermission } from '../services/permissions/permissionService';
 
@@ -125,8 +125,11 @@ export function useLocationPermission(options: UseLocationPermissionOptions = {}
     const requestId = ++gpsRequestIdRef.current;
 
     return new Promise((resolve) => {
-      Geolocation.getCurrentPosition(
-        () => {
+      // allowMocked: this asks "does the location provider answer at all", not
+      // "is this fix trustworthy". Refusing a mocked fix would report GPS as
+      // broken on an emulator and block the screens that gate on this probe.
+      readPosition({ allowMocked: true, geoOptions: { enableHighAccuracy: false, timeout: 5000 } })
+        .then(() => {
           // Issue 3: Ignore stale responses from earlier requests
           if (requestId !== gpsRequestIdRef.current) {
             resolve(true); // Resolve but don't update state
@@ -141,15 +144,15 @@ export function useLocationPermission(options: UseLocationPermissionOptions = {}
             }));
           }
           resolve(true);
-        },
-        (error) => {
+        })
+        .catch((error) => {
           // Issue 3: Ignore stale responses from earlier requests
           if (requestId !== gpsRequestIdRef.current) {
             resolve(false); // Resolve but don't update state
             return;
           }
           // Error code 2 = POSITION_UNAVAILABLE (GPS disabled)
-          const isGpsDisabled = error.code === 2;
+          const isGpsDisabled = error?.code === 2;
           // Issue 4: Check if still mounted
           if (mountedRef.current) {
             setState(prev => ({
@@ -159,13 +162,7 @@ export function useLocationPermission(options: UseLocationPermissionOptions = {}
             }));
           }
           resolve(!isGpsDisabled);
-        },
-        {
-          enableHighAccuracy: false,
-          timeout: 5000,
-          maximumAge: 0,
-        }
-      );
+        });
     });
   }, []);
 

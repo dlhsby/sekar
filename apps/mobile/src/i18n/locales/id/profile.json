@@ -31,7 +31,7 @@
     "labels": {
       "fullName": "Nama Lengkap",
       "username": "Username",
-      "roleRayon": "Role & Rayon",
+      "roleDistrict": "Role & Rayon",
       "phoneNumber": "No. Handphone"
     },
     "hints": {
@@ -100,12 +100,11 @@
   },
   "assignedArea": {
     "title": "Area Ditugaskan",
-    "radiusSuffix": "radius",
     "noArea": "Tidak ada area ditugaskan"
   },
   "assignedKecamatan": {
     "title": "Wilayah Ditugaskan",
-    "rayon": "Rayon",
+    "district": "Rayon",
     "kecamatan": "Kecamatan",
     "noArea": "Belum ada wilayah ditugaskan"
   },
@@ -123,8 +122,7 @@
     "confirmPasswordPlaceholder": "Ulangi sandi baru",
     "rules": {
       "title": "Syarat Sandi",
-      "minLength": "Minimal 8 karakter",
-      "alphanumeric": "Berisi huruf dan angka",
+      "minLength": "Minimal 6 karakter",
       "match": "Konfirmasi cocok"
     },
     "submit": "Simpan & Masuk",
@@ -137,8 +135,7 @@
     "validation": {
       "currentPasswordRequired": "Password saat ini wajib diisi",
       "newPasswordRequired": "Password baru wajib diisi",
-      "newPasswordMinLength": "Password baru minimal 8 karakter",
-      "newPasswordAlphanumeric": "Password baru harus berisi huruf dan angka",
+      "newPasswordMinLength": "Password baru minimal 6 karakter",
       "newPasswordDifferent": "Password baru harus berbeda dari password lama",
       "confirmPasswordRequired": "Konfirmasi password wajib diisi",
       "confirmPasswordMatch": "Konfirmasi password tidak cocok",

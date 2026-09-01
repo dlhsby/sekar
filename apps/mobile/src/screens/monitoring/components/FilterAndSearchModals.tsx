@@ -4,11 +4,12 @@
  * Consolidated from MapDashboardScreen lines 831–868.
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { MonitoringFilterModal } from '../../../components/modals/MonitoringFilterModal';
 import { MonitoringSearchModal } from '../../../components/monitoring/MonitoringSearchModal';
 import { BoundaryDetailModal } from '../../../components/modals/BoundaryDetailModal';
-import type { LiveUser, RayonBoundary, AreaBoundary, User } from '../../../types/models.types';
+import { ReassignWorkerModal } from '../../../components/modals/ReassignWorkerModal';
+import type { LiveUser, DistrictBoundary, AreaBoundary, User } from '../../../types/models.types';
 import type { MonitoringFilters } from '../../../types/api.types';
 import type { SearchResult } from '../../../hooks/useMonitoringSearch';
 
@@ -22,12 +23,11 @@ interface FilterAndSearchModalsProps {
   searchModalVisible: boolean;
   setSearchModalVisible: (visible: boolean) => void;
   liveUsers: LiveUser[];
-  rayons: RayonBoundary[] | undefined;
   onSearchSelect: (result: SearchResult) => void;
   boundaryDetailVisible: boolean;
   setBoundaryDetailVisible: (visible: boolean) => void;
-  boundaryDetailType: 'rayon' | 'area';
-  boundaryDetailData: RayonBoundary | AreaBoundary | null;
+  boundaryDetailType: 'district' | 'location';
+  boundaryDetailData: DistrictBoundary | AreaBoundary | null;
 }
 
 export function FilterAndSearchModals({
@@ -40,13 +40,17 @@ export function FilterAndSearchModals({
   searchModalVisible,
   setSearchModalVisible,
   liveUsers,
-  rayons,
   onSearchSelect,
   boundaryDetailVisible,
   setBoundaryDetailVisible,
   boundaryDetailType,
   boundaryDetailData,
 }: FilterAndSearchModalsProps): React.JSX.Element {
+  // The lokasi being staffed. Local state, not a prop: it exists only between
+  // the boundary sheet closing and the reassign sheet closing, and no parent
+  // needs to know about that window.
+  const [reassignArea, setReassignArea] = useState<AreaBoundary | null>(null);
+
   return (
     <>
       {/* Filter modal */}
@@ -61,20 +65,35 @@ export function FilterAndSearchModals({
         />
       )}
 
-      {/* Boundary detail modal */}
+      {/* Boundary detail modal.
+          `onReassign` restores the entry point for the button this modal has
+          always rendered: it was gated on `is_understaffed && onReassign`, and
+          nothing ever passed `onReassign` — so it never once appeared. The
+          trigger was stripped by the 2026-06-10 map rebuild (49026d85) and, unlike
+          filters and boundaries, never layered back on. */}
       <BoundaryDetailModal
         type={boundaryDetailType}
         data={boundaryDetailData}
         visible={boundaryDetailVisible}
         onClose={() => setBoundaryDetailVisible(false)}
+        onReassign={(area) => {
+          setBoundaryDetailVisible(false);
+          setReassignArea(area);
+        }}
       />
 
-      {/* Fullscreen search — find a petugas / area / rayon and fly to it */}
+      <ReassignWorkerModal
+        visible={reassignArea != null}
+        onClose={() => setReassignArea(null)}
+        targetArea={reassignArea}
+        onSuccess={() => setReassignArea(null)}
+      />
+
+      {/* Fullscreen search — find a petugas / location / district and fly to it */}
       <MonitoringSearchModal
         visible={searchModalVisible}
         onClose={() => setSearchModalVisible(false)}
         liveUsers={liveUsers}
-        rayons={rayons}
         onSelect={onSearchSelect}
       />
     </>

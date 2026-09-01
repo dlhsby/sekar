@@ -51,11 +51,11 @@ export class PruningRequestFinderService {
     return request;
   }
 
-  /** Load with submitter/reviewer/rayon hydrated via the safe projection, or 404. */
+  /** Load with submitter/reviewer/district hydrated via the safe projection, or 404. */
   async getWithPartiesOrFail(id: string): Promise<PruningRequest> {
     const request = await this.pruningRequestRepository.findOne({
       where: { id },
-      relations: ['submitter', 'reviewer', 'rayon'],
+      relations: ['submitter', 'reviewer', 'district'],
       select: SAFE_PRUNING_REQUEST_SELECT,
     });
     if (!request) {

@@ -1,6 +1,9 @@
 import { runProfileCli, type SeedContext } from '../lib/context';
+import { seedPermissions } from '../entities/permission';
+import { seedRoles } from '../entities/role';
+import { seedTeams } from '../entities/team';
 import { seedAreaTypes } from '../entities/area-type';
-import { seedRayons } from '../entities/rayon';
+import { seedDistricts } from '../entities/district';
 import { seedShiftDefinitions } from '../entities/shift-definition';
 import { seedActivityTypes } from '../entities/activity-type';
 import { seedSpecialDayOverrides } from '../entities/special-day';
@@ -20,16 +23,16 @@ import { superadminPasswordHash } from '../constants';
  *
  * **CRITICAL COUNTS (must match exactly):**
  *   - users 1 (superadmin only)
- *   - rayons 8 (7 geographic + Taman Aktif)
+ *   - districts 8 (7 geographic + Taman Aktif)
  *   - kecamatans 31
- *   - area_types 4
+ *   - location_types 4
  *   - shift_definitions 3
  *   - activity_types 20
  *   - special_day_overrides 4
  *   - monitoring_configs 9 (5 Phase 2 + 4 Phase 3)
  *   - plant_species 128
- *   - service_capacity 96 (8 rayons × 12 ISO weeks × pruning, capacity_units=0)
- *   - areas 0 (no areas in reference — loaded via KMZ import)
+ *   - service_capacity 96 (8 districts × 12 ISO weeks × pruning, capacity_units=0)
+ *   - locations 0 (no locations in reference — loaded via KMZ import)
  *   - All transactional tables 0
  */
 async function seedReference(ctx: SeedContext): Promise<void> {
@@ -40,9 +43,14 @@ async function seedReference(ctx: SeedContext): Promise<void> {
 
   // DO NOT truncate — this is idempotent reference data only.
 
+  // Dynamic RBAC (ADR-044) — idempotent; grants seeded only when a role has none.
+  await seedPermissions(ctx);
+  await seedRoles(ctx);
+  await seedTeams(ctx);
+
   // Reference data (all idempotent via ON CONFLICT DO NOTHING).
   await seedAreaTypes(ctx);
-  await seedRayons(ctx);
+  await seedDistricts(ctx);
   await seedShiftDefinitions(ctx);
   await seedActivityTypes(ctx);
   await seedSpecialDayOverrides(ctx);
@@ -70,15 +78,15 @@ async function seedReference(ctx: SeedContext): Promise<void> {
   ctx.log('╚═══════════════════════════════════════════════════════════════════════════╝');
   ctx.log('');
   ctx.log('Summary (idempotent):');
-  ctx.log('  - 4   area_types');
-  ctx.log('  - 8   rayons (7 geographic + Rayon Taman Aktif)');
+  ctx.log('  - 4   location_types');
+  ctx.log('  - 8   districts (7 geographic + Rayon Taman Aktif)');
   ctx.log('  - 31  kecamatans');
   ctx.log('  - 3   shift_definitions (SHIFT1/2/3)');
   ctx.log('  - 20  activity_types');
   ctx.log('  - 4   special_day_overrides (holidays)');
   ctx.log('  - 9   monitoring_configs (5 Phase 2 + 4 Phase 3)');
   ctx.log('  - 128 plant_species');
-  ctx.log('  - 96  service_capacity rows (8 rayons × 12 ISO weeks)');
+  ctx.log('  - 96  service_capacity rows (8 districts × 12 ISO weeks)');
   ctx.log('  - 1   superadmin user');
   ctx.log('');
   ctx.log('⚠️  Production note: Change the superadmin password immediately after first login.');

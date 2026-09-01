@@ -23,6 +23,7 @@ import {
   type NotificationPreference,
 } from '../../services/api/notificationsApi';
 import { nbColors, nbSpacing, nbRadius, nbBorders, nbShadows } from '../../constants/nbTokens';
+import { screenContent } from '../../constants/layout';
 
 function NBToggle({
   value,
@@ -210,7 +211,7 @@ export function NotificationPreferencesScreen(): React.JSX.Element {
 
 const styles = StyleSheet.create({
   content: {
-    padding: nbSpacing.lg,
+    ...screenContent,
     paddingBottom: nbSpacing.xl,
   },
   loading: {

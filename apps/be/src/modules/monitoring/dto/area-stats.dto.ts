@@ -81,17 +81,11 @@ export class StaffRequirementStatusDto {
   @ApiProperty({ example: false })
   is_met: boolean;
 
-  @ApiProperty({ example: 3 })
+  @ApiProperty({ example: 3, description: 'Clocked in and reachable' })
   active_count: number;
 
-  @ApiProperty({ example: 1 })
-  inactive_count: number;
-
-  @ApiProperty({ example: 1 })
-  outside_area_count: number;
-
-  @ApiProperty({ example: 0 })
-  missing_count: number;
+  @ApiProperty({ example: 1, description: 'Clocked in but unreachable past the threshold' })
+  offline_count: number;
 }
 
 export class AreaStatsDto {
@@ -107,11 +101,11 @@ export class AreaStatsDto {
   @ApiProperty({ example: 'active' })
   area_type_category: string;
 
-  @ApiProperty({ example: 'rayon-uuid' })
-  rayon_id: string;
+  @ApiProperty({ example: 'district-uuid' })
+  district_id: string;
 
   @ApiProperty({ example: 'Rayon Selatan' })
-  rayon_name: string;
+  district_name: string;
 
   @ApiProperty({ example: -7.2575 })
   latitude: number;

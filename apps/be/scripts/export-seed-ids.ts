@@ -1,17 +1,17 @@
 /**
  * Export sheet-paste-ready id mappings for the two-way-sync groundwork.
  *
- * The committed seed CSVs already carry deterministic UUID v5 ids. This emits
- * trimmed "name → id" mappings the client can paste back into the spreadsheet's
- * `id` columns, so a future Apps Script sync (and any re-load) keys on a stable
- * id instead of re-deriving by name.
+ * The committed user roster carries deterministic UUID v5 ids. This emits a
+ * trimmed "name → id" mapping the client can paste back into the spreadsheet's
+ * `id` column, so a future Apps Script sync (and any re-load) keys on a stable
+ * id instead of re-deriving by name. (Geography now comes from the live-staging
+ * snapshots, so only the user roster needs this.)
  *
- *   data/areas-taman-aktif-with-ids.csv  (name, id)
- *   data/users-with-ids.csv              (full_name, username, id, phone, rayon_code)
+ *   data/users-with-ids.csv  (full_name, username, id, phone, rayon_code)
  *
  * Run: npm run seed:export-ids
  */
-import { loadTamanAktifAreas, loadSeedUsers } from '../src/database/seeds/load-seed-data';
+import { loadSeedUsers } from '../src/database/seeds/load-seed-data';
 import { serializeCsv } from '../src/database/seeds/csv-util';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -22,13 +22,6 @@ function writeCsv(file: string, header: string[], rows: string[][]): void {
   fs.writeFileSync(file, serializeCsv([header, ...rows]));
 }
 
-const areas = loadTamanAktifAreas();
-writeCsv(
-  path.join(DATA_DIR, 'areas-taman-aktif-with-ids.csv'),
-  ['name', 'id'],
-  areas.map((a) => [a.name, a.id]),
-);
-
 const users = loadSeedUsers();
 writeCsv(
   path.join(DATA_DIR, 'users-with-ids.csv'),
@@ -37,6 +30,5 @@ writeCsv(
 );
 
 console.log(
-  `Exported ${areas.length} area ids + ${users.length} user ids → ` +
-    `data/areas-taman-aktif-with-ids.csv, data/users-with-ids.csv`,
+  `Exported ${users.length} user ids → data/users-with-ids.csv`,
 );

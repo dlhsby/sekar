@@ -4,19 +4,25 @@ import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBText } from '../nb/NBText';
 import { NBModal } from '../nb/NBModal';
+import { StatusPill } from '../home/StatusPill';
 import { StatusSummaryBar } from './StatusSummaryBar';
 import { WorkerTile } from './WorkerTile';
 import { PersonnelGroupCard, type PersonnelGroup } from './PersonnelGroupCard';
 import { AttendanceDetailModal } from './AttendanceDetailModal';
+import { NBTab } from '../nb/NBTab';
+import { MonitoringNodeList } from './MonitoringNodeList';
+import type { NodeMarker } from './AggregateBubbleLayer';
 import { ROLE_LABELS } from '../../constants/roles';
+import { leaveReasonPill } from '../../utils/statusHelpers';
 import {
   nbColors,
   nbBorders,
   nbRadius,
   nbSpacing,
   nbShadows,
+  withAlpha,
 } from '../../constants/nbTokens';
-import type { LiveUser, PresenceActivity, UserRole } from '../../types/models.types';
+import type { LiveUser, PresenceActivity, UserRole, AbsentUser } from '../../types/models.types';
 import type { AttendanceResponse } from '../../types/api.types';
 import i18n from '../../i18n/config';
 
@@ -29,20 +35,49 @@ interface MonitoringStatusSheetProps {
   /** Active ACTIVITY filter (CP6) — the chips filter by activity; location → wrench. */
   activeActivity: PresenceActivity | null;
   onActivityChange: (activity: PresenceActivity | null) => void;
+  /** Luar jadwal — its own axis, combinable with any activity (ADR-050). */
+  scheduledFilter?: 'all' | 'adhoc';
+  onScheduledChange?: (next: 'all' | 'adhoc') => void;
   liveUsers: LiveUser[];
+  /**
+   * The children of the current drill level, for the Wilayah tab.
+   *
+   * The map SHOWS what is here; this list lets you go somewhere. That is why it
+   * is one level deep and not the whole subtree — a flattened rayon is hundreds
+   * of rows, which nobody navigates.
+   */
+  nodes?: NodeMarker[];
+  onDrillNode?: (node: NodeMarker) => void;
+  onNodeDetail?: (node: NodeMarker) => void;
+  isNodeHidden?: (id: string) => boolean;
+  onToggleNodeHidden?: (id: string) => void;
+  onShowAllHiddenNodes?: () => void;
+  /** Where the operator is, shown above the tabs. */
+  breadcrumbLabel?: string;
+  onBreadcrumbBack?: () => void;
   lastUpdated: string | null;
   totalAreas: number;
   staffedAreas: number;
   onUserPress?: (user: LiveUser) => void;
   /** Today's attendance summary; renders the "Kehadiran" section + detail modal. */
   attendance?: AttendanceResponse | null;
+  /**
+   * Roster lifecycle split for the CURRENT drill scope (ADR-050). The attendance
+   * summary only knows "not clocked in", which lumps a worker still inside their
+   * arrival grace (`belum_hadir`) together with a confirmed no-show
+   * (`tidak_hadir`) — two states that call for completely different action.
+   * Supplied from the monitoring aggregate, which already carries both.
+   */
+  rosterSplit?: { belum_hadir: number; tidak_hadir: number } | null;
+  /** Scheduled workers on approved leave today (ADR-050). */
+  onLeaveUsers?: AbsentUser[];
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 // Field roles first (the ones a supervisor actively handles on the map), then
 // the rest. Roles not listed sort last, alphabetically by label.
-const ROLE_ORDER: string[] = ['korlap', 'satgas', 'linmas', 'kepala_rayon', 'admin_data'];
+const ROLE_ORDER: string[] = ['korlap', 'satgas', 'linmas', 'kepala_rayon', 'admin_rayon'];
 
 function roleRank(role: string): number {
   const idx = ROLE_ORDER.indexOf(role);
@@ -67,12 +102,24 @@ export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
   onClose,
   activeActivity,
   onActivityChange,
+  scheduledFilter,
+  onScheduledChange,
   liveUsers,
+  nodes,
+  onDrillNode,
+  onNodeDetail,
+  isNodeHidden,
+  onToggleNodeHidden,
+  onShowAllHiddenNodes,
+  breadcrumbLabel,
+  onBreadcrumbBack,
   lastUpdated,
   totalAreas,
   staffedAreas,
   onUserPress,
   attendance,
+  rosterSplit,
+  onLeaveUsers,
 }: MonitoringStatusSheetProps): React.JSX.Element {
   const { t } = useTranslation();
   const [selectedGroup, setSelectedGroup] = useState<PersonnelGroup | null>(null);
@@ -123,13 +170,41 @@ export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
 
   const keyExtractor = useCallback((item: PersonnelGroup) => item.role, []);
 
+  const hasNodes = (nodes?.length ?? 0) > 0;
+  // Wilayah leads when there is a level to browse; at lokasi scope there are no
+  // children, so the tabs disappear and the sheet reads as it always did.
+  const [tab, setTab] = useState<'wilayah' | 'petugas'>('wilayah');
+
   const contentHeader = useMemo(() => (
     <>
+      {/* Where you are. Current level only: the sheet is narrow at every size,
+          and a trail you have to scroll has stopped answering the question it
+          exists for. The map's own bar carries the full trail. */}
+      {breadcrumbLabel && (
+        <View style={styles.breadcrumb}>
+          {onBreadcrumbBack && (
+            <TouchableOpacity
+              onPress={onBreadcrumbBack}
+              accessibilityRole="button"
+              accessibilityLabel={t('monitoring:page.backLabel')}
+              testID="sheet-breadcrumb-back"
+            >
+              <MaterialCommunityIcons name="chevron-left" size={20} color={nbColors.black} />
+            </TouchableOpacity>
+          )}
+          <NBText variant="body-sm" numberOfLines={1} style={styles.breadcrumbLabel}>
+            {breadcrumbLabel}
+          </NBText>
+        </View>
+      )}
+
       {/* Status row — single source for the per-status counts; tap to filter */}
       <StatusSummaryBar
         liveUsers={liveUsers}
         activeActivity={activeActivity}
         onActivityChange={onActivityChange}
+        scheduledFilter={scheduledFilter}
+        onScheduledChange={onScheduledChange}
       />
 
       {/* Kehadiran — today's clock-in summary; tap for the detail modal */}
@@ -141,8 +216,34 @@ export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
           <KehadiranCard
             clockedIn={attendance.clocked_in_count}
             notClockedIn={attendance.not_clocked_in.meta.total}
+            belumHadir={rosterSplit?.belum_hadir}
+            tidakHadir={rosterSplit?.tidak_hadir}
             onPress={() => setAttendanceOpen(true)}
           />
+        </View>
+      )}
+
+      {/* Berhalangan — on-leave workers with leave reason pills */}
+      {onLeaveUsers && onLeaveUsers.length > 0 && (
+        <View style={styles.section}>
+          <NBText variant="mono-sm" uppercase color="gray600" style={styles.sectionTitle}>
+            {t('monitoring:status.sections.onLeave')}
+          </NBText>
+          <View style={styles.onLeaveList}>
+            {onLeaveUsers.map(user => {
+              const pill = leaveReasonPill(user.leave_reason);
+              return (
+                <View key={user.user_id} style={styles.onLeaveRow}>
+                  <NBText variant="body-sm" color="black" style={styles.onLeaveName}>
+                    {user.full_name}
+                  </NBText>
+                  <View style={styles.leaveReasonPill}>
+                    <StatusPill tone={pill.tone} label={pill.label} />
+                  </View>
+                </View>
+              );
+            })}
+          </View>
         </View>
       )}
 
@@ -179,13 +280,39 @@ export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
         </View>
       </View>
 
-      {/* Daftar Petugas header */}
-      <View style={styles.listHeader}>
-        <NBText variant="h3">{t('monitoring:status.sections.staffList')}</NBText>
-        <NBText variant="caption" color="gray500">{liveUsers.length} {t('monitoring:status.staffCount')}</NBText>
-      </View>
+      {/* Wilayah / Petugas. A tab rather than a second sheet: this sheet
+          already owns the "what is here" question, and a surface beside it
+          would split that answer in two. */}
+      {hasNodes ? (
+        <View style={styles.tabBar}>
+          <NBTab
+            tabs={[
+              { key: 'wilayah', label: t('monitoring:sidebar.tabWilayah'), count: nodes?.length ?? 0 },
+              { key: 'petugas', label: t('monitoring:sidebar.tabWorkers'), count: liveUsers.length },
+            ]}
+            activeTab={tab}
+            onTabChange={k => setTab(k as 'wilayah' | 'petugas')}
+          />
+        </View>
+      ) : (
+        <View style={styles.listHeader}>
+          <NBText variant="h3">{t('monitoring:status.sections.staffList')}</NBText>
+          <NBText variant="caption" color="gray500">{liveUsers.length} {t('monitoring:status.staffCount')}</NBText>
+        </View>
+      )}
+
+      {tab === 'wilayah' && hasNodes && (
+        <MonitoringNodeList
+          nodes={nodes ?? []}
+          onDrill={n => onDrillNode?.(n)}
+          onDetail={onNodeDetail}
+          isHidden={isNodeHidden}
+          onToggleHidden={onToggleNodeHidden}
+          onShowAllHidden={onShowAllHiddenNodes}
+        />
+      )}
     </>
-  ), [activeActivity, onActivityChange, liveUsers, staffedAreas, totalAreas, staleCount, lastUpdated, attendance]);
+  ), [activeActivity, onActivityChange, tab, hasNodes, nodes, breadcrumbLabel, onBreadcrumbBack, onDrillNode, onNodeDetail, isNodeHidden, onToggleNodeHidden, onShowAllHiddenNodes, liveUsers, staffedAreas, totalAreas, staleCount, lastUpdated, attendance, rosterSplit, onLeaveUsers, t]);
 
   const groupLabel = selectedGroup
     ? ROLE_LABELS[selectedGroup.role as UserRole] ?? selectedGroup.role
@@ -204,7 +331,7 @@ export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
       >
         <FlatList
           style={styles.list}
-          data={groups}
+          data={tab === 'petugas' || !hasNodes ? groups : []}
           keyExtractor={keyExtractor}
           renderItem={renderGroupCard}
           ListHeaderComponent={contentHeader}
@@ -281,13 +408,20 @@ function SummaryRow({
 function KehadiranCard({
   clockedIn,
   notClockedIn,
+  belumHadir,
+  tidakHadir,
   onPress,
 }: {
   clockedIn: number;
   notClockedIn: number;
+  belumHadir?: number;
+  tidakHadir?: number;
   onPress: () => void;
 }): React.JSX.Element {
   const { t } = useTranslation();
+  // Show the split when the aggregate supplied it; fall back to the single
+  // lumped counter otherwise (e.g. a scope with no aggregate loaded yet).
+  const hasSplit = belumHadir !== undefined || tidakHadir !== undefined;
 
   return (
     <TouchableOpacity
@@ -300,7 +434,22 @@ function KehadiranCard({
     >
       <View style={styles.attendanceStats}>
         <AttendanceStat tone="ok" value={clockedIn} label={t('monitoring:status.attendance.clockedIn')} />
-        <AttendanceStat tone="warn" value={notClockedIn} label={t('monitoring:status.attendance.notClockedIn')} />
+        {hasSplit ? (
+          <>
+            <AttendanceStat
+              tone="warn"
+              value={belumHadir ?? 0}
+              label={t('monitoring:lifecycle.state.belum_hadir')}
+            />
+            <AttendanceStat
+              tone="bad"
+              value={tidakHadir ?? 0}
+              label={t('monitoring:lifecycle.state.tidak_hadir')}
+            />
+          </>
+        ) : (
+          <AttendanceStat tone="warn" value={notClockedIn} label={t('monitoring:status.attendance.notClockedIn')} />
+        )}
       </View>
       <MaterialCommunityIcons name="chevron-right" size={20} color={nbColors.gray400} />
     </TouchableOpacity>
@@ -312,12 +461,18 @@ function AttendanceStat({
   value,
   label,
 }: {
-  tone: 'ok' | 'warn';
+  tone: 'ok' | 'warn' | 'bad';
   value: number;
   label: string;
 }): React.JSX.Element {
-  const accent = tone === 'ok' ? nbColors.statusActive : nbColors.statusIdle;
-  const bg = tone === 'ok' ? nbColors.statusActiveBg : nbColors.statusIdleBg;
+  const accent =
+    tone === 'ok' ? nbColors.statusActive : tone === 'bad' ? nbColors.danger : nbColors.statusIdle;
+  const bg =
+    tone === 'ok'
+      ? nbColors.statusActiveBg
+      : tone === 'bad'
+        ? withAlpha(nbColors.danger, 0.125)
+        : nbColors.statusIdleBg;
   return (
     <View style={[styles.attendanceStat, { backgroundColor: bg, borderColor: accent }]}>
       <NBText variant="h2" color="black">{String(value)}</NBText>
@@ -369,6 +524,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: nbColors.black,
   },
+  breadcrumb: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nbSpacing.xs,
+    paddingHorizontal: nbSpacing.md,
+    paddingBottom: nbSpacing.xs,
+  },
+  breadcrumbLabel: { flexShrink: 1, fontWeight: '700' },
+  tabBar: { paddingHorizontal: nbSpacing.md, paddingVertical: nbSpacing.xs },
   listHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -424,5 +588,25 @@ const styles = StyleSheet.create({
   attendanceStatLabel: {
     fontSize: 10,
     letterSpacing: 0.3,
+  },
+  onLeaveList: {
+    gap: nbSpacing.xs,
+  },
+  onLeaveRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: nbSpacing.xs,
+    paddingHorizontal: nbSpacing.sm,
+    borderWidth: nbBorders.widthThin,
+    borderColor: nbColors.gray200,
+    borderRadius: nbRadius.base,
+    backgroundColor: nbColors.gray100,
+  },
+  onLeaveName: {
+    flex: 1,
+  },
+  leaveReasonPill: {
+    marginLeft: nbSpacing.sm,
   },
 });

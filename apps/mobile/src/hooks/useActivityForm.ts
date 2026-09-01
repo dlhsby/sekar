@@ -6,11 +6,17 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Alert } from 'react-native';
-import Geolocation from 'react-native-geolocation-service';
+import { readPosition } from '../services/location/verifiedPosition';
+import {
+  classifyLocationError,
+  describeLocationError,
+  type LocationErrorType,
+} from '../services/location/locationErrors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import i18n from '../i18n/config';
 import { useAppDispatch, useAppSelector } from '../store/store';
-import { createActivity } from '../services/api/activitiesApi';
+import { createActivity, uploadActivityPhotos } from '../services/api/activitiesApi';
+import type { UploadableFile } from '../services/api/activitiesApi';
 import { getMyActivityTypes } from '../services/api/activityTypesApi';
 import { getUsers } from '../services/api/usersApi';
 import { setSubmitting, setError } from '../store/slices/activitiesSlice';
@@ -105,7 +111,7 @@ export function useActivityForm() {
   // ADR-038: load co-workers in the same area as the active shift, excluding self.
   // Tagging is a feed-visibility hint, so we keep the scope narrow (same-area peers).
   const loadTaggableUsers = useCallback(async () => {
-    const areaId = currentShift?.area_id;
+    const areaId = currentShift?.location_id;
     if (!areaId || !authUser) {
       setTaggableUsers([]);
       return;
@@ -115,7 +121,7 @@ export function useActivityForm() {
       const response = await getUsers();
       if (response.data) {
         const peers = response.data.filter(
-          (u) => u.id !== authUser.id && u.area_id === areaId,
+          (u) => u.id !== authUser.id && u.location_id === areaId,
         );
         setTaggableUsers(peers);
       }
@@ -124,42 +130,44 @@ export function useActivityForm() {
     } finally {
       setIsLoadingTaggableUsers(false);
     }
-  }, [currentShift?.area_id, authUser]);
+  }, [currentShift?.location_id, authUser]);
 
   // Get current GPS location
   const getCurrentLocation = useCallback(() => {
     setIsLoadingLocation(true);
-    Geolocation.getCurrentPosition(
-      (position) => {
+    // An activity report is evidence, so a mocked fix is refused rather than
+    // recorded. maximumAge stays at the reader's default of 0: the previous 5s
+    // cache is long enough to return a fix captured before a mock provider was
+    // switched off.
+    readPosition()
+      .then((position) => {
         setForm((prev) => ({
           ...prev,
           location: {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            accuracy: position.coords.accuracy,
+            latitude: position.latitude,
+            longitude: position.longitude,
+            accuracy: position.accuracy ?? 0,
           },
         }));
         setErrors((prev) => ({ ...prev, location: undefined }));
         setIsLoadingLocation(false);
-      },
-      (error) => {
+      })
+      .catch((error) => {
         if (__DEV__) { console.error('Location error:', error); }
-        let errorMessage = i18n.t('activities:locationMessages.locationError');
-        if (error.code === 1) { errorMessage = i18n.t('activities:locationMessages.permissionDenied'); }
-        else if (error.code === 3) { errorMessage = i18n.t('activities:locationMessages.timeoutError'); }
-        else if (error.code === 5) { errorMessage = i18n.t('activities:locationMessages.gpsDisabled'); }
-        setErrors((prev) => ({ ...prev, location: errorMessage }));
+        // The activities namespace has its own copy for the common failures;
+        // fall back to the shared describer for everything else (incl. mocked).
+        const activityMessage: Partial<Record<LocationErrorType, string>> = {
+          permission_denied: 'activities:locationMessages.permissionDenied',
+          timeout: 'activities:locationMessages.timeoutError',
+          gps_disabled: 'activities:locationMessages.gpsDisabled',
+        };
+        const key = activityMessage[classifyLocationError(error)];
+        setErrors((prev) => ({
+          ...prev,
+          location: key ? i18n.t(key) : describeLocationError(error),
+        }));
         setIsLoadingLocation(false);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 5000,
-        forceRequestLocation: true,
-        forceLocationManager: false,
-        showLocationDialog: true,
-      }
-    );
+      });
   }, []);
 
   // Add photo (called by PhotoUploader after capture)
@@ -278,6 +286,7 @@ export function useActivityForm() {
     onNavigateClockIn: () => void,
     onNavigateActivities: () => void,
     onValidationFail?: () => void,
+    taskId?: string,
   ) => {
     if (!currentShift) {
       Alert.alert(
@@ -299,24 +308,32 @@ export function useActivityForm() {
     dispatch(setSubmitting(true));
 
     try {
-      const photoBase64Array: string[] = [];
-      for (const photo of form.photos) {
-        const base64 = await mediaService.convertToBase64(photo);
-        photoBase64Array.push(base64);
-      }
+      // Photos go to object storage, never inline base64 (F9): the backend now
+      // rejects data: payloads. Online → upload now and submit the URLs. Offline
+      // → queue the LOCAL file refs; syncManager uploads them at replay time.
+      const uploadables: UploadableFile[] = form.photos.map((p) => ({
+        uri: p.uri,
+        name: p.fileName,
+        type: p.type,
+      }));
 
-      const activityData = {
+      const baseData = {
         activity_type_id: form.activityTypeId!,
         description: sanitizeMultilineText(form.description),
-        photo_urls: photoBase64Array,
         gps_lat: form.location!.latitude,
         gps_lng: form.location!.longitude,
         // ADR-038: include tagged users (omitted when empty so old payload shape is preserved)
         ...(form.taggedUserIds.length > 0 ? { tagged_user_ids: form.taggedUserIds } : {}),
+        // Phase 3: include task_id when submitting activity from task context
+        ...(taskId ? { task_id: taskId } : {}),
       };
 
       if (isOnline) {
-        const response = await createActivity(activityData);
+        const upload = await uploadActivityPhotos(uploadables);
+        if (upload.error || !upload.data) {
+          throw new Error(upload.error || i18n.t('activities:submitAlerts.failureMessage'));
+        }
+        const response = await createActivity({ ...baseData, photo_urls: upload.data.urls });
         if (response.error) { throw new Error(response.error); }
         if (response.data) {
           // Activity created successfully; the server response only includes id and created_at.
@@ -329,7 +346,9 @@ export function useActivityForm() {
           ]);
         }
       } else {
-        await addToOfflineQueue('activity', activityData);
+        // No network to upload photos now — queue the local file refs; the sync
+        // manager uploads them to storage and fills photo_urls before POSTing.
+        await addToOfflineQueue('activity', { ...baseData, photo_local: uploadables });
         await AsyncStorage.removeItem('activity_draft');
         resetForm();
         Alert.alert(
@@ -344,7 +363,7 @@ export function useActivityForm() {
         i18n.t('activities:submitAlerts.failureTitle'),
         i18n.t('activities:submitAlerts.failureMessage'),
         [
-          { text: i18n.t('activities:submitAlerts.retryButton'), onPress: () => handleSubmit(onNavigateClockIn, onNavigateActivities) },
+          { text: i18n.t('activities:submitAlerts.retryButton'), onPress: () => handleSubmit(onNavigateClockIn, onNavigateActivities, onValidationFail, taskId) },
           { text: i18n.t('activities:submitAlerts.saveDraftButton'), onPress: () => saveDraft() },
         ]
       );

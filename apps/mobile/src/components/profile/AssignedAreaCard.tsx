@@ -13,8 +13,8 @@ import { nbColors, nbSpacing, nbRadius, nbBorders, nbShadows } from '../../const
 interface AssignedAreaCardProps {
   area: {
     name?: string;
-    areaType?: { name?: string };
-    radius_meters?: number;
+    // `/me` assigned_area serialises the location type as `area_type` (backend DTO).
+    area_type?: { name?: string } | null;
     address?: string;
   } | null;
   testID?: string;
@@ -25,7 +25,7 @@ export const AssignedAreaCard: React.FC<AssignedAreaCardProps> = ({
   testID = 'assigned-area-card',
 }) => {
   const { t } = useTranslation();
-  const metaParts = [area?.areaType?.name, area?.radius_meters ? `${area.radius_meters}m ${t('profile:assignedArea.radiusSuffix')}` : null]
+  const metaParts = [area?.area_type?.name]
     .filter(Boolean)
     .join(' · ');
 

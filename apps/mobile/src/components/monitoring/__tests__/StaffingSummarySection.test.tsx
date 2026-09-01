@@ -55,9 +55,9 @@ jest.mock('../../../constants/roles', () => ({
     satgas: 'Satgas',
     linmas: 'Linmas',
     korlap: 'Korlap',
-    admin_data: 'Admin Data',
+    admin_rayon: 'Admin Data',
     kepala_rayon: 'Kepala Rayon',
-    top_management: 'Top Management',
+    management: 'Top Management',
     admin_system: 'Admin Sistem',
     superadmin: 'Superadmin',
   },
@@ -73,10 +73,9 @@ function makeRole(
   return {
     role,
     active,
-    idle: 0,
-    outside_area: 0,
-    missing: 0,
     offline: 0,
+    absent: 0,
+    outside_area: 0,
     total_assigned: active,
     total_required,
   };
@@ -84,12 +83,11 @@ function makeRole(
 
 function makeItem(overrides: Partial<StaffingSummaryItem> & { id: string; name: string }): StaffingSummaryItem {
   return {
-    type: 'rayon',
+    type: 'district',
     roles: [],
     total_active: 0,
-    total_idle: 0,
+    total_absent: 0,
     total_outside_area: 0,
-    total_missing: 0,
     total_offline: 0,
     is_fully_staffed: false,
     ...overrides,

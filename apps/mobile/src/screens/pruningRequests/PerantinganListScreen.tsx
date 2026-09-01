@@ -60,6 +60,7 @@ import {
   nbRadius,
   nbShadows,
 } from '../../constants/nbTokens';
+import { screenContentGrow } from '../../constants/layout';
 import type { PruningRequest } from '../../types/models.types';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -160,7 +161,7 @@ export function PerantinganListScreen(): React.JSX.Element {
     let count = 0;
     if (filters.status) { count++; }
     if (filters.fromDate || filters.toDate) { count++; }
-    if (filters.rayonId) { count++; }
+    if (filters.districtId) { count++; }
     if (filters.referenceCode) { count++; }
     if (filters.requesterName) { count++; }
     return count;
@@ -182,7 +183,7 @@ export function PerantinganListScreen(): React.JSX.Element {
         chipStyle: 'date',
       });
     }
-    if (filters.rayonId) { chips.push({ text: t('filterChip.rayonLabel'), chipStyle: 'location' }); }
+    if (filters.districtId) { chips.push({ text: t('filterChip.districtLabel'), chipStyle: 'location' }); }
     if (filters.referenceCode) { chips.push({ text: `# ${filters.referenceCode}`, chipStyle: 'status' }); }
     if (filters.requesterName) { chips.push({ text: `🧑 ${filters.requesterName}`, chipStyle: 'status' }); }
     return chips;
@@ -202,8 +203,8 @@ export function PerantinganListScreen(): React.JSX.Element {
       const to = new Date(filters.toDate + 'T23:59:59').getTime();
       list = list.filter((r) => new Date(r.createdAt).getTime() <= to);
     }
-    if (filters.rayonId) {
-      list = list.filter((r) => r.rayonId === filters.rayonId);
+    if (filters.districtId) {
+      list = list.filter((r) => r.districtId === filters.districtId);
     }
     if (filters.referenceCode) {
       const needle = filters.referenceCode.toLowerCase();
@@ -334,7 +335,7 @@ export function PerantinganListScreen(): React.JSX.Element {
                 ))}
               </ScrollView>
             ) : (
-              <NBText variant="body-sm" color="gray400" style={styles.filterBarPlaceholder}>{t('list.allRequestsLabel')}</NBText>
+              <NBText variant="body-sm" color="gray500" style={styles.filterBarPlaceholder}>{t('list.allRequestsLabel')}</NBText>
             )}
             {activeFilterCount > 0 && (
               <TouchableOpacity
@@ -440,7 +441,7 @@ export function PerantinganListScreen(): React.JSX.Element {
           onApplyFilters={handleApplyFilters}
           onResetFilters={handleResetFilters}
           userRole={user?.role}
-          userRayonId={user?.rayon_id ?? undefined}
+          userDistrictId={user?.district_id ?? undefined}
         />
       </SafeAreaView>
     </NBBackgroundPattern>
@@ -484,7 +485,7 @@ const styles = StyleSheet.create({
   },
   filterBarPlaceholder: {
     fontStyle: 'italic',
-    // Color/size handled by NBText variant="body-sm" color="gray400"
+    // Color/size handled by NBText variant="body-sm" color="gray500"
   },
   miniChipsContent: {
     flexDirection: 'row',
@@ -543,9 +544,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    paddingHorizontal: nbSpacing.md,
+    ...screenContentGrow,
     paddingBottom: nbSpacing['2xl'],
-    flexGrow: 1,
   },
   skeletonContainer: {
     padding: nbSpacing.md,

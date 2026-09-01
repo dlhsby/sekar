@@ -33,11 +33,11 @@ import type { PruningRequest } from '../../types/models.types';
 import { formatDateLong, getISOWeek } from '../../utils/dateUtils';
 
 // Assignable roles ordered top-down by org hierarchy (Kepala Rayon → Linmas).
-// Default selection is intentionally Admin Data (not the first item) — admin_data
+// Default selection is intentionally Admin Data (not the first item) — admin_rayon
 // is the common "Tugaskan" flow.
 const ASSIGNABLE_ROLES = [
   'kepala_rayon',
-  'admin_data',
+  'admin_rayon',
   'korlap',
   'satgas',
   'linmas',
@@ -73,23 +73,23 @@ export function AssignToTaskSheet({
   const { convertingId, error: pruningError } = useAppSelector(
     (state) => state.pruningRequests,
   );
-  const { calendarByRayon } = useAppSelector(
+  const { calendarByDistrict } = useAppSelector(
     (state) => state.serviceCapacity,
   );
 
-  // Scope the assignee picker to the request's rayon (May 11, 2026 — area
+  // Scope the assignee picker to the request's district (May 11, 2026 — area
   // picker removed since pruning happens outside managed areas).
-  // May 12 late+2 — removed the cross-rayon fallback. Every request is
-  // submitted by a staff_kecamatan whose rayon is derived from the
-  // kecamatans table (NOT NULL FK), so request.rayonId should always be
+  // May 12 late+2 — removed the cross-district fallback. Every request is
+  // submitted by a staff_kecamatan whose district is derived from the
+  // kecamatans table (NOT NULL FK), so request.districtId should always be
   // populated. If it isn't, the data is corrupt — fail closed (empty
-  // list) rather than open (every user in every rayon).
+  // list) rather than open (every user in every district).
   const users = useMemo(
     () =>
-      request.rayonId
-        ? allUsers.filter((u) => u.rayon_id === request.rayonId)
+      request.districtId
+        ? allUsers.filter((u) => u.district_id === request.districtId)
         : [],
-    [allUsers, request.rayonId],
+    [allUsers, request.districtId],
   );
 
   // Lazy-load master data the first time the sheet opens.
@@ -102,15 +102,15 @@ export function AssignToTaskSheet({
   //   - `areaId` removed — pruning runs in neighborhoods / private yards.
   //   - `caseType` + `pruningAction` removed — not needed at assignment;
   //     the satgas captures these on the eventual activity report.
-  //   - Two-step assignee picker: role first (default `admin_data`), then
+  //   - Two-step assignee picker: role first (default `admin_rayon`), then
   //     person filtered by selected role (default = the current admin
   //     themselves — supports the centralized-recap pattern where
-  //     admin_data takes ownership and tags satgas on the activity later).
+  //     admin_rayon takes ownership and tags satgas on the activity later).
   //   - `scheduledDate` pre-fills from `request.scheduledDate` (set by
   //     admin via Atur Jadwal pre-approve). Read-only here; to change,
   //     use Atur Ulang Jadwal which cascades to task.deadline + capacity.
   //   - `units` defaults to 1 server-side (capacity = permohonan slots).
-  const [assignedRole, setAssignedRole] = useState<AssignableRole>('admin_data');
+  const [assignedRole, setAssignedRole] = useState<AssignableRole>('admin_rayon');
   const [assignedTo, setAssignedTo] = useState<string>('');
   const scheduledDate = useMemo<Date | null>(
     () => (request.scheduledDate ? new Date(request.scheduledDate) : null),
@@ -118,7 +118,7 @@ export function AssignToTaskSheet({
   );
 
   // Default the assignee to the current admin themselves when their role
-  // matches the selected role (typical case: admin_data assigning to
+  // matches the selected role (typical case: admin_rayon assigning to
   // self). When the role filter changes and the current admin doesn't
   // qualify, clear the selection so the placeholder prompts a pick.
   useEffect(() => {
@@ -136,10 +136,10 @@ export function AssignToTaskSheet({
     [assignedTo, scheduledDate],
   );
 
-  // Pruning-eligible assignees: anyone in the rayon who can field-execute
+  // Pruning-eligible assignees: anyone in the district who can field-execute
   // or take responsibility. Two-step picker (role → person) — the second
   // dropdown is filtered by `assignedRole` so admins see a short, scoped
-  // list instead of hunting through every user in the rayon.
+  // list instead of hunting through every user in the district.
   const roleOptions = useMemo(
     () =>
       ASSIGNABLE_ROLES.map((r) => ({
@@ -161,11 +161,11 @@ export function AssignToTaskSheet({
 
   // Fetch capacity when date changes
   useEffect(() => {
-    if (scheduledDate && request.rayonId) {
+    if (scheduledDate && request.districtId) {
       const { year, week } = getISOWeek(scheduledDate);
       dispatch(
         fetchCapacity({
-          rayonId: request.rayonId,
+          districtId: request.districtId,
           year,
           fromWeek: week,
           toWeek: week,
@@ -173,20 +173,20 @@ export function AssignToTaskSheet({
         }),
       );
     }
-  }, [scheduledDate, request.rayonId, dispatch]);
+  }, [scheduledDate, request.districtId, dispatch]);
 
   // Get capacity for selected week
   const weekCapacity = useMemo(() => {
-    if (!scheduledDate || !request.rayonId) {
+    if (!scheduledDate || !request.districtId) {
       return null;
     }
     const { year, week } = getISOWeek(scheduledDate);
-    const calendar = calendarByRayon[request.rayonId];
+    const calendar = calendarByDistrict[request.districtId];
     if (!calendar) {
       return null;
     }
     return calendar.find((c) => c.year === year && c.week === week) || null;
-  }, [scheduledDate, request.rayonId, calendarByRayon]);
+  }, [scheduledDate, request.districtId, calendarByDistrict]);
 
   // Check if capacity exceeded
   const capacityExceeded = useMemo(() => {
@@ -293,7 +293,7 @@ export function AssignToTaskSheet({
 
           {/* Ditugaskan Ke — two-step picker (role → person). Both
               dropdowns are searchable; the person list re-filters whenever
-              the role changes. Role defaults to admin_data; the person
+              the role changes. Role defaults to admin_rayon; the person
               defaults to the current admin themselves when their role
               matches (centralized-recap pattern), otherwise the dropdown
               starts unselected. */}

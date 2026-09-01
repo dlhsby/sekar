@@ -71,7 +71,7 @@ const makeStore = (seeds: PlantSeed[] = mockSeeds, isLoading = false, error: any
         pagination: { currentPage: 1, limit: 20 },
         searchQuery: '',
       }) => state,
-      auth: (state = { user: { id: 'u1', role: 'admin_data' } }) => state,
+      auth: (state = { user: { id: 'u1', role: 'admin_rayon' } }) => state,
     },
   });
 

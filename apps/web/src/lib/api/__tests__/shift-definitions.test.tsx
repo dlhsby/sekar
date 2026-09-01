@@ -34,7 +34,6 @@ describe('Shift Definitions API', () => {
     {
       id: '1',
       name: 'Pagi',
-      code: 'PAGI',
       start_time: '06:00',
       end_time: '14:00',
       crosses_midnight: false,
@@ -44,7 +43,6 @@ describe('Shift Definitions API', () => {
     {
       id: '2',
       name: 'Siang',
-      code: 'SIANG',
       start_time: '14:00',
       end_time: '22:00',
       crosses_midnight: false,
@@ -54,7 +52,6 @@ describe('Shift Definitions API', () => {
     {
       id: '3',
       name: 'Malam',
-      code: 'MALAM',
       start_time: '22:00',
       end_time: '06:00',
       crosses_midnight: true,
@@ -76,7 +73,16 @@ describe('Shift Definitions API', () => {
     it('should generate correct query keys', () => {
       expect(shiftDefinitionKeys.all).toEqual(['shift-definitions']);
       expect(shiftDefinitionKeys.lists()).toEqual(['shift-definitions', 'list']);
-      expect(shiftDefinitionKeys.list()).toEqual(['shift-definitions', 'list']);
+      expect(shiftDefinitionKeys.list()).toEqual([
+        'shift-definitions',
+        'list',
+        { includeInactive: false },
+      ]);
+      expect(shiftDefinitionKeys.list(true)).toEqual([
+        'shift-definitions',
+        'list',
+        { includeInactive: true },
+      ]);
       expect(shiftDefinitionKeys.details()).toEqual(['shift-definitions', 'detail']);
       expect(shiftDefinitionKeys.detail('1')).toEqual(['shift-definitions', 'detail', '1']);
     });
@@ -123,7 +129,6 @@ describe('Shift Definitions API', () => {
       expect(result.current.data?.name).toBe('Pagi');
       expect(result.current.data?.start_time).toBe('06:00');
       expect(result.current.data?.end_time).toBe('14:00');
-      expect(result.current.data?.code).toBe('PAGI');
     });
 
     it('should handle shift not found', async () => {

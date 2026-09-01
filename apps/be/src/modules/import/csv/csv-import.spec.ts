@@ -4,8 +4,8 @@ import { NotFoundException, ForbiddenException, BadRequestException } from '@nes
 
 import { RedisService } from '../../../common/services/redis.service';
 import { UsersService } from '../../users/users.service';
-import { AreasService } from '../../areas/areas.service';
-import { Area } from '../../areas/entities/area.entity';
+import { LocationsService } from '../../locations/locations.service';
+import { Location } from '../../locations/entities/location.entity';
 import { CsvImportService } from './csv-import.service';
 import { parseCsv } from './csv-parser';
 import { validateUsers, validateAreas } from './csv-validators';
@@ -43,7 +43,7 @@ describe('validateUsers', () => {
         full_name: 'Budi Worker',
         phone_number: '+628123456789',
         role: 'satgas',
-        password: 'Password123!',
+        password: '12345678',
       },
     ]);
     expect(errors).toHaveLength(0);
@@ -94,8 +94,8 @@ describe('validateUsers', () => {
       {
         username: 'topmgr',
         full_name: 'Top Manager',
-        role: 'top_management',
-        password: 'Password123!',
+        role: 'management',
+        password: '12345678',
       },
     ]);
     expect(errors).toHaveLength(0);
@@ -108,14 +108,14 @@ describe('validateUsers', () => {
         full_name: 'First',
         phone_number: '+628123456789',
         role: 'satgas',
-        password: 'Password123!',
+        password: '12345678',
       },
       {
         username: 'duplicate',
         full_name: 'Second',
         phone_number: '+628123456780',
         role: 'satgas',
-        password: 'Password123!',
+        password: '12345678',
       },
     ]);
     expect(valid).toHaveLength(1); // First occurrence is valid
@@ -133,14 +133,14 @@ describe('validateUsers', () => {
         full_name: 'User One',
         phone_number: '+628123456789',
         role: 'satgas',
-        password: 'Password123!',
+        password: '12345678',
       },
       {
         username: 'user2',
         full_name: 'User Two',
         phone_number: '+628123456789',
         role: 'satgas',
-        password: 'Password123!',
+        password: '12345678',
       },
     ]);
     expect(valid).toHaveLength(1);
@@ -157,8 +157,8 @@ describe('validateAreas', () => {
     const { valid, errors } = validateAreas([
       {
         name: 'Taman Baru',
-        area_type_id: VALID_UUID,
-        rayon_id: VALID_UUID,
+        location_type_id: VALID_UUID,
+        district_id: VALID_UUID,
         latitude: '-7.29',
         longitude: '112.73',
       },
@@ -171,8 +171,8 @@ describe('validateAreas', () => {
     const { valid, errors } = validateAreas([
       {
         name: 'Bad',
-        area_type_id: VALID_UUID,
-        rayon_id: VALID_UUID,
+        location_type_id: VALID_UUID,
+        district_id: VALID_UUID,
         latitude: '999',
         longitude: '0',
       },
@@ -185,15 +185,15 @@ describe('validateAreas', () => {
     const { valid, errors } = validateAreas([
       {
         name: 'Taman Baru',
-        area_type_id: VALID_UUID,
-        rayon_id: VALID_UUID,
+        location_type_id: VALID_UUID,
+        district_id: VALID_UUID,
         latitude: '-7.29',
         longitude: '112.73',
       },
       {
         name: 'Taman Baru',
-        area_type_id: VALID_UUID,
-        rayon_id: VALID_UUID,
+        location_type_id: VALID_UUID,
+        district_id: VALID_UUID,
         latitude: '-7.30',
         longitude: '112.74',
       },
@@ -211,22 +211,22 @@ describe('CsvImportService', () => {
   let service: CsvImportService;
   let redisClient: { setex: jest.Mock; get: jest.Mock; del: jest.Mock };
   let usersService: { create: jest.Mock };
-  let areasService: { create: jest.Mock };
-  let areaRepo: { update: jest.Mock };
+  let locationsService: { create: jest.Mock };
+  let locationRepo: { update: jest.Mock };
 
   beforeEach(async () => {
     redisClient = { setex: jest.fn(), get: jest.fn(), del: jest.fn() };
     usersService = { create: jest.fn().mockResolvedValue({ id: 'u1' }) };
-    areasService = { create: jest.fn().mockResolvedValue({ id: 'a1' }) };
-    areaRepo = { update: jest.fn().mockResolvedValue(undefined) };
+    locationsService = { create: jest.fn().mockResolvedValue({ id: 'a1' }) };
+    locationRepo = { update: jest.fn().mockResolvedValue(undefined) };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CsvImportService,
         { provide: RedisService, useValue: { getClient: () => redisClient } },
         { provide: UsersService, useValue: usersService },
-        { provide: AreasService, useValue: areasService },
-        { provide: getRepositoryToken(Area), useValue: areaRepo },
+        { provide: LocationsService, useValue: locationsService },
+        { provide: getRepositoryToken(Location), useValue: locationRepo },
       ],
     }).compile();
 
@@ -235,7 +235,7 @@ describe('CsvImportService', () => {
 
   it('stores a session and returns its id when rows are valid', async () => {
     const file = asFile(
-      'username,full_name,phone_number,role,password\nsatgas9,Budi,+628123456789,satgas,Password123!',
+      'username,full_name,phone_number,role,password\nsatgas9,Budi,+628123456789,satgas,12345678',
     );
 
     const result = await service.validate('users', file, 'user-1');
@@ -267,9 +267,7 @@ describe('CsvImportService', () => {
     const session = {
       userId: 'user-1',
       entityType: 'users',
-      validRows: [
-        { username: 'satgas9', full_name: 'Budi', role: 'satgas', password: 'Password123!' },
-      ],
+      validRows: [{ username: 'satgas9', full_name: 'Budi', role: 'satgas', password: '12345678' }],
       createdAt: new Date().toISOString(),
     };
 
@@ -336,7 +334,7 @@ describe('CsvImportService', () => {
       await expect(service.confirm('sess-1', 'user-1')).rejects.toBeInstanceOf(ForbiddenException);
     });
 
-    it('assigns rayon_id after creating an area', async () => {
+    it('assigns district_id after creating an area', async () => {
       redisClient.get.mockResolvedValue(
         JSON.stringify({
           userId: 'user-1',
@@ -344,8 +342,8 @@ describe('CsvImportService', () => {
           validRows: [
             {
               name: 'Taman',
-              area_type_id: VALID_UUID,
-              rayon_id: VALID_UUID,
+              location_type_id: VALID_UUID,
+              district_id: VALID_UUID,
               latitude: -7.29,
               longitude: 112.73,
             },
@@ -356,8 +354,8 @@ describe('CsvImportService', () => {
 
       const result = await service.confirm('sess-1', 'user-1');
 
-      expect(areasService.create).toHaveBeenCalledTimes(1);
-      expect(areaRepo.update).toHaveBeenCalledWith('a1', { rayon_id: VALID_UUID });
+      expect(locationsService.create).toHaveBeenCalledTimes(1);
+      expect(locationRepo.update).toHaveBeenCalledWith('a1', { district_id: VALID_UUID });
       expect(result.imported).toBe(1);
     });
   });

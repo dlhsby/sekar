@@ -8,9 +8,9 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, ILike, IsNull } from 'typeorm';
 import { PlantSpecies } from '../entities/plant-species.entity';
-import { AreaPlant } from '../entities/area-plant.entity';
+import { LocationPlant } from '../entities/location-plant.entity';
 import { NotablePlant } from '../entities/notable-plant.entity';
-import { Area } from '../../areas/entities/area.entity';
+import { Location } from '../../locations/entities/location.entity';
 import { CreateNotablePlantDto } from '../dto/create-notable-plant.dto';
 import { CreatePlantSpeciesDto } from '../dto/create-plant-species.dto';
 import { UpdatePlantSpeciesDto } from '../dto/update-plant-species.dto';
@@ -28,12 +28,12 @@ export class PlantsService {
   constructor(
     @InjectRepository(PlantSpecies)
     private readonly speciesRepository: Repository<PlantSpecies>,
-    @InjectRepository(AreaPlant)
-    private readonly areaPlantRepository: Repository<AreaPlant>,
+    @InjectRepository(LocationPlant)
+    private readonly areaPlantRepository: Repository<LocationPlant>,
     @InjectRepository(NotablePlant)
     private readonly notablePlantRepository: Repository<NotablePlant>,
-    @InjectRepository(Area)
-    private readonly areaRepository: Repository<Area>,
+    @InjectRepository(Location)
+    private readonly areaRepository: Repository<Location>,
   ) {}
 
   /**
@@ -87,19 +87,19 @@ export class PlantsService {
    *
    * Returns area_plants rows with eager-loaded species details.
    *
-   * @param areaId Area UUID
+   * @param locationId Location UUID
    * @returns Array of area_plants with species relation
    * @throws NotFoundException if area does not exist
    */
-  async listAreaPlants(areaId: string): Promise<AreaPlant[]> {
-    const area = await this.areaRepository.findOne({ where: { id: areaId } });
+  async listAreaPlants(locationId: string): Promise<LocationPlant[]> {
+    const area = await this.areaRepository.findOne({ where: { id: locationId } });
     if (!area) {
-      this.logger.warn(`Area with ID ${areaId} not found`);
-      throw new NotFoundException(`Area with ID ${areaId} not found`);
+      this.logger.warn(`Location with ID ${locationId} not found`);
+      throw new NotFoundException(`Location with ID ${locationId} not found`);
     }
 
     return this.areaPlantRepository.find({
-      where: { areaId },
+      where: { locationId },
       relations: ['species'],
       order: { species: { nameId: 'ASC' } },
     });
@@ -110,19 +110,19 @@ export class PlantsService {
    *
    * Returns heritage trees and significant specimens with species details.
    *
-   * @param areaId Area UUID
+   * @param locationId Location UUID
    * @returns Array of notable plants with species relation
    * @throws NotFoundException if area does not exist
    */
-  async listNotablePlants(areaId: string): Promise<NotablePlant[]> {
-    const area = await this.areaRepository.findOne({ where: { id: areaId } });
+  async listNotablePlants(locationId: string): Promise<NotablePlant[]> {
+    const area = await this.areaRepository.findOne({ where: { id: locationId } });
     if (!area) {
-      this.logger.warn(`Area with ID ${areaId} not found`);
-      throw new NotFoundException(`Area with ID ${areaId} not found`);
+      this.logger.warn(`Location with ID ${locationId} not found`);
+      throw new NotFoundException(`Location with ID ${locationId} not found`);
     }
 
     return this.notablePlantRepository.find({
-      where: { areaId },
+      where: { locationId },
       relations: ['species'],
       order: { createdAt: 'DESC' },
     });
@@ -133,17 +133,17 @@ export class PlantsService {
    *
    * Validates that both area and species exist before creation.
    *
-   * @param dto Create DTO (area_id, species_id, label, last_pruned_at, notes)
+   * @param dto Create DTO (location_id, species_id, label, last_pruned_at, notes)
    * @param user Current authenticated user (unused, for audit trail extensibility)
    * @returns Created notable plant with relations
    * @throws NotFoundException if area or species not found
    * @throws BadRequestException if required fields are invalid
    */
   async createNotablePlant(dto: CreateNotablePlantDto, user: User): Promise<NotablePlant> {
-    const area = await this.areaRepository.findOne({ where: { id: dto.area_id } });
+    const area = await this.areaRepository.findOne({ where: { id: dto.location_id } });
     if (!area) {
-      this.logger.warn(`Cannot create notable plant: area ${dto.area_id} not found`);
-      throw new NotFoundException(`Area with ID ${dto.area_id} not found`);
+      this.logger.warn(`Cannot create notable plant: area ${dto.location_id} not found`);
+      throw new NotFoundException(`Location with ID ${dto.location_id} not found`);
     }
 
     const species = await this.speciesRepository.findOne({ where: { id: dto.species_id } });
@@ -153,7 +153,7 @@ export class PlantsService {
     }
 
     const notable = this.notablePlantRepository.create({
-      areaId: dto.area_id,
+      locationId: dto.location_id,
       speciesId: dto.species_id,
       label: dto.label ?? null,
       notes: dto.notes ?? null,

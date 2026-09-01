@@ -17,7 +17,7 @@ import { Type, Transform } from 'class-transformer';
 /**
  * Query DTO for listing pruning requests (admin view).
  *
- * Used by admin_data, kepala_rayon, top_management, admin_system, or superadmin
+ * Used by admin_rayon, kepala_rayon, management, admin_system, or superadmin
  * to list and filter pruning requests.
  */
 export class ListPruningRequestsQueryDto {
@@ -55,17 +55,17 @@ export class ListPruningRequestsQueryDto {
   status?: string;
 
   /**
-   * Filter by rayon ID. Auto-forced for admin_data users to match their rayon.
+   * Filter by district ID. Auto-forced for admin_rayon users to match their district.
    *
    * @example '22222222-2222-2222-2222-222222222201'
    */
   @ApiPropertyOptional({
-    description: 'Filter by rayon ID',
+    description: 'Filter by district ID',
     example: '22222222-2222-2222-2222-222222222201',
   })
   @IsUUID()
   @IsOptional()
-  rayonId?: string;
+  districtId?: string;
 
   /**
    * Filter by creation date (inclusive, ISO 8601).

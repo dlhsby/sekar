@@ -4,7 +4,7 @@
 **Audience:** DevOps engineers, on-call operators  
 **Scope:** Day-2 operations, incident response, monitoring, and recovery procedures
 
-**Current Reality (2026-06):** Staging = AWS (shared RDS + S3, instance role); Production = on-prem Docker Compose (local Postgres + MinIO, encrypted env via dotenvx). For full deployment guide, see `specs/deployment/deployment-guide.md`.
+**Current Reality (2026-06):** Staging = AWS (shared RDS + S3, instance role); Production = on-prem Docker Compose (local Postgres + MinIO, encrypted env via dotenvx). For full deployment guide, see `specs/deployment/README.md`.
 
 ---
 
@@ -168,7 +168,7 @@ docker exec -it sekar-postgres psql -U postgres -d sekar_db
 -- Count records in key tables
 SELECT
   (SELECT COUNT(*) FROM users) as users,
-  (SELECT COUNT(*) FROM areas) as areas,
+  (SELECT COUNT(*) FROM locations) as areas,
   (SELECT COUNT(*) FROM rayons) as rayons,
   (SELECT COUNT(*) FROM tasks) as tasks;
 
@@ -686,7 +686,7 @@ npm run start:dev
 # Should log: "✅ Firebase Admin SDK initialized successfully"
 ```
 
-For full setup, see `specs/deployment/deployment-guide.md` §8.
+For full setup, see `specs/deployment/README.md` §8.
 
 ---
 
@@ -803,9 +803,15 @@ df -h /                          # confirm freed
 
 Staging has no SSH — run the above via **SSM Run Command** (`AWS-RunShellScript`,
 region `ap-southeast-3`, instance `i-08edccdc966c0985e`). Since v0.1.x+ the backend
-sweeps stale profiles on startup and force-kills hung Chrome on browser recycle, so
-this should no longer accumulate; a size-limited `/tmp` tmpfs mount + a disk >80%
-alarm are the recommended follow-up hardening.
+sweeps stale profiles on startup, force-kills hung Chrome on browser recycle, and
+runs a periodic (30-min) sweep, so this should no longer accumulate.
+
+**Early warning (LIVE):** the `SEKAR-Staging-RootDiskHigh` CloudWatch alarm emails
+`admin@wahyutrip.com` when root disk >80% for ~10 min — you should get this well
+before ENOSPC. A systemd timer (`sekar-disk-metric.timer`) on the box publishes the
+metric every 5 min. Provisioned by `scripts/ops/setup-staging-disk-alarm.sh`; see
+`specs/deployment/monitoring.md` → "Alarm 8". A RAM-backed `/tmp` tmpfs was
+deliberately **not** used (the shared t3.micro is RAM-saturated; it would OOM).
 
 ---
 
@@ -1035,7 +1041,7 @@ docker-compose -f docker-compose.prod.yml restart backend
 
 | Topic | Reference |
 |-------|-----------|
-| **Deployment from scratch** | [`specs/deployment/deployment-guide.md`](./deployment-guide.md) — authoritative start-to-finish guide (self-hosted or AWS) |
+| **Deployment from scratch** | [`specs/deployment/README.md`](./README.md) — authoritative start-to-finish guide (self-hosted or AWS) |
 | **Monitoring & metrics** | [`specs/deployment/monitoring.md`](./monitoring.md) — CloudWatch, dashboards, alarms |
 | **Local development** | [`specs/deployment/local-development.md`](./local-development.md) — Docker infra, MinIO, WSL2 device networking |
 | **AWS infrastructure** | [`specs/deployment/infrastructure.md`](./infrastructure.md) — EC2, RDS, S3, VPC, IAM, networking |

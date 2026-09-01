@@ -9,13 +9,51 @@
 import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { MonitoringSearchModal } from '../MonitoringSearchModal';
-import type { LiveUser, RayonBoundary } from '../../../types/models.types';
+import type { LiveUser } from '../../../types/models.types';
 
 jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => {
   const React = require('react');
   const { Text } = require('react-native');
   return (props: any) => React.createElement(Text, { testID: `icon-${props.name}` }, props.name);
 });
+
+// Geography now comes from a COMPLETE index fetched independently of the map,
+// so the modal's search takes no boundaries prop at all. Mocking the fetch
+// exercises the real path rather than injecting a fake index.
+jest.mock('../../../services/api/monitoringApi', () => ({
+  // The modal's petugas search is HYBRID — server when online, in-store users
+  // when not. Mocking only getBoundaries left searchMonitoring undefined, and
+  // whether its debounce fired before teardown decided pass/fail: green alone,
+  // red in a full run. Mock both halves of what the component actually calls.
+  searchMonitoring: jest.fn(() => Promise.resolve({ data: { users: [] } })),
+  getBoundaries: jest.fn(() =>
+    Promise.resolve({
+      data: {
+        districts: [
+          {
+            id: 'r1',
+            name: 'Rayon Pusat',
+            center_lat: 3,
+            center_lng: 4,
+            area_count: 1,
+            regions: [
+              { id: 'k1', name: 'Kawasan Darmo', center_lat: 7, center_lng: 8 },
+            ],
+            areas: [
+              {
+                id: 'a1',
+                name: 'Taman Bungkul',
+                center_lat: 5,
+                center_lng: 6,
+                district_name: 'Rayon Pusat',
+              },
+            ],
+          },
+        ],
+      },
+    }),
+  ),
+}));
 
 jest.mock('../../../services/storage/recentSearches', () => ({
   getRecentSearches: jest.fn(() => Promise.resolve([])),
@@ -27,17 +65,7 @@ const mockGetRecents = getRecentSearches as jest.MockedFunction<typeof getRecent
 const mockClear = clearRecentSearches as jest.MockedFunction<typeof clearRecentSearches>;
 
 const user = (id: string, name: string): LiveUser =>
-  ({ id, full_name: name, role: 'satgas', area_name: 'Taman A', latitude: 1, longitude: 2 } as unknown as LiveUser);
-const rayons: RayonBoundary[] = [
-  ({
-    id: 'r1',
-    name: 'Rayon Pusat',
-    center_lat: 3,
-    center_lng: 4,
-    area_count: 1,
-    areas: [{ id: 'a1', name: 'Taman Bungkul', center_lat: 5, center_lng: 6, rayon_name: 'Rayon Pusat' }],
-  } as unknown as RayonBoundary),
-];
+  ({ id, full_name: name, role: 'satgas', location_name: 'Taman A', latitude: 1, longitude: 2 } as unknown as LiveUser);
 const liveUsers = [user('u1', 'Budi Santoso')];
 
 function renderModal(overrides?: { onSelect?: jest.Mock }) {
@@ -46,7 +74,6 @@ function renderModal(overrides?: { onSelect?: jest.Mock }) {
       visible
       onClose={jest.fn()}
       liveUsers={liveUsers}
-      rayons={rayons}
       onSelect={overrides?.onSelect ?? jest.fn()}
     />,
   );
@@ -80,8 +107,8 @@ describe('MonitoringSearchModal', () => {
     await waitFor(() => expect(getByText('Mulai Mencari')).toBeTruthy());
 
     fireEvent.changeText(getByTestId('monitoring-search-input'), 'taman');
-    // Area section + the matching area row.
-    expect(getByTestId('search-result-area-a1')).toBeTruthy();
+    // Location section + the matching location row.
+    expect(getByTestId('search-result-location-a1')).toBeTruthy();
     expect(getByText('Taman Bungkul')).toBeTruthy();
   });
 
@@ -93,5 +120,23 @@ describe('MonitoringSearchModal', () => {
     fireEvent.changeText(getByTestId('monitoring-search-input'), 'budi');
     fireEvent.press(getByTestId('search-result-petugas-u1'));
     expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ id: 'u1', type: 'petugas' }));
+  });
+
+  /**
+   * Kawasan (region) is a real drill tier that the search loop originally skipped
+   * entirely — it read districts and their areas and never touched `regions`, so
+   * a whole geographic level was unfindable. It then shipped a second time with
+   * results but no tab, reachable only by scrolling the Semua list. Both halves
+   * are asserted here: the row exists AND the tab that filters to it exists.
+   */
+  it('finds kawasan and exposes a kawasan tab', async () => {
+    const { getByTestId, getByText } = renderModal();
+    await waitFor(() => expect(getByTestId('monitoring-search-input')).toBeTruthy());
+
+    fireEvent.changeText(getByTestId('monitoring-search-input'), 'darmo');
+    expect(getByTestId('search-result-region-k1')).toBeTruthy();
+    expect(getByText('Kawasan Darmo')).toBeTruthy();
+    // The tab, not just the Semua section.
+    expect(getByTestId('search-tab-region')).toBeTruthy();
   });
 });

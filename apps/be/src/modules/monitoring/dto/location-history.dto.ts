@@ -52,10 +52,10 @@ export class LocationHistoryResponseDto {
   shift_name: string | null;
 
   @ApiProperty({ example: 'area-uuid' })
-  area_id: string | null;
+  location_id: string | null;
 
   @ApiProperty({ example: 'Taman Bungkul' })
-  area_name: string | null;
+  location_name: string | null;
 
   @ApiProperty({ example: '2024-01-24T06:00:00Z' })
   clock_in_time: Date | null;

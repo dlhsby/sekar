@@ -1,7 +1,7 @@
 /**
  * Task Create Screen
  * Phase 2C: Create new task with hierarchical assignment validation
- * Access: TASK_CREATORS roles only (korlap, kepala_rayon, top_management, admin_system, superadmin)
+ * Access: TASK_CREATORS roles only (korlap, kepala_rayon, management, admin_system, superadmin)
  */
 
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -31,13 +31,14 @@ import type { TaskPriority, UserRole } from '../../types/models.types';
 import { useTaskCreateForm, useDraftPersistence, useLocationFetching, useAssignableUsersFetching } from './hooks';
 import { TaskDetailSection } from './components/TaskDetailSection';
 import { LocationSection } from './components/LocationSection';
+import { ScopeSection } from './components/ScopeSection';
 import { PrioritySection } from './components/PrioritySection';
 import { DeadlineSection } from './components/DeadlineSection';
 import { AssigneeSection } from './components/AssigneeSection';
 import { TaggedUsersSection } from './components/TaggedUsersSection';
 import { styles } from './styles';
 
-/** Roles where rayon is fixed from user profile */
+/** Roles where district is fixed from user profile */
 const RAYON_FIXED_ROLES: UserRole[] = ['korlap', 'kepala_rayon'];
 
 /** Roles where area is fixed from user profile */
@@ -54,8 +55,8 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
   const scrollViewRef = useRef<ScrollView>(null);
 
   const { form, setForm, errors, validateForm, resetForm, updateField, clearAssigneeAndTagged } = useTaskCreateForm(
-    user?.area_id,
-    user?.rayon_id,
+    user?.location_id,
+    user?.district_id,
   );
 
   const { clearDraft, restoreDraft, formRef, saveDraftRef } = useDraftPersistence(
@@ -65,19 +66,19 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
     },
   );
 
-  const isRayonFixed = role ? RAYON_FIXED_ROLES.includes(role as UserRole) : false;
+  const isDistrictFixed = role ? RAYON_FIXED_ROLES.includes(role as UserRole) : false;
   const isAreaFixed = role ? AREA_FIXED_ROLES.includes(role as UserRole) : false;
 
-  const { isLoadingRayons, isLoadingAreas, rayonOptions, areaOptions } = useLocationFetching(
-    form.rayonId,
-    isRayonFixed,
+  const { isLoadingDistricts, isLoadingAreas, isLoadingRegions, districtOptions, areaOptions, regionOptions } = useLocationFetching(
+    form.districtId,
+    isDistrictFixed,
     isAreaFixed,
   );
 
   const { isLoadingUsers, assignableUsers, prevAreaIdRef } = useAssignableUsersFetching(
     role as UserRole | null,
     form.areaId,
-    form.rayonId,
+    form.districtId,
   );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -98,16 +99,16 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
     // eslint-disable-next-line react-hooks/exhaustive-deps -- prevAreaIdRef is mutated, not dependency tracked
   }, [form.areaId, clearAssigneeAndTagged]);
 
-  // Initialize rayon/area from user profile and check access
+  // Initialize district/area from user profile and check access
   useEffect(() => {
     if (!user || !role) return;
-    if (isRayonFixed && user.rayon_id) {
-      updateField('rayonId', user.rayon_id);
+    if (isDistrictFixed && user.district_id) {
+      updateField('districtId', user.district_id);
     }
-    if (isAreaFixed && user.area_id) {
-      updateField('areaId', user.area_id);
+    if (isAreaFixed && user.location_id) {
+      updateField('areaId', user.location_id);
     }
-  }, [user, role, isRayonFixed, isAreaFixed, updateField]);
+  }, [user, role, isDistrictFixed, isAreaFixed, updateField]);
 
   useEffect(() => {
     if (!canCreateTask) {
@@ -164,20 +165,50 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
       scrollViewRef.current?.scrollTo({ y: 0, animated: true });
       return;
     }
+    // An explicit district/region/location scope needs its matching id (the
+    // backend 400s otherwise) — validate client-side for a localized message.
+    const missingScopeId =
+      (form.scope === 'district' && !form.districtId) ||
+      (form.scope === 'region' && !form.regionId) ||
+      (form.scope === 'location' && !form.areaId);
+    if (missingScopeId) {
+      NBToast.show({
+        level: 'danger',
+        title: t('tasks:create.failureTitle'),
+        body: t('tasks:scope.required'),
+      });
+      return;
+    }
     setIsSubmitting(true);
     try {
       const request: CreateTaskRequest = {
         title: form.title.trim(),
         priority: form.priority as TaskPriority,
         deadline: form.deadline ? form.deadline.toISOString() : undefined,
-        area_id: form.areaId || undefined,
-        rayon_id: form.rayonId || undefined,
         assigned_to: form.assignedTo || undefined,
         tagged_user_ids: form.taggedUserIds.length > 0 ? form.taggedUserIds : undefined,
       };
+
       if (form.description.trim()) {
         request.description = form.description.trim();
       }
+
+      // Scope logic (mirror web): 'auto' sends NO scope/ids so the backend derives
+      // the scope from the assignee's schedule occurrence. Any id sent here would
+      // be treated as an explicit override by the backend (hasExplicitScope) and
+      // suppress that derivation — so Auto must stay id-free.
+      if (form.scope !== 'auto') {
+        request.scope = form.scope as 'city' | 'district' | 'region' | 'location' | 'none';
+        if (form.scope === 'district') {
+          request.district_id = form.districtId || undefined;
+        } else if (form.scope === 'region') {
+          request.region_id = form.regionId || undefined;
+        } else if (form.scope === 'location') {
+          request.location_id = form.areaId || undefined;
+        }
+        // 'city' and 'none' carry no id.
+      }
+
       const response = await createTask(request);
       if (response.data) {
         await clearDraft();
@@ -193,7 +224,7 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
     } finally {
       setIsSubmitting(false);
     }
-  }, [form, validateForm, navigation, clearDraft, resetForm]);
+  }, [form, validateForm, navigation, clearDraft, resetForm, t]);
 
   const handleTaggedUsersChange = useCallback((values: string[]) => {
     setForm((prev) => ({
@@ -203,8 +234,8 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
     }));
   }, [setForm]);
 
-  const handleRayonChange = useCallback((rayonId: string) => {
-    setForm((prev) => ({ ...prev, rayonId, areaId: '' }));
+  const handleDistrictChange = useCallback((districtId: string) => {
+    setForm((prev) => ({ ...prev, districtId, areaId: '' }));
   }, [setForm]);
 
   return (
@@ -249,20 +280,31 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
             onDescriptionChange={(text) => updateField('description', text)}
           />
 
+          <ScopeSection
+            scope={form.scope}
+            onScopeChange={(scope) => updateField('scope', scope as any)}
+            regionId={form.regionId}
+            onRegionChange={(regionId) => updateField('regionId', regionId)}
+            isLoadingRegions={isLoadingRegions}
+            regionOptions={regionOptions}
+            isDistrictFixed={isDistrictFixed}
+            isAreaFixed={isAreaFixed}
+          />
+
           <LocationSection
-            rayonId={form.rayonId}
-            onRayonChange={handleRayonChange}
-            isRayonFixed={isRayonFixed}
-            isLoadingRayons={isLoadingRayons}
-            rayonOptions={rayonOptions}
-            userRayonId={user?.rayon_id}
-            userRayonName={user?.rayon?.name}
+            districtId={form.districtId}
+            onDistrictChange={handleDistrictChange}
+            isDistrictFixed={isDistrictFixed}
+            isLoadingDistricts={isLoadingDistricts}
+            districtOptions={districtOptions}
+            userDistrictId={user?.district_id}
+            userDistrictName={user?.district?.name}
             areaId={form.areaId}
             onAreaChange={(areaId) => updateField('areaId', areaId)}
             isAreaFixed={isAreaFixed}
             isLoadingAreas={isLoadingAreas}
             areaOptions={areaOptions}
-            userAreaId={user?.area_id}
+            userAreaId={user?.location_id}
             userAreaName={user?.area?.name}
           />
 

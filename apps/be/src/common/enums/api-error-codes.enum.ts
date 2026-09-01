@@ -30,6 +30,15 @@ export enum ApiErrorCode {
   SHIFT_PHOTO_UPLOAD_FAILED = 'SHIFT_PHOTO_UPLOAD_FAILED',
   SHIFT_DURATION_TOO_SHORT = 'SHIFT_DURATION_TOO_SHORT',
 
+  // ==================== Location Integrity Errors ====================
+  // Refusals from the shared location-integrity evaluator. Distinct codes on
+  // purpose: the app shows a different remedy for each ("turn off mock
+  // location" vs "wait for a GPS fix"), and a supervisor needs to tell a
+  // spoofing attempt from a device that simply had no signal.
+  GPS_MOCKED = 'GPS_MOCKED',
+  GPS_MISSING_COORDINATES = 'GPS_MISSING_COORDINATES',
+  GPS_IMPOSSIBLE_TRAVEL = 'GPS_IMPOSSIBLE_TRAVEL',
+
   // ==================== Activity Errors (was Report) ====================
   ACTIVITY_SHIFT_REQUIRED = 'ACTIVITY_SHIFT_REQUIRED',
   ACTIVITY_SHIFT_NOT_FOUND = 'ACTIVITY_SHIFT_NOT_FOUND',
@@ -60,13 +69,13 @@ export enum ApiErrorCode {
   // ==================== Task Hierarchy Errors ====================
   /** Role not allowed to assign tasks to target role */
   TASK_HIER_ROLE = 'TASK_HIER_ROLE',
-  /** Kepala rayon can only assign within own rayon */
+  /** Kepala district can only assign within own district */
   TASK_HIER_RAYON_SCOPE = 'TASK_HIER_RAYON_SCOPE',
   /** Korlap can only assign within own area */
   TASK_HIER_AREA_SCOPE = 'TASK_HIER_AREA_SCOPE',
 
   // ==================== Monitoring Errors ====================
-  /** Kepala rayon can only view own rayon monitoring */
+  /** Kepala district can only view own district monitoring */
   MONITOR_RAYON_SCOPE = 'MONITOR_RAYON_SCOPE',
   /** Korlap can only view own area monitoring */
   MONITOR_AREA_SCOPE = 'MONITOR_AREA_SCOPE',
@@ -76,9 +85,15 @@ export enum ApiErrorCode {
   SYNC_STALE_DATA = 'SYNC_STALE_DATA',
   SYNC_PARTIAL_FAILURE = 'SYNC_PARTIAL_FAILURE',
 
-  // ==================== Area Errors ====================
+  // ==================== Location Errors ====================
   AREA_NOT_FOUND = 'AREA_NOT_FOUND',
   AREA_CODE_DUPLICATE = 'AREA_CODE_DUPLICATE',
+  /** District still has active regions/locations/users — deactivate or re-parent them first */
+  RAYON_DEACTIVATE_IN_USE = 'RAYON_DEACTIVATE_IN_USE',
+  /** Region (Kawasan) still has active locations — deactivate or re-parent them first */
+  REGION_DEACTIVATE_IN_USE = 'REGION_DEACTIVATE_IN_USE',
+  /** Capacity written at a tier other than the parent district's `staffing_level` */
+  CAPACITY_WRONG_LEVEL = 'CAPACITY_WRONG_LEVEL',
 
   // ==================== General Errors ====================
   VALIDATION_ERROR = 'VALIDATION_ERROR',

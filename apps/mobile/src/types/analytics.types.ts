@@ -37,7 +37,7 @@ export interface WorkerAnalytics {
  */
 export interface AreaAnalytics {
   id: string;
-  area_name: string;
+  location_name: string;
   date: string;
   attended_workers: number;
   required_workers: number;

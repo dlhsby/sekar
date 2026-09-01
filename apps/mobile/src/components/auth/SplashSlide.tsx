@@ -2,7 +2,7 @@
  * SplashSlide — WL-1, the first frame of the pre-login carousel.
  * Sage→deep-green gradient, tilted pinwheel lockup, wordmark, tagline, and a
  * pulsing "loading" indicator. Auto-advances to WL-2 (timer lives in the
- * carousel screen). Mirrors design/project/hifi-mobile.html · WL-1.
+ * carousel screen). Mirrors specs/design-system/mockups/project/hifi-mobile.html · WL-1.
  */
 
 import React from 'react';

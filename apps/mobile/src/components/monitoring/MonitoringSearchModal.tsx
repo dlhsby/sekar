@@ -1,10 +1,10 @@
 /**
  * MonitoringSearchModal — fullscreen search over the monitoring map's petugas /
- * area / rayon, opened from the map search bar.
+ * location / district, opened from the map search bar.
  *
  * - Autofocused search field (typing happens here, not on the map bar).
  * - Empty query → "Terakhir dilihat" recents list + "Hapus semua".
- * - As you type → results in tabs [Semua, Petugas, Area, Rayon]; the Semua tab
+ * - As you type → results in tabs [Semua, Petugas, Lokasi, Kawasan, Rayon]; the Semua tab
  *   groups results by type. Selecting a result bubbles up via onSelect.
  */
 
@@ -29,15 +29,19 @@ import {
   type SearchResult,
   type SearchResultType,
 } from '../../hooks/useMonitoringSearch';
+import { useServerMonitoringSearch } from '../../hooks/useServerMonitoringSearch';
+import { useGeoIndex } from '../../hooks/useGeoIndex';
 import { getRecentSearches, clearRecentSearches } from '../../services/storage/recentSearches';
-import type { LiveUser, RayonBoundary } from '../../types/models.types';
+import type { LiveUser } from '../../types/models.types';
 
 // ─── Type metadata (icon + accent per entity type) ─────────────────────────────
 
 const TYPE_META: Record<SearchResultType, { icon: string; accent: string }> = {
   petugas: { icon: 'account', accent: nbColors.primary },
-  area: { icon: 'map-marker', accent: nbColors.warning },
-  rayon: { icon: 'office-building', accent: nbColors.requestUnderReview },
+  location: { icon: 'map-marker', accent: nbColors.warning },
+  district: { icon: 'office-building', accent: nbColors.requestUnderReview },
+  // Kawasan sits between rayon and lokasi, and its icon says so.
+  region: { icon: 'shape-outline', accent: nbColors.info },
 };
 
 type Tab = 'semua' | SearchResultType;
@@ -46,7 +50,6 @@ interface MonitoringSearchModalProps {
   visible: boolean;
   onClose: () => void;
   liveUsers: LiveUser[];
-  rayons: RayonBoundary[] | undefined;
   onSelect: (result: SearchResult) => void;
 }
 
@@ -98,7 +101,6 @@ export function MonitoringSearchModal({
   visible,
   onClose,
   liveUsers,
-  rayons,
   onSelect,
 }: MonitoringSearchModalProps): React.JSX.Element {
   const { t } = useTranslation();
@@ -110,12 +112,33 @@ export function MonitoringSearchModal({
     () => ({
       petugas: t('monitoring:layers.workers'),
       area: t('monitoring:layers.areas'),
-      rayon: t('monitoring:layers.rayons'),
+      district: t('monitoring:layers.districts'),
+      region: t('monitoring:layers.kawasan'),
     }),
     [t],
   );
-  const results = useMonitoringSearch(liveUsers, rayons, query, searchLabels);
+  // Hybrid petugas search: server (scope-filtered, incl. off-screen + unscheduled
+  // clock-ins) when online, cached in-store liveUsers when offline.
+  //
+  // Geography comes from a COMPLETE index rather than the map's own boundaries.
+  // Searching what the map has loaded couples "what can I find" to "what am I
+  // looking at", and in viewport mode those actively differ: the bbox fetch
+  // replaces the stored boundaries with only what intersects the camera, so a
+  // lokasi across the city was unfindable. Fetched once, on open.
+  const geo = useGeoIndex(visible);
+  const server = useServerMonitoringSearch(query);
+  const petugasSource = server.users ?? liveUsers;
+  // When petugas come from the server they're already matched (name/lokasi/team) —
+  // skip the client name re-filter so lokasi/team matches aren't dropped.
+  const results = useMonitoringSearch(
+    petugasSource,
+    geo.entries,
+    query,
+    searchLabels,
+    server.users != null,
+  );
   const hasQuery = query.trim().length > 0;
+  const showOfflineNotice = hasQuery && server.isOffline;
 
   // Load recents + reset query/tab whenever the modal opens. Guard the async
   // setState so it can't fire after the modal closes/unmounts.
@@ -138,8 +161,12 @@ export function MonitoringSearchModal({
     () => [
       { key: 'semua', label: t('monitoring:search.all'), count: results.total },
       { key: 'petugas', label: t('monitoring:layers.workers'), count: results.petugas.length },
-      { key: 'area', label: t('monitoring:layers.areas'), count: results.area.length },
-      { key: 'rayon', label: t('monitoring:layers.rayons'), count: results.rayon.length },
+      { key: 'location', label: t('monitoring:layers.areas'), count: results.location.length },
+      // Kawasan needs its own tab, not just a section in "Semua": the tier sits
+      // between lokasi and rayon in the drill hierarchy, and without a tab its
+      // matches are only reachable by scrolling past every petugas and lokasi hit.
+      { key: 'region', label: t('monitoring:layers.kawasan'), count: results.region.length },
+      { key: 'district', label: t('monitoring:layers.districts'), count: results.district.length },
     ],
     [results, t],
   );
@@ -200,11 +227,20 @@ export function MonitoringSearchModal({
 
         {hasQuery ? (
           <>
+            {showOfflineNotice && (
+              <View style={styles.offlineNotice}>
+                <MaterialCommunityIcons name="wifi-off" size={14} color={nbColors.gray600} />
+                <NBText variant="caption" color="gray600" style={styles.offlineNoticeText}>
+                  {t('monitoring:search.offline')}
+                </NBText>
+              </View>
+            )}
             <NBTab
               scrollable
               tabs={tabs}
               activeTab={tab}
               onTabChange={(k) => setTab(k as Tab)}
+              testID="search-tab"
               style={styles.tabs}
             />
             <FlatList
@@ -303,6 +339,20 @@ const styles = StyleSheet.create({
   },
   tabs: {
     marginBottom: nbSpacing.sm,
+  },
+  offlineNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginHorizontal: 16,
+    marginBottom: nbSpacing.xs,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: nbRadius.sm,
+    backgroundColor: nbColors.gray100,
+  },
+  offlineNoticeText: {
+    flex: 1,
   },
   list: {
     flex: 1,

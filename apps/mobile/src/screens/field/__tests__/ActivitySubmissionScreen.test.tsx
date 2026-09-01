@@ -80,6 +80,9 @@ jest.mock('@react-navigation/native', () => ({
     dispatch: jest.fn(),
     setOptions: jest.fn(),
   }),
+  useRoute: () => ({
+    params: undefined,
+  }),
   useFocusEffect: (cb: () => void) => {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const React = require('react');
@@ -170,7 +173,7 @@ describe('ActivitySubmissionScreen', () => {
   it('renders correctly with form fields', async () => {
     const shift = {
       id: '1',
-      area_id: '1',
+      location_id: '1',
       user_id: '1',
       clock_in_time: new Date().toISOString(),
     };
@@ -195,7 +198,7 @@ describe('ActivitySubmissionScreen', () => {
   it('shows offline warning when not online', async () => {
     const shift = {
       id: '1',
-      area_id: '1',
+      location_id: '1',
       user_id: '1',
       clock_in_time: new Date().toISOString(),
     };
@@ -219,7 +222,7 @@ describe('ActivitySubmissionScreen', () => {
   it('shows error banner when activityError exists', async () => {
     const shift = {
       id: '1',
-      area_id: '1',
+      location_id: '1',
       user_id: '1',
       clock_in_time: new Date().toISOString(),
     };
@@ -264,7 +267,7 @@ describe('ActivitySubmissionScreen', () => {
 
     const shift = {
       id: '1',
-      area_id: '1',
+      location_id: '1',
       user_id: '1',
       clock_in_time: new Date().toISOString(),
     };
@@ -286,7 +289,7 @@ describe('ActivitySubmissionScreen', () => {
   it('validates form - shows error when no photos', async () => {
     const shift = {
       id: '1',
-      area_id: '1',
+      location_id: '1',
       user_id: '1',
       clock_in_time: new Date().toISOString(),
     };
@@ -313,7 +316,7 @@ describe('ActivitySubmissionScreen', () => {
   it('validates form - shows error when no description', async () => {
     const shift = {
       id: '1',
-      area_id: '1',
+      location_id: '1',
       user_id: '1',
       clock_in_time: new Date().toISOString(),
     };
@@ -355,7 +358,7 @@ describe('ActivitySubmissionScreen', () => {
   it('validates form - shows error when no activity type', async () => {
     const shift = {
       id: '1',
-      area_id: '1',
+      location_id: '1',
       user_id: '1',
       clock_in_time: new Date().toISOString(),
     };
@@ -406,7 +409,7 @@ describe('ActivitySubmissionScreen', () => {
   it('validates form - shows error when no location', async () => {
     const shift = {
       id: '1',
-      area_id: '1',
+      location_id: '1',
       user_id: '1',
       clock_in_time: new Date().toISOString(),
     };
@@ -454,7 +457,7 @@ describe('ActivitySubmissionScreen', () => {
   it('shows submit button for online mode', async () => {
     const shift = {
       id: '1',
-      area_id: '1',
+      location_id: '1',
       user_id: '1',
       clock_in_time: new Date().toISOString(),
     };
@@ -489,7 +492,7 @@ describe('ActivitySubmissionScreen', () => {
 
     const shift = {
       id: '1',
-      area_id: '1',
+      location_id: '1',
       user_id: '1',
       clock_in_time: new Date().toISOString(),
     };
@@ -521,7 +524,7 @@ describe('ActivitySubmissionScreen', () => {
     // Draft restoration is tested implicitly through the restoreDraft useEffect
     const shift = {
       id: '1',
-      area_id: '1',
+      location_id: '1',
       user_id: '1',
       clock_in_time: new Date().toISOString(),
     };

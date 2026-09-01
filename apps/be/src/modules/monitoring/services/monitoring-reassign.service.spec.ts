@@ -3,7 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { MonitoringReassignService } from './monitoring-reassign.service';
 import { User, UserRole } from '../../users/entities/user.entity';
-import { Area } from '../../areas/entities/area.entity';
+import { Location } from '../../locations/entities/location.entity';
 import { UserTrackingStatus } from '../entities/user-tracking-status.entity';
 import { SchedulesService } from '../../schedules/schedules.service';
 import { ReassignWorkerDto } from '../dto/reassign-worker.dto';
@@ -22,8 +22,8 @@ describe('MonitoringReassignService', () => {
 
   // ── Shared fixture factories ─────────────────────────────────────────────
 
-  const RAYON_A = 'rayon-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
-  const RAYON_B = 'rayon-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+  const DISTRICT_A = 'district-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+  const DISTRICT_B = 'district-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
 
   const AREA_A1_ID = 'area-a1aa-a1aa-a1aa-a1aaa1aaa1aa';
   const AREA_A2_ID = 'area-a2aa-a2aa-a2aa-a2aaa2aaa2aa';
@@ -36,9 +36,9 @@ describe('MonitoringReassignService', () => {
       full_name: 'Satgas Satu',
       role: UserRole.SATGAS,
       is_active: true,
-      area_id: AREA_A1_ID,
-      area: makeArea({ id: AREA_A1_ID, name: 'Taman Bungkul', rayon_id: RAYON_A }),
-      rayon_id: undefined,
+      location_id: AREA_A1_ID,
+      area: makeArea({ id: AREA_A1_ID, name: 'Taman Bungkul', district_id: DISTRICT_A }),
+      district_id: undefined,
       password_hash: 'hashed',
       created_at: new Date(),
       updated_at: new Date(),
@@ -46,22 +46,21 @@ describe('MonitoringReassignService', () => {
     } as User;
   }
 
-  function makeArea(overrides: Partial<Area> = {}): Area {
+  function makeArea(overrides: Partial<Location> = {}): Location {
     return {
       id: AREA_A2_ID,
       name: 'Taman Mundu',
-      rayon_id: RAYON_A,
+      district_id: DISTRICT_A,
       gps_lat: -7.29,
       gps_lng: 112.74,
-      radius_meters: 100,
       is_active: true,
-      area_type_id: 'type-uuid',
-      areaType: {} as any,
+      location_type_id: 'type-uuid',
+      locationType: {} as any,
       address: 'Surabaya',
       created_at: new Date(),
       updated_at: new Date(),
       ...overrides,
-    } as Area;
+    } as Location;
   }
 
   function makeSuperadmin(overrides: Partial<User> = {}): User {
@@ -70,21 +69,21 @@ describe('MonitoringReassignService', () => {
       username: 'superadmin',
       full_name: 'Super Admin',
       role: UserRole.SUPERADMIN,
-      area_id: undefined,
+      location_id: undefined,
       area: undefined,
-      rayon_id: undefined,
+      district_id: undefined,
       ...overrides,
     });
   }
 
-  function makeKepalaRayon(rayonId: string, overrides: Partial<User> = {}): User {
+  function makeKepalaRayon(districtId: string, overrides: Partial<User> = {}): User {
     return makeUser({
       id: 'user-kr00-kr00-kr00-kr00kr00kr00',
       username: 'kepalarayon1',
       full_name: 'Kepala Rayon Satu',
       role: UserRole.KEPALA_RAYON,
-      rayon_id: rayonId,
-      area_id: undefined,
+      district_id: districtId,
+      location_id: undefined,
       area: undefined,
       ...overrides,
     });
@@ -130,7 +129,7 @@ describe('MonitoringReassignService', () => {
       providers: [
         MonitoringReassignService,
         { provide: getRepositoryToken(User), useValue: userRepository },
-        { provide: getRepositoryToken(Area), useValue: areaRepository },
+        { provide: getRepositoryToken(Location), useValue: areaRepository },
         { provide: getRepositoryToken(UserTrackingStatus), useValue: trackingRepository },
         { provide: SchedulesService, useValue: dailySchedulesService },
         { provide: EventsGateway, useValue: eventsGateway },
@@ -147,13 +146,13 @@ describe('MonitoringReassignService', () => {
     // 1. Happy path: successful reassignment
     it('should successfully reassign worker to new area', async () => {
       const worker = makeUser();
-      const targetArea = makeArea({ id: AREA_A2_ID, name: 'Taman Mundu', rayon_id: RAYON_A });
+      const targetArea = makeArea({ id: AREA_A2_ID, name: 'Taman Mundu', district_id: DISTRICT_A });
       const requestingUser = makeSuperadmin();
       const dto = makeDto({ target_area_id: AREA_A2_ID });
 
       userRepository.findOne.mockResolvedValue(worker);
       areaRepository.findOne.mockResolvedValue(targetArea);
-      userRepository.save.mockResolvedValue({ ...worker, area_id: AREA_A2_ID });
+      userRepository.save.mockResolvedValue({ ...worker, location_id: AREA_A2_ID });
       trackingRepository.update.mockResolvedValue({ affected: 1 });
 
       const result = await service.reassign(dto, requestingUser);
@@ -172,9 +171,9 @@ describe('MonitoringReassignService', () => {
       await expect(service.reassign(dto, makeSuperadmin())).rejects.toThrow('non-existent-uuid');
     });
 
-    // 3. Non-reassignable role (top_management)
+    // 3. Non-reassignable role (management)
     it('should throw BadRequestException when worker has non-reassignable role', async () => {
-      const topMgmtWorker = makeUser({ role: UserRole.TOP_MANAGEMENT });
+      const topMgmtWorker = makeUser({ role: UserRole.MANAGEMENT });
       userRepository.findOne.mockResolvedValue(topMgmtWorker);
       areaRepository.findOne.mockResolvedValue(makeArea());
 
@@ -182,7 +181,7 @@ describe('MonitoringReassignService', () => {
         BadRequestException,
       );
       await expect(service.reassign(makeDto(), makeSuperadmin())).rejects.toThrow(
-        UserRole.TOP_MANAGEMENT,
+        UserRole.MANAGEMENT,
       );
     });
 
@@ -209,122 +208,124 @@ describe('MonitoringReassignService', () => {
       await expect(service.reassign(dto, makeSuperadmin())).rejects.toThrow('non-existent-area');
     });
 
-    // 5. kepala_rayon can reassign within own rayon
-    it('should allow kepala_rayon to reassign worker within own rayon', async () => {
-      const kepalaRayon = makeKepalaRayon(RAYON_A);
-      // Worker is already in RAYON_A (area A1)
+    // 5. kepala_rayon can reassign within own district
+    it('should allow kepala_rayon to reassign worker within own district', async () => {
+      const kepalaDistrict = makeKepalaRayon(DISTRICT_A);
+      // Worker is already in DISTRICT_A (area A1)
       const worker = makeUser({
-        area: makeArea({ id: AREA_A1_ID, name: 'Taman Bungkul', rayon_id: RAYON_A }),
-        area_id: AREA_A1_ID,
+        area: makeArea({ id: AREA_A1_ID, name: 'Taman Bungkul', district_id: DISTRICT_A }),
+        location_id: AREA_A1_ID,
       });
-      // Target area also in RAYON_A
-      const targetArea = makeArea({ id: AREA_A2_ID, name: 'Taman Mundu', rayon_id: RAYON_A });
+      // Target area also in DISTRICT_A
+      const targetArea = makeArea({ id: AREA_A2_ID, name: 'Taman Mundu', district_id: DISTRICT_A });
       const dto = makeDto({ target_area_id: AREA_A2_ID });
 
       userRepository.findOne.mockResolvedValue(worker);
       areaRepository.findOne.mockResolvedValue(targetArea);
-      userRepository.save.mockResolvedValue({ ...worker, area_id: AREA_A2_ID });
+      userRepository.save.mockResolvedValue({ ...worker, location_id: AREA_A2_ID });
       trackingRepository.update.mockResolvedValue({ affected: 1 });
 
-      await expect(service.reassign(dto, kepalaRayon)).resolves.not.toThrow();
+      await expect(service.reassign(dto, kepalaDistrict)).resolves.not.toThrow();
     });
 
-    // 6. kepala_rayon forbidden: worker is in a different rayon
-    it('should throw ForbiddenException when kepala_rayon tries to reassign worker from different rayon', async () => {
-      const kepalaRayon = makeKepalaRayon(RAYON_A);
-      // Worker belongs to RAYON_B
+    // 6. kepala_rayon forbidden: worker is in a different district
+    it('should throw ForbiddenException when kepala_rayon tries to reassign worker from different district', async () => {
+      const kepalaDistrict = makeKepalaRayon(DISTRICT_A);
+      // Worker belongs to DISTRICT_B
       const worker = makeUser({
-        area: makeArea({ id: AREA_B1_ID, name: 'Taman Rayon B', rayon_id: RAYON_B }),
-        area_id: AREA_B1_ID,
+        area: makeArea({ id: AREA_B1_ID, name: 'Taman District B', district_id: DISTRICT_B }),
+        location_id: AREA_B1_ID,
       });
-      // Target area is in RAYON_A (same as kepala_rayon)
-      const targetArea = makeArea({ id: AREA_A2_ID, name: 'Taman Mundu', rayon_id: RAYON_A });
+      // Target area is in DISTRICT_A (same as kepala_rayon)
+      const targetArea = makeArea({ id: AREA_A2_ID, name: 'Taman Mundu', district_id: DISTRICT_A });
       const dto = makeDto({ target_area_id: AREA_A2_ID });
 
       userRepository.findOne.mockResolvedValue(worker);
       areaRepository.findOne.mockResolvedValue(targetArea);
 
-      await expect(service.reassign(dto, kepalaRayon)).rejects.toThrow(ForbiddenException);
-      await expect(service.reassign(dto, kepalaRayon)).rejects.toThrow('within your own rayon');
+      await expect(service.reassign(dto, kepalaDistrict)).rejects.toThrow(ForbiddenException);
+      await expect(service.reassign(dto, kepalaDistrict)).rejects.toThrow(
+        'within your own district',
+      );
     });
 
-    // 7. kepala_rayon forbidden: target area in different rayon
-    it('should throw ForbiddenException when kepala_rayon tries to reassign to area in different rayon', async () => {
-      const kepalaRayon = makeKepalaRayon(RAYON_A);
-      // Worker is in RAYON_A
+    // 7. kepala_rayon forbidden: target area in different district
+    it('should throw ForbiddenException when kepala_rayon tries to reassign to area in different district', async () => {
+      const kepalaDistrict = makeKepalaRayon(DISTRICT_A);
+      // Worker is in DISTRICT_A
       const worker = makeUser({
-        area: makeArea({ id: AREA_A1_ID, name: 'Taman Bungkul', rayon_id: RAYON_A }),
-        area_id: AREA_A1_ID,
+        area: makeArea({ id: AREA_A1_ID, name: 'Taman Bungkul', district_id: DISTRICT_A }),
+        location_id: AREA_A1_ID,
       });
-      // Target area is in RAYON_B — cross-rayon move, forbidden
-      const targetAreaInRayonB = makeArea({
+      // Target area is in DISTRICT_B — cross-district move, forbidden
+      const targetAreaInDistrictB = makeArea({
         id: AREA_B1_ID,
-        name: 'Taman Rayon B',
-        rayon_id: RAYON_B,
+        name: 'Taman District B',
+        district_id: DISTRICT_B,
       });
       const dto = makeDto({ target_area_id: AREA_B1_ID });
 
       userRepository.findOne.mockResolvedValue(worker);
-      areaRepository.findOne.mockResolvedValue(targetAreaInRayonB);
+      areaRepository.findOne.mockResolvedValue(targetAreaInDistrictB);
 
-      await expect(service.reassign(dto, kepalaRayon)).rejects.toThrow(ForbiddenException);
+      await expect(service.reassign(dto, kepalaDistrict)).rejects.toThrow(ForbiddenException);
     });
 
-    // 8. superadmin can reassign across rayons
-    it('should allow superadmin to reassign worker across rayons', async () => {
+    // 8. superadmin can reassign across districts
+    it('should allow superadmin to reassign worker across districts', async () => {
       const superadmin = makeSuperadmin();
-      // Worker is in RAYON_A
+      // Worker is in DISTRICT_A
       const worker = makeUser({
-        area: makeArea({ id: AREA_A1_ID, name: 'Taman Bungkul', rayon_id: RAYON_A }),
-        area_id: AREA_A1_ID,
+        area: makeArea({ id: AREA_A1_ID, name: 'Taman Bungkul', district_id: DISTRICT_A }),
+        location_id: AREA_A1_ID,
       });
-      // Target area is in RAYON_B — cross-rayon, allowed for superadmin
-      const targetAreaInRayonB = makeArea({
+      // Target area is in DISTRICT_B — cross-district, allowed for superadmin
+      const targetAreaInDistrictB = makeArea({
         id: AREA_B1_ID,
-        name: 'Taman Rayon B',
-        rayon_id: RAYON_B,
+        name: 'Taman District B',
+        district_id: DISTRICT_B,
       });
       const dto = makeDto({ target_area_id: AREA_B1_ID });
 
       userRepository.findOne.mockResolvedValue(worker);
-      areaRepository.findOne.mockResolvedValue(targetAreaInRayonB);
-      userRepository.save.mockResolvedValue({ ...worker, area_id: AREA_B1_ID });
+      areaRepository.findOne.mockResolvedValue(targetAreaInDistrictB);
+      userRepository.save.mockResolvedValue({ ...worker, location_id: AREA_B1_ID });
       trackingRepository.update.mockResolvedValue({ affected: 1 });
 
       await expect(service.reassign(dto, superadmin)).resolves.not.toThrow();
     });
 
-    // 9. Updates user_tracking_status area_id
-    it('should update user_tracking_status area_id to the target area', async () => {
+    // 9. Updates user_tracking_status location_id
+    it('should update user_tracking_status location_id to the target area', async () => {
       const worker = makeUser();
-      const targetArea = makeArea({ id: AREA_A2_ID, rayon_id: RAYON_A });
+      const targetArea = makeArea({ id: AREA_A2_ID, district_id: DISTRICT_A });
       const dto = makeDto({ target_area_id: AREA_A2_ID });
 
       userRepository.findOne.mockResolvedValue(worker);
       areaRepository.findOne.mockResolvedValue(targetArea);
-      userRepository.save.mockResolvedValue({ ...worker, area_id: AREA_A2_ID });
+      userRepository.save.mockResolvedValue({ ...worker, location_id: AREA_A2_ID });
       trackingRepository.update.mockResolvedValue({ affected: 1 });
 
       await service.reassign(dto, makeSuperadmin());
 
       expect(trackingRepository.update).toHaveBeenCalledWith(
         { user_id: worker.id },
-        { area_id: AREA_A2_ID },
+        { location_id: AREA_A2_ID },
       );
     });
 
     // 10. Emits USER_REASSIGNED WebSocket event
     it('should emit USER_REASSIGNED WebSocket event with correct payload', async () => {
       const worker = makeUser({
-        area: makeArea({ id: AREA_A1_ID, name: 'Taman Bungkul', rayon_id: RAYON_A }),
-        area_id: AREA_A1_ID,
+        area: makeArea({ id: AREA_A1_ID, name: 'Taman Bungkul', district_id: DISTRICT_A }),
+        location_id: AREA_A1_ID,
       });
-      const targetArea = makeArea({ id: AREA_A2_ID, name: 'Taman Mundu', rayon_id: RAYON_A });
+      const targetArea = makeArea({ id: AREA_A2_ID, name: 'Taman Mundu', district_id: DISTRICT_A });
       const dto = makeDto({ target_area_id: AREA_A2_ID });
 
       userRepository.findOne.mockResolvedValue(worker);
       areaRepository.findOne.mockResolvedValue(targetArea);
-      userRepository.save.mockResolvedValue({ ...worker, area_id: AREA_A2_ID });
+      userRepository.save.mockResolvedValue({ ...worker, location_id: AREA_A2_ID });
       trackingRepository.update.mockResolvedValue({ affected: 1 });
 
       await service.reassign(dto, makeSuperadmin());
@@ -339,7 +340,7 @@ describe('MonitoringReassignService', () => {
           previous_area_name: 'Taman Bungkul',
           new_area_id: AREA_A2_ID,
           new_area_name: 'Taman Mundu',
-          rayon_id: RAYON_A,
+          district_id: DISTRICT_A,
         }),
       );
     });
@@ -347,15 +348,15 @@ describe('MonitoringReassignService', () => {
     // 11. Returns correct response DTO shape
     it('should return a response DTO with all required fields populated', async () => {
       const worker = makeUser({
-        area: makeArea({ id: AREA_A1_ID, name: 'Taman Bungkul', rayon_id: RAYON_A }),
-        area_id: AREA_A1_ID,
+        area: makeArea({ id: AREA_A1_ID, name: 'Taman Bungkul', district_id: DISTRICT_A }),
+        location_id: AREA_A1_ID,
       });
-      const targetArea = makeArea({ id: AREA_A2_ID, name: 'Taman Mundu', rayon_id: RAYON_A });
+      const targetArea = makeArea({ id: AREA_A2_ID, name: 'Taman Mundu', district_id: DISTRICT_A });
       const dto = makeDto({ target_area_id: AREA_A2_ID });
 
       userRepository.findOne.mockResolvedValue(worker);
       areaRepository.findOne.mockResolvedValue(targetArea);
-      userRepository.save.mockResolvedValue({ ...worker, area_id: AREA_A2_ID });
+      userRepository.save.mockResolvedValue({ ...worker, location_id: AREA_A2_ID });
       trackingRepository.update.mockResolvedValue({ affected: 1 });
 
       const result = await service.reassign(dto, makeSuperadmin());
@@ -374,16 +375,16 @@ describe('MonitoringReassignService', () => {
       expect(result.reassigned_at.getTime()).toBeCloseTo(Date.now(), -3);
     });
 
-    // 12. Worker with no current area (null area_id)
+    // 12. Worker with no current area (null location_id)
     it('should handle worker with no current area and set previous_area fields to null', async () => {
       // Worker has never been assigned to an area
-      const workerWithNoArea = makeUser({ area_id: undefined, area: undefined });
-      const targetArea = makeArea({ id: AREA_A2_ID, name: 'Taman Mundu', rayon_id: RAYON_A });
+      const workerWithNoArea = makeUser({ location_id: undefined, area: undefined });
+      const targetArea = makeArea({ id: AREA_A2_ID, name: 'Taman Mundu', district_id: DISTRICT_A });
       const dto = makeDto({ target_area_id: AREA_A2_ID });
 
       userRepository.findOne.mockResolvedValue(workerWithNoArea);
       areaRepository.findOne.mockResolvedValue(targetArea);
-      userRepository.save.mockResolvedValue({ ...workerWithNoArea, area_id: AREA_A2_ID });
+      userRepository.save.mockResolvedValue({ ...workerWithNoArea, location_id: AREA_A2_ID });
       trackingRepository.update.mockResolvedValue({ affected: 1 });
 
       const result = await service.reassign(dto, makeSuperadmin());
@@ -395,13 +396,13 @@ describe('MonitoringReassignService', () => {
 
     // 12b. Worker with null area: WebSocket event also carries null previous fields
     it('should emit USER_REASSIGNED with null previous_area fields when worker had no area', async () => {
-      const workerWithNoArea = makeUser({ area_id: undefined, area: undefined });
-      const targetArea = makeArea({ id: AREA_A2_ID, name: 'Taman Mundu', rayon_id: RAYON_A });
+      const workerWithNoArea = makeUser({ location_id: undefined, area: undefined });
+      const targetArea = makeArea({ id: AREA_A2_ID, name: 'Taman Mundu', district_id: DISTRICT_A });
       const dto = makeDto({ target_area_id: AREA_A2_ID });
 
       userRepository.findOne.mockResolvedValue(workerWithNoArea);
       areaRepository.findOne.mockResolvedValue(targetArea);
-      userRepository.save.mockResolvedValue({ ...workerWithNoArea, area_id: AREA_A2_ID });
+      userRepository.save.mockResolvedValue({ ...workerWithNoArea, location_id: AREA_A2_ID });
       trackingRepository.update.mockResolvedValue({ affected: 1 });
 
       await service.reassign(dto, makeSuperadmin());
@@ -443,30 +444,30 @@ describe('MonitoringReassignService', () => {
 
       userRepository.findOne.mockResolvedValue(linmasWorker);
       areaRepository.findOne.mockResolvedValue(targetArea);
-      userRepository.save.mockResolvedValue({ ...linmasWorker, area_id: AREA_A2_ID });
+      userRepository.save.mockResolvedValue({ ...linmasWorker, location_id: AREA_A2_ID });
       trackingRepository.update.mockResolvedValue({ affected: 1 });
 
       await expect(service.reassign(dto, makeSuperadmin())).resolves.not.toThrow();
     });
 
-    // kepala_rayon: worker with null area (workerRayonId becomes null), should be forbidden
-    it('should throw ForbiddenException when kepala_rayon reassigns worker with null area from different rayon context', async () => {
-      const kepalaRayon = makeKepalaRayon(RAYON_A);
-      // Worker has no area so rayon_id is null — null !== RAYON_A
-      const workerWithNoArea = makeUser({ area_id: undefined, area: undefined });
-      const targetArea = makeArea({ id: AREA_A2_ID, rayon_id: RAYON_A });
+    // kepala_rayon: worker with null area (workerDistrictId becomes null), should be forbidden
+    it('should throw ForbiddenException when kepala_rayon reassigns worker with null area from different district context', async () => {
+      const kepalaDistrict = makeKepalaRayon(DISTRICT_A);
+      // Worker has no area so district_id is null — null !== DISTRICT_A
+      const workerWithNoArea = makeUser({ location_id: undefined, area: undefined });
+      const targetArea = makeArea({ id: AREA_A2_ID, district_id: DISTRICT_A });
       const dto = makeDto({ target_area_id: AREA_A2_ID });
 
       userRepository.findOne.mockResolvedValue(workerWithNoArea);
       areaRepository.findOne.mockResolvedValue(targetArea);
 
-      await expect(service.reassign(dto, kepalaRayon)).rejects.toThrow(ForbiddenException);
+      await expect(service.reassign(dto, kepalaDistrict)).rejects.toThrow(ForbiddenException);
     });
 
     // Override today's roster with the target area + shift
     it("should override today's roster with the target area and shift", async () => {
       const worker = makeUser();
-      const targetArea = makeArea({ id: AREA_A2_ID, rayon_id: RAYON_A });
+      const targetArea = makeArea({ id: AREA_A2_ID, district_id: DISTRICT_A });
       const dto = makeDto({
         target_area_id: AREA_A2_ID,
         shift_definition_id: 'shift-def-uuid',
@@ -476,7 +477,7 @@ describe('MonitoringReassignService', () => {
 
       userRepository.findOne.mockResolvedValue(worker);
       areaRepository.findOne.mockResolvedValue(targetArea);
-      userRepository.save.mockResolvedValue({ ...worker, area_id: AREA_A2_ID });
+      userRepository.save.mockResolvedValue({ ...worker, location_id: AREA_A2_ID });
       trackingRepository.update.mockResolvedValue({ affected: 1 });
 
       const result = await service.reassign(dto, superadmin);
@@ -484,7 +485,7 @@ describe('MonitoringReassignService', () => {
       expect(dailySchedulesService.overrideForDay).toHaveBeenCalledWith(
         worker.id,
         '2026-03-07',
-        { areaId: AREA_A2_ID, rayonId: RAYON_A, shiftDefinitionId: 'shift-def-uuid' },
+        { locationId: AREA_A2_ID, districtId: DISTRICT_A, shiftDefinitionId: 'shift-def-uuid' },
         superadmin.id,
       );
       expect(result.new_schedule_id).toBe('roster-row-uuid');
@@ -494,12 +495,12 @@ describe('MonitoringReassignService', () => {
     // Effective date defaults to today when not provided
     it('should default effective_date to today when not provided', async () => {
       const worker = makeUser();
-      const targetArea = makeArea({ id: AREA_A2_ID, rayon_id: RAYON_A });
+      const targetArea = makeArea({ id: AREA_A2_ID, district_id: DISTRICT_A });
       const dto = makeDto({ target_area_id: AREA_A2_ID });
 
       userRepository.findOne.mockResolvedValue(worker);
       areaRepository.findOne.mockResolvedValue(targetArea);
-      userRepository.save.mockResolvedValue({ ...worker, area_id: AREA_A2_ID });
+      userRepository.save.mockResolvedValue({ ...worker, location_id: AREA_A2_ID });
       trackingRepository.update.mockResolvedValue({ affected: 1 });
 
       const result = await service.reassign(dto, makeSuperadmin());
@@ -513,10 +514,10 @@ describe('MonitoringReassignService', () => {
 
     it('should write an audit log entry with old/new area, actor and metadata on success', async () => {
       const worker = makeUser({
-        area: makeArea({ id: AREA_A1_ID, name: 'Taman Bungkul', rayon_id: RAYON_A }),
-        area_id: AREA_A1_ID,
+        area: makeArea({ id: AREA_A1_ID, name: 'Taman Bungkul', district_id: DISTRICT_A }),
+        location_id: AREA_A1_ID,
       });
-      const targetArea = makeArea({ id: AREA_A2_ID, name: 'Taman Mundu', rayon_id: RAYON_A });
+      const targetArea = makeArea({ id: AREA_A2_ID, name: 'Taman Mundu', district_id: DISTRICT_A });
       const superadmin = makeSuperadmin();
       const dto = makeDto({
         target_area_id: AREA_A2_ID,
@@ -526,7 +527,7 @@ describe('MonitoringReassignService', () => {
 
       userRepository.findOne.mockResolvedValue(worker);
       areaRepository.findOne.mockResolvedValue(targetArea);
-      userRepository.save.mockResolvedValue({ ...worker, area_id: AREA_A2_ID });
+      userRepository.save.mockResolvedValue({ ...worker, location_id: AREA_A2_ID });
       trackingRepository.update.mockResolvedValue({ affected: 1 });
 
       await service.reassign(dto, superadmin);
@@ -537,8 +538,8 @@ describe('MonitoringReassignService', () => {
         entity_id: worker.id,
         action: 'reassign',
         actor_id: superadmin.id,
-        old_value: { area_id: AREA_A1_ID, area_name: 'Taman Bungkul' },
-        new_value: { area_id: AREA_A2_ID, area_name: 'Taman Mundu' },
+        old_value: { location_id: AREA_A1_ID, location_name: 'Taman Bungkul' },
+        new_value: { location_id: AREA_A2_ID, location_name: 'Taman Mundu' },
         metadata: {
           reason: 'Understaffed at target area',
           effective_date: '2026-06-10',
@@ -549,12 +550,12 @@ describe('MonitoringReassignService', () => {
 
     it('should not fail the reassignment when audit logging rejects', async () => {
       const worker = makeUser();
-      const targetArea = makeArea({ id: AREA_A2_ID, rayon_id: RAYON_A });
+      const targetArea = makeArea({ id: AREA_A2_ID, district_id: DISTRICT_A });
       const dto = makeDto({ target_area_id: AREA_A2_ID });
 
       userRepository.findOne.mockResolvedValue(worker);
       areaRepository.findOne.mockResolvedValue(targetArea);
-      userRepository.save.mockResolvedValue({ ...worker, area_id: AREA_A2_ID });
+      userRepository.save.mockResolvedValue({ ...worker, location_id: AREA_A2_ID });
       trackingRepository.update.mockResolvedValue({ affected: 1 });
       auditLogService.log.mockRejectedValue(new Error('db down'));
 
@@ -575,12 +576,12 @@ describe('MonitoringReassignService', () => {
     // Roster override carries no shift when shift_definition_id is omitted
     it('should override the roster with no shift when shift_definition_id is not provided', async () => {
       const worker = makeUser();
-      const targetArea = makeArea({ id: AREA_A2_ID, rayon_id: RAYON_A });
+      const targetArea = makeArea({ id: AREA_A2_ID, district_id: DISTRICT_A });
       const dto = makeDto({ target_area_id: AREA_A2_ID });
 
       userRepository.findOne.mockResolvedValue(worker);
       areaRepository.findOne.mockResolvedValue(targetArea);
-      userRepository.save.mockResolvedValue({ ...worker, area_id: AREA_A2_ID });
+      userRepository.save.mockResolvedValue({ ...worker, location_id: AREA_A2_ID });
       trackingRepository.update.mockResolvedValue({ affected: 1 });
 
       const result = await service.reassign(dto, makeSuperadmin());
@@ -588,7 +589,7 @@ describe('MonitoringReassignService', () => {
       expect(dailySchedulesService.overrideForDay).toHaveBeenCalledWith(
         worker.id,
         expect.any(String),
-        expect.objectContaining({ areaId: AREA_A2_ID, shiftDefinitionId: undefined }),
+        expect.objectContaining({ locationId: AREA_A2_ID, shiftDefinitionId: undefined }),
         expect.any(String),
       );
       expect(result.new_schedule_id).toBe('roster-row-uuid');

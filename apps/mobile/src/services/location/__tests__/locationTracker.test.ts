@@ -15,6 +15,16 @@ import { Alert } from 'react-native';
 
 // Mock dependencies
 jest.mock('react-native-geolocation-service');
+// Thinning off for this suite. These specs drive the SAME fixture coordinates
+// repeatedly to exercise buffering and upload mechanics; with the 25 m filter
+// live those pings are correctly discarded as "still here" and the buffer never
+// grows, which would make them assert the thinning rather than what they are
+// about. Thinning has its own coverage: pingThinning.test.ts for the rule, and
+// the dedicated tracker spec below for the integration.
+jest.mock('../../../constants/config', () => {
+  const actual = jest.requireActual('../../../constants/config');
+  return { __esModule: true, ...actual, default: { ...actual.default, LOCATION_DISTANCE_FILTER: 0 } };
+});
 jest.mock('react-native-device-info');
 jest.mock('../../api/locationApi');
 jest.mock('../../sync/offlineQueue');
@@ -167,6 +177,60 @@ describe('LocationTracker', () => {
     });
   });
 
+  describe('upload against a dead session', () => {
+    /**
+     * `initialize` fires an immediate first-ping upload whose promise settles
+     * after the setup returns, so the response has to be in place BEFORE
+     * initialize and the spies cleared only once it has drained - otherwise
+     * the startup call is attributed to the assertion.
+     *
+     * The capture itself then goes through `captureNow({ upload: true })`,
+     * which is awaited end to end. Driving it with timers instead leaves the
+     * GPS read in flight when the assertion runs, and "addToQueue was not
+     * called" passes for the wrong reason.
+     */
+    const startTrackingWith = async (response: Record<string, unknown>) => {
+      (Geolocation.getCurrentPosition as jest.Mock).mockImplementation((success) => {
+        success(mockLocation);
+      });
+      (locationApi.uploadLocationBatch as jest.Mock).mockResolvedValue(response);
+      locationTracker.on('error', jest.fn());
+      await locationTracker.initialize(mockShiftId);
+      await Promise.resolve();
+      await Promise.resolve();
+      (offlineQueue.addToQueue as jest.Mock).mockClear();
+      (locationApi.uploadLocationBatch as jest.Mock).mockClear();
+    };
+
+    it('holds the buffer instead of queueing when the session is invalid', async () => {
+      // A 401 is not a transient upload failure. `apiClient` has already
+      // cleared the credentials and announced the expiry, so the sign-out is
+      // in flight; queueing here writes pings that cannot be attributed yet.
+      // They stay in the PERSISTED buffer and go up under the next session.
+      await startTrackingWith({
+        error: 'Sesi tidak valid. Silakan masuk kembali.',
+        code: 'AUTH_TOKEN_INVALID',
+      });
+
+      await locationTracker.captureNow({ upload: true });
+
+      expect(locationApi.uploadLocationBatch).toHaveBeenCalled();
+      expect(offlineQueue.addToQueue).not.toHaveBeenCalled();
+    });
+
+    it('still queues on an ordinary transport failure', async () => {
+      // The contrast that makes the case above meaningful: a network blip must
+      // keep behaving exactly as before, or the fix would have traded one data
+      // loss for another.
+      await startTrackingWith({ error: 'Network Error', code: 'NETWORK_ERROR' });
+
+      await locationTracker.captureNow({ upload: true });
+
+      expect(locationApi.uploadLocationBatch).toHaveBeenCalled();
+      expect(offlineQueue.addToQueue).toHaveBeenCalled();
+    });
+  });
+
   describe('stop', () => {
     beforeEach(async () => {
       (Geolocation.getCurrentPosition as jest.Mock).mockImplementation((success) => {
@@ -284,6 +348,33 @@ describe('LocationTracker', () => {
       expect(locationTracker.getBufferCount()).toBe(0);
     });
 
+    it('captureNow({upload}) uploads the fix it just captured, not an empty buffer', async () => {
+      // The bug this covers: callers fired captureNow() and forceUpload() on
+      // consecutive lines. The upload ran while the GPS read was still in
+      // flight, found an empty buffer, and returned — so pressing Refresh put
+      // nothing on the supervisor's map.
+      (locationApi.uploadLocationBatch as jest.Mock).mockClear();
+
+      await locationTracker.captureNow({ upload: true });
+      await Promise.resolve();
+
+      expect(locationApi.uploadLocationBatch).toHaveBeenCalled();
+      // `convertPingsToLocations` is mocked in this suite, so assert on the
+      // shift it uploaded FOR and on the buffer draining — both are false when
+      // the upload races an empty buffer.
+      expect((locationApi.uploadLocationBatch as jest.Mock).mock.calls[0][0]).toBe(mockShiftId);
+      expect(locationTracker.getBufferCount()).toBe(0);
+    });
+
+    it('captureNow() without upload still only buffers', async () => {
+      // The background loop must keep batching; only an explicit refresh forces
+      // a send.
+      (locationApi.uploadLocationBatch as jest.Mock).mockClear();
+      await locationTracker.captureNow();
+      await Promise.resolve();
+      expect(locationApi.uploadLocationBatch).not.toHaveBeenCalled();
+    });
+
     it('should capture location at random interval between 5-10 minutes', async () => {
       const initialCalls = (Geolocation.getCurrentPosition as jest.Mock).mock.calls.length;
 
@@ -295,10 +386,42 @@ describe('LocationTracker', () => {
       expect((Geolocation.getCurrentPosition as jest.Mock).mock.calls.length).toBeGreaterThan(initialCalls);
     });
 
+    it('flags a mocked ping instead of dropping it', async () => {
+      // Dropping the ping would be indistinguishable from the worker being
+      // offline, hiding exactly the cheating this is meant to surface. The
+      // server decides what to do; the tracker's job is to report honestly.
+      const listener = jest.fn();
+      locationTracker.on('locationUpdate', listener);
+      (Geolocation.getCurrentPosition as jest.Mock).mockImplementation((success) => {
+        success({ ...mockLocation, mocked: true });
+      });
+
+      await jest.advanceTimersByTimeAsync(61 * 1000);
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(listener).toHaveBeenCalledWith(expect.objectContaining({ mocked: true }));
+    });
+
+    it('marks an ordinary ping as not mocked', async () => {
+      const listener = jest.fn();
+      locationTracker.on('locationUpdate', listener);
+
+      await jest.advanceTimersByTimeAsync(61 * 1000);
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(listener).toHaveBeenCalledWith(expect.objectContaining({ mocked: false }));
+    });
+
     it('should add location to buffer on capture', async () => {
       // First ping is uploaded immediately (buffer cleared); advance time to
       // trigger a second ping, which is buffered until batch size is reached.
       await jest.advanceTimersByTimeAsync(61 * 1000);
+      // Capture resolves through readPosition's promise, so the buffer write
+      // lands a microtask after the timer callback rather than inside it.
+      await Promise.resolve();
+      await Promise.resolve();
       expect(locationTracker.getBufferCount()).toBeGreaterThan(0);
     });
 

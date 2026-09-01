@@ -26,10 +26,10 @@ const createUser = (overrides?: Partial<LiveUser>): LiveUser => ({
   role: 'satgas',
   phone: '08123456789',
   status: 'active',
-  area_id: 'area-1',
-  area_name: 'Taman Bungkul',
-  rayon_id: 'rayon-1',
-  rayon_name: 'Rayon 1',
+  location_id: 'area-1',
+  location_name: 'Taman Bungkul',
+  district_id: 'district-1',
+  district_name: 'Rayon 1',
   latitude: -7.25,
   longitude: 112.76,
   accuracy: 8,
@@ -57,15 +57,15 @@ describe('WorkerTile', () => {
 
   it('renders the activity pill label for the status', () => {
     const { getByText } = render(
-      <WorkerTile user={createUser({ status: 'inactive' })} onPress={jest.fn()} />,
+      <WorkerTile user={createUser({ status: 'absent' })} onPress={jest.fn()} />,
     );
-    expect(getByText('Tidak aktif')).toBeTruthy();
+    expect(getByText('Tidak Hadir')).toBeTruthy();
   });
 
   it('shows the "Luar area" chip for an outside worker (CP6)', () => {
-    // outside_area = fresh fix outside → activity "Aktif" + a "Luar area" chip.
+    // active + outside area = fresh fix outside → activity "Aktif" + a "Luar area" chip.
     const { getByText } = render(
-      <WorkerTile user={createUser({ status: 'outside_area' })} onPress={jest.fn()} />,
+      <WorkerTile user={createUser({ status: 'active', is_within_area: false })} onPress={jest.fn()} />,
     );
     expect(getByText('Aktif')).toBeTruthy();
     expect(getByText('Luar area')).toBeTruthy();

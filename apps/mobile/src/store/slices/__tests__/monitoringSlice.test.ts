@@ -7,8 +7,9 @@
 import monitoringReducer, {
   setLiveUsers,
   updateLiveUser,
+  removeLiveUser,
   setCityStats,
-  setRayonStats,
+  setDistrictStats,
   setAreaStats,
   setMonitoringFilters,
   resetMonitoringFilters,
@@ -61,10 +62,10 @@ const mockLiveUser: LiveUser = {
   role: 'satgas',
   phone: '08123456789',
   status: 'active',
-  area_id: 'area-123',
-  area_name: 'Taman A',
-  rayon_id: 'rayon-1',
-  rayon_name: 'Rayon 1',
+  location_id: 'area-123',
+  location_name: 'Taman A',
+  district_id: 'district-1',
+  district_name: 'Rayon 1',
   latitude: -7.250445,
   longitude: 112.768845,
   accuracy: 10,
@@ -80,34 +81,34 @@ const mockLiveUser: LiveUser = {
   current_task_title: null,
 };
 
-const mockLiveUserInactive: LiveUser = {
+const mockLiveUserOffline: LiveUser = {
   ...mockLiveUser,
   id: 'user-456',
   full_name: 'Budi Linmas',
   role: 'linmas',
-  status: 'inactive',
+  status: 'offline',
 };
 
-const mockLiveUserOutsideArea: LiveUser = {
+const mockLiveUserOutsideAreaActive: LiveUser = {
   ...mockLiveUser,
   id: 'user-789',
   full_name: 'Citra Korlap',
   role: 'korlap',
-  status: 'outside_area',
+  status: 'active',
   is_within_area: false,
 };
 
-const mockLiveUserMissing: LiveUser = {
+const mockLiveUserAbsent: LiveUser = {
   ...mockLiveUser,
-  id: 'user-missing',
+  id: 'user-absent',
   full_name: 'Dodi Satgas',
   role: 'satgas',
-  status: 'missing',
+  status: 'absent',
 };
 
-const mockLiveUserOffline: LiveUser = {
+const mockLiveUserOffline2: LiveUser = {
   ...mockLiveUser,
-  id: 'user-offline',
+  id: 'user-offline-2',
   full_name: 'Eko Satgas',
   role: 'satgas',
   status: 'offline',
@@ -120,10 +121,10 @@ const mockUserDaySummary: UserDaySummary = {
   role: 'satgas',
   phone: '08123456789',
   status: 'active',
-  area_id: 'area-123',
-  area_name: 'Taman A',
-  rayon_id: 'rayon-1',
-  rayon_name: 'Rayon 1',
+  location_id: 'area-123',
+  location_name: 'Taman A',
+  district_id: 'district-1',
+  district_name: 'Rayon 1',
   shift: {
     id: 'shift-123',
     name: 'Shift Pagi',
@@ -155,8 +156,8 @@ const mockLocationHistory: LocationHistory = {
   date: '2026-02-15',
   shift_id: 'shift-123',
   shift_name: 'Shift Pagi',
-  area_id: 'area-123',
-  area_name: 'Taman A',
+  location_id: 'area-123',
+  location_name: 'Taman A',
   clock_in_time: '2026-02-15T07:00:00Z',
   clock_out_time: null,
   points: [
@@ -177,26 +178,24 @@ const mockLocationHistory: LocationHistory = {
 };
 
 const mockStaffingItem: StaffingSummaryItem = {
-  id: 'rayon-1',
+  id: 'district-1',
   name: 'Rayon 1',
-  type: 'rayon',
+  type: 'district',
   roles: [
     {
       role: 'satgas',
       active: 3,
-      idle: 1,
-      outside_area: 0,
-      missing: 0,
       offline: 1,
+      absent: 1,
+      outside_area: 0,
       total_assigned: 5,
       total_required: 6,
     },
   ],
   total_active: 3,
-  total_idle: 1,
-  total_outside_area: 0,
-  total_missing: 0,
   total_offline: 1,
+  total_absent: 1,
+  total_outside_area: 0,
   is_fully_staffed: false,
 };
 
@@ -205,7 +204,7 @@ const mockStaffingItem: StaffingSummaryItem = {
 const initialState = {
   liveUsers: [],
   cityStats: null,
-  rayonStats: {},
+  districtStats: {},
   areaStats: {},
   filters: {},
   selectedUser: null,
@@ -218,10 +217,9 @@ const initialState = {
   currentDayTypeLabel: null,
   statusCounts: {
     active: 0,
-    inactive: 0,
-    outside_area: 0,
-    missing: 0,
     offline: 0,
+    absent: 0,
+    outside_area: 0,
   },
   rosterCounts: {
     expected_count: 0,
@@ -231,6 +229,7 @@ const initialState = {
     off_schedule_count: 0,
   },
   absentUsers: [],
+  onLeaveUsers: [],
   isLoading: false,
   isLoadingDaySummary: false,
   isLoadingLocationHistory: false,
@@ -282,6 +281,35 @@ describe('monitoringSlice', () => {
     });
   });
 
+  // ── removeLiveUser (clock-out) ─────────────────────────────────────────────
+
+  describe('removeLiveUser', () => {
+    it('drops the worker from liveUsers on clock-out', () => {
+      const other = { ...mockLiveUser, id: 'other-user' };
+      const state = monitoringReducer(
+        { ...initialState, liveUsers: [mockLiveUser, other] },
+        removeLiveUser({ id: mockLiveUser.id }),
+      );
+      expect(state.liveUsers.map((u) => u.id)).toEqual(['other-user']);
+    });
+
+    it('clears the selected user when they are the one removed', () => {
+      const state = monitoringReducer(
+        { ...initialState, liveUsers: [mockLiveUser], selectedUser: mockLiveUser },
+        removeLiveUser({ id: mockLiveUser.id }),
+      );
+      expect(state.selectedUser).toBeNull();
+    });
+
+    it('is a no-op when the user is not present', () => {
+      const state = monitoringReducer(
+        { ...initialState, liveUsers: [mockLiveUser] },
+        removeLiveUser({ id: 'ghost' }),
+      );
+      expect(state.liveUsers).toHaveLength(1);
+    });
+  });
+
   // ── computeStatusCounts (via setLiveUsers) ─────────────────────────────────
 
   describe('computeStatusCounts (via setLiveUsers)', () => {
@@ -292,10 +320,9 @@ describe('monitoringSlice', () => {
       );
       expect(state.statusCounts).toEqual({
         active: 1,
-        inactive: 0,
-        outside_area: 0,
-        missing: 0,
         offline: 0,
+        absent: 0,
+        outside_area: 0,
       });
     });
 
@@ -303,18 +330,17 @@ describe('monitoringSlice', () => {
       const users: LiveUser[] = [
         mockLiveUser,
         { ...mockLiveUser, id: 'u2', status: 'active' },
-        mockLiveUserInactive,
-        mockLiveUserOutsideArea,
-        mockLiveUserMissing,
-        mockLiveUserOffline,
+        mockLiveUserOffline2,
+        mockLiveUserOutsideAreaActive,
+        mockLiveUserAbsent,
+        mockLiveUserOffline2,
       ];
       const state = monitoringReducer(initialState, setLiveUsers(users));
       expect(state.statusCounts).toEqual({
-        active: 2,
-        inactive: 1,
-        outside_area: 1,
-        missing: 1,
-        offline: 1,
+        active: 3,
+        offline: 2,
+        absent: 1,
+        outside_area: 0,
       });
     });
 
@@ -322,10 +348,9 @@ describe('monitoringSlice', () => {
       const state = monitoringReducer(initialState, setLiveUsers([]));
       expect(state.statusCounts).toEqual({
         active: 0,
-        inactive: 0,
-        outside_area: 0,
-        missing: 0,
         offline: 0,
+        absent: 0,
+        outside_area: 0,
       });
     });
 
@@ -341,8 +366,8 @@ describe('monitoringSlice', () => {
       );
       // 'unknown_status' is not a key in StatusCounts — count stays at 0 for all except active
       expect(state.statusCounts.active).toBe(1);
-      expect(state.statusCounts.inactive).toBe(0);
       expect(state.statusCounts.offline).toBe(0);
+      expect(state.statusCounts.absent).toBe(0);
     });
   });
 
@@ -352,40 +377,40 @@ describe('monitoringSlice', () => {
     it('should update the matching user in liveUsers', () => {
       const stateWithUsers = {
         ...initialState,
-        liveUsers: [mockLiveUser, mockLiveUserInactive],
+        liveUsers: [mockLiveUser, mockLiveUserOffline],
       };
       const state = monitoringReducer(
         stateWithUsers,
-        updateLiveUser({ id: 'user-123', status: 'inactive' }),
+        updateLiveUser({ id: 'user-123', status: 'offline' }),
       );
-      expect(state.liveUsers[0].status).toBe('inactive');
+      expect(state.liveUsers[0].status).toBe('offline');
     });
 
     it('should not modify other users', () => {
       const stateWithUsers = {
         ...initialState,
-        liveUsers: [mockLiveUser, mockLiveUserInactive],
+        liveUsers: [mockLiveUser, mockLiveUserOffline],
       };
       const state = monitoringReducer(
         stateWithUsers,
         updateLiveUser({ id: 'user-123', battery_level: 50 }),
       );
-      expect(state.liveUsers[1]).toEqual(mockLiveUserInactive);
+      expect(state.liveUsers[1]).toEqual(mockLiveUserOffline);
     });
 
     it('should recompute statusCounts after update', () => {
       const stateWithUsers = {
         ...initialState,
-        liveUsers: [mockLiveUser, mockLiveUserInactive],
-        statusCounts: { active: 1, inactive: 1, outside_area: 0, missing: 0, offline: 0 },
+        liveUsers: [mockLiveUser, mockLiveUserOffline],
+        statusCounts: { active: 1, offline: 1, absent: 0, outside_area: 0 },
       };
       const state = monitoringReducer(
         stateWithUsers,
         updateLiveUser({ id: 'user-123', status: 'offline' }),
       );
       expect(state.statusCounts.active).toBe(0);
-      expect(state.statusCounts.offline).toBe(1);
-      expect(state.statusCounts.inactive).toBe(1);
+      expect(state.statusCounts.offline).toBe(2);
+      expect(state.statusCounts.absent).toBe(0);
     });
 
     it('should update selectedUser when ids match', () => {
@@ -396,16 +421,16 @@ describe('monitoringSlice', () => {
       };
       const state = monitoringReducer(
         stateWithSelected,
-        updateLiveUser({ id: 'user-123', battery_level: 20, status: 'inactive' }),
+        updateLiveUser({ id: 'user-123', battery_level: 20, status: 'absent' }),
       );
       expect(state.selectedUser?.battery_level).toBe(20);
-      expect(state.selectedUser?.status).toBe('inactive');
+      expect(state.selectedUser?.status).toBe('absent');
     });
 
     it('should not change selectedUser when ids do not match', () => {
       const stateWithSelected = {
         ...initialState,
-        liveUsers: [mockLiveUser, mockLiveUserInactive],
+        liveUsers: [mockLiveUser, mockLiveUserOffline],
         selectedUser: mockLiveUser,
       };
       const state = monitoringReducer(
@@ -423,7 +448,7 @@ describe('monitoringSlice', () => {
       };
       const state = monitoringReducer(
         stateWithUsers,
-        updateLiveUser({ id: 'user-123', status: 'inactive' }),
+        updateLiveUser({ id: 'user-123', status: 'absent' }),
       );
       expect(state.selectedUser).toBeNull();
     });
@@ -445,22 +470,22 @@ describe('monitoringSlice', () => {
     });
   });
 
-  // ── setRayonStats ──────────────────────────────────────────────────────────
+  // ── setDistrictStats ──────────────────────────────────────────────────────────
 
-  describe('setRayonStats', () => {
-    it('should set rayon stats map', () => {
-      const rayonStats = { 'rayon-1': { active: 3 }, 'rayon-2': { active: 1 } };
-      const state = monitoringReducer(initialState, setRayonStats(rayonStats));
-      expect(state.rayonStats).toEqual(rayonStats);
+  describe('setDistrictStats', () => {
+    it('should set district stats map', () => {
+      const districtStats = { 'district-1': { active: 3 }, 'district-2': { active: 1 } };
+      const state = monitoringReducer(initialState, setDistrictStats(districtStats));
+      expect(state.districtStats).toEqual(districtStats);
     });
 
-    it('should overwrite existing rayon stats', () => {
-      const oldStats = { 'rayon-1': { active: 3 } };
-      const newStats = { 'rayon-2': { active: 1 } };
-      const stateWithOld = { ...initialState, rayonStats: oldStats };
-      const state = monitoringReducer(stateWithOld, setRayonStats(newStats));
-      expect(state.rayonStats).toEqual(newStats);
-      expect(state.rayonStats['rayon-1']).toBeUndefined();
+    it('should overwrite existing district stats', () => {
+      const oldStats = { 'district-1': { active: 3 } };
+      const newStats = { 'district-2': { active: 1 } };
+      const stateWithOld = { ...initialState, districtStats: oldStats };
+      const state = monitoringReducer(stateWithOld, setDistrictStats(newStats));
+      expect(state.districtStats).toEqual(newStats);
+      expect(state.districtStats['district-1']).toBeUndefined();
     });
   });
 
@@ -480,16 +505,16 @@ describe('monitoringSlice', () => {
     it('should merge partial filters into existing filters', () => {
       const stateWithFilters = {
         ...initialState,
-        filters: { rayon_id: 'rayon-1', role: 'satgas' },
+        filters: { district_id: 'district-1', role: 'satgas' },
       };
       const state = monitoringReducer(
         stateWithFilters,
-        setMonitoringFilters({ area_id: 'area-1' }),
+        setMonitoringFilters({ location_id: 'area-1' }),
       );
       expect(state.filters).toEqual({
-        rayon_id: 'rayon-1',
+        district_id: 'district-1',
         role: 'satgas',
-        area_id: 'area-1',
+        location_id: 'area-1',
       });
     });
 
@@ -505,13 +530,13 @@ describe('monitoringSlice', () => {
     it('should overwrite an existing filter key with the new value', () => {
       const stateWithFilters = {
         ...initialState,
-        filters: { rayon_id: 'rayon-1' },
+        filters: { district_id: 'district-1' },
       };
       const state = monitoringReducer(
         stateWithFilters,
-        setMonitoringFilters({ rayon_id: 'rayon-2' }),
+        setMonitoringFilters({ district_id: 'district-2' }),
       );
-      expect(state.filters.rayon_id).toBe('rayon-2');
+      expect(state.filters.district_id).toBe('district-2');
     });
   });
 
@@ -521,7 +546,7 @@ describe('monitoringSlice', () => {
     it('should reset filters to empty object', () => {
       const stateWithFilters = {
         ...initialState,
-        filters: { rayon_id: 'rayon-1', role: 'satgas', search: 'ahmad' },
+        filters: { district_id: 'district-1', role: 'satgas', search: 'ahmad' },
       };
       const state = monitoringReducer(stateWithFilters, resetMonitoringFilters());
       expect(state.filters).toEqual({});
@@ -610,7 +635,7 @@ describe('monitoringSlice', () => {
 
   describe('setStatusCounts', () => {
     it('should set status counts directly', () => {
-      const counts = { active: 5, inactive: 2, outside_area: 1, missing: 0, offline: 3 };
+      const counts = { active: 5, offline: 3, absent: 2, outside_area: 1 };
       const state = monitoringReducer(initialState, setStatusCounts(counts));
       expect(state.statusCounts).toEqual(counts);
     });
@@ -666,12 +691,11 @@ describe('monitoringSlice', () => {
 
     it('should populate liveUsers and statusCounts from API response on fulfilled', () => {
       const apiPayload = {
-        users: [mockLiveUser, mockLiveUserInactive],
+        users: [mockLiveUser, mockLiveUserOffline],
         total_active: 1,
-        total_inactive: 1,
-        total_outside_area: 0,
-        total_missing: 0,
         total_offline: 0,
+        total_absent: 1,
+        total_outside_area: 0,
         total_online: 1,
         generated_at: '2026-02-15T08:00:00Z',
       };
@@ -680,13 +704,12 @@ describe('monitoringSlice', () => {
         fetchLiveUsers.fulfilled(apiPayload, 'req-id', undefined),
       );
       expect(state.isLoading).toBe(false);
-      expect(state.liveUsers).toEqual([mockLiveUser, mockLiveUserInactive]);
+      expect(state.liveUsers).toEqual([mockLiveUser, mockLiveUserOffline]);
       expect(state.statusCounts).toEqual({
         active: 1,
-        inactive: 1,
-        outside_area: 0,
-        missing: 0,
         offline: 0,
+        absent: 1,
+        outside_area: 0,
       });
     });
 
@@ -719,19 +742,18 @@ describe('monitoringSlice', () => {
         data: {
           users: [],
           total_active: 0,
-          total_inactive: 0,
-          total_outside_area: 0,
-          total_missing: 0,
           total_offline: 0,
+          total_absent: 0,
+          total_outside_area: 0,
           total_online: 0,
           generated_at: '2026-02-15T08:00:00Z',
         },
       });
       const dispatch = jest.fn();
       const getState = jest.fn();
-      const thunk = fetchLiveUsers({ rayon_id: 'rayon-1' });
+      const thunk = fetchLiveUsers({ district_id: 'district-1' });
       await thunk(dispatch, getState, undefined);
-      expect(mockGetLiveUsers).toHaveBeenCalledWith({ rayon_id: 'rayon-1' });
+      expect(mockGetLiveUsers).toHaveBeenCalledWith({ district_id: 'district-1' });
     });
 
     it('should reject with error message when getLiveUsers returns an error field', async () => {
@@ -930,9 +952,9 @@ describe('monitoringSlice', () => {
       });
       const dispatch = jest.fn();
       const getState = jest.fn();
-      const thunk = fetchStaffingSummary({ rayon_id: 'rayon-1' });
+      const thunk = fetchStaffingSummary({ district_id: 'district-1' });
       await thunk(dispatch, getState, undefined);
-      expect(mockGetStaffingSummary).toHaveBeenCalledWith({ rayon_id: 'rayon-1' });
+      expect(mockGetStaffingSummary).toHaveBeenCalledWith({ district_id: 'district-1' });
     });
 
     it('should return empty items when getStaffingSummary response has no items', async () => {
@@ -983,9 +1005,9 @@ describe('monitoringSlice', () => {
     it('should handle filter apply and reset flow', () => {
       let state = monitoringReducer(
         initialState,
-        setMonitoringFilters({ rayon_id: 'rayon-1', role: 'satgas' }),
+        setMonitoringFilters({ district_id: 'district-1', role: 'satgas' }),
       );
-      expect(state.filters.rayon_id).toBe('rayon-1');
+      expect(state.filters.district_id).toBe('district-1');
 
       state = monitoringReducer(state, resetMonitoringFilters());
       expect(state.filters).toEqual({});

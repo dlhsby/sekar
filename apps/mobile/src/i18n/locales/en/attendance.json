@@ -1,6 +1,6 @@
 {
   "list": {
-    "title": "Attendance",
+    "title": "Attendance Log",
     "sortOptions": {
       "newest": "Newest Date",
       "oldest": "Oldest Date"
@@ -68,6 +68,16 @@
     "shiftCount": "{{count}} shift",
     "a11y": {
       "viewShifts": "View shift details for today"
+    },
+    "punchLog": {
+      "title": "Attendance Log",
+      "session": "Session",
+      "overtime": "Overtime",
+      "open": "Open",
+      "masuk": "In",
+      "keluar": "Out",
+      "inArea": "In area",
+      "outArea": "Out of area"
     }
   },
   "dayCard": {
@@ -83,6 +93,54 @@
       "label": "Attendance {{date}}, {{status}}"
     }
   },
+  "infoCard": {
+    "shift": "Scheduled Shift",
+    "status": "Attendance Status",
+    "clockInStart": "Clock-in start",
+    "duration": "Elapsed shift time",
+    "currentTime": "Current Time",
+    "assignedArea": "Assigned Area",
+    "areaStatus": "Area Status",
+    "currentLocation": "Current Location",
+    "detailShift": "Shift detail",
+    "accuracy": "±{{value}}m",
+    "refreshLocation": "Refresh location",
+    "locationUnavailable": "Location unavailable",
+    "inArea": "In area",
+    "outArea": "Out of area",
+    "noArea": "No area",
+    "scopeUndefined": "Boundary not set",
+    "locating": "Locating…",
+    "whyStatus": "See why this attendance status"
+  },
+  "statusSheet": {
+    "clockIn": "Clock in",
+    "scheduledStart": "Scheduled start",
+    "why": {
+      "late": "You clocked in after the scheduled shift start, so attendance is recorded as late.",
+      "onTime": "You clocked in at or before the scheduled shift start, so attendance is recorded as on time.",
+      "noSchedule": "You have no scheduled shift today, so attendance is not judged on time or late."
+    }
+  },
+  "punchConfirm": {
+    "titleClockIn": "Confirm Clock In",
+    "titleClockOut": "Confirm Clock Out",
+    "intro": "Please note before continuing:",
+    "footer": "Your attendance will still be recorded.",
+    "confirmClockIn": "Clock In",
+    "confirmClockOut": "Clock Out",
+    "reasons": {
+      "outsideArea": "You are outside your assigned area ({{area}}).",
+      "outsideAreaUnknown": "You are outside your assigned area.",
+      "late": "{{duration}} late from the shift start ({{time}}).",
+      "lateUnknown": "You are late from the shift start.",
+      "outsideWindow": "The shift ended at {{time}} — this will be recorded outside the schedule.",
+      "outsideWindowUnknown": "The shift has ended — this will be recorded outside the schedule.",
+      "earlyLeave": "The shift ends at {{time}} — {{duration}} still remaining.",
+      "earlyLeaveUnknown": "You are leaving before the shift ends.",
+      "noSchedule": "No schedule today — this is recorded as unscheduled and is not counted in monitoring."
+    }
+  },
   "clockInOut": {
     "noAreaAssigned": "No area assigned — you can still clock in",
     "contactSupervisor": "Contact your supervisor for area assignment",
@@ -91,12 +149,21 @@
     "gpsLocation": "GPS Location",
     "currentTime": "Current Time",
     "scheduledShift": "Scheduled Shift",
+    "statusLabel": "Status",
+    "pageTitle": "Record Attendance",
+    "attendanceType": "Attendance Type",
+    "changeLabel": "Change Time Label",
+    "selectLabelTitle": "Select Time Label",
+    "confirmSelect": "Select",
+    "clockInUnavailable": "You still have an active shift. Clock out first before clocking in.",
+    "clockOutUnavailable": "No active shift to clock out.",
+    "mapTitle": "Assigned Area",
+    "viewOnMap": "View on map",
     "assignedArea": "Assigned Area",
     "address": "Address",
     "areaType": "Area Type",
     "gpsCoordinates": "GPS Coordinates",
-    "boundaryRadius": "Boundary Radius",
-    "rayonCoverage": "Rayon Coverage",
+    "districtCoverage": "District Coverage",
     "noSpecificArea": "No specific area",
     "inBoundary": "IN AREA",
     "outOfBoundary": "OUT OF AREA",
@@ -109,7 +176,7 @@
     "captureSelfie": "Capture Selfie",
     "captureForVerification": "Capture selfie for identity verification",
     "captureForClockOutVerification": "Capture selfie to verify clock out",
-    "offlineBannerClockIn": "Offline Mode - Clock in requires internet connection",
+    "offlineBannerClockIn": "Offline — clock in will sync when online.",
     "onlineRequiredForClockIn": "You must be online to clock in. Connect to the internet first.",
     "offlineModeClockOut": "Offline mode. Clock out will sync when online.",
     "selfiePreviewTitle": "Selfie Clock In",
@@ -119,20 +186,38 @@
     "shiftTimeLabel": "Shift Time:",
     "clockInColonLabel": "Clock In:",
     "noScheduleChip": "No schedule",
-    "noScheduleToday": "No schedule today",
-    "noAreaChip": "No area"
+    "scope": {
+      "city": "Surabaya",
+      "district": "{{name}}",
+      "region": "{{name}}"
+    },
+    "outsideWindowChip": "Outside Shift Window",
+    "multiArea": "{{count}} locations",
+    "multiAreaHint": "Clock in is accepted at any of the locations above",
+    "selectShiftTitle": "Select Shift",
+    "noShiftOptions": "No shifts available right now",
+    "shiftDefault": "Suggested",
+    "shiftPhase": {
+      "early": "Starting soon",
+      "covering": "In progress",
+      "grace": "Just ended"
+    },
+    "offlineQueued": "Saved offline — will sync when online.",
+    "changeShift": "Change Shift",
+    "otherShiftsAvailable": "You have other shifts available:"
   },
   "gpsSection": {
     "capturingLocation": "Getting your location...",
     "locationUnavailable": "Location unavailable",
-    "accuracy": "accuracy",
+    "locationRecorded": "Location recorded",
     "withinBoundary": "You are within the work area",
     "outsideBoundary": "You are outside the work area. Attendance will still be recorded.",
     "gpsLabel": "GPS:",
     "accuracyLabel": "Accuracy:",
     "lowAccuracyWarning": "GPS accuracy is low. Move to an open area for better results.",
     "updateGpsButton": "Update GPS",
-    "noArea": "No assigned area — attendance is still recorded."
+    "noArea": "No assigned area — attendance is still recorded.",
+    "scopeAssigned": "Assigned {{scope}} — area boundary not defined; attendance is still recorded."
   },
   "shifts": {
     "today": "Attendance Today",
@@ -152,8 +237,7 @@
     "validation": "Clock In Location Validation",
     "withinArea": "Within Area",
     "outsideArea": "Outside Area",
-    "distance": "Distance",
-    "radius": "Radius"
+    "distance": "Distance"
   },
   "shiftCard": {
     "unknownArea": "Unknown area",
@@ -162,5 +246,16 @@
   },
   "workHours": {
     "titlePrefix": "Attendance {{date}}"
+  },
+  "hub": {
+    "noRecordThisShift": "You have not recorded time for this shift yet",
+    "notClockedIn": "You haven't clocked in for this shift",
+    "noShift": "No Shift",
+    "jamMasuk": "Clock In",
+    "jamKeluar": "Clock Out",
+    "viewLog": "Attendance Log",
+    "viewSchedule": "Schedule",
+    "todayLog": "Today's Attendance Log",
+    "todayEmpty": "Your attendance entries will appear here"
   }
 }

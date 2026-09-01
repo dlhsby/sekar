@@ -9,9 +9,9 @@ import { AssetMaintenance } from './entities/asset-maintenance.entity';
 import { QrCodeService } from './services/qr-code.service';
 import { MaintenanceOverdueCron } from './cron/maintenance-overdue.cron';
 import { User } from '../users/entities/user.entity';
-import { UserArea } from '../user-areas/entities/user-area.entity';
-import { Area } from '../areas/entities/area.entity';
-import { Rayon } from '../rayons/entities/rayon.entity';
+import { UserLocation } from '../user-locations/entities/user-location.entity';
+import { Location } from '../locations/entities/location.entity';
+import { District } from '../districts/entities/district.entity';
 import { SharedModule } from '../../shared/shared.module';
 import { AuditModule } from '../audit/audit.module';
 
@@ -23,9 +23,9 @@ import { AuditModule } from '../audit/audit.module';
       AssetAssignment,
       AssetMaintenance,
       User,
-      UserArea,
-      Area,
-      Rayon,
+      UserLocation,
+      Location,
+      District,
     ]),
     SharedModule,
     AuditModule,

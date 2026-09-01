@@ -11,6 +11,17 @@ import { User, UserRole } from '../users/entities/user.entity';
 import * as firebaseConfig from '../../config/firebase.config';
 
 describe('NotificationsService', () => {
+  // FCM runtime kill-switch (ADR-049) falls back to FCM_ENABLED when no
+  // SystemConfigService is provided; enable it so the send-path tests run.
+  const savedFcmEnabled = process.env.FCM_ENABLED;
+  beforeAll(() => {
+    process.env.FCM_ENABLED = 'true';
+  });
+  afterAll(() => {
+    if (savedFcmEnabled === undefined) delete process.env.FCM_ENABLED;
+    else process.env.FCM_ENABLED = savedFcmEnabled;
+  });
+
   let service: NotificationsService;
   let tokenRepository: jest.Mocked<Repository<NotificationToken>>;
   let notificationRepository: jest.Mocked<Repository<Notification>>;

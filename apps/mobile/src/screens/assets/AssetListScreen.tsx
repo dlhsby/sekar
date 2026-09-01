@@ -35,6 +35,7 @@ import {
 } from '../../store/slices/assetsSlice';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { nbColors, nbSpacing, nbShadows } from '../../constants/nbTokens';
+import { screenContent } from '../../constants/layout';
 import type { MainTabParamList } from '../../types/navigation.types';
 import type { Asset } from '../../types/assets.types';
 
@@ -194,7 +195,7 @@ const styles = StyleSheet.create({
     gap: nbSpacing.sm,
   },
   listContent: {
-    paddingHorizontal: nbSpacing.md,
+    ...screenContent,
     paddingBottom: nbSpacing.lg,
   },
   skeleton: {

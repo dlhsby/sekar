@@ -1,15 +1,17 @@
 /**
- * Create Task Page (Phase 2C - rayon, hierarchical assignment)
+ * Create Task Page (Phase 2C - district, hierarchical assignment)
  * Access: TASK_MANAGER_ROLES
  */
 
 'use client';
 
 import { useAuth } from '@/lib/auth/hooks';
-import { useCreateTask, type TaskPriority } from '@/lib/api/tasks';
-import { useUsers } from '@/lib/api/users';
-import { useAreas } from '@/lib/api/areas';
-import { useRayons } from '@/lib/api/rayons';
+import { useCreateTask, type TaskPriority, type AssignmentScope } from '@/lib/api/tasks';
+import { useTaskScopeField } from '@/lib/hooks/useTaskScopeField';
+import { useUserLookup } from '@/lib/api/users';
+import { useLocationLookup } from '@/lib/api/locations';
+import { useDistricts } from '@/lib/api/districts';
+import { useRegions } from '@/lib/api/regions';
 import { useTranslation } from 'react-i18next';
 import {
   Card,
@@ -27,6 +29,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { getErrorMessage } from '@/lib/api/client';
+import { toast } from 'sonner';
 import {
   TASK_MANAGER_ROLES,
   VALID_TASK_ASSIGNMENTS,
@@ -39,21 +42,28 @@ export default function CreateTaskPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { t } = useTranslation('tasks');
+  const { scopeOptions, validate: validateScope, buildScopePayload } = useTaskScopeField();
 
   // State hooks - must be called unconditionally (Rules of Hooks)
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [assignedTo, setAssignedTo] = useState('none');
+  const [scope, setScope] = useState<AssignmentScope | 'auto'>('auto');
+  const [districtId, setDistrictId] = useState('none');
+  const [regionId, setRegionId] = useState('none');
   const [areaId, setAreaId] = useState('none');
-  const [rayonId, setRayonId] = useState('none');
-  const [priority, setPriority] = useState<TaskPriority>('normal');
+  const [priority, setPriority] = useState<TaskPriority>('medium');
   const [dueDate, setDueDate] = useState('');
+  const [scopeError, setScopeError] = useState('');
   const [error, setError] = useState('');
 
   // Data fetching hooks - always call (enabled by query client)
-  const { data: usersData } = useUsers({ limit: 1000 });
-  const { data: areasData } = useAreas({ limit: 1000 });
-  const { data: rayonsData } = useRayons();
+  // Lookup, not the paginated list — see OvertimeForm.
+  const { data: users = [] } = useUserLookup();
+  // Lookup, not the full entity — see UserForm.
+  const { data: allAreas = [] } = useLocationLookup();
+  const { data: districtsData } = useDistricts();
+  const { data: regionsData } = useRegions();
 
   const createMutation = useCreateTask();
 
@@ -81,22 +91,31 @@ export default function CreateTaskPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setScopeError('');
 
     if (!title) {
       setError(t('newPage.requiredError'));
       return;
     }
 
+    const scopeValidationError = validateScope(scope, { districtId, regionId, areaId });
+    if (scopeValidationError) {
+      setScopeError(scopeValidationError);
+      return;
+    }
+
     try {
-      await createMutation.mutateAsync({
+      const basePayload = {
         title,
         description: description || undefined,
         assigned_to: assignedTo !== 'none' ? assignedTo : undefined,
-        area_id: areaId !== 'none' ? areaId : undefined,
-        rayon_id: rayonId !== 'none' ? rayonId : undefined,
         priority,
-        due_date: dueDate ? new Date(dueDate).toISOString() : undefined,
-      });
+        deadline: dueDate ? new Date(dueDate).toISOString() : undefined,
+        ...buildScopePayload(scope, { districtId, regionId, areaId }),
+      };
+
+      await createMutation.mutateAsync(basePayload as Parameters<typeof createMutation.mutateAsync>[0]);
+      toast.success(t('common:messages.created'));
       router.push('/tasks');
     } catch (err) {
       setError(getErrorMessage(err));
@@ -104,16 +123,18 @@ export default function CreateTaskPage() {
   };
 
   // Filter users by assignable roles
-  const assignableUsers = (usersData?.data || []).filter((u) =>
+  const assignableUsers = (users || []).filter((u) =>
     assignableRoles.includes(u.role as UserRole)
   );
 
-  const areas = areasData?.data || [];
-  const rayons = rayonsData || [];
+  // A picker offers only lokasi you can actually pick.
+  const areas = allAreas.filter((a) => a.is_active !== false);
+  const districts = districtsData || [];
+  const regions = regionsData || [];
 
   const priorityOptions = [
     { value: 'low', label: t('form.priorityLow') },
-    { value: 'normal', label: t('form.priorityNormal') },
+    { value: 'medium', label: t('form.priorityNormal') },
     { value: 'high', label: t('form.priorityHigh') },
     { value: 'urgent', label: t('form.priorityUrgent') },
   ];
@@ -181,30 +202,68 @@ export default function CreateTaskPage() {
               />
 
               <FormSelect
-                label={t('newPage.formRayonLabel')}
-                value={rayonId}
-                onChange={(value) => setRayonId(value)}
-                options={[
-                  { value: 'none', label: t('newPage.formRayonPlaceholder') },
-                  ...rayons.map((r) => ({
-                    value: r.id,
-                    label: r.name,
-                  })),
-                ]}
+                label={t('newPage.formScopeLabel')}
+                value={scope}
+                onChange={(value) => {
+                  setScope(value as AssignmentScope | 'auto');
+                  setScopeError('');
+                }}
+                options={scopeOptions}
               />
 
-              <FormSelect
-                label={t('newPage.formAreaLabel')}
-                value={areaId}
-                onChange={(value) => setAreaId(value)}
-                options={[
-                  { value: 'none', label: t('newPage.formAreaPlaceholder') },
-                  ...areas.map((a) => ({
-                    value: a.id,
-                    label: `${a.name} (${a.code})`,
-                  })),
-                ]}
-              />
+              {scopeError && (
+                <div className="p-3 bg-nb-danger-light border-2 border-nb-danger rounded-nb-base">
+                  <p className="text-nb-danger font-semibold text-nb-body-sm">{scopeError}</p>
+                </div>
+              )}
+
+              {scope === 'district' && (
+                <FormSelect
+                  label={t('newPage.scopeDistrictPlaceholder')}
+                  value={districtId}
+                  onChange={(value) => setDistrictId(value)}
+                  options={[
+                    { value: 'none', label: t('newPage.scopeDistrictPlaceholder') },
+                    ...districts.map((r) => ({
+                      value: r.id,
+                      label: r.name,
+                    })),
+                  ]}
+                />
+              )}
+
+              {scope === 'region' && (
+                <FormSelect
+                  label={t('newPage.scopeRegionPlaceholder')}
+                  value={regionId}
+                  onChange={(value) => setRegionId(value)}
+                  options={[
+                    { value: 'none', label: t('newPage.scopeRegionPlaceholder') },
+                    ...regions.map((r) => ({
+                      value: r.id,
+                      label: r.name,
+                    })),
+                  ]}
+                />
+              )}
+
+              {scope === 'location' && (
+                <FormSelect
+                  label={t('newPage.scopeLocationPlaceholder')}
+                  value={areaId}
+                  onChange={(value) => setAreaId(value)}
+                  options={[
+                    { value: 'none', label: t('newPage.scopeLocationPlaceholder') },
+                    ...areas.map((a) => ({
+                      value: a.id,
+                      // `a.code` never existed on a lokasi, so this label read
+                      // "Taman Bungkul (undefined)". The TYPE is what actually
+                      // disambiguates two lokasi sharing a name.
+                      label: a.location_type_name ? `${a.name} (${a.location_type_name})` : a.name,
+                    })),
+                  ]}
+                />
+              )}
 
               <FormSelect
                 label={t('newPage.formPriorityLabel')}

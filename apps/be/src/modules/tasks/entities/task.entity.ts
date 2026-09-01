@@ -11,9 +11,12 @@ import {
   Index,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
-import { Area } from '../../areas/entities/area.entity';
-import { Rayon } from '../../rayons/entities/rayon.entity';
+import { Location } from '../../locations/entities/location.entity';
+import { District } from '../../districts/entities/district.entity';
+import { Region } from '../../regions/entities/region.entity';
 import { TaskTag } from './task-tag.entity';
+import { ApiProperty } from '@nestjs/swagger';
+import { AssignmentScope } from '../../../common/enums/assignment-scope.enum';
 
 /**
  * Task status enum
@@ -46,7 +49,7 @@ export enum TaskPriority {
  * Workers can accept, decline, start, and complete tasks with photo evidence.
  */
 @Entity('tasks')
-@Index(['area_id', 'status'])
+@Index(['location_id', 'status'])
 @Index(['assigned_to', 'status'])
 @Index(['created_by'])
 @Index(['deadline'])
@@ -78,12 +81,33 @@ export class Task {
   @Column({ type: 'timestamptz', nullable: true })
   deadline: Date | null;
 
-  // Foreign keys
-  @Column({ name: 'area_id', type: 'uuid', nullable: true })
-  area_id: string | null;
+  /**
+   * Geographic scope this task is bound to (ADR-046). Follows the assignee's
+   * schedule occurrence by default (city/district/region/location), can be
+   * overridden by the creator, or `none` for an ad-hoc task with no location
+   * context (e.g. assigned to an unscheduled worker). Drives where the task —
+   * and, once started, the worker running it — appears on the monitoring map.
+   */
+  @ApiProperty({ description: 'Geographic scope (ADR-046)', enum: AssignmentScope })
+  @Column({
+    type: 'enum',
+    enum: AssignmentScope,
+    default: AssignmentScope.NONE,
+  })
+  scope: AssignmentScope;
 
-  @Column({ name: 'rayon_id', type: 'uuid', nullable: true })
-  rayon_id: string | null;
+  // Foreign keys — the id for each level down to `scope` is populated.
+  @ApiProperty({ description: 'Location UUID (location scope)', nullable: true })
+  @Column({ name: 'location_id', type: 'uuid', nullable: true })
+  location_id: string | null;
+
+  @ApiProperty({ description: 'Region/Kawasan UUID (region scope)', nullable: true })
+  @Column({ name: 'region_id', type: 'uuid', nullable: true })
+  region_id: string | null;
+
+  @ApiProperty({ description: 'District UUID (district scope)', nullable: true })
+  @Column({ name: 'district_id', type: 'uuid', nullable: true })
+  district_id: string | null;
 
   @Column({ name: 'assigned_to', type: 'uuid', nullable: true })
   assigned_to: string | null;
@@ -160,13 +184,17 @@ export class Task {
   deleted_by?: string;
 
   // Relations
-  @ManyToOne(() => Area, { onDelete: 'RESTRICT', nullable: true })
-  @JoinColumn({ name: 'area_id' })
-  area: Area | null;
+  @ManyToOne(() => Location, { onDelete: 'RESTRICT', nullable: true })
+  @JoinColumn({ name: 'location_id' })
+  area: Location | null;
 
-  @ManyToOne(() => Rayon, { onDelete: 'RESTRICT', nullable: true })
-  @JoinColumn({ name: 'rayon_id' })
-  rayon: Rayon | null;
+  @ManyToOne(() => District, { onDelete: 'RESTRICT', nullable: true })
+  @JoinColumn({ name: 'district_id' })
+  district: District | null;
+
+  @ManyToOne(() => Region, { onDelete: 'RESTRICT', nullable: true })
+  @JoinColumn({ name: 'region_id' })
+  region: Region | null;
 
   @ManyToOne(() => User, { onDelete: 'SET NULL' })
   @JoinColumn({ name: 'assigned_to' })

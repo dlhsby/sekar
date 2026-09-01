@@ -1,6 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ActivitiesController } from './activities.controller';
 import { ActivitiesService } from './activities.service';
+import { S3Service } from '../../shared/services/s3.service';
+import { BadRequestException } from '@nestjs/common';
 import { CreateActivityDto } from './dto/create-activity.dto';
 import { UpdateActivityDto } from './dto/update-activity.dto';
 import { ActivitiesFilterDto } from './dto/activities-filter.dto';
@@ -19,15 +21,15 @@ describe('ActivitiesController', () => {
     role: UserRole.SATGAS,
     full_name: 'Worker One',
     is_active: true,
-    area_id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
-    rayon_id: 'rayon-uuid-1',
+    location_id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
+    district_id: 'district-uuid-1',
   };
 
   const mockActivity: any = {
     id: 'activity-uuid-1',
     user_id: mockUser.id,
     shift_id: 'shift-uuid-1',
-    area_id: mockUser.area_id,
+    location_id: mockUser.location_id,
     activity_type_id: 'activity-type-uuid-1',
     description: 'Penyiraman tanaman area Taman Bungkul',
     photo_urls: ['https://s3.amazonaws.com/activities/photo1.jpg?presigned=true'],
@@ -39,7 +41,7 @@ describe('ActivitiesController', () => {
     shift: {
       id: 'shift-uuid-1',
       worker_id: mockUser.id,
-      area_id: mockUser.area_id,
+      location_id: mockUser.location_id,
     },
   };
 
@@ -52,6 +54,18 @@ describe('ActivitiesController', () => {
     remove: jest.fn(),
   };
 
+  const mockS3Service = {
+    generateKey: jest.fn(
+      (folder: string, name: string) => `sekar-media/2026/07/24/${folder}/${name}`,
+    ),
+    uploadFile: jest.fn((_buf: Buffer, key: string) =>
+      Promise.resolve(`http://localhost:9000/sekar-media-dev/${key}`),
+    ),
+  };
+
+  const filePart = (mimetype: string): Express.Multer.File =>
+    ({ mimetype, buffer: Buffer.from('x'), size: 1, originalname: 'p' }) as Express.Multer.File;
+
   beforeEach(async () => {
     module = await Test.createTestingModule({
       controllers: [ActivitiesController],
@@ -59,6 +73,10 @@ describe('ActivitiesController', () => {
         {
           provide: ActivitiesService,
           useValue: mockService,
+        },
+        {
+          provide: S3Service,
+          useValue: mockS3Service,
         },
       ],
     }).compile();
@@ -118,8 +136,8 @@ describe('ActivitiesController', () => {
       );
     });
 
-    it('should create an activity for ADMIN_DATA', async () => {
-      const adminDataUser = { ...mockUser, role: UserRole.ADMIN_DATA };
+    it('should create an activity for ADMIN_RAYON', async () => {
+      const adminDataUser = { ...mockUser, role: UserRole.ADMIN_RAYON };
       mockService.createActivity.mockResolvedValue(mockActivity);
 
       const result = await controller.create(createDto, adminDataUser as any);
@@ -204,20 +222,20 @@ describe('ActivitiesController', () => {
       expect(service.findAllPaginated).toHaveBeenCalledWith(expect.any(Object), korlapUser, 1, 50);
     });
 
-    it('should return paginated activities for KEPALA_RAYON (rayon-scoped)', async () => {
-      const kepalaRayonUser = { ...mockUser, role: UserRole.KEPALA_RAYON };
+    it('should return paginated activities for KEPALA_RAYON (district-scoped)', async () => {
+      const kepalaDistrictUser = { ...mockUser, role: UserRole.KEPALA_RAYON };
       const filterDto: ActivitiesFilterDto = {
         page: 1,
         limit: 50,
       };
       mockService.findAllPaginated.mockResolvedValue(mockPaginatedResponse);
 
-      const result = await controller.findAll(filterDto, kepalaRayonUser as any);
+      const result = await controller.findAll(filterDto, kepalaDistrictUser as any);
 
       expect(result).toEqual(mockPaginatedResponse);
       expect(service.findAllPaginated).toHaveBeenCalledWith(
         expect.any(Object),
-        kepalaRayonUser,
+        kepalaDistrictUser,
         1,
         50,
       );
@@ -368,8 +386,8 @@ describe('ActivitiesController', () => {
       expect(result).toHaveLength(1);
     });
 
-    it('should work for ADMIN_DATA role', async () => {
-      const adminDataUser = { ...mockUser, role: UserRole.ADMIN_DATA };
+    it('should work for ADMIN_RAYON role', async () => {
+      const adminDataUser = { ...mockUser, role: UserRole.ADMIN_RAYON };
       mockService.findMyActivities.mockResolvedValue([mockActivity]);
 
       const result = await controller.getMyActivities(undefined, adminDataUser as any);
@@ -398,14 +416,14 @@ describe('ActivitiesController', () => {
       expect(service.findOne).toHaveBeenCalledWith(mockActivity.id, korlapUser);
     });
 
-    it('should return activity by ID for KEPALA_RAYON (rayon-scoped)', async () => {
-      const kepalaRayonUser = { ...mockUser, role: UserRole.KEPALA_RAYON };
+    it('should return activity by ID for KEPALA_RAYON (district-scoped)', async () => {
+      const kepalaDistrictUser = { ...mockUser, role: UserRole.KEPALA_RAYON };
       mockService.findOne.mockResolvedValue(mockActivity);
 
-      const result = await controller.findOne(mockActivity.id, kepalaRayonUser as any);
+      const result = await controller.findOne(mockActivity.id, kepalaDistrictUser as any);
 
       expect(result).toEqual(mockActivity);
-      expect(service.findOne).toHaveBeenCalledWith(mockActivity.id, kepalaRayonUser);
+      expect(service.findOne).toHaveBeenCalledWith(mockActivity.id, kepalaDistrictUser);
     });
 
     it('should return activity by ID for ADMIN_SYSTEM (no scope restriction)', async () => {
@@ -418,8 +436,8 @@ describe('ActivitiesController', () => {
       expect(service.findOne).toHaveBeenCalledWith(mockActivity.id, adminUser);
     });
 
-    it('should return activity by ID for TOP_MANAGEMENT', async () => {
-      const topMgmtUser = { ...mockUser, role: UserRole.TOP_MANAGEMENT };
+    it('should return activity by ID for MANAGEMENT', async () => {
+      const topMgmtUser = { ...mockUser, role: UserRole.MANAGEMENT };
       mockService.findOne.mockResolvedValue(mockActivity);
 
       const result = await controller.findOne(mockActivity.id, topMgmtUser as any);
@@ -475,8 +493,8 @@ describe('ActivitiesController', () => {
       expect(service.update).toHaveBeenCalledWith(mockActivity.id, updateDto, korlapUser.id);
     });
 
-    it('should update activity for ADMIN_DATA', async () => {
-      const adminDataUser = { ...mockUser, role: UserRole.ADMIN_DATA };
+    it('should update activity for ADMIN_RAYON', async () => {
+      const adminDataUser = { ...mockUser, role: UserRole.ADMIN_RAYON };
       const updatedActivity = { ...mockActivity, ...updateDto };
       mockService.update.mockResolvedValue(updatedActivity);
 
@@ -537,8 +555,8 @@ describe('ActivitiesController', () => {
 
   describe('Role Guard Integration', () => {
     it('should allow ACTIVITY_SUBMITTERS to create activities', async () => {
-      // ACTIVITY_SUBMITTERS = [SATGAS, LINMAS, KORLAP, ADMIN_DATA]
-      const roles = [UserRole.SATGAS, UserRole.LINMAS, UserRole.KORLAP, UserRole.ADMIN_DATA];
+      // ACTIVITY_SUBMITTERS = [SATGAS, LINMAS, KORLAP, ADMIN_RAYON]
+      const roles = [UserRole.SATGAS, UserRole.LINMAS, UserRole.KORLAP, UserRole.ADMIN_RAYON];
 
       for (const role of roles) {
         const user = { ...mockUser, role };
@@ -556,11 +574,11 @@ describe('ActivitiesController', () => {
     });
 
     it('should allow MONITORING_AREA roles to view activities', async () => {
-      // MONITORING_AREA = [KORLAP, KEPALA_RAYON, TOP_MANAGEMENT, ADMIN_SYSTEM, SUPERADMIN]
+      // MONITORING_AREA = [KORLAP, KEPALA_RAYON, MANAGEMENT, ADMIN_SYSTEM, SUPERADMIN]
       const roles = [
         UserRole.KORLAP,
         UserRole.KEPALA_RAYON,
-        UserRole.TOP_MANAGEMENT,
+        UserRole.MANAGEMENT,
         UserRole.ADMIN_SYSTEM,
         UserRole.SUPERADMIN,
       ];
@@ -625,6 +643,38 @@ describe('ActivitiesController', () => {
       expect(result.data).toEqual([]);
       expect(result.meta.total).toBe(0);
       expect(result.meta.totalPages).toBe(0);
+    });
+  });
+
+  describe('uploadPhotos (F9 — photos to storage, not inline)', () => {
+    it('uploads each file to storage and returns their URLs', async () => {
+      const files = [filePart('image/jpeg'), filePart('image/png')];
+
+      const result = await controller.uploadPhotos(files);
+
+      expect(result.urls).toHaveLength(2);
+      expect(mockS3Service.uploadFile).toHaveBeenCalledTimes(2);
+      // Stored under the activities folder, and NOT as a data-URI.
+      expect(mockS3Service.generateKey).toHaveBeenCalledWith(
+        'activities',
+        expect.stringMatching(/\.(jpg|png)$/),
+      );
+      result.urls.forEach((u) => expect(u.startsWith('data:')).toBe(false));
+    });
+
+    it('rejects an empty upload', async () => {
+      await expect(controller.uploadPhotos([])).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejects more than 3 files', async () => {
+      const files = Array.from({ length: 4 }, () => filePart('image/jpeg'));
+      await expect(controller.uploadPhotos(files)).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejects an unsupported mime type', async () => {
+      await expect(controller.uploadPhotos([filePart('application/pdf')])).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 });

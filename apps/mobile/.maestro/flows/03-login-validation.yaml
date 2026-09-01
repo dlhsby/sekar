@@ -13,8 +13,8 @@ appId: com.wahyutrip.sekar
 - tapOn:
     id: login-button
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 # Should see inline error under username field
 # The error text is "No. HP / Username wajib diisi" based on LoginScreen code
 - assertVisible:
@@ -33,8 +33,8 @@ appId: com.wahyutrip.sekar
 - tapOn:
     id: login-button
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 # Should see inline error under password field
 # The error text is "Kata Sandi wajib diisi"
 - assertVisible:
@@ -49,13 +49,13 @@ appId: com.wahyutrip.sekar
 # Enter valid password
 - tapOn:
     id: password-input
-- inputText: password123
+- inputText: 12345678
 
 - tapOn:
     id: login-button
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 # Should see "Minimal 3 karakter" error
 - assertVisible:
     text: Minimal 3 karakter
@@ -74,8 +74,8 @@ appId: com.wahyutrip.sekar
 - tapOn:
     id: login-button
 
-- wait: 2000
-
+- waitForAnimationToEnd:
+    timeout: 2000
 # Should see auth failure toast (generic to prevent enumeration)
 # Toast text: "Gagal Masuk" + "No. HP atau Kata Sandi salah. Coba lagi."
 - assertVisible:

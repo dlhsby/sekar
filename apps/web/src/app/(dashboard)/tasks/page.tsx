@@ -24,6 +24,7 @@ import {
   DataTable,
   FormSelect,
   Button,
+  CreateButton,
   PageHeader,
   StatusPill,
   Tabs,
@@ -36,11 +37,12 @@ import type { ColumnDef } from '@/components/ui/data-table';
 import { TaskKanban } from '@/components/tasks/TaskKanban';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
-import { Plus, Eye, Trash2 } from 'lucide-react';
+import { Eye, Trash2 } from 'lucide-react';
 import { TASK_MANAGER_ROLES, hasRole } from '@/lib/constants/roles';
 import { TaskFormModal } from '@/components/tasks/TaskFormModal';
 import { formatDate } from '@/lib/utils/time';
 import { useViewModal } from '@/lib/hooks/use-view-modal';
+import { runAction } from '@/lib/hooks/use-action';
 import {
   getTaskStatusLabel,
   getTaskPriorityLabel,
@@ -196,7 +198,7 @@ export default function TasksPage() {
       enableColumnFilter: false,
       meta: { label: t('tasks:list.tableHeaderArea') },
       cell: ({ row }) => (
-        <div className="text-nb-body-sm">{row.original.area?.name ?? row.original.rayon?.name ?? '-'}</div>
+        <div className="text-nb-body-sm">{row.original.area?.name ?? row.original.district?.name ?? '-'}</div>
       ),
     },
     {
@@ -239,7 +241,7 @@ export default function TasksPage() {
       meta: { label: t('tasks:list.tableHeaderDueDate') },
       cell: ({ row }) => (
         <div className="text-nb-body-sm">
-          {row.original.due_date ? new Date(row.original.due_date).toLocaleDateString(intlLocale()) : '-'}
+          {row.original.deadline ? new Date(row.original.deadline).toLocaleDateString(intlLocale()) : '-'}
         </div>
       ),
     },
@@ -279,10 +281,11 @@ export default function TasksPage() {
             ? t('tasks:list.totalCount', { count: activeQuery.data.meta.total })
             : t('tasks:list.pageHeader')
         }
+        // Stays in the masthead, not the table toolbar: Tugas is kanban-first and
+        // the table is one of two views, so a toolbar button would vanish in
+        // kanban. Same responsive shape as every list page's create action.
         actions={
-          <Button onClick={() => setFormOpen(true)} leftIcon={<Plus className="size-5" />}>
-            {t('tasks:list.createButton')}
-          </Button>
+          <CreateButton label={t('tasks:list.createButton')} onClick={() => setFormOpen(true)} />
         }
       />
 
@@ -370,8 +373,8 @@ export default function TasksPage() {
             </StatusPill>
           ) },
           { label: t('tasks:list.tableHeaderAssignedTo'), value: viewModal.item.assigned_to?.full_name },
-          { label: t('tasks:list.tableHeaderArea'), value: viewModal.item.area?.name ?? viewModal.item.rayon?.name },
-          { label: t('tasks:list.tableHeaderDueDate'), value: viewModal.item.due_date ? new Date(viewModal.item.due_date).toLocaleDateString(intlLocale()) : null },
+          { label: t('tasks:list.tableHeaderArea'), value: viewModal.item.area?.name ?? viewModal.item.district?.name },
+          { label: t('tasks:list.tableHeaderDueDate'), value: viewModal.item.deadline ? new Date(viewModal.item.deadline).toLocaleDateString(intlLocale()) : null },
           { label: t('tasks:list.tableHeaderCreated'), value: formatDate(viewModal.item.created_at) },
           { label: t('tasks:list.tableHeaderUpdated'), value: formatDate(viewModal.item.updated_at) },
         ] : []}
@@ -385,10 +388,12 @@ export default function TasksPage() {
         confirmLabel={t('tasks:list.rowActionDelete')}
         loading={deleteTask.isPending}
         onConfirm={async () => {
-          if (deleteDialog.task) {
-            await deleteTask.mutateAsync(deleteDialog.task.id);
-            setDeleteDialog({ isOpen: false, task: null });
-          }
+          const task = deleteDialog.task;
+          if (!task) return;
+          await runAction(() => deleteTask.mutateAsync(task.id), {
+            success: t('common:messages.deleted'),
+            onSuccess: () => setDeleteDialog({ isOpen: false, task: null }),
+          });
         }}
       />
     </div>

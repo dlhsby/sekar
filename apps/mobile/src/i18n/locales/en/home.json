@@ -4,7 +4,7 @@
       "shiftTime": "Shift time: {{hours}} hours {{minutes}} minutes"
     },
     "sections": {
-      "attendance": "My Attendance",
+      "attendance": "Attendance",
       "summary": "Today's Summary"
     },
     "alerts": {
@@ -29,6 +29,7 @@
         "clockInStart": "Clock in start",
         "status": "Attendance Status",
         "assignedArea": "Assigned Area",
+        "areaStatus": "Area Status",
         "duration": "Current shift duration",
         "currentLocation": "Current location"
       },
@@ -50,6 +51,7 @@
         "title": "Start shift today",
         "assignedArea": "Area: {{area}}"
       },
+      "nextShift": "Next: {{shift}}",
       "a11y": {
         "onDuty": "On duty",
         "overtimeActive": "Overtime active",
@@ -66,11 +68,22 @@
     },
     "warning": {
       "noAssignedArea": "You have not been assigned to any area yet."
+    },
+    "schedule": {
+      "shift": "Shift",
+      "assignment": "Assignment",
+      "team": "Team",
+      "noAssignment": "No assignment",
+      "none": "No schedule today",
+      "viewAll": "View full schedule →",
+      "a11y": {
+        "open": "Open my schedule"
+      }
     }
   },
   "fallbacks": {
     "you": "You",
-    "noRayon": "No rayon"
+    "noDistrict": "No district"
   },
   "coordinator": {
     "sections": {
@@ -180,7 +193,7 @@
   "exec": {
     "sections": {
       "summary": "Today's Summary",
-      "perRayon": "By Rayon"
+      "perDistrict": "By District"
     },
     "hero": {
       "button": {
@@ -197,7 +210,7 @@
       "offline": "Offline",
       "outOfArea": "Out of Area"
     },
-    "rayon": {
+    "district": {
       "detail": "{{active}} Active of {{total}} Officers",
       "status": "{{active}}/{{total}}"
     }

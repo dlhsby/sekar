@@ -53,12 +53,15 @@
     "sortTooltip": "Klik untuk mengurutkan · Shift+klik untuk beberapa kolom",
     "openMapLink": "Buka di Google Maps",
     "fullscreen": "Layar Penuh",
-    "exitFullscreen": "Keluar Layar Penuh"
+    "exitFullscreen": "Keluar Layar Penuh",
+    "apply": "Terapkan",
+    "decrease": "Kurangi",
+    "increase": "Tambah"
   },
   "entities": {
     "user": "Pengguna",
     "area": "Area",
-    "rayon": "Rayon",
+    "district": "Rayon",
     "task": "Tugas",
     "activity": "Aktivitas",
     "schedule": "Jadwal",
@@ -127,7 +130,8 @@
       "placeholder": "Pilih…",
       "searchPlaceholder": "Cari…",
       "noResults": "Tidak ditemukan",
-      "clearSelection": "Hapus pilihan"
+      "clearSelection": "Hapus pilihan",
+      "loadMore": "Muat lebih banyak"
     },
     "timePicker": {
       "selectTime": "Pilih jam",
@@ -136,7 +140,10 @@
     "multiCombobox": {
       "selected": "{{count}} dipilih",
       "removeItem": "Hapus {{label}}"
-    }
+    },
+    "photoPreview": "Pratinjau foto",
+    "photoPrevious": "Foto sebelumnya",
+    "photoNext": "Foto berikutnya"
   },
   "app": {
     "install": {
@@ -159,9 +166,11 @@
     "pruningRequests": "Permohonan Perantingan",
     "usersAccess": "Pengguna & Hak Akses",
     "users": "Pengguna",
+    "roles": "Peran",
     "masterData": "Data Master",
-    "areas": "Area",
-    "rayons": "Rayon",
+    "locations": "Lokasi",
+    "districts": "Rayon",
+    "regions": "Kawasan",
     "plants": "Tanaman",
     "seeds": "Bibit",
     "assets": "Aset",
@@ -184,7 +193,8 @@
     "guide": "Panduan",
     "districtNav": "Navigasi kecamatan",
     "mainNav": "Navigasi utama",
-    "breadcrumbAria": "Navigasi breadcrumb"
+    "breadcrumbAria": "Navigasi breadcrumb",
+    "teams": "Kategori Tim"
   },
   "pagination": {
     "previous": "Sebelumnya",
@@ -251,5 +261,38 @@
     "noPermission": {
       "short": "Akses ditolak"
     }
+  },
+  "color": "Warna",
+  "marker": {
+    "label": "Penanda Peta",
+    "upload": "Unggah gambar",
+    "clear": "Hapus penanda",
+    "custom": "Penanda kustom",
+    "preset": "Opsi penanda {{n}}",
+    "hint": "Pilih penanda bawaan atau unggah gambar (SVG/PNG, maks 200KB).",
+    "tooLarge": "Ukuran gambar maksimal 200KB",
+    "readError": "Gagal membaca gambar",
+    "change": "Ubah",
+    "reset": "Setel ke bawaan",
+    "default": "Bawaan",
+    "done": "Selesai",
+    "current": "Penanda saat ini",
+    "usingDefault": "Menggunakan bawaan sistem",
+    "colorHint": "Warna pin/label di peta — tidak mewarnai ikon gambar."
+  },
+  "loading": "Memuat…",
+  "messages": {
+    "saved": "Perubahan disimpan",
+    "created": "Berhasil dibuat",
+    "updated": "Berhasil diperbarui",
+    "deleted": "Berhasil dihapus",
+    "approved": "Berhasil disetujui",
+    "rejected": "Berhasil ditolak",
+    "assigned": "Berhasil ditugaskan",
+    "verified": "Berhasil diverifikasi",
+    "revisionRequested": "Revisi diminta",
+    "removed": "Berhasil dihapus dari daftar",
+    "markedRead": "Ditandai sudah dibaca",
+    "converted": "Berhasil dikonversi"
   }
 }

@@ -1,0 +1,681 @@
+/**
+ * Schedule Events API Client
+ * Rule-based recurring schedules (ADR-047)
+ */
+
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  type QueryClient,
+} from '@tanstack/react-query';
+import { apiClient } from './client';
+import type { UserRole } from '@/types/models';
+import type { DaySummaryPayload, RangeSummaryPayload } from '@/lib/schedules/dayBoard';
+import { unscheduledKeys } from './unscheduled';
+
+export type RecurrenceType = 'none' | 'daily' | 'every_n_days' | 'weekly' | 'specific_dates';
+export type ScheduleScope = 'static' | 'mobile' | 'district' | 'city';
+export type EditScope = 'this' | 'this_and_future' | 'series';
+
+export interface RecurrenceConfig {
+  interval_n?: number;
+  weekdays?: number[];
+  dates?: string[];
+}
+
+export interface CreateScheduleEventInput {
+  title?: string;
+  recurrence_type: RecurrenceType;
+  start_date: string;
+  end_date?: string | null;
+  recurrence_config?: RecurrenceConfig;
+  shift_definition_id: string;
+  scope: ScheduleScope;
+  location_id?: string | null;
+  region_id?: string | null;
+  district_id?: string | null;
+  is_team: boolean;
+  user_id?: string | null;
+  team_category_id?: string | null;
+  pic_user_id?: string | null;
+  member_ids?: string[];
+  notes?: string;
+}
+
+export interface UpdateScheduleEventInput {
+  title?: string;
+  recurrence_type?: RecurrenceType;
+  start_date?: string;
+  end_date?: string | null;
+  recurrence_config?: RecurrenceConfig;
+  shift_definition_id?: string;
+  scope?: ScheduleScope;
+  location_id?: string | null;
+  region_id?: string | null;
+  district_id?: string | null;
+  member_ids?: string[];
+  notes?: string;
+}
+
+export interface ScheduleEvent {
+  id: string;
+  title: string | null;
+  recurrence_type: RecurrenceType;
+  start_date: string;
+  end_date: string | null;
+  recurrence_config: RecurrenceConfig | null;
+  shift_definition_id: string;
+  scope: ScheduleScope;
+  location_id: string | null;
+  region_id: string | null;
+  district_id: string | null;
+  is_team: boolean;
+  team_category_id: string | null;
+  pic_user_id: string | null;
+  user_id: string | null;
+  is_active: boolean;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  created_by: string | null;
+  updated_by: string | null;
+  shift_definition: {
+    id: string;
+    name: string;
+    start_time: string;
+    end_time: string;
+    crosses_midnight?: boolean;
+    /** Latest-clock-in grace (min); drives the lazy planned→absent display. */
+    cutoff_grace_min?: number | null;
+  };
+  location?: {
+    id: string;
+    name: string;
+  } | null;
+  region?: {
+    id: string;
+    name: string;
+  } | null;
+  district?: {
+    id: string;
+    name: string;
+  } | null;
+  team_category?: {
+    id: string;
+    name: string;
+    marker_color?: string | null;
+  } | null;
+  pic_user?: {
+    id: string;
+    full_name: string;
+    username: string;
+    role: UserRole;
+  } | null;
+  user?: {
+    id: string;
+    full_name: string;
+    username: string;
+    role: UserRole;
+  } | null;
+  members?: Array<{
+    id: string;
+    user_id: string;
+    full_name: string;
+    username: string;
+    role: UserRole;
+  }>;
+}
+
+export interface ScheduleOccurrence {
+  id: string;
+  user_id: string;
+  schedule_date: string;
+  shift_definition_id: string | null;
+  scope: ScheduleScope;
+  status: string;
+  location_id?: string | null;
+  region_id?: string | null;
+  district_id?: string | null;
+  schedule_event_id?: string | null;
+  is_detached: boolean;
+  is_projected?: boolean;
+  // Presence axes (ADR-050) — drive the board's status bullet. Absent on a
+  // projected occurrence (nothing has happened yet), which reads as `planned`.
+  lifecycle_state?: string | null;
+  lifecycle_flags?: string[];
+  leave_reason?: 'cuti' | 'sakit' | 'izin' | 'libur' | null;
+  is_within_area?: boolean | null;
+  is_scheduled?: boolean;
+  user: {
+    id: string;
+    full_name: string;
+    username: string;
+    role: UserRole;
+  };
+  shift_definition: {
+    id: string;
+    name: string;
+    start_time: string;
+    end_time: string;
+    crosses_midnight?: boolean;
+  } | null;
+  team_category?: {
+    id: string;
+    name: string;
+    marker_color?: string | null;
+  } | null;
+  location?: {
+    id: string;
+    name: string;
+  } | null;
+  region?: {
+    id: string;
+    name: string;
+  } | null;
+}
+
+/** Raw roster row as the backend returns it (Schedule entity: locations ride in
+ * `location`; there is no `scope` field). */
+export interface RawScheduleRangeRow {
+  id: string;
+  user_id: string;
+  schedule_date: string;
+  shift_definition_id: string | null;
+  status: string;
+  // Presence axes (ADR-050). Attached by the backend's RosterPresenceService for
+  // rows dated today or earlier; `lifecycle_state: null` on a future row means
+  // "not applicable yet", not "off duty".
+  lifecycle_state?: string | null;
+  lifecycle_flags?: string[];
+  leave_reason?: 'cuti' | 'sakit' | 'izin' | 'libur' | null;
+  is_within_area?: boolean | null;
+  is_scheduled?: boolean;
+  region_id?: string | null;
+  district_id?: string | null;
+  team_category_id?: string | null;
+  schedule_event_id?: string | null;
+  is_detached?: boolean;
+  is_projected?: boolean;
+  user: ScheduleOccurrence['user'];
+  shift_definition?: ScheduleOccurrence['shift_definition'];
+  location_id?: string | null;
+  location?: { id: string; name: string } | null;
+  region?: ScheduleOccurrence['region'];
+  team_category?: ScheduleOccurrence['team_category'];
+}
+
+/**
+ * Normalize a raw roster row to the calendar's occurrence shape.
+ *
+ * Exported for tests: this mapping is where the ADR-050 presence axes were
+ * silently dropped for months, so it is worth asserting directly rather than
+ * only through a mocked fetch.
+ */
+export function toOccurrence(row: RawScheduleRangeRow): ScheduleOccurrence {
+  // ADR-053: the row carries exactly one place.
+  // Derive scope from the row's binding: region → mobile, a location →
+  // static, a district-only row → district (roving crew), else no binding at all →
+  // city (a Tim Patroli covering all Surabaya).
+  const scope: ScheduleScope = row.region_id
+    ? 'mobile'
+    : row.location_id
+      ? 'static'
+      : row.district_id
+        ? 'district'
+        : 'city';
+  return {
+    id: row.id,
+    user_id: row.user_id,
+    schedule_date: row.schedule_date,
+    shift_definition_id: row.shift_definition_id,
+    scope,
+    status: row.status,
+    // These four are what make the board's presence bullet mean anything: they
+    // were declared on ScheduleOccurrence but never mapped, so every consumer
+    // silently fell back to `status` and five of the nine tones were dead.
+    lifecycle_state: row.lifecycle_state ?? null,
+    lifecycle_flags: row.lifecycle_flags ?? [],
+    leave_reason: row.leave_reason ?? null,
+    is_within_area: row.is_within_area ?? null,
+    is_scheduled: row.is_scheduled ?? true,
+    location_id: row.location_id ?? null,
+    region_id: row.region_id ?? null,
+    district_id: row.district_id ?? null,
+    schedule_event_id: row.schedule_event_id ?? null,
+    is_detached: row.is_detached ?? false,
+    is_projected: row.is_projected ?? false,
+    user: row.user,
+    shift_definition: row.shift_definition ?? null,
+    team_category: row.team_category ?? null,
+    location: row.location ?? null,
+    region: row.region ?? null,
+  };
+}
+
+/** Per-member/date entry for conflicts or skipped entries */
+export interface MaterializationEntry {
+  user_id: string;
+  date: string;
+  reason?: 'exists' | 'duplicate' | string;
+  conflicting_shift?: string;
+}
+
+export interface MaterializationResult {
+  created: number;
+  skipped: MaterializationEntry[];
+  conflicts?: MaterializationEntry[];
+}
+
+export interface CreateScheduleEventResponse {
+  event: ScheduleEvent;
+  materialization: MaterializationResult;
+}
+
+export interface UpdateScheduleEventResponse {
+  event: ScheduleEvent;
+  /** Present for edit_scope=this_and_future — the split-off series. */
+  new_event?: ScheduleEvent;
+  materialization: MaterializationResult;
+}
+
+/**
+ * Query key factory for schedule events
+ */
+export const scheduleEventKeys = {
+  all: ['schedule-events'] as const,
+  lists: () => [...scheduleEventKeys.all, 'list'] as const,
+  byRange: (from: string, to: string) => [...scheduleEventKeys.lists(), { from, to }] as const,
+  byId: (id: string) => [...scheduleEventKeys.all, 'detail', id] as const,
+};
+
+/**
+ * Query key factory for schedule occurrences (materialized roster)
+ */
+export const scheduleOccurrenceKeys = {
+  all: ['schedule-occurrences'] as const,
+  lists: () => [...scheduleOccurrenceKeys.all, 'list'] as const,
+  byRange: (from: string, to: string) => [...scheduleOccurrenceKeys.lists(), { from, to }] as const,
+  /** One container's rows on a day — what the board fetches when a card opens. */
+  byContainer: (date: string, containerId: string, filters?: ScheduleRangeFilters) =>
+    [...scheduleOccurrenceKeys.lists(), { date, containerId, ...filters }] as const,
+  /** Aggregate counts for the week/month grids. */
+  rangeSummary: (from: string, to: string, filters?: ScheduleRangeFilters) =>
+    [...scheduleOccurrenceKeys.all, 'range-summary', { from, to, ...filters }] as const,
+  /** Aggregate counts for the collapsed board. */
+  daySummary: (date: string, filters?: ScheduleRangeFilters) =>
+    [...scheduleOccurrenceKeys.all, 'day-summary', { date, ...filters }] as const,
+};
+
+/**
+ * Fetch schedule occurrences (materialized roster) for a date range
+ */
+/** Calendar range filters (query-param names match the backend, camelCase). */
+export interface ScheduleRangeFilters {
+  /** Only rows bound to nothing — the board's city container. */
+  cityScopeOnly?: boolean;
+  districtId?: string;
+  regionId?: string;
+  locationId?: string;
+  userId?: string;
+  shiftDefinitionId?: string;
+  teamCategoryId?: string;
+}
+
+/** The range filters as query params — shared by the range and summary calls so
+ *  the two can never drift and disagree about what a card contains. */
+function appendRangeFilters(params: URLSearchParams, filters?: ScheduleRangeFilters): void {
+  if (filters?.districtId) params.append('districtId', filters.districtId);
+  if (filters?.regionId) params.append('regionId', filters.regionId);
+  if (filters?.locationId) params.append('locationId', filters.locationId);
+  if (filters?.userId) params.append('userId', filters.userId);
+  if (filters?.shiftDefinitionId) params.append('shiftDefinitionId', filters.shiftDefinitionId);
+  if (filters?.teamCategoryId) params.append('teamCategoryId', filters.teamCategoryId);
+  if (filters?.cityScopeOnly) params.append('cityScopeOnly', 'true');
+}
+
+async function fetchScheduleRange(
+  from: string,
+  to: string,
+  filters?: ScheduleRangeFilters
+): Promise<ScheduleOccurrence[]> {
+  const params = new URLSearchParams();
+  params.append('from', from);
+  params.append('to', to);
+  appendRangeFilters(params, filters);
+
+  const response = await apiClient.get<RawScheduleRangeRow[]>(
+    `/schedules/range?${params.toString()}`
+  );
+  return (response.data || []).map(toOccurrence);
+}
+
+/**
+ * Fetch schedule events for a date range
+ */
+async function fetchScheduleEvents(filters?: {
+  from?: string;
+  to?: string;
+  district_id?: string;
+  user_id?: string;
+  team_id?: string;
+  shift_definition_id?: string;
+  is_team?: boolean;
+}): Promise<ScheduleEvent[]> {
+  const params = new URLSearchParams();
+  if (filters?.from) params.append('from', filters.from);
+  if (filters?.to) params.append('to', filters.to);
+  if (filters?.district_id) params.append('district_id', filters.district_id);
+  if (filters?.user_id) params.append('user_id', filters.user_id);
+  if (filters?.team_id) params.append('team_id', filters.team_id);
+  if (filters?.shift_definition_id)
+    params.append('shift_definition_id', filters.shift_definition_id);
+  if (filters?.is_team !== undefined) params.append('is_team', filters.is_team ? 'true' : 'false');
+
+  const response = await apiClient.get<ScheduleEvent[]>(`/schedule-events?${params.toString()}`);
+  return response.data || [];
+}
+
+/**
+ * Fetch a single schedule event
+ */
+async function fetchScheduleEvent(id: string): Promise<ScheduleEvent> {
+  const response = await apiClient.get<ScheduleEvent>(`/schedule-events/${id}`);
+  return response.data;
+}
+
+/**
+ * Create a schedule event
+ */
+async function createScheduleEvent(
+  input: CreateScheduleEventInput
+): Promise<CreateScheduleEventResponse> {
+  const response = await apiClient.post<CreateScheduleEventResponse>('/schedule-events', input);
+  return response.data;
+}
+
+/**
+ * Update a schedule event
+ */
+async function updateScheduleEvent(
+  id: string,
+  input: UpdateScheduleEventInput,
+  editScope?: EditScope,
+  fromDate?: string
+): Promise<UpdateScheduleEventResponse> {
+  const params = new URLSearchParams();
+  if (editScope) params.append('edit_scope', editScope);
+  if (fromDate) params.append('from_date', fromDate);
+
+  const response = await apiClient.patch<UpdateScheduleEventResponse>(
+    `/schedule-events/${id}?${params.toString()}`,
+    input
+  );
+  return response.data;
+}
+
+/**
+ * Delete a schedule event
+ */
+async function deleteScheduleEvent(id: string, scope?: EditScope, date?: string): Promise<void> {
+  const params = new URLSearchParams();
+  if (scope) params.append('scope', scope);
+  if (date) params.append('date', date);
+
+  await apiClient.delete(`/schedule-events/${id}?${params.toString()}`);
+}
+
+/**
+ * Hook: Fetch schedule occurrences (materialized roster) for a date range
+ */
+export function useScheduleRange(
+  from: string,
+  to: string,
+  filters?: ScheduleRangeFilters,
+  enabled = true
+) {
+  return useQuery({
+    queryKey: [...scheduleOccurrenceKeys.byRange(from, to), filters ?? {}],
+    queryFn: () => fetchScheduleRange(from, to, filters),
+    enabled,
+    staleTime: 30_000,
+  });
+}
+
+/**
+ * Aggregate counts for one day's collapsed board.
+ *
+ * The board used to download every occurrence in the city to render headcounts
+ * and capacity pills — 3.9 MB for a day on staging-sized data, to print
+ * integers. This is the same day in ~80 KB; the rows for a container arrive via
+ * `useContainerOccurrences` when it is expanded.
+ */
+export function useDaySummary(date: string, filters?: ScheduleRangeFilters, enabled = true) {
+  return useQuery({
+    queryKey: scheduleOccurrenceKeys.daySummary(date, filters),
+    queryFn: async () => {
+      const params = new URLSearchParams({ date });
+      appendRangeFilters(params, filters);
+      const response = await apiClient.get<DaySummaryPayload>(
+        `/schedules/day-summary?${params.toString()}`
+      );
+      return response.data;
+    },
+    enabled: enabled && !!date,
+    staleTime: 30_000,
+  });
+}
+
+/**
+ * Aggregate counts for the week and month grids.
+ *
+ * Both render only headcounts unless a subject filter is set, and used to fetch
+ * every row in the range to derive them — an unfiltered month was 57 MB / 27 s
+ * and an OOM risk on staging. This answers the same question in ~190 KB.
+ */
+export function useRangeSummary(
+  from: string,
+  to: string,
+  filters?: ScheduleRangeFilters,
+  enabled = true
+) {
+  return useQuery({
+    queryKey: scheduleOccurrenceKeys.rangeSummary(from, to, filters),
+    queryFn: async () => {
+      const params = new URLSearchParams({ from, to });
+      appendRangeFilters(params, filters);
+      const response = await apiClient.get<RangeSummaryPayload>(
+        `/schedules/range-summary?${params.toString()}`
+      );
+      return response.data;
+    },
+    enabled: enabled && !!from && !!to,
+    staleTime: 30_000,
+  });
+}
+
+/** Which tier a board container belongs to — decides how a leaf fetch is scoped. */
+export type ContainerTier = 'city' | 'district' | 'region' | 'location';
+
+/**
+ * Query options for ONE container's rows on a day, fetched when its card opens.
+ *
+ * Options rather than a hook because the board opens an arbitrary number of
+ * containers and they must be fetched with `useQueries` — each independently
+ * cached, so re-opening a card is instant and closing one costs nothing.
+ *
+ * The city container is bound to no geography, so it asks for `cityScopeOnly`
+ * rather than an id. Without that param it had to fall back to the unscoped day
+ * — and since the board auto-opens the city node, that quietly re-downloaded
+ * all 1.2 MB the summary had just replaced.
+ *
+ * `expectedRows` short-circuits the fetch entirely when the summary already says
+ * the container is empty: there is nothing to ask for, and most containers on a
+ * city-wide board are empty.
+ */
+export function containerOccurrencesQuery(
+  date: string,
+  container: { id: string; tier: ContainerTier } | null,
+  filters?: ScheduleRangeFilters,
+  expectedRows?: number
+) {
+  const scoped: ScheduleRangeFilters = {
+    ...filters,
+    ...(container?.tier === 'city' ? { cityScopeOnly: true } : {}),
+    ...(container?.tier === 'location' ? { locationId: container.id } : {}),
+    ...(container?.tier === 'region' ? { regionId: container.id } : {}),
+    ...(container?.tier === 'district' ? { districtId: container.id } : {}),
+  };
+  return {
+    queryKey: scheduleOccurrenceKeys.byContainer(date, container?.id ?? '', filters),
+    queryFn: () => fetchScheduleRange(date, date, scoped),
+    enabled: !!container && !!date && expectedRows !== 0,
+    staleTime: 30_000,
+  };
+}
+
+/** One day's occupancy count for the year heatmap. */
+export interface DayCount {
+  date: string;
+  count: number;
+}
+
+async function fetchYearSummary(
+  from: string,
+  to: string,
+  filters?: ScheduleRangeFilters
+): Promise<DayCount[]> {
+  const params = new URLSearchParams();
+  params.append('from', from);
+  params.append('to', to);
+  if (filters?.districtId) params.append('districtId', filters.districtId);
+  if (filters?.regionId) params.append('regionId', filters.regionId);
+  if (filters?.locationId) params.append('locationId', filters.locationId);
+  if (filters?.userId) params.append('userId', filters.userId);
+  if (filters?.shiftDefinitionId) params.append('shiftDefinitionId', filters.shiftDefinitionId);
+  if (filters?.teamCategoryId) params.append('teamCategoryId', filters.teamCategoryId);
+
+  const response = await apiClient.get<DayCount[]>(`/schedules/year-summary?${params.toString()}`);
+  return response.data || [];
+}
+
+/** Per-day occupancy counts across a year (the year heatmap). */
+export function useScheduleYearSummary(
+  year: number,
+  filters?: ScheduleRangeFilters,
+  enabled = true
+) {
+  const from = `${year}-01-01`;
+  const to = `${year}-12-31`;
+  return useQuery({
+    queryKey: [...scheduleOccurrenceKeys.all, 'year', year, filters ?? {}],
+    queryFn: () => fetchYearSummary(from, to, filters),
+    enabled,
+    staleTime: 60_000,
+  });
+}
+
+/**
+ * Hook: Fetch schedule events
+ */
+export function useScheduleEvents(
+  filters?: {
+    from?: string;
+    to?: string;
+    district_id?: string;
+    user_id?: string;
+    team_id?: string;
+    shift_definition_id?: string;
+    is_team?: boolean;
+  },
+  enabled = true
+) {
+  return useQuery({
+    queryKey: filters ? [scheduleEventKeys.lists(), filters] : scheduleEventKeys.lists(),
+    queryFn: () => fetchScheduleEvents(filters),
+    enabled,
+    staleTime: 30_000,
+  });
+}
+
+/**
+ * Hook: Fetch a single schedule event
+ */
+export function useScheduleEvent(id: string, enabled = true) {
+  return useQuery({
+    queryKey: scheduleEventKeys.byId(id),
+    queryFn: () => fetchScheduleEvent(id),
+    enabled,
+    staleTime: 60_000,
+  });
+}
+
+/**
+ * Everything a roster write invalidates, awaited so the caller can trust the
+ * board before it claims success.
+ *
+ * Two things were wrong before. It invalidated `scheduleOccurrenceKeys.lists()`,
+ * which does NOT cover the day summary — the collapsed board's counts sat under
+ * a sibling key and would have kept the pre-write numbers. And nothing awaited
+ * the refetch, so `mutateAsync` resolved while the board was still stale and the
+ * success toast beat the row onto the screen by seconds.
+ *
+ * `onSuccess` may return a promise; React Query waits for it before the mutation
+ * settles, which is what makes the toast honest without an optimistic patch.
+ */
+async function invalidateRosterWrites(queryClient: QueryClient): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: scheduleEventKeys.lists() }),
+    // `.all`, not `.lists()` — covers the range, the per-container rows AND the
+    // day summary.
+    queryClient.invalidateQueries({ queryKey: scheduleOccurrenceKeys.all }),
+    // The gap panel ("Belum Dijadwalkan") is derived from the same rosters, so a
+    // schedule written anywhere must invalidate it too — otherwise returning to
+    // the list after a save shows the worker you just placed still sitting there.
+    queryClient.invalidateQueries({ queryKey: unscheduledKeys.all }),
+  ]);
+}
+
+/**
+ * Hook: Create a schedule event
+ */
+export function useCreateScheduleEvent() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createScheduleEvent,
+    onSuccess: () => invalidateRosterWrites(queryClient),
+  });
+}
+
+/**
+ * Hook: Update a schedule event
+ */
+export function useUpdateScheduleEvent() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      input,
+      editScope,
+      fromDate,
+    }: {
+      id: string;
+      input: UpdateScheduleEventInput;
+      editScope?: EditScope;
+      fromDate?: string;
+    }) => updateScheduleEvent(id, input, editScope, fromDate),
+    onSuccess: () => invalidateRosterWrites(queryClient),
+  });
+}
+
+/**
+ * Hook: Delete a schedule event
+ */
+export function useDeleteScheduleEvent() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, scope, date }: { id: string; scope?: EditScope; date?: string }) =>
+      deleteScheduleEvent(id, scope, date),
+    onSuccess: () => invalidateRosterWrites(queryClient),
+  });
+}

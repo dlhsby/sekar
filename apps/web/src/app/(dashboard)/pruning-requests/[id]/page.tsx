@@ -20,8 +20,6 @@ import { ArrowLeft, ArrowRight, ExternalLink } from 'lucide-react';
 
 import {
   Button,
-  Dialog,
-  DialogContent,
   DatePicker,
   Field as FormField,
   FormSelect,
@@ -30,6 +28,7 @@ import {
   StatusPill,
   Textarea,
 } from '@/components/ui';
+import { PhotoLightbox } from '@/components/ui/photo-lightbox';
 import { useAuth } from '@/lib/auth/hooks';
 import { hasRole } from '@/lib/constants/roles';
 import type { UserRole } from '@/types/models';
@@ -45,13 +44,14 @@ import {
   useConvertPruningRequestToTask,
   type ConvertToTaskDto,
 } from '@/lib/api/pruning-requests';
-import { useAreas } from '@/lib/api/areas';
+import { useLocations } from '@/lib/api/locations';
 import { useUsers } from '@/lib/api/users';
+import { runAction } from '@/lib/hooks/use-action';
 
 type CaseType = ConvertToTaskDto['caseType'];
 type PruningAction = ConvertToTaskDto['pruningAction'];
 
-const ASSIGNEE_ROLES: UserRole[] = ['korlap', 'satgas', 'linmas', 'kepala_rayon', 'admin_data'];
+const ASSIGNEE_ROLES: UserRole[] = ['korlap', 'satgas', 'linmas', 'kepala_rayon', 'admin_rayon'];
 
 export default function PruningRequestDetailPage() {
   const { t } = useTranslation();
@@ -67,15 +67,15 @@ export default function PruningRequestDetailPage() {
   }, [user, authLoading, router]);
 
   const { data: request, isLoading, isError } = usePruningRequest(id);
-  // Areas + users — fetched once, filtered client-side by request.rayonId so
+  // Areas + users — fetched once, filtered client-side by request.districtId so
   // the dropdowns only show in-scope options.
-  const { data: areasResponse } = useAreas({ rayon_id: request?.rayonId ?? undefined });
-  // useUsers' filter doesn't accept rayon_id; fetch a generous page and filter client-side.
+  const { data: areasResponse } = useLocations({ district_id: request?.districtId ?? undefined });
+  // useUsers' filter doesn't accept district_id; fetch a generous page and filter client-side.
   const { data: usersResponse } = useUsers({ limit: 200 });
 
   // Hoist the optional-chain read to a stable value so the memo deps are plain
   // identifiers (the React Compiler can't preserve a member-expression dep).
-  const requestRayonId = request?.rayonId;
+  const requestDistrictId = request?.districtId;
   const areaOptions = useMemo(
     () => (areasResponse?.data ?? []).map((a) => ({ label: a.name, value: a.id })),
     [areasResponse],
@@ -84,9 +84,9 @@ export default function PruningRequestDetailPage() {
     const all = usersResponse?.data ?? [];
     return all
       .filter((u) => ASSIGNEE_ROLES.includes(u.role as UserRole))
-      .filter((u) => !requestRayonId || u.rayon_id === requestRayonId)
+      .filter((u) => !requestDistrictId || u.district_id === requestDistrictId)
       .map((u) => ({ label: `${u.full_name} (${u.role})`, value: u.id }));
-  }, [usersResponse, requestRayonId]);
+  }, [usersResponse, requestDistrictId]);
 
   // Build case types and pruning actions from i18n
   const caseTypeOptions = useMemo<Array<{ label: string; value: CaseType }>>(() => [
@@ -115,8 +115,10 @@ export default function PruningRequestDetailPage() {
   const [scheduledDate, setScheduledDate] = useState('');
   const convertMutation = useConvertPruningRequestToTask(id);
 
-  // Photo lightbox
-  const [lightbox, setLightbox] = useState<string | null>(null);
+  // Photo lightbox — an INDEX now, not a URL, so the shared viewer knows where
+  // the clicked photo sits in the set and can step through the rest. This page
+  // always had several photos and no way to move between them.
+  const [lightbox, setLightbox] = useState<number | null>(null);
 
   if (isLoading) {
     return (
@@ -147,20 +149,26 @@ export default function PruningRequestDetailPage() {
   const canConvert = request.status === 'approved';
 
   const handleReview = (decision: 'approve' | 'reject') => {
-    reviewMutation.mutate({ decision, reviewNotes: reviewNotes || undefined });
+    void runAction(() => reviewMutation.mutateAsync({ decision, reviewNotes: reviewNotes || undefined }), {
+      success: decision === 'approve' ? t('common:messages.approved') : t('common:messages.rejected'),
+    });
   };
 
   const handleConvert = () => {
     if (!areaId || !assignedTo) return;
-    convertMutation.mutate(
+    void runAction(
+      () =>
+        convertMutation.mutateAsync({
+          areaId,
+          assignedTo,
+          caseType,
+          pruningAction,
+          scheduledDate: scheduledDate || undefined,
+        }),
       {
-        areaId,
-        assignedTo,
-        caseType,
-        pruningAction,
-        scheduledDate: scheduledDate || undefined,
+        success: t('common:messages.converted'),
+        onSuccess: () => router.push('/pruning-requests'),
       },
-      { onSuccess: () => router.push('/pruning-requests') },
     );
   };
 
@@ -195,7 +203,7 @@ export default function PruningRequestDetailPage() {
           <SectionCard title={t('pruning:detail.sections.details')}>
             <dl className="space-y-2.5 text-nb-body-sm">
               <Field label={t('pruning:detail.fields.kecamatan')} value={request.kecamatanName ?? '-'} />
-              <Field label={t('pruning:detail.fields.rayon')} value={request.rayon?.name ?? '-'} />
+              <Field label={t('pruning:detail.fields.district')} value={request.district?.name ?? '-'} />
               <Field label={t('pruning:detail.fields.submitter')} value={request.submitter?.full_name ?? '-'} />
               <Field label={t('pruning:detail.fields.expectedWeek')} value={expectedLabel} />
               <Field
@@ -225,7 +233,7 @@ export default function PruningRequestDetailPage() {
                   <button
                     key={i}
                     type="button"
-                    onClick={() => setLightbox(url)}
+                    onClick={() => setLightbox(i)}
                     className="group relative overflow-hidden rounded-nb-base border-2 border-nb-black focus:outline-none focus-visible:ring-2 focus-visible:ring-nb-primary"
                     aria-label={t('pruning:detail.photoLabel', { index: i + 1 })}
                   >
@@ -383,20 +391,12 @@ export default function PruningRequestDetailPage() {
         </div>
       </div>
 
-      <Dialog open={!!lightbox} onOpenChange={(open) => !open && setLightbox(null)}>
-        <DialogContent className="max-w-2xl p-2">
-          {lightbox && (
-            <Image
-              src={lightbox}
-              alt={t('pruning:detail.photoPreview')}
-              width={1024}
-              height={768}
-              className="h-auto w-full rounded-nb-base object-contain"
-              unoptimized
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      <PhotoLightbox
+        photos={request.photoUrls}
+        index={lightbox}
+        onIndexChange={setLightbox}
+        alt={t('pruning:detail.photoPreview')}
+      />
     </div>
   );
 }

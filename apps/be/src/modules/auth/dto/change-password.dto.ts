@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsOptional, IsString, MinLength } from 'class-validator';
+import { ValidationConstants } from '../../../common/constants/auth.constants';
 
 /**
  * Phase 4 sub-phase 4-7 (M3a): payload for POST /auth/change-password.
@@ -20,8 +21,11 @@ export class ChangePasswordDto {
   @IsString()
   old_password?: string;
 
-  @ApiProperty({ description: 'New password (min 8 chars)', minLength: 8 })
+  @ApiProperty({
+    description: `New password (min ${ValidationConstants.PASSWORD_MIN_LENGTH} chars)`,
+    minLength: ValidationConstants.PASSWORD_MIN_LENGTH,
+  })
   @IsString()
-  @MinLength(8)
+  @MinLength(ValidationConstants.PASSWORD_MIN_LENGTH)
   new_password: string;
 }

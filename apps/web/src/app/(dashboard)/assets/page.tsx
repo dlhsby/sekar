@@ -21,14 +21,14 @@ import {
 } from '@/components/ui';
 import { useUser } from '@/lib/auth/hooks';
 import { useAssets, useAssetCategories, useDeleteAsset, type AssetStatus } from '@/lib/api/assets';
-import { useUsers } from '@/lib/api/users';
+import { useUserLookup } from '@/lib/api/users';
 import { AssetFormModal } from '@/components/assets/AssetFormModal';
 import { formatDate } from '@/lib/utils/time';
 import { useViewModal } from '@/lib/hooks/use-view-modal';
 import { getErrorMessage } from '@/lib/api/client';
 import type { Asset } from '@/lib/api/assets';
 
-const ASSET_MANAGER_ROLES = ['korlap', 'kepala_rayon', 'top_management', 'admin_system', 'superadmin'];
+const ASSET_MANAGER_ROLES = ['korlap', 'kepala_rayon', 'management', 'admin_system', 'superadmin'];
 
 const STATUS_TONE_MAP: Record<AssetStatus, 'ok' | 'info' | 'warn' | 'neutral' | 'bad'> = {
   available: 'ok',
@@ -78,10 +78,11 @@ export default function AssetsPage() {
   const { data: categories } = useAssetCategories();
 
   // Resolve actor ids (created_by/updated_by) to names via the user list.
-  const { data: usersData } = useUsers({ limit: 1000 });
+  // Lookup, not the paginated list — only a NAME is resolved here.
+  const { data: users = [] } = useUserLookup();
   const userNameById = useMemo(
-    () => new Map((usersData?.data ?? []).map((u) => [u.id, u.full_name])),
-    [usersData]
+    () => new Map((users ?? []).map((u) => [u.id, u.full_name])),
+    [users]
   );
   const actorName = useCallback(
     (id?: string): string => (id ? (userNameById.get(id) ?? '—') : '—'),
@@ -187,7 +188,7 @@ export default function AssetsPage() {
         enableSorting: false,
         enableColumnFilter: false,
         meta: { label: t('list.columns.location') },
-        cell: ({ row }) => row.original.area?.name || row.original.rayon?.name || '—',
+        cell: ({ row }) => row.original.area?.name || row.original.district?.name || '—',
       },
       {
         id: 'created_by',
@@ -400,7 +401,7 @@ export default function AssetsPage() {
               </StatusPill>
             ),
           },
-          { label: t('detail.location'), value: view.item.area?.name || view.item.rayon?.name },
+          { label: t('detail.location'), value: view.item.area?.name || view.item.district?.name },
           { label: t('detail.createdAt'), value: formatDate(view.item.created_at) },
           { label: t('detail.createdBy'), value: actorName(view.item.created_by) },
           { label: t('detail.updatedAt'), value: formatDate(view.item.updated_at) },

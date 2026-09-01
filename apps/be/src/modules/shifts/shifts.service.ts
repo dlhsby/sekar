@@ -1,24 +1,44 @@
 import { Injectable, Logger, HttpStatus, Optional, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { randomUUID } from 'crypto';
+import { Repository, IsNull, Not } from 'typeorm';
 import { Shift } from './entities/shift.entity';
+import { AttendancePunch } from './entities/attendance-punch.entity';
+import { PunchLabel } from './enums/punch-label.enum';
+import { AttendanceDerivationService } from './services/attendance-derivation.service';
+import { ShiftAttributionService, AttributionMatch } from './services/shift-attribution.service';
+import { AttendanceCurrentDto, ShiftOptionDto } from './dto/attendance-current.dto';
+import { PunchLogDayDto, PunchSessionDto, PunchDto } from './dto/punch-log.dto';
 import { ClockInDto } from './dto/clock-in.dto';
 import { ClockOutDto } from './dto/clock-out.dto';
-import { AreasService } from '../areas/areas.service';
+import { LocationsService } from '../locations/locations.service';
 import { ApiException } from '../../common/exceptions/api.exception';
+import {
+  evaluateLocation,
+  LocationRejection,
+  type LocationVerdict,
+  type PreviousFix,
+} from '../../common/utils/location-integrity.util';
+import { mockedLocationAllowed } from '../../common/config/integrity-overrides';
+import { isShiftWindowClosed } from '../schedules/schedules.support';
+
+/** Fallback when a shift definition carries no explicit grace. Matches the absence sweep. */
+const DEFAULT_CUTOFF_GRACE_MIN = 60;
 import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
 import { BoundaryCheckService } from '../../shared/services/boundary-check.service';
+import { PhotoStorageService } from '../../shared/services/photo-storage.service';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 import { TimezoneUtil } from '../../common/utils/timezone.util';
 import { AttendanceDaySummaryDto } from './dto/attendance-day.dto';
 import { AttendanceFilterDto } from './dto/attendance-filter.dto';
 import { getMinimumShiftDurationMinutes } from '../../common/constants/shift.constants';
-import { Area } from '../areas/entities/area.entity';
+import { SystemConfigService } from '../settings/services/system-config.service';
+import { Location } from '../locations/entities/location.entity';
 import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
 import { User } from '../users/entities/user.entity';
 import { StatusCalculatorService } from '../monitoring/services/status-calculator.service';
 import { AuditLogService } from '../audit/audit.service';
-import { UserAreasService } from '../user-areas/user-areas.service';
+import { UserLocationsService } from '../user-locations/user-locations.service';
 import { SchedulesService } from '../schedules/schedules.service';
 import { GpsUtil } from '../../common/utils/gps.util';
 
@@ -35,12 +55,16 @@ export class ShiftsService {
   constructor(
     @InjectRepository(Shift)
     private readonly shiftRepository: Repository<Shift>,
+    @InjectRepository(AttendancePunch)
+    private readonly punchRepository: Repository<AttendancePunch>,
+    private readonly derivation: AttendanceDerivationService,
+    private readonly attribution: ShiftAttributionService,
     @InjectRepository(ShiftDefinition)
     private readonly shiftDefinitionRepo: Repository<ShiftDefinition>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
-    private readonly userAreasService: UserAreasService,
-    private readonly areasService: AreasService,
+    private readonly userAreasService: UserLocationsService,
+    private readonly locationsService: LocationsService,
     @Optional()
     @Inject(forwardRef(() => StatusCalculatorService))
     private readonly statusCalculator: StatusCalculatorService | undefined,
@@ -53,7 +77,41 @@ export class ShiftsService {
     // legacy specs without the provider fall back to a local instance.
     @Optional()
     private readonly boundaryCheckService?: BoundaryCheckService,
+    // ADR-049: runtime min-shift-duration via SystemConfigService (DB → env →
+    // default). Optional → specs without the provider fall back to the env helper.
+    @Optional()
+    private readonly systemConfig?: SystemConfigService,
+    // Selfies go to object storage, never into the column (see `storeSelfie`).
+    // Optional → legacy specs that build this service by hand keep working.
+    @Optional()
+    private readonly photos?: PhotoStorageService,
   ) {}
+
+  /**
+   * Put a clock-in/out selfie in object storage and return its URL.
+   *
+   * `PhotoUrlInterceptor` converts inline media globally, but only for the field
+   * names it knows, and the selfie arrives as `selfie_photo` — so these photos
+   * bypassed it and went into `attendance_punches.photo_url` and
+   * `shifts.clock_*_photo_url` as raw base64. On the staging clone that is
+   * **500 MB across three columns**, every row a data URI, averaging 188 KB.
+   *
+   * A value that is already a URL passes through, so a client that has been
+   * updated to upload separately is unaffected.
+   */
+  private async storeSelfie(
+    value: string | null | undefined,
+    folder: string,
+  ): Promise<string | null> {
+    if (!value) return null;
+    if (!this.photos) {
+      // Only reachable from a hand-built service in a spec; the module provides
+      // it. Say so rather than silently persisting base64.
+      this.logger.warn('PhotoStorageService unavailable — selfie left inline');
+      return value;
+    }
+    return this.photos.store(value, folder);
+  }
 
   private get boundaryCheck(): BoundaryCheckService {
     return (this.boundaryCheckFallback ??= this.boundaryCheckService ?? new BoundaryCheckService());
@@ -67,20 +125,21 @@ export class ShiftsService {
    * task_based + active explicit schedules) and a single shift. With GPS we
    * pick the assigned area whose geofence CONTAINS the point; if several/none
    * contain it we pick the CLOSEST centre. Without GPS we prefer the primary
-   * (`users.area_id`) then the first candidate. Returns null when the worker
+   * (`users.location_id`) then the first candidate. Returns null when the worker
    * has no assigned area (ad-hoc) — clock-in still proceeds.
    *
    * @param userId User UUID
    * @param lat optional clock-in latitude
    * @param lng optional clock-in longitude
    */
-  async getActiveArea(userId: string, lat?: number, lng?: number): Promise<Area | null> {
+  async getActiveArea(userId: string, lat?: number, lng?: number): Promise<Location | null> {
     // Prefer today's roster areas (ADR-013); fall back to the standing
     // assignment (user_areas + active schedules) when there is no roster row.
-    let candidates: Area[] = [];
+    let candidates: Location[] = [];
     if (this.dailySchedulesService) {
-      const today = TimezoneUtil.jakartaDateString();
-      candidates = await this.dailySchedulesService.getActiveAreasForDay(userId, today);
+      // "Now", not "today": a Shift 3 worker clocking out at 03:00 is still on
+      // yesterday's roster row.
+      candidates = await this.dailySchedulesService.getActiveAreasNow(userId);
     }
     if (candidates.length === 0) {
       candidates = await this.getCandidateAreas(userId);
@@ -102,7 +161,7 @@ export class ShiftsService {
 
     // No GPS: prefer the designated primary, else the first candidate.
     const user = await this.userRepo.findOne({ where: { id: userId } });
-    return candidates.find((a) => a.id === user?.area_id) ?? candidates[0];
+    return candidates.find((a) => a.id === user?.location_id) ?? candidates[0];
   }
 
   /**
@@ -110,15 +169,15 @@ export class ShiftsService {
    * task_based (`user_areas`). The roster (today's areas) is preferred upstream
    * in `getActiveArea`; this is the fallback when there is no roster row.
    */
-  private async getCandidateAreas(userId: string): Promise<Area[]> {
-    const effective = await this.userAreasService.getEffectiveAreas(userId);
-    const byId = new Map<string, Area>();
+  private async getCandidateAreas(userId: string): Promise<Location[]> {
+    const effective = await this.userAreasService.getEffectiveLocations(userId);
+    const byId = new Map<string, Location>();
     for (const area of effective) if (area) byId.set(area.id, area);
     return [...byId.values()];
   }
 
   /** Pick the area whose centre is nearest the point. */
-  private closestArea(areas: Area[], lat: number, lng: number): Area {
+  private closestArea(areas: Location[], lat: number, lng: number): Location {
     let best = areas[0];
     let bestDist = Infinity;
     for (const area of areas) {
@@ -187,77 +246,95 @@ export class ShiftsService {
    * Phase 2C: GPS boundary validation removed, area auto-detection added
    *
    * @param userId User UUID
-   * @param dto Clock-in data (optional area_id, GPS, selfie photo)
+   * @param dto Clock-in data (optional location_id, GPS, selfie photo)
    * @returns Created shift entity
    * @throws BadRequestException if already clocked in
    */
   async clockIn(userId: string, dto: ClockInDto, isOvertime: boolean = false): Promise<Shift> {
     this.logger.log(`User ${userId} attempting to clock in`);
 
-    // 1. Check if user already has an active shift
-    const activeShift = await this.findActiveShift(userId);
-    if (activeShift) {
-      throw new ApiException(
-        HttpStatus.BAD_REQUEST,
-        ApiErrorCode.SHIFT_ALREADY_ACTIVE,
-        `Already clocked in. Active shift ID: ${activeShift.id}`,
-        { activeShiftId: activeShift.id },
-      );
-    }
+    // ADR-055: clock-in is NEVER blocked. There is no SHIFT_ALREADY_ACTIVE guard
+    // any more — a repeat clock-in simply appends a punch; the derivation collapses
+    // redundant/re-entry clock-ins into one session (first-in / last-out).
 
-    // 2. Get area: from DTO or auto-detect
-    let area: Area | null = null;
-    if (dto.area_id) {
-      area = await this.areasService.findOne(dto.area_id);
+    // 0. Integrity gate. Runs BEFORE anything is stored or uploaded so a refused
+    // punch leaves no selfie in object storage and no partial state behind.
+    // Being outside the area is NOT judged here — that stays advisory (step 3).
+    const verdict = await this.evaluatePunchLocation(userId, dto);
+
+    // 1. Get area: from DTO or auto-detect (GPS-aware among assigned areas).
+    let area: Location | null = null;
+    if (dto.location_id) {
+      area = await this.locationsService.findOne(dto.location_id);
     } else {
-      // GPS-aware: closest/containing among the worker's assigned areas.
       area = await this.getActiveArea(userId, dto.gps_lat, dto.gps_lng);
     }
-    // area can be null - allow clock-in without area (ad-hoc; GPS still recorded)
+    // area may be null — ad-hoc clock-in still proceeds (GPS still recorded).
 
-    // 3. Store selfie as base64 string directly (no S3 upload — avoids URL accessibility
-    //    issues in dev/LocalStack and keeps selfie loading fast on mobile)
-    const photoUrl: string | null = dto.selfie_photo ?? null;
+    // 2. Selfie to object storage — the column holds a URL, never the bytes.
+    const photoUrl = await this.storeSelfie(dto.selfie_photo, 'clock-in');
 
-    // 4. Check boundary (soft geofencing — never blocks clock-in)
-    let clockInOutsideBoundary = false;
+    // 3. Soft geofencing — advisory only, never blocks (ADR-005→010).
+    let outsideBoundary = false;
     if (area) {
-      const isWithin = this.boundaryCheck.isWithinAreaBoundary(dto.gps_lat, dto.gps_lng, area);
-      clockInOutsideBoundary = !isWithin;
-      if (clockInOutsideBoundary) {
+      outsideBoundary = !this.boundaryCheck.isWithinAreaBoundary(dto.gps_lat, dto.gps_lng, area);
+      if (outsideBoundary) {
         this.logger.warn(`User ${userId} clocking in outside area boundary: ${area.name}`);
       }
     }
 
-    // 5. Shift = the worker's configured shift (fallback time-of-day match);
-    //    not applicable for overtime — null.
-    const shiftDefinition = isOvertime ? null : await this.getUserShiftOrCurrent(userId);
+    // 4. Session key (service_day + shift-definition) for this punch.
+    const { shiftDefId, serviceDay } = await this.resolveClockInKey(userId, isOvertime, {
+      shiftDefinitionId: dto.shift_definition_id,
+      serviceDay: dto.service_day,
+    });
 
-    // 6. Create shift record
-    const shift = this.shiftRepository.create({
+    // 5. Append the immutable clock-in punch (idempotent on the client uuid).
+    await this.insertPunch({
+      id: dto.client_uuid ?? randomUUID(),
       user_id: userId,
-      area_id: area?.id || null,
-      shift_definition_id: shiftDefinition?.id || null,
-      clock_in_time: new Date(),
-      clock_in_gps_lat: dto.gps_lat,
-      clock_in_gps_lng: dto.gps_lng,
-      clock_in_photo_url: photoUrl,
-      clock_in_outside_boundary: clockInOutsideBoundary,
+      punched_at: verdict.effectiveTimestamp,
+      label: PunchLabel.CLOCK_IN,
+      service_day: serviceDay,
+      shift_definition_id: shiftDefId,
+      location_id: area?.id ?? null,
+      gps_lat: dto.gps_lat,
+      gps_lng: dto.gps_lng,
+      accuracy_m: dto.accuracy_m ?? null,
+      outside_boundary: outsideBoundary,
+      poor_accuracy: verdict.advisories.poorAccuracy,
+      clock_skew_ms: verdict.advisories.clockSkewMs,
+      photo_url: photoUrl,
       is_overtime: isOvertime,
     });
 
-    const savedShift = await this.shiftRepository.save(shift);
+    // 6. Rebuild the maintained session-projection row from that key's punches.
+    const session = await this.projectSession(userId, serviceDay, shiftDefId, isOvertime);
     this.logger.log(
-      `User ${userId} clocked in successfully. Shift ID: ${savedShift.id}, Area: ${area?.name || 'None'}`,
+      `User ${userId} clocked in. Session ${session.id}, Location: ${area?.name || 'None'}`,
     );
 
+    // 6b. Advance the day's roster row planned → present (ADR schedule-status-
+    // lifecycle). Non-overtime only (overtime has no roster row), and never lets a
+    // status write fail the clock-in.
+    if (!isOvertime && shiftDefId && this.dailySchedulesService) {
+      await this.dailySchedulesService
+        .markPresentForClockIn(userId, serviceDay, shiftDefId)
+        .catch((err) =>
+          this.logger.warn(
+            `markPresentForClockIn failed for user ${userId}: ${(err as Error).message}`,
+          ),
+        );
+    }
+
+    // 7. Live path: emit based on the DERIVED state (session is open after a clock-in).
     if (this.statusCalculator) {
       await this.statusCalculator
         .onClockIn(
           userId,
-          savedShift.id,
-          savedShift.area_id,
-          savedShift.shift_definition_id ?? null,
+          session.id,
+          session.location_id,
+          session.shift_definition_id ?? null,
           dto.gps_lat,
           dto.gps_lng,
         )
@@ -272,18 +349,18 @@ export class ShiftsService {
     this.auditLogService
       .log({
         entity_type: 'shift',
-        entity_id: savedShift.id,
+        entity_id: session.id,
         action: 'clock_in',
         actor_id: userId,
         new_value: {
-          area_id: savedShift.area_id,
+          location_id: session.location_id,
           is_overtime: isOvertime,
-          clock_in_outside_boundary: clockInOutsideBoundary,
+          clock_in_outside_boundary: outsideBoundary,
         },
       })
       .catch((err) => this.logger.error(`Audit log failed: ${err.message}`));
 
-    return savedShift;
+    return session;
   }
 
   /**
@@ -294,17 +371,31 @@ export class ShiftsService {
    * @returns Updated shift entity
    * @throws BadRequestException if no active shift found
    */
-  async clockOut(userId: string, dto: ClockOutDto): Promise<Shift> {
+  async clockOut(userId: string, dto: ClockOutDto, isOvertime: boolean = false): Promise<Shift> {
     this.logger.log(`User ${userId} attempting to clock out`);
 
-    // Find active shift
-    const shift = await this.shiftRepository.findOne({
-      where: {
-        user_id: userId,
-        clock_out_time: IsNull(),
-      },
-      relations: ['area'],
+    // ADR-055: clock-out requires an OPEN session (a prior unmatched clock-in).
+    // The open session-projection row is the anchor; it also carries the shift's
+    // service-day + definition so a cross-midnight Shift-3 clock-out at 03:00
+    // pairs with its 21:00 clock-in (same service_day) instead of starting anew.
+    // Filtered by `is_overtime` — since Phase 1 removed the single-open-shift
+    // guard, a worker can hold a regular AND an overtime session at once, so
+    // ending overtime must close the OT session, not the regular one (and the
+    // regular clock-out must not close the OT session).
+    // Ordered + liveness-ranked, not `findOne`: a worker can legitimately hold a
+    // dangling session from a past day AND a live one today, and an unordered
+    // findOne closed whichever the database happened to return first — observed
+    // closing yesterday's forgotten session while today's stayed open. Prefer
+    // the live session; fall back to the newest dangling one so a worker who
+    // simply forgot can still close it.
+    const openRows = await this.shiftRepository.find({
+      where: { user_id: userId, clock_out_time: IsNull(), is_overtime: isOvertime },
+      order: { clock_in_time: 'DESC' },
+      relations: ['area', 'shift_definition'],
     });
+    const nowForLiveness = TimezoneUtil.jakartaNow();
+    const shift =
+      openRows.find((row) => this.isSessionLive(row, nowForLiveness)) ?? openRows[0] ?? null;
 
     if (!shift) {
       throw new ApiException(
@@ -314,13 +405,31 @@ export class ShiftsService {
       );
     }
 
-    // Check minimum shift duration (configurable via MINIMUM_SHIFT_DURATION_MINUTES env)
-    const minMinutes = getMinimumShiftDurationMinutes();
-    const minMs = minMinutes * 60 * 1000;
-    const shiftDurationMs = Date.now() - shift.clock_in_time.getTime();
+    // Explicit service_day (ADR-055); fall back to the clock-in's WIB date for
+    // legacy rows created before the column existed.
+    const serviceDay =
+      shift.service_day ?? TimezoneUtil.jakartaDateOf(shift.clock_in_time ?? new Date());
+    const shiftDefId = shift.shift_definition_id;
 
-    if (shiftDurationMs < minMs) {
-      const minutesWorked = Math.floor(shiftDurationMs / (60 * 1000));
+    // Minimum shift duration — DB override → env → default (ADR-049). Measured
+    // from the EARLIEST still-open clock-in (the segment this clock-out closes),
+    // so a re-entry's short segment is guarded, not the whole day.
+    const priorPunches = await this.sessionPunches(userId, serviceDay, shiftDefId, isOvertime);
+    const openSince = this.derivation.earliestOpenClockIn(priorPunches) ?? shift.clock_in_time;
+    const minMinutes = this.systemConfig
+      ? this.systemConfig.getNumber('schedule.min_shift_duration_min', 5)
+      : getMinimumShiftDurationMinutes();
+    const minMs = minMinutes * 60 * 1000;
+    // Integrity gate first: a refused clock-out must not consume the duration
+    // check or upload a selfie. Measured to the punch's own time — for an
+    // offline clock-out that is the capture time, not the (later) sync time.
+    const verdict = await this.evaluatePunchLocation(userId, dto);
+    const punchedAt = verdict.effectiveTimestamp;
+    const segmentMs = punchedAt.getTime() - openSince.getTime();
+    // 0 (or any non-positive) disables the guard entirely — configurable via
+    // `schedule.min_shift_duration_min` in settings.
+    if (minMinutes > 0 && segmentMs < minMs) {
+      const minutesWorked = Math.floor(segmentMs / (60 * 1000));
       throw new ApiException(
         HttpStatus.BAD_REQUEST,
         ApiErrorCode.SHIFT_DURATION_TOO_SHORT,
@@ -328,65 +437,488 @@ export class ShiftsService {
         {
           minutesWorked,
           minimumRequired: minMinutes,
-          clockInTime: shift.clock_in_time.toISOString(),
+          clockInTime: openSince.toISOString(),
         },
       );
     }
 
-    // Store clock-out selfie as base64 string directly (consistent with clock-in)
-    const clockOutPhotoUrl: string | null = dto.selfie_photo ?? null;
+    const clockOutPhotoUrl = await this.storeSelfie(dto.selfie_photo, 'clock-out');
 
-    // Check boundary (soft geofencing — never blocks clock-out)
-    let clockOutOutsideBoundary = false;
+    // Soft geofencing — advisory only, never blocks (ADR-005→010).
+    let outsideBoundary = false;
     if (shift.area) {
-      const isWithin = this.boundaryCheck.isWithinAreaBoundary(
+      outsideBoundary = !this.boundaryCheck.isWithinAreaBoundary(
         dto.gps_lat,
         dto.gps_lng,
         shift.area,
       );
-      clockOutOutsideBoundary = !isWithin;
-      if (clockOutOutsideBoundary) {
+      if (outsideBoundary) {
         this.logger.warn(`User ${userId} clocking out outside area boundary: ${shift.area.name}`);
       }
     }
 
-    // Update shift with clock-out details
-    shift.clock_out_time = new Date();
-    shift.clock_out_gps_lat = dto.gps_lat;
-    shift.clock_out_gps_lng = dto.gps_lng;
-    shift.clock_out_outside_boundary = clockOutOutsideBoundary;
-    shift.clock_out_photo_url = clockOutPhotoUrl ?? undefined;
+    // Append the immutable clock-out punch (inherits the session's service_day /
+    // definition / area), then re-project the row from the full punch stream.
+    await this.insertPunch({
+      id: dto.client_uuid ?? randomUUID(),
+      user_id: userId,
+      punched_at: punchedAt,
+      label: PunchLabel.CLOCK_OUT,
+      service_day: serviceDay,
+      shift_definition_id: shiftDefId,
+      location_id: shift.location_id,
+      gps_lat: dto.gps_lat,
+      gps_lng: dto.gps_lng,
+      accuracy_m: dto.accuracy_m ?? null,
+      outside_boundary: outsideBoundary,
+      poor_accuracy: verdict.advisories.poorAccuracy,
+      clock_skew_ms: verdict.advisories.clockSkewMs,
+      photo_url: clockOutPhotoUrl,
+      is_overtime: isOvertime,
+    });
 
-    const updatedShift = await this.shiftRepository.save(shift);
+    const session = await this.projectSession(userId, serviceDay, shiftDefId, isOvertime);
+    const hoursWorked = this.calculateHoursWorked(session.clock_in_time, session.clock_out_time);
+    this.logger.log(
+      `User ${userId} clocked out. Session ${session.id}, hours worked: ${hoursWorked}`,
+    );
 
-    const hoursWorked = this.calculateHoursWorked(shift.clock_in_time, shift.clock_out_time);
-    this.logger.log(`User ${userId} clocked out successfully. Hours worked: ${hoursWorked}`);
-
+    // Live path: emit based on the DERIVED state. A clock-out closes the session,
+    // so it goes inactive; a still-open session (shouldn't happen post-clock-out)
+    // would keep the worker active — hence we branch on the projection, not the label.
     if (this.statusCalculator) {
-      await this.statusCalculator
-        .onClockOut(userId)
-        .catch((err) =>
-          this.logger.error(
-            `StatusCalculator.onClockOut failed for user ${userId}: ${err.message}`,
-            err.stack,
-          ),
-        );
+      const emit = session.clock_out_time
+        ? this.statusCalculator.onClockOut(userId)
+        : this.statusCalculator.onClockIn(
+            userId,
+            session.id,
+            session.location_id,
+            session.shift_definition_id ?? null,
+            dto.gps_lat,
+            dto.gps_lng,
+          );
+      await emit.catch((err) =>
+        this.logger.error(
+          `StatusCalculator emit failed for user ${userId}: ${err.message}`,
+          err.stack,
+        ),
+      );
     }
 
     this.auditLogService
       .log({
         entity_type: 'shift',
-        entity_id: updatedShift.id,
+        entity_id: session.id,
         action: 'clock_out',
         actor_id: userId,
         new_value: {
           hours_worked: hoursWorked,
-          clock_out_outside_boundary: clockOutOutsideBoundary,
+          clock_out_outside_boundary: outsideBoundary,
         },
       })
       .catch((err) => this.logger.error(`Audit log failed: ${err.message}`));
 
-    return updatedShift;
+    return session;
+  }
+
+  /**
+   * All punches for one session key `(user, service_day, shift_definition, overtime)`,
+   * ordered by `punched_at`. `shift_definition_id` null is matched with `IS NULL`
+   * (ad-hoc / overtime) so those punches group into their own session.
+   */
+  private async sessionPunches(
+    userId: string,
+    serviceDay: string,
+    shiftDefId: string | null,
+    isOvertime: boolean,
+  ): Promise<AttendancePunch[]> {
+    const qb = this.punchRepository
+      .createQueryBuilder('p')
+      .where('p.user_id = :userId', { userId })
+      .andWhere('p.service_day = :serviceDay', { serviceDay })
+      .andWhere('p.is_overtime = :isOvertime', { isOvertime });
+    if (shiftDefId === null) {
+      qb.andWhere('p.shift_definition_id IS NULL');
+    } else {
+      qb.andWhere('p.shift_definition_id = :shiftDefId', { shiftDefId });
+    }
+    return qb.orderBy('p.punched_at', 'ASC').getMany();
+  }
+
+  /** Error code the app shows a specific remedy for, per rejection reason. */
+  private static readonly REJECTION_CODE: Record<LocationRejection, ApiErrorCode> = {
+    [LocationRejection.MOCKED]: ApiErrorCode.GPS_MOCKED,
+    [LocationRejection.MISSING_COORDINATES]: ApiErrorCode.GPS_MISSING_COORDINATES,
+    [LocationRejection.IMPOSSIBLE_TRAVEL]: ApiErrorCode.GPS_IMPOSSIBLE_TRAVEL,
+  };
+
+  /** The most recent punch with usable coordinates, for impossible-travel. */
+  private async lastKnownFix(userId: string): Promise<PreviousFix | null> {
+    const previous = await this.punchRepository.findOne({
+      where: { user_id: userId, gps_lat: Not(IsNull()), gps_lng: Not(IsNull()) },
+      order: { punched_at: 'DESC' },
+    });
+
+    if (previous?.gps_lat == null || previous.gps_lng == null) return null;
+    return { lat: previous.gps_lat, lng: previous.gps_lng, at: previous.punched_at };
+  }
+
+  /**
+   * Judge the location on a punch, and refuse the punch if it fails.
+   *
+   * A punch is evidence, so unlike the ping stream this rejects outright rather
+   * than recording a flagged row — there must be nothing to submit. The worker
+   * is told exactly which remedy applies (turn off mock location / wait for a
+   * fix) via a distinct error code.
+   *
+   * Returns the verdict so the caller can persist the advisories and the
+   * clamped timestamp. Replaces the old `resolvePunchedAt`, which clamped only
+   * the FUTURE — backdating was unbounded, so a device with its clock rolled
+   * back could claim a punch from any point in the past.
+   */
+  private async evaluatePunchLocation(
+    userId: string,
+    dto: {
+      gps_lat: number;
+      gps_lng: number;
+      accuracy_m?: number;
+      is_mocked?: boolean;
+      punched_at?: string;
+    },
+  ): Promise<LocationVerdict> {
+    const verdict = evaluateLocation(
+      {
+        lat: dto.gps_lat,
+        lng: dto.gps_lng,
+        accuracyMeters: dto.accuracy_m ?? null,
+        isMocked: dto.is_mocked ?? null,
+        clientTimestamp: dto.punched_at ? new Date(dto.punched_at) : null,
+      },
+      {
+        now: new Date(),
+        previous: await this.lastKnownFix(userId),
+        allowMocked: mockedLocationAllowed(),
+      },
+    );
+
+    if (!verdict.accepted && verdict.rejection) {
+      this.logger.warn(`Punch refused for user ${userId}: ${verdict.rejection}`);
+      throw new ApiException(
+        HttpStatus.BAD_REQUEST,
+        ShiftsService.REJECTION_CODE[verdict.rejection],
+        `Location rejected: ${verdict.rejection}`,
+        { reason: verdict.rejection, impliedSpeedKmh: verdict.advisories.impliedSpeedKmh },
+      );
+    }
+
+    return verdict;
+  }
+
+  /** Insert a punch idempotently — a retried offline punch (same PK) is a no-op. */
+  private async insertPunch(punch: Partial<AttendancePunch>): Promise<void> {
+    await this.punchRepository
+      .createQueryBuilder()
+      .insert()
+      .into(AttendancePunch)
+      .values(punch)
+      .orIgnore() // ON CONFLICT (id) DO NOTHING
+      .execute();
+  }
+
+  /**
+   * Rebuild the maintained `shifts` session-projection row for a session key from
+   * its punches (ADR-055). One row per `(user, service_day, shift_definition,
+   * overtime)`; its `id` is stable across re-entry so the FKs that point at it
+   * (activities / location_logs / overtime / user_tracking_status) never break.
+   * `clock_out_time` follows the last-punch rule: set when closed, NULL when the
+   * last punch reopened the session.
+   */
+  private async projectSession(
+    userId: string,
+    serviceDay: string,
+    shiftDefId: string | null,
+    isOvertime: boolean,
+  ): Promise<Shift> {
+    const punches = await this.sessionPunches(userId, serviceDay, shiftDefId, isOvertime);
+    const s = this.derivation.deriveSession(punches);
+
+    // Find the existing session row for this key (WIB day of its clock-in), if any.
+    const existing = await this.findSessionRow(userId, serviceDay, shiftDefId, isOvertime);
+    const row = existing ?? this.shiftRepository.create({ user_id: userId });
+
+    row.user_id = userId;
+    row.shift_definition_id = shiftDefId;
+    row.is_overtime = isOvertime;
+    row.service_day = serviceDay; // explicit key — may differ from clock_in's WIB date
+    row.location_id = s.firstIn?.location_id ?? row.location_id ?? null;
+
+    // Clock-in facet = the first-in punch.
+    row.clock_in_time = s.clockInTime ?? row.clock_in_time;
+    row.clock_in_gps_lat = s.firstIn?.gps_lat ?? null;
+    row.clock_in_gps_lng = s.firstIn?.gps_lng ?? null;
+    row.clock_in_photo_url = s.firstIn?.photo_url ?? null;
+    row.clock_in_outside_boundary = s.firstIn?.outside_boundary ?? false;
+
+    // Clock-out facet = the last closing punch. Cleared with `null` (never
+    // `undefined`) while the session is open — TypeORM omits `undefined` on an
+    // UPDATE, which would leave a stale clock-out on a reopened session; `null`
+    // is emitted as `SET ... = NULL`.
+    if (s.clockOutTime) {
+      row.clock_out_time = s.clockOutTime;
+      row.clock_out_gps_lat = s.lastOut?.gps_lat ?? null;
+      row.clock_out_gps_lng = s.lastOut?.gps_lng ?? null;
+      row.clock_out_photo_url = s.lastOut?.photo_url ?? null;
+      row.clock_out_outside_boundary = s.lastOut?.outside_boundary ?? false;
+    } else {
+      row.clock_out_time = null;
+      row.clock_out_gps_lat = null;
+      row.clock_out_gps_lng = null;
+      row.clock_out_photo_url = null;
+      row.clock_out_outside_boundary = false;
+    }
+
+    return this.shiftRepository.save(row);
+  }
+
+  /**
+   * The (service_day, shift_definition) a clock-in belongs to.
+   *   1. An already-OPEN session continues on its own key — so a redundant tap or
+   *      a post-midnight re-entry lands on the same session, never a 2nd open row.
+   *   2. Overtime is not attributed to a shift-definition (ADR-014).
+   *   3. Otherwise the ADR-055 attribution window picks the rostered shift (and
+   *      its service-day — yesterday for a crossing shift past midnight) whose
+   *      [start − early_window, end + cutoff_grace] covers now.
+   *   4. Fallback (unscheduled / ad-hoc, or no schedules provider): the legacy
+   *      resolution (configured shift / time-of-day match) on today's date.
+   */
+  /**
+   * The punch timeline for one WIB service-day (ADR-055 Phase 4) — the raw
+   * append-only log grouped into sessions (per shift-definition / overtime),
+   * each with its derived Jam Masuk / Keluar / worked-minutes. Powers the mobile
+   * "Detail Pencatatan Waktu" screen. Punches within a session are ordered by
+   * `punched_at`.
+   */
+  async getPunchLogForDate(userId: string, date: string): Promise<PunchLogDayDto> {
+    const punches = await this.punchRepository
+      .createQueryBuilder('p')
+      .where('p.user_id = :userId', { userId })
+      .andWhere('p.service_day = :date', { date })
+      .orderBy('p.punched_at', 'ASC')
+      .getMany();
+
+    // Group by session key (shift-definition + overtime), preserving first-seen order.
+    const groups = new Map<string, AttendancePunch[]>();
+    for (const punch of punches) {
+      const key = `${punch.shift_definition_id ?? 'none'}:${punch.is_overtime}`;
+      const bucket = groups.get(key);
+      if (bucket) bucket.push(punch);
+      else groups.set(key, [punch]);
+    }
+
+    const sessions: PunchSessionDto[] = [];
+    for (const bucket of groups.values()) {
+      const derived = this.derivation.deriveSession(bucket);
+      sessions.push({
+        shift_definition_id: bucket[0].shift_definition_id,
+        is_overtime: bucket[0].is_overtime,
+        jam_masuk: derived.clockInTime ? derived.clockInTime.toISOString() : null,
+        jam_keluar: derived.clockOutTime ? derived.clockOutTime.toISOString() : null,
+        worked_minutes: derived.workedMinutes,
+        is_open: derived.isOpen,
+        punches: bucket.map(
+          (p): PunchDto => ({
+            id: p.id,
+            label: p.label,
+            punched_at: p.punched_at.toISOString(),
+            gps_lat: p.gps_lat,
+            gps_lng: p.gps_lng,
+            accuracy_m: p.accuracy_m,
+            outside_boundary: p.outside_boundary,
+            photo_url: p.photo_url,
+          }),
+        ),
+      });
+    }
+
+    return { date, sessions };
+  }
+
+  /**
+   * The worker's live attendance state (ADR-055): the open session (or null) and
+   * the shift options a clock-in could target now (best-first, `is_default` flags
+   * the top). Powers the mobile "Rekam Waktu" screen — disable Clock Out when
+   * nothing is open, offer the picker near midnight / for a dangling shift.
+   */
+  async getCurrentAttendance(userId: string): Promise<AttendanceCurrentDto> {
+    const open = await this.findOpenSessionRow(userId, false);
+
+    let matches: AttributionMatch[] = [];
+    if (this.dailySchedulesService) {
+      const candidates = await this.dailySchedulesService.getAttributionCandidates(userId);
+      matches = this.attribution.resolveAll(candidates, TimezoneUtil.jakartaNow());
+    }
+    const options: ShiftOptionDto[] = matches.map((m, i) => ({
+      shift_definition_id: m.candidate.shift_definition_id,
+      shift_name: m.candidate.shift_name,
+      start_time: m.candidate.start_time,
+      end_time: m.candidate.end_time,
+      crosses_midnight: m.candidate.crosses_midnight,
+      service_day: m.candidate.service_day,
+      phase: m.phase,
+      minutes_to_start: m.minutesToStart,
+      is_default: i === 0,
+    }));
+
+    return {
+      open_session: open
+        ? {
+            id: open.id,
+            service_day: open.service_day ?? null,
+            shift_definition_id: open.shift_definition_id,
+            clock_in_time: (open.clock_in_time ?? new Date()).toISOString(),
+            location_id: open.location_id,
+            is_overtime: open.is_overtime,
+          }
+        : null,
+      options,
+    };
+  }
+
+  private async resolveClockInKey(
+    userId: string,
+    isOvertime: boolean,
+    explicit?: { shiftDefinitionId?: string; serviceDay?: string },
+  ): Promise<{ shiftDefId: string | null; serviceDay: string }> {
+    const openSession = await this.findOpenSessionRow(userId, isOvertime);
+    if (openSession) {
+      return {
+        shiftDefId: openSession.shift_definition_id,
+        serviceDay:
+          openSession.service_day ??
+          TimezoneUtil.jakartaDateOf(openSession.clock_in_time ?? new Date()),
+      };
+    }
+    if (isOvertime) {
+      return { shiftDefId: null, serviceDay: TimezoneUtil.jakartaDateString() };
+    }
+
+    // The worker's attributable shifts right now (yesterday+today rostered).
+    const candidates = this.dailySchedulesService
+      ? await this.dailySchedulesService.getAttributionCandidates(userId)
+      : [];
+
+    // Explicit picker choice (ADR-055) — honored ONLY when it matches a real
+    // current candidate. That both (a) supplies the CORRECT service_day (yesterday
+    // for a crossing shift chosen after midnight — never a blind "today" default)
+    // and (b) rejects a bogus/expired shift_definition_id (which would otherwise
+    // orphan a punch on an FK violation). A non-matching explicit falls through
+    // to auto-attribution rather than being trusted.
+    if (explicit?.shiftDefinitionId) {
+      const chosen = candidates.find(
+        (c) =>
+          c.shift_definition_id === explicit.shiftDefinitionId &&
+          (!explicit.serviceDay || c.service_day === explicit.serviceDay),
+      );
+      if (chosen) {
+        return { shiftDefId: chosen.shift_definition_id, serviceDay: chosen.service_day };
+      }
+    }
+
+    const match = this.attribution.resolveBest(candidates, TimezoneUtil.jakartaNow());
+    if (match) {
+      return {
+        shiftDefId: match.candidate.shift_definition_id,
+        serviceDay: match.candidate.service_day,
+      };
+    }
+    return {
+      shiftDefId: (await this.getUserShiftOrCurrent(userId))?.id ?? null,
+      serviceDay: TimezoneUtil.jakartaDateString(),
+    };
+  }
+
+  /**
+   * The worker's currently-open session-projection row (clock_out_time IS NULL)
+   * for the given overtime flag, newest first. Used by clock-in to CONTINUE an
+   * open session (its key) rather than open a second row — the fix for a
+   * post-midnight re-entry landing on a fresh service_day. Null when none is open.
+   */
+  /**
+   * Is this open row still the worker's LIVE session?
+   *
+   * "Open" and "live" are not the same thing, and conflating them is what put a
+   * forgotten clock-out from one day on the next day's screen: the hub offered
+   * Clock Out, the home card showed yesterday's Jam Masuk against today's shift,
+   * and the session's duration kept climbing past 25 hours.
+   *
+   * ADR-055 is explicit — a forgotten clock-out is never auto-closed, it simply
+   * stops being live once its shift window plus `cutoff_grace_min` has passed.
+   * The row stays open (a supervisor still has to resolve it) but it is no
+   * longer what "am I on duty right now?" should answer with.
+   *
+   * `isShiftWindowClosed` is imported rather than reimplemented so this, the
+   * absence sweep, and the monitoring session sweep can never disagree about
+   * when a shift has finished. A session with no shift definition (overtime, or
+   * legacy data) has no window to judge and stays live — a worker genuinely on
+   * duty must never be told they are not.
+   */
+  private isSessionLive(shift: Shift, now: Date = TimezoneUtil.jakartaNow()): boolean {
+    if (shift.clock_out_time) return false;
+    const sd = shift.shift_definition;
+    if (!sd?.end_time) return true;
+    const serviceDay = shift.service_day ?? TimezoneUtil.jakartaDateOf(shift.clock_in_time ?? now);
+    return !isShiftWindowClosed(
+      serviceDay,
+      sd.end_time,
+      sd.crosses_midnight ?? false,
+      sd.cutoff_grace_min ?? DEFAULT_CUTOFF_GRACE_MIN,
+      now,
+    );
+  }
+
+  private async findOpenSessionRow(userId: string, isOvertime: boolean): Promise<Shift | null> {
+    const open = await this.shiftRepository.find({
+      where: { user_id: userId, clock_out_time: IsNull(), is_overtime: isOvertime },
+      order: { clock_in_time: 'DESC' },
+      // Needed to judge liveness — without the definition there is no window.
+      relations: ['shift_definition'],
+    });
+    const now = TimezoneUtil.jakartaNow();
+    return open.find((shift) => this.isSessionLive(shift, now)) ?? null;
+  }
+
+  /**
+   * The session-projection row for a key, matched on the EXPLICIT `service_day`
+   * (ADR-055) — not the WIB date of clock_in_time, which the attribution window
+   * can put on a different day. Prefers a currently-OPEN row (clock_out_time IS
+   * NULL), then newest, so both a re-entry clock-in and a clock-out target the
+   * live session — never a stale closed duplicate. Returns null for a brand-new
+   * session (and for legacy rows whose service_day was never backfilled, which
+   * are historical closed sessions never re-projected).
+   */
+  private async findSessionRow(
+    userId: string,
+    serviceDay: string,
+    shiftDefId: string | null,
+    isOvertime: boolean,
+  ): Promise<Shift | null> {
+    const qb = this.shiftRepository
+      .createQueryBuilder('shift')
+      .where('shift.user_id = :userId', { userId })
+      .andWhere('shift.is_overtime = :isOvertime', { isOvertime })
+      .andWhere('shift.deleted_at IS NULL')
+      // Match on the EXPLICIT service_day (ADR-055) — not the WIB date of
+      // clock_in_time, which the attribution window can put on a different day.
+      .andWhere('shift.service_day = :serviceDay', { serviceDay });
+    if (shiftDefId === null) {
+      qb.andWhere('shift.shift_definition_id IS NULL');
+    } else {
+      qb.andWhere('shift.shift_definition_id = :shiftDefId', { shiftDefId });
+    }
+    return qb
+      .orderBy('CASE WHEN shift.clock_out_time IS NULL THEN 0 ELSE 1 END', 'ASC')
+      .addOrderBy('shift.clock_in_time', 'DESC')
+      .getOne();
   }
 
   /**
@@ -396,14 +928,20 @@ export class ShiftsService {
    * @returns Active shift or null if not clocked in
    */
   async findActiveShift(userId: string): Promise<Shift | null> {
-    return this.shiftRepository.findOne({
+    const open = await this.shiftRepository.find({
       where: {
         user_id: userId,
         clock_out_time: IsNull(),
       },
+      order: { clock_in_time: 'DESC' },
       // shift_definition carries the scheduled start_time used for the late check.
-      relations: ['area', 'area.areaType', 'user', 'shift_definition'],
+      relations: ['area', 'area.locationType', 'user', 'shift_definition'],
     });
+    // "Active" means live, not merely un-clocked-out: this drives the mobile
+    // `currentShift`, so a dangling session from a previous day would otherwise
+    // make the app believe the worker is already on duty today.
+    const now = TimezoneUtil.jakartaNow();
+    return open.find((shift) => this.isSessionLive(shift, now)) ?? null;
   }
 
   /**
@@ -416,7 +954,7 @@ export class ShiftsService {
   async findOne(id: string): Promise<Shift> {
     const shift = await this.shiftRepository.findOne({
       where: { id },
-      relations: ['area', 'area.areaType', 'user'],
+      relations: ['area', 'area.locationType', 'user'],
     });
 
     if (!shift) {
@@ -440,7 +978,7 @@ export class ShiftsService {
   async findByUserId(userId: string, limit = 50): Promise<Shift[]> {
     return this.shiftRepository.find({
       where: { user_id: userId },
-      relations: ['area', 'area.areaType', 'shift_definition'],
+      relations: ['area', 'area.locationType', 'shift_definition'],
       order: { clock_in_time: 'DESC' },
       take: limit,
     });
@@ -457,7 +995,7 @@ export class ShiftsService {
   ): Promise<PaginatedResponseDto<Shift>> {
     const [data, total] = await this.shiftRepository.findAndCount({
       where: { user_id: userId },
-      relations: ['area', 'area.areaType', 'shift_definition'],
+      relations: ['area', 'area.locationType', 'shift_definition'],
       order: { clock_in_time: 'DESC' },
       skip: (page - 1) * limit,
       take: limit,
@@ -549,7 +1087,7 @@ export class ShiftsService {
     return this.shiftRepository
       .createQueryBuilder('shift')
       .leftJoinAndSelect('shift.area', 'area')
-      .leftJoinAndSelect('area.areaType', 'areaType')
+      .leftJoinAndSelect('area.locationType', 'locationType')
       .leftJoinAndSelect('shift.shift_definition', 'shift_definition')
       .where('shift.user_id = :userId', { userId })
       .andWhere('shift.is_overtime = false')
@@ -608,13 +1146,13 @@ export class ShiftsService {
   /**
    * Get all shifts for an area
    *
-   * @param areaId Area UUID
+   * @param areaId Location UUID
    * @param limit Maximum number of results (default: 100)
    * @returns Array of shifts ordered by clock-in time descending
    */
   async findByAreaId(areaId: string, limit = 100): Promise<Shift[]> {
     return this.shiftRepository.find({
-      where: { area_id: areaId },
+      where: { location_id: areaId },
       relations: ['user'],
       order: { clock_in_time: 'DESC' },
       take: limit,
@@ -643,7 +1181,7 @@ export class ShiftsService {
   async findAllActiveShifts(): Promise<Shift[]> {
     return this.shiftRepository.find({
       where: { clock_out_time: IsNull() },
-      relations: ['user', 'area', 'area.areaType'],
+      relations: ['user', 'area', 'area.locationType'],
       order: { clock_in_time: 'ASC' },
     });
   }
@@ -661,7 +1199,7 @@ export class ShiftsService {
   ): Promise<PaginatedResponseDto<Shift>> {
     const [data, total] = await this.shiftRepository.findAndCount({
       where: { clock_out_time: IsNull() },
-      relations: ['user', 'area', 'area.areaType'],
+      relations: ['user', 'area', 'area.locationType'],
       order: { clock_in_time: 'ASC' },
       skip: (page - 1) * limit,
       take: limit,

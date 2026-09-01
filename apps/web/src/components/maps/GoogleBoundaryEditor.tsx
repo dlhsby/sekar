@@ -24,11 +24,22 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { GoogleMap, Marker, Polygon, Polyline } from '@react-google-maps/api';
+import { GoogleMap, Polygon, Polyline } from '@react-google-maps/api';
 import { Search, X, Loader2, Pencil, Trash2, Check, MapPin } from 'lucide-react';
 import { Button, Input } from '@/components/ui';
 import { GoogleMapsGate } from './GoogleMapsGate';
+import { AdvancedMarker } from './AdvancedMarker';
+import { pinMarker, MARKER_NEUTRAL_OUTLINE } from '@/lib/monitoring/markers';
+import { useMapId } from '@/lib/api/config';
 import { calculatePolygonArea, formatArea } from '@/lib/utils/geo';
+
+/** Small white circle DOM node for a draft-boundary vertex (AdvancedMarker content). */
+function createVertexDot(): HTMLDivElement {
+  const el = document.createElement('div');
+  el.style.cssText =
+    'width:10px;height:10px;border-radius:9999px;background:var(--color-nb-white);border:2px solid var(--color-nb-black);';
+  return el;
+}
 
 /** Surabaya city center — sensible default when nothing is set yet. */
 const SURABAYA_CENTER = { lat: -7.2575, lng: 112.7521 };
@@ -55,15 +66,6 @@ const DRAFT_LINE_OPTIONS: google.maps.PolylineOptions = {
   icons: [{ icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 3 }, offset: '0', repeat: '10px' }],
 };
 
-const VERTEX_ICON: google.maps.Symbol = {
-  path: 0 /* google.maps.SymbolPath.CIRCLE — literal so it's defined before the SDK loads */,
-  scale: 5,
-  fillColor: BOUNDARY_FILL,
-  fillOpacity: 1,
-  strokeColor: BOUNDARY_STROKE,
-  strokeWeight: 2,
-};
-
 type LatLng = { lat: number; lng: number };
 type BoundaryGeometry = GeoJSON.Polygon | GeoJSON.MultiPolygon;
 
@@ -88,6 +90,19 @@ export interface GoogleBoundaryEditorProps {
   readonly?: boolean;
   /** Map height in pixels. */
   height?: number;
+  // ── Live style preview (ADR-045): draw the boundary + pin as the entity is
+  //    configured, so editing colors/marker updates the map immediately. All
+  //    optional — omit to keep the neutral Neo-Brutalism default styling.
+  /** Boundary stroke color (`border_color`). */
+  strokeColor?: string | null;
+  /** Boundary stroke opacity 0–1 (`border_opacity`); defaults opaque. */
+  strokeOpacity?: number | null;
+  /** Boundary fill color (`fill_color`); null/empty → unfilled. */
+  fillColor?: string | null;
+  /** Boundary fill opacity 0–1 (`fill_opacity`). */
+  fillOpacity?: number | null;
+  /** Center-pin glyph (`marker_icon`); null → the caller's default. */
+  markerIcon?: string | null;
   /** Rendered when Google Maps is unavailable (no key / load error). */
   manualFallback?: React.ReactNode;
 }
@@ -156,10 +171,46 @@ function BoundaryMap({
   autoLocateOnMount = false,
   readonly = false,
   height = 420,
+  strokeColor,
+  strokeOpacity,
+  fillColor,
+  fillOpacity,
+  markerIcon,
 }: Omit<GoogleBoundaryEditorProps, 'manualFallback'>) {
   const { t } = useTranslation();
   const editablePolygon = !readonly && !!onPolygonChange;
   const editablePin = !readonly && !!onPinChange;
+
+  // Merge the entity's configured style over the neutral default so the preview
+  // reflects the form live; an unset/empty fill color draws no fill.
+  const polygonOptions = useMemo<google.maps.PolygonOptions>(() => {
+    const hasFill = !!fillColor;
+    return {
+      ...POLYGON_OPTIONS,
+      strokeColor: strokeColor || POLYGON_OPTIONS.strokeColor,
+      strokeOpacity: strokeOpacity ?? 1,
+      fillColor: hasFill ? (fillColor as string) : POLYGON_OPTIONS.fillColor,
+      fillOpacity: hasFill ? (fillOpacity ?? 0.25) : 0,
+    };
+  }, [strokeColor, strokeOpacity, fillColor, fillOpacity]);
+
+  // Center-pin visual = the entity's unified pin (glyph + identity color),
+  // rebuilt on change; null → Google's default pin.
+  const pinContent = useMemo(() => {
+    if (typeof document === 'undefined' || !markerIcon) return null;
+    const img = document.createElement('img');
+    img.src = pinMarker(markerIcon ?? null, {
+      outline: MARKER_NEUTRAL_OUTLINE,
+      fill: fillColor ?? undefined,
+      fillOpacity: fillOpacity ?? undefined,
+      big: true,
+    }).url;
+    img.alt = '';
+    img.style.width = '34px';
+    img.style.height = '42px';
+    img.style.objectFit = 'contain';
+    return img;
+  }, [markerIcon, fillColor, fillOpacity]);
 
   const [paths, setPaths] = useState<LatLng[][]>(() => geometryToPaths(initialPolygon));
   const [drawing, setDrawing] = useState(false);
@@ -171,6 +222,7 @@ function BoundaryMap({
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
 
+  const mapId = useMapId();
   const mapRef = useRef<google.maps.Map | null>(null);
   const polygonRef = useRef<google.maps.Polygon | null>(null);
   const pathListeners = useRef<google.maps.MapsEventListener[]>([]);
@@ -356,9 +408,9 @@ function BoundaryMap({
   }, []);
 
   const handlePinDrag = useCallback(
-    (e: google.maps.MapMouseEvent) => {
-      if (!editablePin || !e.latLng) return;
-      onPinChange?.({ lat: e.latLng.lat(), lng: e.latLng.lng() });
+    (coords: LatLng) => {
+      if (!editablePin) return;
+      onPinChange?.(coords);
     },
     [editablePin, onPinChange]
   );
@@ -539,6 +591,8 @@ function BoundaryMap({
           onClick={handleMapClick}
           onDblClick={drawing ? finishDrawing : undefined}
           options={{
+            // Vector map + Map ID → required for AdvancedMarkerElement.
+            mapId: mapId ?? undefined,
             // Keep Google's native controls (zoom, map type, fullscreen) visible.
             streetViewControl: false,
             mapTypeControl: true,
@@ -564,7 +618,7 @@ function BoundaryMap({
                   onLoad={editable ? attachPolygon : undefined}
                   onUnmount={editable ? detachPolygon : undefined}
                   onMouseUp={editable ? syncFromPolygon : undefined}
-                  options={POLYGON_OPTIONS}
+                  options={polygonOptions}
                 />
               );
             })}
@@ -574,14 +628,20 @@ function BoundaryMap({
             <>
               <Polyline path={draft} options={DRAFT_LINE_OPTIONS} />
               {draft.map((v, i) => (
-                <Marker key={`draft-${i}`} position={v} icon={VERTEX_ICON} clickable={false} />
+                <AdvancedMarker
+                  key={`draft-${i}`}
+                  position={v}
+                  clickable={false}
+                  content={createVertexDot()}
+                />
               ))}
             </>
           )}
 
           {point && (
-            <Marker
+            <AdvancedMarker
               position={point}
+              content={pinContent}
               draggable={editablePin && !drawing}
               onDragEnd={handlePinDrag}
             />

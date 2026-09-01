@@ -35,7 +35,7 @@ export function ActivitiesScreen({ navigation }: Props): React.JSX.Element {
     { key: 'created_at_asc', label: t('activities:sort.oldest') },
   ];
 
-  const initialAreaId = user?.area_id ?? currentShift?.area_id ?? null;
+  const initialAreaId = user?.location_id ?? currentShift?.location_id ?? null;
 
   const [activitySort, setActivitySort] = useState<ActivitySortOption>('created_at_desc');
   const [isSortModalOpen, setIsSortModalOpen] = useState(false);
@@ -142,8 +142,8 @@ export function ActivitiesScreen({ navigation }: Props): React.JSX.Element {
           onApplyFilters={activityFilters.handleApplyActivityFilters}
           onResetFilters={activityFilters.handleResetActivityFilters}
           userRole={user?.role}
-          userRayonId={user?.rayon_id}
-          userAreaId={user?.area_id ?? currentShift?.area_id ?? undefined}
+          userDistrictId={user?.district_id}
+          userAreaId={user?.location_id ?? currentShift?.location_id ?? undefined}
           userId={user?.id}
         />
       </View>

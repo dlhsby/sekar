@@ -6,7 +6,7 @@
  *
  * Usage in a `layout.tsx` / `page.tsx`:
  *   export async function generateMetadata(): Promise<Metadata> {
- *     return pageMetadata('rayons');
+ *     return pageMetadata('districts');
  *   }
  */
 import { cookies } from 'next/headers';

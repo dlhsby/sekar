@@ -1,10 +1,17 @@
 'use client';
 
 /**
- * BulkReassignModal — multi-worker reassignment (Phase 4-4 B1).
- * Same flow as ReassignWorkerModal but with checkbox multi-select and a
- * sequential submit loop against the single-worker endpoint. Partial failures
- * keep the modal open with only the failed workers still selected for retry.
+ * BulkReassignModal — reassignment for a lokasi (Phase 4-4 B1).
+ *
+ * Handles 1..N: checkbox multi-select over a sequential submit loop against the
+ * single-worker endpoint. Partial failures keep the modal open with only the
+ * failed workers still selected for retry.
+ *
+ * This is the ONLY reassignment modal on web. A separate single-worker
+ * `ReassignWorkerModal` existed alongside it, doing the same job with a
+ * one-item selection, and was reachable from nowhere; selecting one checkbox
+ * here is that flow, so it was deleted rather than given a second entry point
+ * for the two to drift apart behind.
  */
 
 import { useState } from 'react';
@@ -37,19 +44,19 @@ export interface BulkReassignModalProps {
   boundaries?: BoundariesResponse;
 }
 
-/** Derive sibling areas (same rayon) excluding the target area */
+/** Derive sibling areas (same district) excluding the target area */
 function getSiblingAreas(
   boundaries: BoundariesResponse | undefined,
   targetAreaId: string
-): { id: string; name: string; rayonName: string }[] {
+): { id: string; name: string; districtName: string }[] {
   if (!boundaries) return [];
-  const results: { id: string; name: string; rayonName: string }[] = [];
-  for (const rayon of boundaries.rayons) {
-    const hasTarget = rayon.areas.some((a) => a.id === targetAreaId);
+  const results: { id: string; name: string; districtName: string }[] = [];
+  for (const district of boundaries.districts) {
+    const hasTarget = district.areas.some((a) => a.id === targetAreaId);
     if (!hasTarget) continue;
-    for (const area of rayon.areas) {
+    for (const area of district.areas) {
       if (area.id !== targetAreaId) {
-        results.push({ id: area.id, name: area.name, rayonName: rayon.name });
+        results.push({ id: area.id, name: area.name, districtName: district.name });
       }
     }
   }
@@ -74,11 +81,11 @@ export function BulkReassignModal({
   const siblingAreas = getSiblingAreas(boundaries, targetAreaId);
 
   const { data: liveUsersData, isLoading: usersLoading } = useLiveUsers(
-    sourceAreaId ? { area_id: sourceAreaId } : undefined
+    sourceAreaId ? { location_id: sourceAreaId } : undefined
   );
 
   const workers: LiveUser[] = sourceAreaId
-    ? (liveUsersData?.users ?? []).filter((u) => u.area_id === sourceAreaId)
+    ? (liveUsersData?.users ?? []).filter((u) => u.location_id === sourceAreaId)
     : [];
 
   const reassignMutation = useReassignWorker();
@@ -293,7 +300,7 @@ export function BulkReassignModal({
                 'w-full px-3 py-2 text-sm rounded-nb-base resize-none',
                 'border-2 border-nb-black bg-nb-white text-nb-black',
                 'shadow-nb-md focus:outline-none focus:ring-2 focus:ring-nb-primary focus:ring-offset-1',
-                'placeholder:text-nb-gray-400'
+                'placeholder:text-nb-gray-500'
               )}
             />
           </div>

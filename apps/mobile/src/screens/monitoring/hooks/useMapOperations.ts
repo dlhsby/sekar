@@ -6,7 +6,7 @@
 
 import { useCallback } from 'react';
 import MapView from 'react-native-maps';
-import Geolocation from 'react-native-geolocation-service';
+import { readPosition } from '../../../services/location/verifiedPosition';
 
 interface CurrentRegion {
   latitude: number;
@@ -28,21 +28,22 @@ export function useMapOperations(
   currentRegion: CurrentRegion,
 ): UseMapOperationsReturn {
   const handleMyLocation = useCallback(() => {
-    Geolocation.getCurrentPosition(
-      pos => {
+    // allowMocked: this only recentres the supervisor's map. Nothing is
+    // recorded, so refusing a mocked fix would break the button on an emulator
+    // for no security gain.
+    readPosition({ allowMocked: true })
+      .then((pos) => {
         mapRef.current?.animateToRegion(
           {
-            latitude: pos.coords.latitude,
-            longitude: pos.coords.longitude,
+            latitude: pos.latitude,
+            longitude: pos.longitude,
             latitudeDelta: 0.01,
             longitudeDelta: 0.01,
           },
           300,
         );
-      },
-      () => {},
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
-    );
+      })
+      .catch(() => {});
   }, [mapRef]);
 
   const resetHeading = useCallback(() => {

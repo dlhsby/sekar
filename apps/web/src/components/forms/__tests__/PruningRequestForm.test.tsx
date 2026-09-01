@@ -63,7 +63,7 @@ describe('PruningRequestForm', () => {
           referenceCode: 'PR-001',
           submittedBy: 'user1',
           kecamatanName: 'Surabaya',
-          rayonId: 'rayon1',
+          districtId: 'district1',
           address: 'Test Address',
           gpsLat: -7.2575,
           gpsLng: 112.7521,

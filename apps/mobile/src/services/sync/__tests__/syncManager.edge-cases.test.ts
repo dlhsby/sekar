@@ -71,7 +71,7 @@ describe('Sync Manager - Edge Cases & Error Handling', () => {
 
     // Default: location tracker not tracking
     mockLocationTracker.isTracking.mockReturnValue(false);
-    mockLocationTracker.captureNow.mockReturnValue(undefined);
+    mockLocationTracker.captureNow.mockResolvedValue(undefined);
 
     // Initialize sync manager
     syncManager.initialize();
@@ -254,7 +254,7 @@ describe('Sync Manager - Edge Cases & Error Handling', () => {
       const item: any = {
         id: 'item-1',
         type: 'clock-in',
-        data: { area_id: 1, gps_lat: -7.25, gps_lng: 112.75 },
+        data: { location_id: 1, gps_lat: -7.25, gps_lng: 112.75 },
         timestamp: Date.now(),
         retryCount: 0,
         status: 'pending',
@@ -290,7 +290,7 @@ describe('Sync Manager - Edge Cases & Error Handling', () => {
           work_type: 'Cleaning',
           gps_lat: -7.25,
           gps_lng: 112.75,
-          photos: [],
+          photo_urls: ['sekar-media/2026/07/activities/x.jpg'],
         },
         timestamp: Date.now(),
         retryCount: 0,
@@ -368,7 +368,7 @@ describe('Sync Manager - Edge Cases & Error Handling', () => {
       const item: any = {
         id: 'item-1',
         type: 'clock-in',
-        data: { area_id: 1, gps_lat: -7.25, gps_lng: 112.75 },
+        data: { location_id: 1, gps_lat: -7.25, gps_lng: 112.75 },
         timestamp: Date.now(),
         retryCount: 0,
         status: 'pending',
@@ -425,7 +425,7 @@ describe('Sync Manager - Edge Cases & Error Handling', () => {
           work_type: 'Cleaning',
           gps_lat: -7.25,
           gps_lng: 112.75,
-          photos: [],
+          photo_urls: ['sekar-media/2026/07/activities/x.jpg'],
         },
         timestamp: Date.now(),
         retryCount: 0,
@@ -637,7 +637,7 @@ describe('Sync Manager - Edge Cases & Error Handling', () => {
         {
           id: 'item-1',
           type: 'clock-in',
-          data: { area_id: 1, gps_lat: -7.25, gps_lng: 112.75 },
+          data: { location_id: 1, gps_lat: -7.25, gps_lng: 112.75 },
           timestamp: Date.now(),
           retryCount: 0,
           status: 'pending',

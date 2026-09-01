@@ -7,9 +7,13 @@ import {
   ActivityStatus,
   LocationStatus,
 } from '../entities/user-tracking-status.entity';
-import { MonitoringCacheService, StatusThresholds } from './monitoring-cache.service';
+import {
+  MonitoringCacheService,
+  StatusThresholds,
+  type BoundaryScope,
+} from './monitoring-cache.service';
 import { User, UserRole } from '../../users/entities/user.entity';
-import { Area } from '../../areas/entities/area.entity';
+import { Location } from '../../locations/entities/location.entity';
 import { EventsGateway } from '../../../gateways/events.gateway';
 import {
   UserStatusChangedEvent,
@@ -17,13 +21,13 @@ import {
   UserLocationEvent,
   AreaStaffingChangedEvent,
 } from '../../../gateways/dto/events.dto';
-import { AreaStaffRequirement } from '../../area-staff-requirements/entities/area-staff-requirement.entity';
+import { LocationStaffRequirement } from '../../location-staff-requirements/entities/location-staff-requirement.entity';
 import { StaffingDebouncerService } from './staffing-debouncer.service';
 import { NotificationsService } from '../../notifications/notifications.service';
 import { NotificationType } from '../../notifications/entities/notification.entity';
 import { RedisService } from '../../../common/services/redis.service';
 import { BoundaryCheckService } from '../../../shared/services/boundary-check.service';
-import { UserAreasService } from '../../user-areas/user-areas.service';
+import { UserLocationsService } from '../../user-locations/user-locations.service';
 import { SchedulesService } from '../../schedules/schedules.service';
 import { TimezoneUtil } from '../../../common/utils/timezone.util';
 
@@ -42,10 +46,10 @@ export class StatusCalculatorService {
     private readonly trackingRepository: Repository<UserTrackingStatus>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    @InjectRepository(Area)
-    private readonly areaRepository: Repository<Area>,
-    @InjectRepository(AreaStaffRequirement)
-    private readonly staffRequirementRepository: Repository<AreaStaffRequirement>,
+    @InjectRepository(Location)
+    private readonly areaRepository: Repository<Location>,
+    @InjectRepository(LocationStaffRequirement)
+    private readonly staffRequirementRepository: Repository<LocationStaffRequirement>,
     private readonly cacheService: MonitoringCacheService,
     @Inject(forwardRef(() => EventsGateway))
     private readonly eventsGateway: EventsGateway,
@@ -68,7 +72,7 @@ export class StatusCalculatorService {
     // within-area while inside that task's area. Optional → legacy specs
     // without the provider fall back to primary-area-only checking.
     @Optional()
-    private readonly userAreasService?: UserAreasService,
+    private readonly userAreasService?: UserLocationsService,
     // Monitoring/geofencing/tracking read the day's GENERATED roster, not the
     // raw user assignment (the user record is only the template that feeds
     // generation). Optional → legacy specs fall back to user_areas.
@@ -83,7 +87,7 @@ export class StatusCalculatorService {
 
   /**
    * Phase 4-3 (§C1 #8): notify the korlap(s) responsible for an area AND the
-   * kepala_rayon of its rayon when one of their workers transitions to MISSING.
+   * kepala_rayon of its district when one of their workers transitions to MISSING.
    *
    * Public so the 5-min stale-status sweeper can reuse it for the records it
    * flips directly (those bypass `recalculate`). De-duplicated per
@@ -91,15 +95,15 @@ export class StatusCalculatorService {
    * flapping worker isn't spammed; the dedup fails OPEN — a Redis hiccup must
    * never silence a safety alert.
    *
-   * Korlap scope matches the worker's primary `users.area_id` (multi-area via
-   * `user_areas` is a later follow-up); kepala_rayon scope matches `rayon_id`.
+   * Korlap scope matches the worker's primary `users.location_id` (multi-area via
+   * `user_areas` is a later follow-up); kepala_rayon scope matches `district_id`.
    */
   async notifyMissingWorker(
     workerUserId: string,
-    areaId: string | null,
-    rayonId?: string | null,
+    locationId: string | null,
+    districtId?: string | null,
   ): Promise<void> {
-    if (!this.notificationsService || !areaId) return;
+    if (!this.notificationsService || !locationId) return;
 
     // Cross-path dedup: claim once per worker per Jakarta day.
     const claimed = await this.claimMissingAlert(workerUserId);
@@ -113,19 +117,19 @@ export class StatusCalculatorService {
       const workerName = worker?.full_name ?? 'pekerja';
 
       const korlaps = await this.userRepository.find({
-        where: { role: UserRole.KORLAP, area_id: areaId, is_active: true },
+        where: { role: UserRole.KORLAP, location_id: locationId, is_active: true },
         select: ['id'],
       });
 
-      const kepalaRayons = rayonId
+      const kepalaDistricts = districtId
         ? await this.userRepository.find({
-            where: { role: UserRole.KEPALA_RAYON, rayon_id: rayonId, is_active: true },
+            where: { role: UserRole.KEPALA_RAYON, district_id: districtId, is_active: true },
             select: ['id'],
           })
         : [];
 
       // Dedup recipient ids (a user could match both queries in odd configs).
-      const recipientIds = Array.from(new Set([...korlaps, ...kepalaRayons].map((u) => u.id)));
+      const recipientIds = Array.from(new Set([...korlaps, ...kepalaDistricts].map((u) => u.id)));
 
       await Promise.all(
         recipientIds.map((id) =>
@@ -134,7 +138,7 @@ export class StatusCalculatorService {
             title: 'Pekerja hilang',
             body: `${workerName} terdeteksi MISSING di area Anda. Mohon segera periksa.`,
             type: NotificationType.MISSING_WORKER_ALERT,
-            data: { worker_user_id: workerUserId, area_id: areaId },
+            data: { worker_user_id: workerUserId, location_id: locationId },
           }),
         ),
       );
@@ -168,38 +172,38 @@ export class StatusCalculatorService {
     }
   }
 
+  /**
+   * Three states, one threshold (ADR-046 amendment):
+   *   not clocked in            → ABSENT   (*tidak hadir* when a schedule exists)
+   *   clocked in, fresh fix     → ACTIVE
+   *   clocked in, stale/no fix  → OFFLINE
+   *
+   * Inside/outside the area is **not** decided here — `is_within_area` carries it
+   * as an independent axis, so a worker can be ACTIVE and outside. The old
+   * `OUTSIDE_AREA` status conflated the two, which meant a worker outside their
+   * area had no reportable activity state at all.
+   *
+   * Only `active_max_age_seconds` matters now: `idle` folded into OFFLINE, so
+   * everything past the first boundary is offline and the old `inactive`/`missing`
+   * thresholds became unreachable (they are retired from the settings catalog).
+   */
   calculateStatus(
     input: StatusInput,
     thresholds: StatusThresholds,
     now: Date = new Date(),
   ): TrackingStatus {
     if (!input.hasActiveShift) {
-      return TrackingStatus.OFFLINE;
+      return TrackingStatus.ABSENT;
     }
 
     if (!input.lastLocationAt) {
-      return TrackingStatus.MISSING;
+      return TrackingStatus.OFFLINE;
     }
 
     const ageSeconds = (now.getTime() - input.lastLocationAt.getTime()) / 1000;
-
-    if (ageSeconds > thresholds.missing_threshold_seconds) {
-      return TrackingStatus.MISSING;
-    }
-
-    if (ageSeconds > thresholds.inactive_threshold_seconds) {
-      return TrackingStatus.INACTIVE;
-    }
-
-    if (!input.isWithinArea && ageSeconds <= thresholds.active_max_age_seconds) {
-      return TrackingStatus.OUTSIDE_AREA;
-    }
-
-    if (ageSeconds <= thresholds.active_max_age_seconds) {
-      return TrackingStatus.ACTIVE;
-    }
-
-    return TrackingStatus.INACTIVE;
+    return ageSeconds <= thresholds.active_max_age_seconds
+      ? TrackingStatus.ACTIVE
+      : TrackingStatus.OFFLINE;
   }
 
   calculateAxes(
@@ -209,22 +213,23 @@ export class StatusCalculatorService {
   ): { activity: ActivityStatus; location: LocationStatus } {
     let activity: ActivityStatus;
     if (!input.hasActiveShift) {
-      activity = 'offline';
+      activity = 'absent';
     } else if (!input.lastLocationAt) {
-      activity = 'missing';
+      activity = 'offline';
     } else {
       const ageSeconds = (now.getTime() - input.lastLocationAt.getTime()) / 1000;
-      if (ageSeconds > thresholds.missing_threshold_seconds) {
-        activity = 'missing';
-      } else if (ageSeconds > thresholds.active_max_age_seconds) {
-        activity = 'idle';
-      } else {
-        activity = 'aktif';
-      }
+      activity = ageSeconds <= thresholds.active_max_age_seconds ? 'aktif' : 'offline';
     }
 
+    // Inside/outside is reported for BOTH aktif and offline — an offline worker's
+    // last known fix is exactly what a supervisor needs ("unreachable, and the last
+    // we saw they were outside their park"). Throwing it away would make offline
+    // indistinguishable from absent on the one axis that still carries information.
+    //
+    // 'unknown' is reserved for the two cases with genuinely nothing to report:
+    // never clocked in, or clocked in and no fix has EVER arrived.
     const location: LocationStatus =
-      activity === 'offline' || activity === 'missing'
+      activity === 'absent' || !input.lastLocationAt
         ? 'unknown'
         : input.isWithinArea
           ? 'dalam_area'
@@ -262,12 +267,19 @@ export class StatusCalculatorService {
       await this.trackingRepository.save(existing);
 
       await this.broadcastStatusChanged(existing, previousStatus, newStatus, now);
-      await this.emitStaffingChangedIfNeeded(existing.area_id, previousStatus, newStatus, now);
+      await this.emitStaffingChangedIfNeeded(existing.location_id, previousStatus, newStatus, now);
 
-      // Phase 4-3 (M2): alert korlap + kepala_rayon on transition into MISSING.
-      // Fire-and-forget; do not block the status calculation if dispatch fails.
-      if (newStatus === TrackingStatus.MISSING && previousStatus !== TrackingStatus.MISSING) {
-        void this.notifyMissingWorker(userId, existing.area_id, existing.rayon_id);
+      // Phase 4-3 (M2): alert korlap + kepala_rayon when a clocked-in worker goes
+      // unreachable. Fire-and-forget; never block the status calculation on dispatch.
+      //
+      // The alert rides OFFLINE (was MISSING). With `active_max_age_sec` now 10 min
+      // (ADR-050) it fires after 10 min of silence, and `notifyMissingWorker`
+      // de-dupes to once per worker per Jakarta day, so patchy signal can't spam a
+      // korlap. Suppressing the page once a worker is past his shift end (an
+      // expected departure) is a lifecycle-phase refinement — it needs the resolved
+      // shift window, which this path does not yet carry.
+      if (newStatus === TrackingStatus.OFFLINE && previousStatus !== TrackingStatus.OFFLINE) {
+        void this.notifyMissingWorker(userId, existing.location_id, existing.district_id);
       }
 
       this.logger.debug(`User ${userId} status: ${previousStatus} → ${newStatus}`);
@@ -279,7 +291,7 @@ export class StatusCalculatorService {
   async onClockIn(
     userId: string,
     shiftId: string,
-    areaId: string | null,
+    locationId: string | null,
     shiftDefinitionId: string | null,
     clockInLat?: number,
     clockInLng?: number,
@@ -287,31 +299,31 @@ export class StatusCalculatorService {
     const now = new Date();
 
     let isWithinArea = true;
-    if (areaId && clockInLat !== undefined && clockInLng !== undefined) {
-      isWithinArea = await this.checkWithinArea(areaId, clockInLat, clockInLng);
+    if (locationId && clockInLat !== undefined && clockInLng !== undefined) {
+      isWithinArea = await this.checkWithinArea(locationId, clockInLat, clockInLng);
     }
 
-    // Resolve rayon_id from the day's generated roster first (the operational
-    // source of truth), then the area's rayon, then the user template last.
-    let rayonId: string | null = null;
+    // Resolve district_id from the day's generated roster first (the operational
+    // source of truth), then the area's district, then the user template last.
+    let districtId: string | null = null;
     const roster = this.dailySchedulesService
       ? await this.dailySchedulesService.findByUserAndDate(userId, TimezoneUtil.jakartaDateString())
       : null;
-    if (roster?.rayon_id) {
-      rayonId = roster.rayon_id;
-    } else if (areaId) {
+    if (roster?.district_id) {
+      districtId = roster.district_id;
+    } else if (locationId) {
       const area = await this.areaRepository.findOne({
-        where: { id: areaId },
-        select: ['id', 'rayon_id'],
+        where: { id: locationId },
+        select: ['id', 'district_id'],
       });
-      rayonId = area?.rayon_id || null;
+      districtId = area?.district_id || null;
     }
-    if (!rayonId) {
+    if (!districtId) {
       const user = await this.userRepository.findOne({
         where: { id: userId },
-        select: ['id', 'rayon_id'],
+        select: ['id', 'district_id'],
       });
-      rayonId = user?.rayon_id ?? null;
+      districtId = user?.district_id ?? null;
     }
 
     await this.trackingRepository.upsert(
@@ -319,8 +331,8 @@ export class StatusCalculatorService {
         user_id: userId,
         shift_id: shiftId,
         shift_definition_id: shiftDefinitionId,
-        area_id: areaId,
-        rayon_id: rayonId,
+        location_id: locationId,
+        district_id: districtId,
         status: TrackingStatus.ACTIVE,
         is_within_area: isWithinArea,
         updated_at: now,
@@ -339,16 +351,21 @@ export class StatusCalculatorService {
         user_id: userId,
         shift_id: null,
         shift_definition_id: null,
-        area_id: null,
-        rayon_id: null,
-        status: TrackingStatus.OFFLINE,
+        location_id: null,
+        district_id: null,
+        // Not clocked in is ABSENT, not OFFLINE. Under the 5→3 collapse OFFLINE
+        // inverted to mean "clocked in but unreachable"; a clocked-out worker is
+        // simply not on shift, which is exactly what calculateStatus returns for
+        // !hasActiveShift. Writing OFFLINE here contradicted the calculator and
+        // read as "unreachable" in any query that isn't gated on shift_id.
+        status: TrackingStatus.ABSENT,
         is_within_area: true,
         updated_at: now,
       },
       ['user_id'],
     );
 
-    this.logger.log(`User ${userId} clocked out → OFFLINE`);
+    this.logger.log(`User ${userId} clocked out → ABSENT`);
   }
 
   async onLocationPing(
@@ -369,7 +386,7 @@ export class StatusCalculatorService {
       relations: ['shift_definition', 'user', 'area'],
       select: {
         user: { id: true, full_name: true, role: true },
-        area: { id: true, name: true, rayon_id: true },
+        area: { id: true, name: true, district_id: true },
       } as any,
     });
 
@@ -381,8 +398,8 @@ export class StatusCalculatorService {
     const now = new Date();
 
     let isWithinArea = true;
-    if (existing.area_id) {
-      isWithinArea = await this.checkWithinAnyAssignedArea(userId, existing.area_id, lat, lng);
+    if (existing.location_id) {
+      isWithinArea = await this.checkWithinAnyAssignedArea(userId, existing.location_id, lat, lng);
     }
 
     const thresholds = await this.cacheService.getThresholds();
@@ -415,7 +432,7 @@ export class StatusCalculatorService {
     // defensive) so we keep parity with the previous behaviour.
     const context = existing.user
       ? { user: existing.user, area: existing.area ?? null }
-      : await this.resolveUserContext(existing.user_id, existing.area_id);
+      : await this.resolveUserContext(existing.user_id, existing.location_id);
 
     // Broadcast boundary crossing events via WebSocket
     if (previousWithinArea && !isWithinArea) {
@@ -427,7 +444,7 @@ export class StatusCalculatorService {
     // Broadcast status change via WebSocket if changed
     if (newStatus !== previousStatus) {
       await this.broadcastStatusChanged(existing, previousStatus, newStatus, now, context);
-      await this.emitStaffingChangedIfNeeded(existing.area_id, previousStatus, newStatus, now);
+      await this.emitStaffingChangedIfNeeded(existing.location_id, previousStatus, newStatus, now);
     }
 
     // Always emit location update
@@ -451,10 +468,10 @@ export class StatusCalculatorService {
     previousStatus: TrackingStatus,
     newStatus: TrackingStatus,
     timestamp: Date,
-    preResolved?: { user: User; area: Area | null } | null,
+    preResolved?: { user: User; area: Location | null } | null,
   ): Promise<void> {
     const context =
-      preResolved ?? (await this.resolveUserContext(tracking.user_id, tracking.area_id));
+      preResolved ?? (await this.resolveUserContext(tracking.user_id, tracking.location_id));
     if (!context) return;
 
     const thresholds = await this.cacheService.getThresholds();
@@ -472,9 +489,10 @@ export class StatusCalculatorService {
       user_id: tracking.user_id,
       user_name: context.user.full_name,
       role: context.user.role as UserRole,
-      area_id: tracking.area_id,
-      area_name: context.area?.name || null,
-      rayon_id: context.area?.rayon_id || null,
+      location_id: tracking.location_id,
+      location_name: context.area?.name || null,
+      district_id: context.area?.district_id || null,
+      region_id: context.area?.region_id || null,
       previous_status: previousStatus,
       new_status: newStatus,
       latitude: tracking.last_latitude,
@@ -493,21 +511,22 @@ export class StatusCalculatorService {
     lat: number,
     lng: number,
     timestamp: Date,
-    preResolved?: { user: User; area: Area | null } | null,
+    preResolved?: { user: User; area: Location | null } | null,
   ): Promise<void> {
-    if (!tracking.area_id) return;
+    if (!tracking.location_id) return;
 
     const context =
-      preResolved ?? (await this.resolveUserContext(tracking.user_id, tracking.area_id));
+      preResolved ?? (await this.resolveUserContext(tracking.user_id, tracking.location_id));
     if (!context || !context.area) return;
 
     const event: UserAreaEvent = {
       user_id: tracking.user_id,
       user_name: context.user.full_name,
       role: context.user.role as UserRole,
-      area_id: tracking.area_id,
-      area_name: context.area.name,
-      rayon_id: context.area.rayon_id || null,
+      location_id: tracking.location_id,
+      location_name: context.area.name,
+      district_id: context.area.district_id || null,
+      region_id: context.area.region_id || null,
       latitude: lat,
       longitude: lng,
       timestamp,
@@ -529,12 +548,12 @@ export class StatusCalculatorService {
     status: TrackingStatus,
     isWithinArea: boolean,
     timestamp: Date,
-    preResolved?: { user: User; area: Area | null } | null,
+    preResolved?: { user: User; area: Location | null } | null,
   ): Promise<void> {
-    if (!tracking.area_id || !tracking.shift_id) return;
+    if (!tracking.location_id || !tracking.shift_id) return;
 
     const context =
-      preResolved ?? (await this.resolveUserContext(tracking.user_id, tracking.area_id));
+      preResolved ?? (await this.resolveUserContext(tracking.user_id, tracking.location_id));
     if (!context) return;
 
     const thresholds = await this.cacheService.getThresholds();
@@ -554,9 +573,10 @@ export class StatusCalculatorService {
       role: context.user.role as UserRole,
       shift_id: tracking.shift_id,
       shift_name: tracking.shift_definition?.name || 'Active Shift',
-      area_id: tracking.area_id,
-      area_name: context.area?.name || 'Unknown',
-      rayon_id: context.area?.rayon_id || null,
+      location_id: tracking.location_id,
+      location_name: context.area?.name || 'Unknown',
+      district_id: context.area?.district_id || null,
+      region_id: context.area?.region_id || null,
       latitude: lat,
       longitude: lng,
       accuracy,
@@ -571,21 +591,22 @@ export class StatusCalculatorService {
     this.eventsGateway.emitUserLocation(event);
   }
 
+  /**
+   * Whether this status contributes to a place's staffing — i.e. the worker is
+   * clocked in. OFFLINE counts: they are at work, their phone just isn't
+   * reporting. Only ABSENT (never clocked in) does not.
+   */
   private isActiveStatus(status: TrackingStatus): boolean {
-    return (
-      status === TrackingStatus.ACTIVE ||
-      status === TrackingStatus.INACTIVE ||
-      status === TrackingStatus.OUTSIDE_AREA
-    );
+    return status === TrackingStatus.ACTIVE || status === TrackingStatus.OFFLINE;
   }
 
   private async emitStaffingChangedIfNeeded(
-    areaId: string | null,
+    locationId: string | null,
     previousStatus: TrackingStatus,
     newStatus: TrackingStatus,
     timestamp: Date,
   ): Promise<void> {
-    if (!areaId) return;
+    if (!locationId) return;
 
     const wasActive = this.isActiveStatus(previousStatus);
     const isNowActive = this.isActiveStatus(newStatus);
@@ -593,29 +614,30 @@ export class StatusCalculatorService {
 
     const activeCount = await this.trackingRepository
       .createQueryBuilder('uts')
-      .where('uts.area_id = :areaId', { areaId })
+      .where('uts.location_id = :locationId', { locationId })
       .andWhere('uts.status IN (:...statuses)', {
-        statuses: [TrackingStatus.ACTIVE, TrackingStatus.INACTIVE, TrackingStatus.OUTSIDE_AREA],
+        statuses: [TrackingStatus.ACTIVE, TrackingStatus.OFFLINE],
       })
       .getCount();
 
     const reqResult = await this.staffRequirementRepository
       .createQueryBuilder('req')
       .select('SUM(req.required_count)', 'total')
-      .where('req.area_id = :areaId', { areaId })
+      .where('req.location_id = :locationId', { locationId })
       .getRawOne();
 
     const requiredCount = parseInt(reqResult?.total || '0');
     if (requiredCount === 0) return;
 
     const area = await this.areaRepository.findOne({
-      where: { id: areaId },
-      select: ['id', 'rayon_id'],
+      where: { id: locationId },
+      select: ['id', 'district_id', 'region_id'],
     });
 
     const event: AreaStaffingChangedEvent = {
-      area_id: areaId,
-      rayon_id: area?.rayon_id || null,
+      location_id: locationId,
+      district_id: area?.district_id || null,
+      region_id: area?.region_id || null,
       active_count: activeCount,
       required_count: requiredCount,
       is_met: activeCount >= requiredCount,
@@ -625,7 +647,7 @@ export class StatusCalculatorService {
     // Route through debouncer when available to coalesce rapid successive
     // status changes (e.g. shift-start wave) into a single broadcast.
     if (this.staffingDebouncer) {
-      this.staffingDebouncer.flag(areaId, event as unknown as Record<string, unknown>);
+      this.staffingDebouncer.flag(locationId, event as unknown as Record<string, unknown>);
     } else {
       this.eventsGateway.emitAreaStaffingChanged(event);
     }
@@ -633,8 +655,8 @@ export class StatusCalculatorService {
 
   private async resolveUserContext(
     userId: string,
-    areaId: string | null,
-  ): Promise<{ user: User; area: Area | null } | null> {
+    locationId: string | null,
+  ): Promise<{ user: User; area: Location | null } | null> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
       select: ['id', 'full_name', 'role'],
@@ -642,18 +664,32 @@ export class StatusCalculatorService {
 
     if (!user) return null;
 
-    const area = areaId
+    const area = locationId
       ? await this.areaRepository.findOne({
-          where: { id: areaId },
-          select: ['id', 'name', 'rayon_id'],
+          where: { id: locationId },
+          select: ['id', 'name', 'district_id', 'region_id'],
         })
       : null;
 
     return { user, area };
   }
 
-  private async checkWithinArea(areaId: string, lat: number, lng: number): Promise<boolean> {
-    const boundary = await this.cacheService.getAreaBoundary(areaId);
+  private checkWithinArea(locationId: string, lat: number, lng: number): Promise<boolean> {
+    return this.checkWithinBoundary('location', locationId, lat, lng);
+  }
+
+  /**
+   * Is a point inside a geofence subject's polygon (lokasi, kawasan or district)?
+   * Fails OPEN when the subject has no polygon — an un-mapped area must not mark
+   * everyone in it as outside. The tolerance math is scope-agnostic (5.4e).
+   */
+  private async checkWithinBoundary(
+    scope: BoundaryScope,
+    id: string,
+    lat: number,
+    lng: number,
+  ): Promise<boolean> {
+    const boundary = await this.cacheService.getBoundary(scope, id);
     if (!boundary || boundary.length === 0) {
       return true;
     }
@@ -687,7 +723,7 @@ export class StatusCalculatorService {
     // Union today's + yesterday's roster areas so an overnight (Shift-3) worker
     // whose roster row sits on the clock-in day is still recognized after WIB
     // midnight. Only runs when the worker is outside their primary area.
-    let rosterAreas: Area[] = [];
+    let rosterAreas: Location[] = [];
     if (this.dailySchedulesService) {
       const today = TimezoneUtil.jakartaDateString();
       const yesterday = TimezoneUtil.jakartaDateString(new Date(Date.now() - 24 * 60 * 60 * 1000));
@@ -695,7 +731,7 @@ export class StatusCalculatorService {
         this.dailySchedulesService.getActiveAreasForDay(userId, today),
         this.dailySchedulesService.getActiveAreasForDay(userId, yesterday),
       ]);
-      const byId = new Map<string, Area>();
+      const byId = new Map<string, Location>();
       for (const a of [...todayAreas, ...yesterdayAreas]) byId.set(a.id, a);
       rosterAreas = [...byId.values()];
     }
@@ -703,7 +739,7 @@ export class StatusCalculatorService {
       rosterAreas.length > 0
         ? rosterAreas
         : this.userAreasService
-          ? await this.userAreasService.getEffectiveAreas(userId)
+          ? await this.userAreasService.getEffectiveLocations(userId)
           : [];
     for (const area of candidates) {
       if (area.id === primaryAreaId) continue;
@@ -711,6 +747,38 @@ export class StatusCalculatorService {
         return true;
       }
     }
+
+    // A worker bound to lokasi (roster or user_areas) who is outside every one is
+    // simply outside. Only when there is NO lokasi assignment does the occurrence's
+    // wider scope apply: a MOBILE crew (region occurrence, no lokasi) roams its
+    // KAWASAN, so geofence against the region polygon — "outside area" for a mobile
+    // subject means outside its kawasan (ADR-046, 5.4e). Static workers keep the
+    // lokasi-only rule above; district-scoped + supervisor (kepala_rayon/admin_rayon)
+    // district-geofencing is a documented follow-up.
+    if (candidates.length > 0) {
+      return false;
+    }
+    const regionId = await this.resolveMobileRegion(userId);
+    if (regionId) {
+      return this.checkWithinBoundary('region', regionId, lat, lng);
+    }
     return false;
+  }
+
+  /**
+   * The kawasan a mobile worker roams today, from their schedule occurrence's
+   * `region_id` — or null when they aren't region-scoped (static / no occurrence).
+   * Today's row is preferred; yesterday's covers a Shift-3 crew still out after
+   * WIB midnight. Only reached when the worker has no lokasi assignment.
+   */
+  private async resolveMobileRegion(userId: string): Promise<string | null> {
+    const svc = this.dailySchedulesService;
+    if (!svc?.findByUserAndDate) return null;
+    const today = TimezoneUtil.jakartaDateString();
+    const yesterday = TimezoneUtil.jakartaDateString(new Date(Date.now() - 24 * 60 * 60 * 1000));
+    const occ =
+      (await svc.findByUserAndDate(userId, today)) ??
+      (await svc.findByUserAndDate(userId, yesterday));
+    return occ?.region_id ?? null;
   }
 }

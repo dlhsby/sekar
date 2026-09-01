@@ -1,9 +1,9 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { AreaPlant } from '../../plants/entities/area-plant.entity';
-import { Area } from '../../areas/entities/area.entity';
-import { Rayon } from '../../rayons/entities/rayon.entity';
+import { LocationPlant } from '../../plants/entities/location-plant.entity';
+import { Location } from '../../locations/entities/location.entity';
+import { District } from '../../districts/entities/district.entity';
 import { PlantDueDateService, PlantStatus } from '../../plants/services/plant-due-date.service';
 
 /**
@@ -18,10 +18,10 @@ export interface AreaPlantSpeciesSummary {
 }
 
 /**
- * Area-level plant status aggregation response.
+ * Location-level plant status aggregation response.
  */
 export interface AreaPlantStatusResponse {
-  areaId: string;
+  locationId: string;
   total: number;
   ok: number;
   due_soon: number;
@@ -33,19 +33,19 @@ export interface AreaPlantStatusResponse {
 /**
  * Rayon-level rollup (Phase 3-8 close-out: dashboard widget + overdue digest).
  */
-export interface RayonPlantStatusSummary {
-  rayon_id: string | null;
-  rayon_name: string | null;
+export interface DistrictPlantStatusSummary {
+  district_id: string | null;
+  district_name: string | null;
   ok: number;
   due_soon: number;
   overdue: number;
   unknown: number;
-  overdue_areas: { area_id: string; area_name: string; overdue: number }[];
+  overdue_areas: { location_id: string; location_name: string; overdue: number }[];
 }
 
 export interface PlantStatusSummaryResponse {
   generated_at: Date;
-  rayons: RayonPlantStatusSummary[];
+  districts: DistrictPlantStatusSummary[];
 }
 
 /**
@@ -63,12 +63,12 @@ export class AreaPlantStatusService {
   private readonly logger = new Logger(AreaPlantStatusService.name);
 
   constructor(
-    @InjectRepository(AreaPlant)
-    private readonly areaPlantRepository: Repository<AreaPlant>,
-    @InjectRepository(Area)
-    private readonly areaRepository: Repository<Area>,
-    @InjectRepository(Rayon)
-    private readonly rayonRepository: Repository<Rayon>,
+    @InjectRepository(LocationPlant)
+    private readonly areaPlantRepository: Repository<LocationPlant>,
+    @InjectRepository(Location)
+    private readonly areaRepository: Repository<Location>,
+    @InjectRepository(District)
+    private readonly districtRepository: Repository<District>,
     private readonly plantDueDateService: PlantDueDateService,
   ) {}
 
@@ -80,26 +80,26 @@ export class AreaPlantStatusService {
    * and status using PlantDueDateService. Aggregates status counts and returns
    * a per-species breakdown.
    *
-   * @param areaId — UUID of the area
+   * @param locationId — UUID of the area
    * @returns AreaPlantStatusResponse with status aggregates and per-species details
    * @throws NotFoundException if area does not exist
    */
-  async getAreaPlantStatus(areaId: string): Promise<AreaPlantStatusResponse> {
-    this.logger.log(`Computing plant status for area: ${areaId}`);
+  async getAreaPlantStatus(locationId: string): Promise<AreaPlantStatusResponse> {
+    this.logger.log(`Computing plant status for area: ${locationId}`);
 
     // Verify area exists
     const area = await this.areaRepository.findOne({
-      where: { id: areaId },
-      relations: ['areaType'],
+      where: { id: locationId },
+      relations: ['locationType'],
     });
 
     if (!area) {
-      throw new NotFoundException(`Area with ID ${areaId} not found`);
+      throw new NotFoundException(`Location with ID ${locationId} not found`);
     }
 
     // Load all plants for this area with species relation
     const areaPlants = await this.areaPlantRepository.find({
-      where: { areaId },
+      where: { locationId },
       relations: ['species'],
     });
 
@@ -108,7 +108,7 @@ export class AreaPlantStatusService {
       const { nextDueAt, status } = this.plantDueDateService.recomputeAreaPlant(
         plant,
         plant.species,
-        area.areaType,
+        area.locationType,
       );
 
       return {
@@ -133,7 +133,7 @@ export class AreaPlantStatusService {
     const totalCount = plants.reduce((sum, p) => sum + p.count, 0);
 
     return {
-      areaId,
+      locationId,
       total: totalCount,
       ok: aggregates.ok,
       due_soon: aggregates.due_soon,
@@ -144,41 +144,43 @@ export class AreaPlantStatusService {
   }
 
   /**
-   * Per-rayon plant-status rollup across all areas (optionally one rayon).
+   * Per-district plant-status rollup across all areas (optionally one district).
    * Recomputes every row's status (same path as getAreaPlantStatus) and groups
-   * counts per rayon, listing the areas that currently have overdue species.
+   * counts per district, listing the areas that currently have overdue species.
    */
-  async getSummary(rayonId?: string): Promise<PlantStatusSummaryResponse> {
+  async getSummary(districtId?: string): Promise<PlantStatusSummaryResponse> {
     const areas = await this.areaRepository.find({
-      where: rayonId ? { rayon_id: rayonId } : {},
-      relations: ['areaType'],
+      where: districtId ? { district_id: districtId, is_active: true } : { is_active: true },
+      relations: ['locationType'],
     });
     const areaById = new Map(areas.map((a) => [a.id, a]));
-    const rayons = await this.rayonRepository.find({ select: ['id', 'name'] });
-    const rayonNameById = new Map(rayons.map((r) => [r.id, r.name]));
+    const districts = await this.districtRepository.find({ select: ['id', 'name'] });
+    const districtNameById = new Map(districts.map((r) => [r.id, r.name]));
 
     const plants = await this.areaPlantRepository.find({ relations: ['species'] });
 
-    const rayonMap = new Map<string, RayonPlantStatusSummary>();
+    const districtMap = new Map<string, DistrictPlantStatusSummary>();
     const overduePerArea = new Map<string, number>();
 
     for (const plant of plants) {
-      const area = areaById.get(plant.areaId);
-      if (!area) continue; // outside the requested rayon scope (or orphaned)
+      const area = areaById.get(plant.locationId);
+      if (!area) continue; // outside the requested district scope (or orphaned)
 
       const { status } = this.plantDueDateService.recomputeAreaPlant(
         plant,
         plant.species,
-        area.areaType,
+        area.locationType,
       );
 
-      const key = area.rayon_id ?? 'none';
+      const key = area.district_id ?? 'none';
       const entry =
-        rayonMap.get(key) ??
-        rayonMap
+        districtMap.get(key) ??
+        districtMap
           .set(key, {
-            rayon_id: area.rayon_id ?? null,
-            rayon_name: area.rayon_id ? (rayonNameById.get(area.rayon_id) ?? null) : null,
+            district_id: area.district_id ?? null,
+            district_name: area.district_id
+              ? (districtNameById.get(area.district_id) ?? null)
+              : null,
             ok: 0,
             due_soon: 0,
             overdue: 0,
@@ -193,19 +195,23 @@ export class AreaPlantStatusService {
       }
     }
 
-    for (const [areaId, count] of overduePerArea) {
-      const area = areaById.get(areaId)!;
-      const entry = rayonMap.get(area.rayon_id ?? 'none');
-      entry?.overdue_areas.push({ area_id: areaId, area_name: area.name, overdue: count });
+    for (const [locationId, count] of overduePerArea) {
+      const area = areaById.get(locationId)!;
+      const entry = districtMap.get(area.district_id ?? 'none');
+      entry?.overdue_areas.push({
+        location_id: locationId,
+        location_name: area.name,
+        overdue: count,
+      });
     }
-    for (const entry of rayonMap.values()) {
+    for (const entry of districtMap.values()) {
       entry.overdue_areas.sort((a, b) => b.overdue - a.overdue);
     }
 
     return {
       generated_at: new Date(),
-      rayons: [...rayonMap.values()].sort((a, b) =>
-        (a.rayon_name ?? '').localeCompare(b.rayon_name ?? ''),
+      districts: [...districtMap.values()].sort((a, b) =>
+        (a.district_name ?? '').localeCompare(b.district_name ?? ''),
       ),
     };
   }

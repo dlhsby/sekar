@@ -1,21 +1,91 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+  ApiQuery,
+  ApiBody,
+} from '@nestjs/swagger';
 import { ShiftDefinitionsService } from './shift-definitions.service';
 import { ShiftDefinition } from './entities/shift-definition.entity';
+import { CreateShiftDefinitionDto } from './dto/create-shift-definition.dto';
+import { UpdateShiftDefinitionDto } from './dto/update-shift-definition.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { USER_MANAGERS } from '../users/constants/role-groups';
 
 /**
- * Controller for shift definition operations (read-only)
+ * Controller for shift definition operations.
  *
- * All endpoints require authentication.
- * Shift definitions are fixed and not modifiable at runtime.
+ * Reads are open to any authenticated user; writes (ADR-055 configurable shifts)
+ * are restricted to system managers. All endpoints require authentication.
  */
 @ApiTags('shift-definitions')
 @ApiBearerAuth('JWT-auth')
 @Controller('shift-definitions')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class ShiftDefinitionsController {
   constructor(private readonly shiftDefinitionsService: ShiftDefinitionsService) {}
+
+  @Post()
+  @Roles(...USER_MANAGERS)
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Create a shift definition (ADR-055)',
+    description: 'Add a new shift type. System managers only.',
+  })
+  @ApiBody({ type: CreateShiftDefinitionDto })
+  @ApiResponse({ status: 201, type: ShiftDefinition })
+  @ApiResponse({ status: 409, description: 'Duplicate name' })
+  create(@Body() dto: CreateShiftDefinitionDto): Promise<ShiftDefinition> {
+    return this.shiftDefinitionsService.create(dto);
+  }
+
+  @Patch(':id')
+  @Roles(...USER_MANAGERS)
+  @ApiOperation({
+    summary: 'Update a shift definition (ADR-055)',
+    description: 'Edit times / windows / active flag. System managers only.',
+  })
+  @ApiParam({ name: 'id', description: 'Shift definition UUID' })
+  @ApiBody({ type: UpdateShiftDefinitionDto })
+  @ApiResponse({ status: 200, type: ShiftDefinition })
+  @ApiResponse({ status: 404, description: 'Not found' })
+  @ApiResponse({ status: 409, description: 'Duplicate name' })
+  update(@Param('id') id: string, @Body() dto: UpdateShiftDefinitionDto): Promise<ShiftDefinition> {
+    return this.shiftDefinitionsService.update(id, dto);
+  }
+
+  @Delete(':id')
+  @Roles(...USER_MANAGERS)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Delete (soft) a shift definition (ADR-055)',
+    description:
+      'Soft-deletes so historical schedules/shifts/punches keep their reference. ' +
+      'To merely stop offering a shift, set is_active=false instead. System managers only.',
+  })
+  @ApiParam({ name: 'id', description: 'Shift definition UUID' })
+  @ApiResponse({ status: 204, description: 'Deleted' })
+  @ApiResponse({ status: 404, description: 'Not found' })
+  async remove(@Param('id') id: string): Promise<void> {
+    await this.shiftDefinitionsService.remove(id);
+  }
 
   /**
    * Get all shift definitions
@@ -29,7 +99,15 @@ export class ShiftDefinitionsController {
   @ApiOperation({
     summary: 'Get all shift definitions',
     description:
-      'Returns all active shift definitions (Shift 1: 06:00-15:00, Shift 2: 15:00-23:00, Shift 3: 21:00-05:00). Any authenticated user can access this.',
+      'Returns shift definitions ordered by start time (soft-deleted excluded). By ' +
+      'default only active ones; pass includeInactive=true (management datagrid) to ' +
+      'also return inactive shifts. Any authenticated user can access this.',
+  })
+  @ApiQuery({
+    name: 'includeInactive',
+    required: false,
+    type: Boolean,
+    description: 'Include inactive (is_active=false) shifts too — for the management list.',
   })
   @ApiResponse({
     status: 200,
@@ -40,8 +118,8 @@ export class ShiftDefinitionsController {
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
   })
-  findAll(): Promise<ShiftDefinition[]> {
-    return this.shiftDefinitionsService.findAll();
+  findAll(@Query('includeInactive') includeInactive?: string): Promise<ShiftDefinition[]> {
+    return this.shiftDefinitionsService.findAll(includeInactive === 'true');
   }
 
   /**

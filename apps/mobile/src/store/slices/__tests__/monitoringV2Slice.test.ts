@@ -7,7 +7,7 @@
 import monitoringV2Reducer, {
   setSnapshot,
   applyPatch,
-  toggleLayer,
+  setLayer,
   setSelectedUser,
   setSelectedArea,
   setClusterZoomThreshold,
@@ -34,10 +34,10 @@ const makeWorker = (overrides: Partial<LiveUser> = {}): LiveUser => ({
   role: 'satgas',
   phone: null,
   status: 'active',
-  area_id: 'area-1',
-  area_name: 'Taman A',
-  rayon_id: 'rayon-1',
-  rayon_name: 'Rayon 1',
+  location_id: 'area-1',
+  location_name: 'Taman A',
+  district_id: 'district-1',
+  district_name: 'Rayon 1',
   latitude: -7.25,
   longitude: 112.75,
   accuracy: 10,
@@ -55,7 +55,7 @@ const makeWorker = (overrides: Partial<LiveUser> = {}): LiveUser => ({
 });
 
 const workerA = makeWorker({ id: 'worker-A', status: 'active', battery_level: 90 });
-const workerB = makeWorker({ id: 'worker-B', status: 'inactive', battery_level: 50 });
+const workerB = makeWorker({ id: 'worker-B', status: 'absent', battery_level: 50 });
 
 const initialSnapshot: MonitoringV2Snapshot = {
   scope: 'city',
@@ -77,17 +77,18 @@ describe('monitoringV2Slice', () => {
       expect(state.snapshot.workers).toEqual([]);
     });
 
-    it('starts with workers and rayons layers visible', () => {
+    it('starts with every geo tier and personnel fully visible', () => {
       const state = monitoringV2Reducer(undefined, { type: '@@INIT' });
-      expect(state.visibleLayers.workers).toBe(true);
-      expect(state.visibleLayers.rayons).toBe(true);
-      expect(state.visibleLayers.areas).toBe(true);
+      expect(state.visibleLayers.district).toEqual(['boundary', 'fill', 'marker', 'label']);
+      // Kawasan is new: the tier the map drills THROUGH previously had no layer.
+      expect(state.visibleLayers.kawasan).toEqual(['boundary', 'fill', 'marker', 'label']);
+      expect(state.visibleLayers.lokasi).toEqual(['boundary', 'fill', 'marker', 'label']);
+      expect(state.visibleLayers.personnel).toEqual(['petugas', 'tim']);
     });
 
-    it('starts with plants, overdue layers hidden', () => {
+    it('starts with the plants overlay hidden', () => {
       const state = monitoringV2Reducer(undefined, { type: '@@INIT' });
       expect(state.visibleLayers.plants).toBe(false);
-      expect(state.visibleLayers.overdue).toBe(false);
     });
 
     it('starts with no selected user or area', () => {
@@ -134,11 +135,11 @@ describe('monitoringV2Slice', () => {
       const state = stateWithWorkers();
       const patched = monitoringV2Reducer(
         state,
-        applyPatch({ id: 'worker-A', battery_level: 20, status: 'missing' }),
+        applyPatch({ id: 'worker-A', battery_level: 20, status: 'absent' }),
       );
       const workerAUpdated = patched.snapshot.workers.find(w => w.id === 'worker-A');
       expect(workerAUpdated?.battery_level).toBe(20);
-      expect(workerAUpdated?.status).toBe('missing');
+      expect(workerAUpdated?.status).toBe('absent');
     });
 
     it('does not mutate other workers when patching one', () => {
@@ -149,7 +150,7 @@ describe('monitoringV2Slice', () => {
       );
       const workerBUnchanged = patched.snapshot.workers.find(w => w.id === 'worker-B');
       expect(workerBUnchanged?.battery_level).toBe(50);
-      expect(workerBUnchanged?.status).toBe('inactive');
+      expect(workerBUnchanged?.status).toBe('absent');
     });
 
     it('preserves array length when patching', () => {
@@ -185,45 +186,58 @@ describe('monitoringV2Slice', () => {
     });
   });
 
-  describe('toggleLayer', () => {
-    it('flips workers layer from true to false', () => {
-      const state = monitoringV2Reducer(undefined, toggleLayer('workers'));
-      expect(state.visibleLayers.workers).toBe(false);
+  describe('setLayer', () => {
+    it('sets a geo tier to an explicit facet set', () => {
+      const state = monitoringV2Reducer(
+        undefined,
+        setLayer({ key: 'district', value: ['boundary'] }),
+      );
+      expect(state.visibleLayers.district).toEqual(['boundary']);
     });
 
-    it('flips plants layer from false to true', () => {
-      const state = monitoringV2Reducer(undefined, toggleLayer('plants'));
+    it('lets Tim be chosen without Petugas — the map then shows teams only', () => {
+      const state = monitoringV2Reducer(undefined, setLayer({ key: 'personnel', value: ['tim'] }));
+      expect(state.visibleLayers.personnel).toEqual(['tim']);
+    });
+
+    it('keeps plants a plain boolean', () => {
+      const state = monitoringV2Reducer(undefined, setLayer({ key: 'plants', value: true }));
       expect(state.visibleLayers.plants).toBe(true);
     });
 
-    it('flips overdue layer from false to true', () => {
-      const state = monitoringV2Reducer(undefined, toggleLayer('overdue'));
-      expect(state.visibleLayers.overdue).toBe(true);
+    it('hides a tier outright with an empty set', () => {
+      const state = monitoringV2Reducer(undefined, setLayer({ key: 'lokasi', value: [] }));
+      expect(state.visibleLayers.lokasi).toEqual([]);
     });
 
-    it('flips rayons layer from true to false', () => {
-      const state = monitoringV2Reducer(undefined, toggleLayer('rayons'));
-      expect(state.visibleLayers.rayons).toBe(false);
+    it('can ask for markers without the outline — impossible before', () => {
+      // The original booleans governed the BOUNDARY only; node markers were
+      // always drawn and could not be hidden or requested on their own.
+      const state = monitoringV2Reducer(undefined, setLayer({ key: 'kawasan', value: ['marker'] }));
+      expect(state.visibleLayers.kawasan).toEqual(['marker']);
     });
 
-    it('flips areas layer from true to false', () => {
-      const state = monitoringV2Reducer(undefined, toggleLayer('areas'));
-      expect(state.visibleLayers.areas).toBe(false);
+    it('can ask for outline without fill — the combination the select had no word for', () => {
+      const state = monitoringV2Reducer(
+        undefined,
+        setLayer({ key: 'kawasan', value: ['boundary', 'marker'] }),
+      );
+      expect(state.visibleLayers.kawasan).toEqual(['boundary', 'marker']);
     });
 
-    it('double-toggle returns to original value', () => {
-      let state = monitoringV2Reducer(undefined, toggleLayer('workers'));
-      expect(state.visibleLayers.workers).toBe(false);
-      state = monitoringV2Reducer(state, toggleLayer('workers'));
-      expect(state.visibleLayers.workers).toBe(true);
+    it('stores a COPY, so a caller reusing its array cannot mutate the store', () => {
+      const chosen = ['boundary'];
+      const state = monitoringV2Reducer(undefined, setLayer({ key: 'district', value: chosen }));
+      chosen.push('marker');
+      expect(state.visibleLayers.district).toEqual(['boundary']);
     });
 
-    it('toggling one layer does not affect others', () => {
-      const state = monitoringV2Reducer(undefined, toggleLayer('workers'));
+    it('setting one layer does not affect others', () => {
+      const state = monitoringV2Reducer(undefined, setLayer({ key: 'personnel', value: [] }));
       expect(state.visibleLayers.plants).toBe(false);
-      expect(state.visibleLayers.overdue).toBe(false);
-      expect(state.visibleLayers.rayons).toBe(true);
-      expect(state.visibleLayers.areas).toBe(true);
+      expect(state.visibleLayers.district).toEqual(['boundary', 'fill', 'marker', 'label']);
+      expect(state.visibleLayers.kawasan).toEqual(['boundary', 'fill', 'marker', 'label']);
+      expect(state.visibleLayers.lokasi).toEqual(['boundary', 'fill', 'marker', 'label']);
     });
   });
 
@@ -329,8 +343,8 @@ describe('monitoringV2Slice', () => {
       mockGet.mockResolvedValueOnce({
         data: {
           data: {
-            scope: 'rayon',
-            scope_id: 'rayon-1',
+            scope: 'district',
+            scope_id: 'district-1',
             workers: [],
             generated_at: '2026-04-26T08:00:00Z',
           },
@@ -339,11 +353,11 @@ describe('monitoringV2Slice', () => {
 
       const dispatch = jest.fn();
       const getState = jest.fn();
-      const thunk = fetchSnapshot({ scope: 'rayon', id: 'rayon-1' });
+      const thunk = fetchSnapshot({ scope: 'district', id: 'district-1' });
       await thunk(dispatch, getState, undefined);
 
       expect(mockGet).toHaveBeenCalledWith(
-        '/monitoring/snapshot?scope=rayon&id=rayon-1',
+        '/monitoring/snapshot?scope=district&id=district-1',
       );
     });
   });

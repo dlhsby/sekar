@@ -6,9 +6,10 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, ILike, In, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User, UserRole } from './entities/user.entity';
+import { Role } from '../rbac/entities/role.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateMyProfileDto } from './dto/update-my-profile.dto';
@@ -16,7 +17,7 @@ import { AuthService } from '../auth/auth.service';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 import { UserValidationService } from './services/user-validation.service';
 import { AuditLogService } from '../audit/audit.service';
-import { UserAreasService } from '../user-areas/user-areas.service';
+import { UserLocationsService } from '../../modules/user-locations/user-locations.service';
 import { generateTempPassword } from '../../common/utils/password.util';
 
 /** A user plus a one-time plaintext password (only present on create/reset). */
@@ -30,6 +31,17 @@ export interface ResetCredential {
   temp_password: string;
 }
 
+/**
+ * The four fields a picker or a name label needs from a user. Deliberately
+ * excludes `profile_picture_url` — see `findAllForLookup`.
+ */
+export interface UserLookup {
+  id: string;
+  full_name: string;
+  username: string;
+  role: UserRole;
+}
+
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
@@ -37,14 +49,60 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    // Roles are data-driven (ADR-044) — validate assigned role codes against the
+    // `roles` table rather than a static enum. Repo is provided globally by the
+    // @Global rbac module.
+    @InjectRepository(Role)
+    private readonly roleRepository: Repository<Role>,
     private readonly authService: AuthService,
     // Phase 4-7 (H2): uniqueness validation extracted from CRUD methods
     private readonly userValidation: UserValidationService,
     // Phase 4-4 (C2): account mutations are audit-logged
     private readonly auditLogService: AuditLogService,
-    // Simplified assignment: rayon + permanent areas + one shift set in user mgmt
-    private readonly userAreasService: UserAreasService,
+    // Simplified assignment: district + permanent areas + one shift set in user mgmt
+    private readonly userAreasService: UserLocationsService,
   ) {}
+
+  /**
+   * Validate the user's role + scope fields as a whole (ADR-044/045): the role
+   * code is checked against the data-driven `roles` table (replaces the static
+   * enum/CHECK constraint; undefined role is allowed — create falls back to the
+   * column default). Scope rules: a
+   * district/region-scope role needs a district; a region assignment is only valid
+   * for region/location-scope roles and must belong to the user's district.
+   * Returns the role's monitoring_scope so callers can reconcile stale fields.
+   */
+  private async assertScopeConsistent(effective: {
+    role?: string;
+    district_id?: string | null;
+    region_id?: string | null;
+  }): Promise<string | undefined> {
+    let scope: string | undefined;
+    if (effective.role) {
+      const roleRow = await this.roleRepository.findOne({ where: { code: effective.role } });
+      if (!roleRow) throw new BadRequestException(`Unknown role: ${effective.role}`);
+      scope = roleRow.monitoring_scope;
+      if ((scope === 'district' || scope === 'region') && !effective.district_id) {
+        throw new BadRequestException(`Role '${effective.role}' requires a district assignment`);
+      }
+      if (effective.region_id && scope !== 'region' && scope !== 'location') {
+        throw new BadRequestException(
+          `Role '${effective.role}' does not take a region (kawasan) assignment`,
+        );
+      }
+    }
+    if (effective.region_id) {
+      const rows = (await this.userRepository.manager.query(
+        `SELECT district_id FROM regions WHERE id = $1 AND deleted_at IS NULL`,
+        [effective.region_id],
+      )) as Array<{ district_id: string }>;
+      if (rows.length === 0) throw new BadRequestException('Region not found');
+      if (!effective.district_id || rows[0].district_id !== effective.district_id) {
+        throw new BadRequestException("Region must belong to the user's district");
+      }
+    }
+    return scope;
+  }
 
   /** Fire-and-forget audit write — account changes must never fail on logging */
   private audit(params: Parameters<AuditLogService['log']>[0]): void {
@@ -60,12 +118,21 @@ export class UsersService {
    * @throws ConflictException if username already exists
    */
   async create(createUserDto: CreateUserDto, actor?: User): Promise<UserWithTempPassword> {
-    const { username, password, full_name, role, phone_number, rayon_id, shift_definition_id } =
-      createUserDto;
-    const areaIds = [...new Set(createUserDto.area_ids ?? [])];
+    const {
+      username,
+      password,
+      full_name,
+      role,
+      phone_number,
+      district_id,
+      region_id,
+      shift_definition_id,
+    } = createUserDto;
+    const locationIds = [...new Set(createUserDto.area_ids ?? [])];
 
     this.logger.log(`Creating new user: ${username}`);
 
+    await this.assertScopeConsistent({ role, district_id, region_id });
     await this.userValidation.assertUsernameAvailable(username);
     if (phone_number) {
       await this.userValidation.assertPhoneAvailable(phone_number);
@@ -85,23 +152,24 @@ export class UsersService {
       username,
       password_hash,
       full_name,
-      role,
+      role: role as UserRole,
       phone_number: phone_number || null,
       password_must_change: true,
-      rayon_id: rayon_id ?? undefined,
+      district_id: district_id ?? undefined,
+      region_id: region_id ?? undefined,
       shift_definition_id: shift_definition_id ?? undefined,
-      // Primary area = first assigned area (legacy `users.area_id` fallback).
-      area_id: areaIds[0] ?? undefined,
+      // Primary area = first assigned area (legacy `users.location_id` fallback).
+      location_id: locationIds[0] ?? undefined,
     });
 
     const savedUser = await this.userRepository.save(user);
     this.logger.log(`User created successfully: ${username} (ID: ${savedUser.id})`);
 
     // Permanent area membership (multi) drives monitoring scope + geofence.
-    if (areaIds.length) {
-      await this.userAreasService.reconcilePermanentAreas(
+    if (locationIds.length) {
+      await this.userAreasService.reconcilePermanentLocations(
         savedUser.id,
-        areaIds,
+        locationIds,
         actor?.id ?? savedUser.id,
       );
     }
@@ -111,7 +179,15 @@ export class UsersService {
       entity_id: savedUser.id,
       action: 'create',
       actor_id: actor?.id ?? savedUser.id, // self-attributed for internal callers (e.g. CSV import w/o actor)
-      new_value: { username, full_name, role, rayon_id, shift_definition_id, area_ids: areaIds },
+      new_value: {
+        username,
+        full_name,
+        role,
+        district_id,
+        region_id,
+        shift_definition_id,
+        area_ids: locationIds,
+      },
     });
 
     return tempPassword ? Object.assign(savedUser, { temp_password: tempPassword }) : savedUser;
@@ -163,8 +239,9 @@ export class UsersService {
         'full_name',
         'role',
         'is_active',
-        'area_id',
-        'rayon_id',
+        'location_id',
+        'district_id',
+        'region_id',
         'created_at',
         'updated_at',
         'created_by',
@@ -189,6 +266,40 @@ export class UsersService {
   }
 
   /**
+   * Every user as a bare `{ id, full_name, username, role }` tuple.
+   *
+   * The schedules search box and its filter chips only ever resolve a worker's
+   * NAME and role, but asked `useUsers({ limit: 1000 })` for it — which pages
+   * through the full entity twice on a 1 173-person workforce and costs **928 KB
+   * on every page load**. Same question, four columns, one request.
+   *
+   * Deactivated accounts are excluded: every consumer is a picker or a label for
+   * someone who can actually be rostered.
+   */
+  async findAllForLookup(requester?: User): Promise<UserLookup[]> {
+    const qb = this.userRepository
+      .createQueryBuilder('user')
+      .select(['user.id', 'user.full_name', 'user.username', 'user.role'])
+      .where('user.is_active = TRUE')
+      .orderBy('user.full_name', 'ASC');
+
+    // Rayon-scoped roles see only their own district — same rule as the list,
+    // including the area-derived fallback for users with no direct district_id.
+    if (
+      requester &&
+      (requester.role === UserRole.ADMIN_RAYON || requester.role === UserRole.KEPALA_RAYON)
+    ) {
+      if (!requester.district_id) return [];
+      qb.leftJoin('user.area', 'area').andWhere(
+        '(user.district_id = :districtId OR area.district_id = :districtId)',
+        { districtId: requester.district_id },
+      );
+    }
+
+    return qb.getMany() as unknown as Promise<UserLookup[]>;
+  }
+
+  /**
    * Find all users with pagination (without sensitive data)
    * @param page Page number (1-based)
    * @param limit Items per page
@@ -198,23 +309,30 @@ export class UsersService {
     page: number = 1,
     limit: number = 50,
     requestingUser?: User,
+    filters?: { search?: string; roles?: string[]; isActive?: boolean },
   ): Promise<PaginatedResponseDto<User>> {
     this.logger.log(`Fetching users with pagination: page=${page}, limit=${limit}`);
 
-    // Rayon-scoped roles see only users in their rayon.
-    // May 11, 2026 — switched from `area.rayon_id` (which required users to
-    // have an `area_id` set) to `user.rayon_id` directly. The old form
-    // excluded rayon-scoped roles (`admin_data`, `kepala_rayon`) and any
+    const search = filters?.search?.trim();
+    const roles = filters?.roles?.filter(Boolean);
+    // Opt-in: the admin grid wants everyone, assignment pickers (scheduling,
+    // tasks) pass is_active=true so a deactivated account can't be rostered.
+    const isActive = filters?.isActive;
+
+    // Rayon-scoped roles see only users in their district.
+    // May 11, 2026 — switched from `area.district_id` (which required users to
+    // have an `location_id` set) to `user.district_id` directly. The old form
+    // excluded district-scoped roles (`admin_rayon`, `kepala_rayon`) and any
     // satgas/korlap not yet placed in an area, so the Tugaskan ke Petugas
-    // assignee dropdown rendered "Tidak ada Admin Data di rayon ini" even
-    // when those users existed in the rayon. We OR the area-derived
-    // rayon too so satgas with only an `area_id` (no direct `rayon_id`)
+    // assignee dropdown rendered "Tidak ada Admin Data di district ini" even
+    // when those users existed in the district. We OR the area-derived
+    // district too so satgas with only an `location_id` (no direct `district_id`)
     // still appear — defensive for legacy rows.
     if (
       requestingUser &&
-      (requestingUser.role === UserRole.ADMIN_DATA ||
+      (requestingUser.role === UserRole.ADMIN_RAYON ||
         requestingUser.role === UserRole.KEPALA_RAYON) &&
-      requestingUser.rayon_id
+      requestingUser.district_id
     ) {
       const qb = this.userRepository
         .createQueryBuilder('user')
@@ -225,8 +343,9 @@ export class UsersService {
           'user.full_name',
           'user.role',
           'user.is_active',
-          'user.area_id',
-          'user.rayon_id',
+          'user.location_id',
+          'user.district_id',
+          'user.region_id',
           'user.phone_number',
           'user.shift_definition_id',
           'user.profile_picture_url',
@@ -236,10 +355,17 @@ export class UsersService {
           'user.created_by',
           'user.updated_by',
         ])
-        .where('(user.rayon_id = :rayonId OR area.rayon_id = :rayonId)', {
-          rayonId: requestingUser.rayon_id,
-        })
-        .orderBy('user.created_at', 'DESC')
+        .where('(user.district_id = :districtId OR area.district_id = :districtId)', {
+          districtId: requestingUser.district_id,
+        });
+
+      if (roles?.length) qb.andWhere('user.role IN (:...roles)', { roles });
+      if (isActive !== undefined) qb.andWhere('user.is_active = :isActive', { isActive });
+      if (search) {
+        qb.andWhere('(user.full_name ILIKE :s OR user.username ILIKE :s)', { s: `%${search}%` });
+      }
+
+      qb.orderBy('user.created_at', 'DESC')
         .skip((page - 1) * limit)
         .take(limit);
 
@@ -247,15 +373,32 @@ export class UsersService {
       return new PaginatedResponseDto(await this.withAreaCounts(data), total, page, limit);
     }
 
+    // role IN (...) AND (full_name ILIKE OR username ILIKE). The OR needs an
+    // array of where-objects; each carries the role predicate so it ANDs. Only
+    // attach `where` when a filter is present (keeps the unfiltered path clean).
+    const base: FindOptionsWhere<User> = {};
+    if (roles?.length) base.role = In(roles) as unknown as FindOptionsWhere<User>['role'];
+    if (isActive !== undefined) base.is_active = isActive;
+    const where: FindOptionsWhere<User> | FindOptionsWhere<User>[] | undefined = search
+      ? [
+          { ...base, full_name: ILike(`%${search}%`) },
+          { ...base, username: ILike(`%${search}%`) },
+        ]
+      : Object.keys(base).length
+        ? base
+        : undefined;
+
     const [data, total] = await this.userRepository.findAndCount({
+      ...(where ? { where } : {}),
       select: [
         'id',
         'username',
         'full_name',
         'role',
         'is_active',
-        'area_id',
-        'rayon_id',
+        'location_id',
+        'district_id',
+        'region_id',
         'phone_number',
         'shift_definition_id',
         'profile_picture_url',
@@ -274,19 +417,21 @@ export class UsersService {
   }
 
   /**
-   * Attach `assigned_area_count` + `assigned_area_ids` (permanent area
-   * assignments) to each user for the management grid's Area column — one
+   * Attach `assigned_location_count` + `assigned_location_ids` (permanent area
+   * assignments) to each user for the management grid's Location column — one
    * batched query per page, no N+1. Full area detail (name, boundary, etc.)
    * is still loaded lazily via GET /users/:id/areas; this is IDs only, so the
    * grid can filter by area.
    */
   private async withAreaCounts(users: User[]): Promise<User[]> {
     if (!users.length) return users;
-    const byUser = await this.userAreasService.getPermanentAreaIdsForUsers(users.map((u) => u.id));
+    const byUser = await this.userAreasService.getPermanentLocationIdsForUsers(
+      users.map((u) => u.id),
+    );
     for (const user of users) {
-      const areaIds = byUser.get(user.id) ?? [];
-      user.assigned_area_count = areaIds.length;
-      user.assigned_area_ids = areaIds;
+      const locationIds = byUser.get(user.id) ?? [];
+      user.assigned_location_count = locationIds.length;
+      user.assigned_location_ids = locationIds;
     }
     return users;
   }
@@ -306,8 +451,9 @@ export class UsersService {
         'full_name',
         'role',
         'is_active',
-        'area_id',
-        'rayon_id',
+        'location_id',
+        'district_id',
+        'region_id',
         'phone_number',
         'shift_definition_id',
         'profile_picture_url',
@@ -357,6 +503,36 @@ export class UsersService {
     if (phone_number) {
       await this.userValidation.assertPhoneAvailable(phone_number, id);
     }
+    // Username is editable on update; only re-check availability when it changes.
+    if (updateData.username && updateData.username !== user.username) {
+      await this.userValidation.assertUsernameAvailable(updateData.username);
+    }
+    // Validate role + scope against the EFFECTIVE post-update state (a partial
+    // PATCH inherits current values for anything it omits).
+    const effectiveRole = updateData.role ?? user.role;
+    const effectiveDistrictId =
+      updateData.district_id !== undefined ? updateData.district_id : user.district_id;
+    let effectiveRegionId: string | null | undefined =
+      updateData.region_id !== undefined ? updateData.region_id : user.region_id;
+    const roleChanged = !!updateData.role && updateData.role !== user.role;
+    if (roleChanged || updateData.district_id !== undefined || updateData.region_id !== undefined) {
+      // Safety net: a role change away from region/location scope clears a
+      // stale inherited region instead of failing on it (the form sends
+      // explicit values, but the API must not rely on that).
+      if (roleChanged && effectiveRegionId && updateData.region_id === undefined) {
+        const newRole = await this.roleRepository.findOne({ where: { code: effectiveRole } });
+        const newScope = newRole?.monitoring_scope as string | undefined;
+        if (newScope !== 'region' && newScope !== 'location') {
+          effectiveRegionId = null;
+          updateData.region_id = null as unknown as typeof updateData.region_id;
+        }
+      }
+      await this.assertScopeConsistent({
+        role: effectiveRole,
+        district_id: effectiveDistrictId,
+        region_id: effectiveRegionId,
+      });
+    }
 
     // Reassignment = editing the user's permanent areas. Past shifts/tracking
     // history are immutable; today/future use the new set.
@@ -364,8 +540,8 @@ export class UsersService {
     let primaryAreaId: string | undefined;
     if (area_ids) {
       const desired = [...new Set(area_ids)];
-      const before = await this.userAreasService.getPermanentAreaIds(id);
-      areaChange = await this.userAreasService.reconcilePermanentAreas(
+      const before = await this.userAreasService.getPermanentLocationIds(id);
+      areaChange = await this.userAreasService.reconcilePermanentLocations(
         id,
         desired,
         actor?.id ?? id,
@@ -383,12 +559,12 @@ export class UsersService {
       }
     }
 
-    // area_id may be cleared to null when all areas are removed → loose payload.
+    // location_id may be cleared to null when all areas are removed → loose payload.
     const savePayload: Record<string, unknown> = {
       ...user,
       ...updateData,
       ...(phone_number !== undefined ? { phone_number } : {}),
-      ...(area_ids ? { area_id: primaryAreaId ?? null } : {}),
+      ...(area_ids ? { location_id: primaryAreaId ?? null } : {}),
     };
     const savedUser = await this.userRepository.save(savePayload as unknown as User);
     this.logger.log(`User updated successfully: ID ${id}`);
@@ -527,10 +703,17 @@ export class UsersService {
     if (updateMyProfileDto.phone_number && updateMyProfileDto.phone_number !== user.phone_number) {
       await this.userValidation.assertPhoneAvailable(updateMyProfileDto.phone_number, userId);
     }
+    // Validate username uniqueness if it actually changes.
+    if (updateMyProfileDto.username && updateMyProfileDto.username !== user.username) {
+      await this.userValidation.assertUsernameAvailable(updateMyProfileDto.username);
+    }
 
     // Update only allowed fields
     if (updateMyProfileDto.full_name !== undefined) {
       user.full_name = updateMyProfileDto.full_name.trim();
+    }
+    if (updateMyProfileDto.username !== undefined) {
+      user.username = updateMyProfileDto.username;
     }
     if (updateMyProfileDto.phone_number !== undefined) {
       user.phone_number = updateMyProfileDto.phone_number;

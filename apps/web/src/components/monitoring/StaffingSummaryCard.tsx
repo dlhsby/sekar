@@ -11,7 +11,7 @@ import { AlertTriangle, Users, ChevronDown, ChevronRight, ArrowRightLeft } from 
 import type { UserRole } from '@/types/models';
 
 export interface StaffingSummaryCardProps {
-  filters: { rayon_id?: string; area_id?: string };
+  filters: { district_id?: string; location_id?: string };
   boundaries?: BoundariesResponse;
   dayType?: DayType;
   onReassign?: (areaId: string) => void;
@@ -27,9 +27,9 @@ interface RoleRowProps {
 
 function RoleRow({ role }: RoleRowProps) {
   const { t } = useTranslation(['monitoring']);
-  const present = role.active + role.idle + role.outside_area;
+  const clocked = role.active + role.offline;
   const required = role.total_required > 0 ? role.total_required : role.total_assigned;
-  const isFullyStaffed = present >= required;
+  const isFullyStaffed = clocked >= required;
   const roleLabel = ROLE_LABELS[role.role as UserRole] ?? role.role;
 
   return (
@@ -39,29 +39,29 @@ function RoleRow({ role }: RoleRowProps) {
         <div
           className={cn(
             'h-full rounded-full transition-all duration-300',
-            isFullyStaffed ? 'bg-[var(--color-status-active)]' : 'bg-[var(--color-status-idle)]'
+            isFullyStaffed ? 'bg-[var(--color-status-active)]' : 'bg-[var(--color-status-offline)]'
           )}
-          style={{ width: `${required > 0 ? Math.min((present / required) * 100, 100) : 0}%` }}
+          style={{ width: `${required > 0 ? Math.min((clocked / required) * 100, 100) : 0}%` }}
         />
       </div>
       <span className="w-10 text-right font-mono text-nb-gray-500 tabular-nums">
-        {present}/{required}
+        {clocked}/{required}
       </span>
-      <div className="flex gap-1 text-[10px] text-nb-gray-400">
+      <div className="flex gap-1 text-[10px] text-nb-gray-500">
         <span title={t('monitoring:staffing.activeStatus')} className="text-[var(--color-status-active)]">
           {role.active}
         </span>
         <span>/</span>
-        <span title={t('monitoring:staffing.idleStatus')} className="text-[var(--color-status-idle)]">
-          {role.idle}
+        <span title={t('monitoring:staffing.offlineStatus')} className="text-[var(--color-status-offline)]">
+          {role.offline}
+        </span>
+        <span>/</span>
+        <span title={t('monitoring:staffing.absentStatus')} className="text-[var(--color-status-missing)]">
+          {role.absent}
         </span>
         <span>/</span>
         <span title={t('monitoring:staffing.outsideStatus')} className="text-[var(--color-status-outside)]">
           {role.outside_area}
-        </span>
-        <span>/</span>
-        <span title={t('monitoring:staffing.missingStatus')} className="text-[var(--color-status-missing)]">
-          {role.missing}
         </span>
       </div>
     </div>
@@ -83,7 +83,7 @@ function UnderstaffedBadge({ shortage }: UnderstaffedBadgeProps) {
 }
 
 // ---------------------------------------------------------------------------
-// Area View (area_id filter selected)
+// Area View (location_id filter selected)
 // ---------------------------------------------------------------------------
 
 interface AreaViewProps {
@@ -93,21 +93,21 @@ interface AreaViewProps {
 
 function AreaView({ areaId, onReassign }: AreaViewProps) {
   const { t } = useTranslation(['monitoring']);
-  const { data, isLoading } = useStaffingSummary({ area_id: areaId });
+  const { data, isLoading } = useStaffingSummary({ location_id: areaId });
 
   if (isLoading) {
     return <div className="h-20 bg-nb-gray-200 animate-pulse rounded-nb-base" />;
   }
 
   const areaItem = data?.items?.find((item) => item.id === areaId);
-  if (!areaItem) return <p className="text-xs text-nb-gray-400 italic">{t('monitoring:staffing.dataUnavailable')}</p>;
+  if (!areaItem) return <p className="text-xs text-nb-gray-500 italic">{t('monitoring:staffing.dataUnavailable')}</p>;
 
-  const totalPresent = areaItem.total_active + areaItem.total_idle + areaItem.total_outside_area;
-  const totalAll = totalPresent + areaItem.total_missing + areaItem.total_offline;
+  const totalClocked = areaItem.total_active + areaItem.total_offline;
+  const totalAll = areaItem.total_active + areaItem.total_offline + areaItem.total_absent;
   const shortage = areaItem.roles.reduce((acc, r) => {
-    const present = r.active + r.idle + r.outside_area;
+    const clocked = r.active + r.offline;
     const required = r.total_required > 0 ? r.total_required : r.total_assigned;
-    return acc + Math.max(0, required - present);
+    return acc + Math.max(0, required - clocked);
   }, 0);
 
   return (
@@ -116,16 +116,16 @@ function AreaView({ areaId, onReassign }: AreaViewProps) {
       <div>
         <div className="flex items-center justify-between text-xs mb-1">
           <span className="font-semibold text-nb-black">
-            {totalPresent} / {totalAll} {t('monitoring:staffing.presentLabel')}
+            {totalClocked} / {totalAll} {t('monitoring:staffing.presentLabel')}
           </span>
           <span className="text-nb-gray-500">
-            {totalAll > 0 ? Math.round((totalPresent / totalAll) * 100) : 0}%
+            {totalAll > 0 ? Math.round((totalClocked / totalAll) * 100) : 0}%
           </span>
         </div>
         <div className="h-2 bg-nb-gray-200 border border-nb-black rounded-full overflow-hidden">
           <div
             className="h-full bg-[var(--color-status-active)] transition-all duration-300"
-            style={{ width: `${totalAll > 0 ? (totalPresent / totalAll) * 100 : 0}%` }}
+            style={{ width: `${totalAll > 0 ? (totalClocked / totalAll) * 100 : 0}%` }}
           />
         </div>
       </div>
@@ -152,22 +152,22 @@ function AreaView({ areaId, onReassign }: AreaViewProps) {
 }
 
 // ---------------------------------------------------------------------------
-// Rayon View (rayon_id filter selected) — per-area expandable rows
+// Rayon View (district_id filter selected) — per-area expandable rows
 // ---------------------------------------------------------------------------
 
-interface RayonViewProps {
-  rayonId: string;
+interface DistrictViewProps {
+  districtId: string;
   boundaries?: BoundariesResponse;
   onReassign?: (areaId: string) => void;
 }
 
-function RayonView({ rayonId, boundaries, onReassign }: RayonViewProps) {
+function DistrictView({ districtId, boundaries, onReassign }: DistrictViewProps) {
   const { t } = useTranslation(['monitoring']);
   const [expandedAreaIds, setExpandedAreaIds] = useState<Set<string>>(new Set());
-  const rayon = boundaries?.rayons.find((r) => r.id === rayonId);
+  const district = boundaries?.districts.find((r) => r.id === districtId);
 
-  if (!rayon) {
-    return <p className="text-xs text-nb-gray-400 italic">{t('monitoring:staffing.rayonDataUnavailable')}</p>;
+  if (!district) {
+    return <p className="text-xs text-nb-gray-500 italic">{t('monitoring:staffing.districtDataUnavailable')}</p>;
   }
 
   const toggleArea = (areaId: string) => {
@@ -184,7 +184,7 @@ function RayonView({ rayonId, boundaries, onReassign }: RayonViewProps) {
 
   return (
     <div className="space-y-1">
-      {rayon.areas.map((area) => {
+      {district.areas.map((area) => {
         const isExpanded = expandedAreaIds.has(area.id);
         const activeCount = area.staffing_summary.reduce((acc, s) => acc + s.active, 0);
         const requiredCount = area.staffing_summary.reduce((acc, s) => acc + s.required, 0);
@@ -262,7 +262,7 @@ function RayonView({ rayonId, boundaries, onReassign }: RayonViewProps) {
 }
 
 // ---------------------------------------------------------------------------
-// City View (no filters) — per-rayon expandable accordion rows
+// City View (no filters) — per-district expandable accordion rows
 // ---------------------------------------------------------------------------
 
 interface CityViewProps {
@@ -272,19 +272,19 @@ interface CityViewProps {
 
 function CityView({ boundaries, onReassign }: CityViewProps) {
   const { t } = useTranslation(['monitoring']);
-  const [expandedRayonIds, setExpandedRayonIds] = useState<Set<string>>(new Set());
+  const [expandedDistrictIds, setExpandedDistrictIds] = useState<Set<string>>(new Set());
 
-  if (!boundaries?.rayons?.length) {
-    return <p className="text-xs text-nb-gray-400 italic">{t('monitoring:staffing.cityDataUnavailable')}</p>;
+  if (!boundaries?.districts?.length) {
+    return <p className="text-xs text-nb-gray-500 italic">{t('monitoring:staffing.cityDataUnavailable')}</p>;
   }
 
-  const toggleRayon = (rayonId: string) => {
-    setExpandedRayonIds((prev) => {
+  const toggleDistrict = (districtId: string) => {
+    setExpandedDistrictIds((prev) => {
       const next = new Set(prev);
-      if (next.has(rayonId)) {
-        next.delete(rayonId);
+      if (next.has(districtId)) {
+        next.delete(districtId);
       } else {
-        next.add(rayonId);
+        next.add(districtId);
       }
       return next;
     });
@@ -292,27 +292,27 @@ function CityView({ boundaries, onReassign }: CityViewProps) {
 
   return (
     <div className="space-y-1">
-      {boundaries.rayons.map((rayon) => {
-        const isExpanded = expandedRayonIds.has(rayon.id);
-        const totalActive = rayon.areas.reduce(
+      {boundaries.districts.map((district) => {
+        const isExpanded = expandedDistrictIds.has(district.id);
+        const totalActive = district.areas.reduce(
           (acc, a) => acc + a.staffing_summary.reduce((s, r) => s + r.active, 0),
           0
         );
-        const totalRequired = rayon.areas.reduce(
+        const totalRequired = district.areas.reduce(
           (acc, a) => acc + a.staffing_summary.reduce((s, r) => s + r.required, 0),
           0
         );
 
         return (
           <div
-            key={rayon.id}
+            key={district.id}
             className={cn(
               'border-2 border-nb-black rounded-nb-base overflow-hidden',
-              rayon.is_understaffed && 'border-l-4 border-l-[var(--color-status-missing)]'
+              district.is_understaffed && 'border-l-4 border-l-[var(--color-status-missing)]'
             )}
           >
             <button
-              onClick={() => toggleRayon(rayon.id)}
+              onClick={() => toggleDistrict(district.id)}
               className="w-full flex items-center gap-2 px-2.5 py-2 bg-nb-white hover:bg-nb-gray-50 transition-colors text-left"
             >
               {isExpanded ? (
@@ -321,19 +321,19 @@ function CityView({ boundaries, onReassign }: CityViewProps) {
                 <ChevronRight className="w-3.5 h-3.5 text-nb-gray-500 flex-shrink-0" />
               )}
               <span className="flex-1 text-xs font-semibold text-nb-black truncate">
-                {rayon.name}
+                {district.name}
               </span>
               <span className="text-xs font-mono text-nb-gray-600 tabular-nums">
                 {totalActive}/{totalRequired}
               </span>
-              {rayon.is_understaffed && (
-                <UnderstaffedBadge shortage={rayon.understaffed_area_count} />
+              {district.is_understaffed && (
+                <UnderstaffedBadge shortage={district.understaffed_area_count} />
               )}
             </button>
 
             {isExpanded && (
               <div className="border-t-2 border-nb-black bg-nb-gray-50 px-2 py-2 space-y-1">
-                {rayon.areas.map((area) => {
+                {district.areas.map((area) => {
                   const areaActive = area.staffing_summary.reduce((acc, s) => acc + s.active, 0);
                   const areaRequired = area.staffing_summary.reduce(
                     (acc, s) => acc + s.required,
@@ -382,11 +382,11 @@ export function StaffingSummaryCard({
 }: StaffingSummaryCardProps) {
   const { t } = useTranslation(['monitoring']);
   const dayTypeLabels = getDayTypeLabels();
-  const hasAreaFilter = !!filters.area_id;
-  const hasRayonFilter = !!filters.rayon_id && !hasAreaFilter;
-  const isCityView = !hasAreaFilter && !hasRayonFilter;
+  const hasAreaFilter = !!filters.location_id;
+  const hasDistrictFilter = !!filters.district_id && !hasAreaFilter;
+  const isCityView = !hasAreaFilter && !hasDistrictFilter;
 
-  const viewLabel = hasAreaFilter ? 'Area' : hasRayonFilter ? 'Rayon' : t('monitoring:staffing.cityViewLabel');
+  const viewLabel = hasAreaFilter ? 'Area' : hasDistrictFilter ? 'Rayon' : t('monitoring:staffing.cityViewLabel');
 
   return (
     <div className="border-2 border-nb-black rounded-nb-base shadow-nb-sm bg-nb-white overflow-hidden">
@@ -395,7 +395,7 @@ export function StaffingSummaryCard({
         <h3 className="text-xs font-bold uppercase text-nb-gray-600 flex items-center gap-1.5">
           <Users className="w-3.5 h-3.5" />
           {t('monitoring:staffing.staffingLabel')}
-          <span className="text-nb-gray-400 font-normal normal-case">· {viewLabel}</span>
+          <span className="text-nb-gray-500 font-normal normal-case">· {viewLabel}</span>
         </h3>
         {dayType && dayTypeLabels[dayType] && (
           <span
@@ -413,9 +413,9 @@ export function StaffingSummaryCard({
 
       {/* Body */}
       <div className="px-3 py-2.5">
-        {hasAreaFilter && <AreaView areaId={filters.area_id!} onReassign={onReassign} />}
-        {hasRayonFilter && (
-          <RayonView rayonId={filters.rayon_id!} boundaries={boundaries} onReassign={onReassign} />
+        {hasAreaFilter && <AreaView areaId={filters.location_id!} onReassign={onReassign} />}
+        {hasDistrictFilter && (
+          <DistrictView districtId={filters.district_id!} boundaries={boundaries} onReassign={onReassign} />
         )}
         {isCityView && <CityView boundaries={boundaries} onReassign={onReassign} />}
       </div>

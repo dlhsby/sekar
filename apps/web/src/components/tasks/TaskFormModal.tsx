@@ -17,12 +17,15 @@ import {
 } from '@/components/ui';
 import { FormActions } from '@/components/forms/FormActions';
 import { useAuth } from '@/lib/auth/hooks';
-import { useCreateTask, type TaskPriority } from '@/lib/api/tasks';
-import { useUsers } from '@/lib/api/users';
-import { useAreas } from '@/lib/api/areas';
-import { useRayons } from '@/lib/api/rayons';
+import { useCreateTask, type TaskPriority, type AssignmentScope } from '@/lib/api/tasks';
+import { useTaskScopeField } from '@/lib/hooks/useTaskScopeField';
+import { useUserLookup } from '@/lib/api/users';
+import { useLocationLookup } from '@/lib/api/locations';
+import { useDistricts } from '@/lib/api/districts';
+import { useRegions } from '@/lib/api/regions';
 import { getErrorMessage } from '@/lib/api/client';
 import { VALID_TASK_ASSIGNMENTS, ROLE_LABELS } from '@/lib/constants/roles';
+import { toast } from 'sonner';
 import type { UserRole } from '@/types/models';
 
 interface TaskFormModalProps {
@@ -42,17 +45,25 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
   const formId = useId();
   const { user } = useAuth();
   const createMutation = useCreateTask();
-  const { data: usersData } = useUsers({ limit: 1000 });
-  const { data: areasData } = useAreas({ limit: 1000 });
-  const { data: rayonsData } = useRayons();
+  const { scopeOptions, validate: validateScope, buildScopePayload } = useTaskScopeField();
+  // Lookup, not the paginated list — see OvertimeForm.
+  const { data: users = [] } = useUserLookup();
+  // Lookup, not the full entity — see UserForm. The lookup carries the lokasi
+  // TYPE name, which this picker uses to disambiguate duplicate names.
+  const { data: allAreas = [] } = useLocationLookup();
+  const { data: districtsData } = useDistricts();
+  const { data: regionsData } = useRegions();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [assignedTo, setAssignedTo] = useState('none');
+  const [scope, setScope] = useState<AssignmentScope | 'auto'>('auto');
+  const [districtId, setDistrictId] = useState('none');
+  const [regionId, setRegionId] = useState('none');
   const [areaId, setAreaId] = useState('none');
-  const [rayonId, setRayonId] = useState('none');
-  const [priority, setPriority] = useState<TaskPriority>('normal');
+  const [priority, setPriority] = useState<TaskPriority>('medium');
   const [dueDate, setDueDate] = useState('');
+  const [scopeError, setScopeError] = useState('');
   const [error, setError] = useState('');
 
   // Reset the form each time the modal opens (create-only).
@@ -62,43 +73,58 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
     setTitle('');
     setDescription('');
     setAssignedTo('none');
+    setScope('auto');
+    setDistrictId('none');
+    setRegionId('none');
     setAreaId('none');
-    setRayonId('none');
-    setPriority('normal');
+    setPriority('medium');
     setDueDate('');
+    setScopeError('');
     setError('');
   }, [open]);
 
   const assignableRoles = user ? VALID_TASK_ASSIGNMENTS[user.role] || [] : [];
   const PRIORITY_OPTIONS = [
     { value: 'low', label: t('tasks:form.priorityLow') },
-    { value: 'normal', label: t('tasks:form.priorityNormal') },
+    { value: 'medium', label: t('tasks:form.priorityNormal') },
     { value: 'high', label: t('tasks:form.priorityHigh') },
     { value: 'urgent', label: t('tasks:form.priorityUrgent') },
   ];
-  const assignableUsers = (usersData?.data || []).filter((u) =>
+  const assignableUsers = (users || []).filter((u) =>
     assignableRoles.includes(u.role as UserRole)
   );
-  const areas = areasData?.data || [];
-  const rayons = rayonsData || [];
+  // A picker offers only lokasi you can actually pick.
+  const areas = allAreas.filter((a) => a.is_active !== false);
+  const districts = districtsData || [];
+  const regions = regionsData || [];
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     setError('');
+    setScopeError('');
     if (!title) {
       setError(t('tasks:form.requiredError'));
       return;
     }
+
+    const scopeValidationError = validateScope(scope, { districtId, regionId, areaId });
+    if (scopeValidationError) {
+      setScopeError(scopeValidationError);
+      return;
+    }
+
     try {
-      await createMutation.mutateAsync({
+      const basePayload = {
         title,
         description: description || undefined,
         assigned_to: assignedTo !== 'none' ? assignedTo : undefined,
-        area_id: areaId !== 'none' ? areaId : undefined,
-        rayon_id: rayonId !== 'none' ? rayonId : undefined,
         priority,
-        due_date: dueDate ? new Date(dueDate).toISOString() : undefined,
-      });
+        deadline: dueDate ? new Date(dueDate).toISOString() : undefined,
+        ...buildScopePayload(scope, { districtId, regionId, areaId }),
+      };
+
+      await createMutation.mutateAsync(basePayload as Parameters<typeof createMutation.mutateAsync>[0]);
+      toast.success(t('common:messages.created'));
       onSuccess?.();
       onOpenChange(false);
     } catch (err) {
@@ -153,26 +179,62 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
                 ]}
               />
               <FormSelect
-                label={t("tasks:form.rayonLabel")}
-                value={rayonId}
-                onChange={setRayonId}
-                options={[
-                  { value: 'none', label: t('tasks:form.rayonPlaceholder') },
-                  ...rayons.map((r) => ({ value: r.id, label: r.name })),
-                ]}
+                label={t("tasks:newPage.formScopeLabel")}
+                value={scope}
+                onChange={(value) => {
+                  setScope(value as AssignmentScope | 'auto');
+                  setScopeError('');
+                }}
+                options={scopeOptions}
               />
-              <FormSelect
-                label={t("tasks:form.areaLabel")}
-                value={areaId}
-                onChange={setAreaId}
-                options={[
-                  { value: 'none', label: t('tasks:form.areaPlaceholder') },
-                  ...areas.map((a) => ({
-                    value: a.id,
-                    label: a.areaType?.name ? `${a.name} (${a.areaType.name})` : a.name,
-                  })),
-                ]}
-              />
+
+              {scopeError && (
+                <div className="p-3 bg-nb-danger-light border-2 border-nb-danger rounded-nb-base">
+                  <p className="text-nb-danger font-semibold text-nb-body-sm">{scopeError}</p>
+                </div>
+              )}
+
+              {scope === 'district' && (
+                <FormSelect
+                  label={t('tasks:newPage.scopeDistrictPlaceholder')}
+                  value={districtId}
+                  onChange={setDistrictId}
+                  options={[
+                    { value: 'none', label: t('tasks:newPage.scopeDistrictPlaceholder') },
+                    ...districts.map((r) => ({ value: r.id, label: r.name })),
+                  ]}
+                />
+              )}
+
+              {scope === 'region' && (
+                <FormSelect
+                  label={t('tasks:newPage.scopeRegionPlaceholder')}
+                  value={regionId}
+                  onChange={setRegionId}
+                  options={[
+                    { value: 'none', label: t('tasks:newPage.scopeRegionPlaceholder') },
+                    ...regions.map((r) => ({
+                      value: r.id,
+                      label: r.name,
+                    })),
+                  ]}
+                />
+              )}
+
+              {scope === 'location' && (
+                <FormSelect
+                  label={t('tasks:newPage.scopeLocationPlaceholder')}
+                  value={areaId}
+                  onChange={setAreaId}
+                  options={[
+                    { value: 'none', label: t('tasks:newPage.scopeLocationPlaceholder') },
+                    ...areas.map((a) => ({
+                      value: a.id,
+                      label: a.location_type_name ? `${a.name} (${a.location_type_name})` : a.name,
+                    })),
+                  ]}
+                />
+              )}
               <FormSelect
                 label={t("tasks:form.priorityLabel")}
                 value={priority}

@@ -14,6 +14,8 @@
     "usernameLabel": "Username",
     "phoneLabel": "Phone Number",
     "adminNote": "Username and phone number are managed by an administrator.",
-    "saveButton": "Save Changes"
+    "saveButton": "Save Changes",
+    "editInSettings": "Edit in Settings",
+    "editInSettingsHint": "Change your name, username, phone, photo & password in Settings → Account & Security."
   }
 }

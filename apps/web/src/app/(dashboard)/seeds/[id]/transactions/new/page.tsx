@@ -28,9 +28,9 @@ import { useToast } from '@/components/ui/toast';
 import { Controller } from 'react-hook-form';
 
 const ALLOWED_ROLES = [
-  'admin_data',
+  'admin_rayon',
   'kepala_rayon',
-  'top_management',
+  'management',
   'admin_system',
   'superadmin',
 ];

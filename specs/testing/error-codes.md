@@ -866,7 +866,7 @@ describe('Shift Error Codes (e2e)', () => {
 
   it('POST /api/v1/shifts/clock-in returns SHIFT_GPS_OUT_OF_BOUNDS', async () => {
     const outOfBoundsDto = {
-      area_id: areaId,
+      location_id: locationId,
       gps_lat: -7.3037, // 1.5km away
       gps_lng: 112.7375,
       selfie_photo: validBase64Photo,
@@ -917,7 +917,7 @@ describe('Auth Error Codes (e2e)', () => {
 
     return request(app.getHttpServer())
       .post('/api/v1/auth/login')
-      .send({ username: 'worker1', password: 'Password123!' })
+      .send({ username: 'worker1', password: '12345678' })
       .expect(401)
       .expect((res) => {
         expect(res.body.code).toBe('AUTH_ACCOUNT_INACTIVE');
@@ -1015,7 +1015,7 @@ describe('API Versioning (e2e)', () => {
   it('should access endpoints at /api/v1', async () => {
     return request(app.getHttpServer())
       .post('/api/v1/auth/login')
-      .send({ username: 'worker1', password: 'Password123!' })
+      .send({ username: 'worker1', password: '12345678' })
       .expect(200)
       .expect((res) => {
         expect(res.headers['x-api-version']).toBe('v1');
@@ -1025,7 +1025,7 @@ describe('API Versioning (e2e)', () => {
   it('should return 404 for old /api paths', () => {
     return request(app.getHttpServer())
       .post('/api/auth/login')
-      .send({ username: 'worker1', password: 'Password123!' })
+      .send({ username: 'worker1', password: '12345678' })
       .expect(404);
   });
 
@@ -1103,11 +1103,11 @@ npm run test:cov -- --collectCoverageFrom="src/**/*.ts"
 ```typescript
 // Seeded in database
 const users = {
-  admin: { username: 'admin', password: 'Password123!', role: 'Admin' },
-  supervisor: { username: 'supervisor1', password: 'Password123!', role: 'Supervisor' },
-  worker1: { username: 'worker1', password: 'Password123!', role: 'Worker' },
-  worker2: { username: 'worker2', password: 'Password123!', role: 'Worker' },
-  worker3: { username: 'worker3', password: 'Password123!', role: 'Worker' },
+  admin: { username: 'admin', password: '12345678', role: 'Admin' },
+  supervisor: { username: 'supervisor1', password: '12345678', role: 'Supervisor' },
+  worker1: { username: 'worker1', password: '12345678', role: 'Worker' },
+  worker2: { username: 'worker2', password: '12345678', role: 'Worker' },
+  worker3: { username: 'worker3', password: '12345678', role: 'Worker' },
 };
 ```
 
@@ -1119,7 +1119,7 @@ const tamanBungkul = {
   gps_lat: -7.2905,
   gps_lng: 112.7398,
   radius_meters: 150,
-  area_type_id: areaTypeId,
+  location_type_id: locationTypeId,
 };
 ```
 

@@ -27,7 +27,7 @@ import {
   useDeletePlantSpecies,
   type PlantSpeciesRow,
 } from '@/lib/api/plants';
-import { useAreas } from '@/lib/api/areas';
+import { useLocationLookup } from '@/lib/api/locations';
 import { getErrorMessage } from '@/lib/api/client';
 import { useViewModal } from '@/lib/hooks/use-view-modal';
 import { formatDate } from '@/lib/utils/time';
@@ -40,10 +40,14 @@ export default function PlantsPage() {
   const { data: catalogData, isLoading, refetch } = useSpeciesCatalog(1, '', 1000);
   const species = useMemo(() => catalogData?.data ?? [], [catalogData]);
 
-  const { data: areasResponse } = useAreas({ limit: 1000 });
+  // Lookup, not the full entity — see UserForm.
+  const { data: allAreas = [] } = useLocationLookup();
   const areaOptions = useMemo(
-    () => (areasResponse?.data ?? []).map((area) => ({ value: area.id, label: area.name })),
-    [areasResponse]
+    () =>
+      allAreas
+        .filter((a) => a.is_active !== false)
+        .map((area) => ({ value: area.id, label: area.name })),
+    [allAreas]
   );
 
   // Form modal state
@@ -222,14 +226,13 @@ export default function PlantsPage() {
         getRowId={(r) => r.id}
         searchPlaceholder={t('plants:catalog.searchPlaceholder')}
         rowActions={rowActions}
-        actions={
-          <Button onClick={() => {
+        createAction={{
+          label: t('plants:buttonAdd'),
+          onClick: () => {
             setEditingPlant(null);
             setFormOpen(true);
-          }} leftIcon={<Plus className="h-5 w-5" />}>
-            {t('plants:buttonAdd')}
-          </Button>
-        }
+          },
+        }}
         emptyTitle={t('plants:catalog.emptyTitle')}
         emptyDescription={t('plants:catalog.emptyDescription')}
         emptyAction={
@@ -263,7 +266,7 @@ export default function PlantsPage() {
         onOpenChange={(isOpen) => setDeleteDialog({ ...deleteDialog, isOpen })}
         title={t('plants:deleteConfirmTitle')}
         description={t('plants:deleteConfirmDescription', { name: deleteDialog.plant?.nameId })}
-        confirmLabel={t('common:delete')}
+        confirmLabel={t('common:actions.delete')}
         variant="destructive"
         onConfirm={handleDeleteConfirm}
         loading={deleteMutation.isPending}

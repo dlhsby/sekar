@@ -22,7 +22,12 @@ export type TaskStatus =
 /**
  * Task Priority
  */
-export type TaskPriority = 'low' | 'normal' | 'high' | 'urgent';
+export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
+
+/**
+ * Assignment Scope - geographic scope for task assignment
+ */
+export type AssignmentScope = 'city' | 'district' | 'region' | 'location' | 'none';
 
 /**
  * Task Interface (Phase 2C)
@@ -45,7 +50,7 @@ export interface Task extends Record<string, unknown> {
     id: string;
     name: string;
   };
-  rayon?: {
+  district?: {
     id: string;
     name: string;
   };
@@ -57,7 +62,9 @@ export interface Task extends Record<string, unknown> {
   tags?: TaskTag[];
   priority: TaskPriority;
   status: TaskStatus;
-  due_date?: string;
+  scope?: AssignmentScope;
+  region_id?: string | null;
+  deadline?: string;
   assigned_at?: string;
   accepted_at?: string;
   declined_at?: string;
@@ -81,10 +88,10 @@ export interface TaskFilters {
   status?: TaskStatus;
   priority?: TaskPriority;
   assigned_to?: string;
-  area_id?: string;
-  rayon_id?: string;
-  due_date_from?: string;
-  due_date_to?: string;
+  location_id?: string;
+  district_id?: string;
+  deadline_after?: string;
+  deadline_before?: string;
   page?: number;
   limit?: number;
 }
@@ -96,11 +103,13 @@ export interface CreateTaskDto {
   title: string;
   description?: string;
   assigned_to?: string;
-  area_id?: string;
-  rayon_id?: string;
+  location_id?: string;
+  district_id?: string;
+  region_id?: string;
+  scope?: AssignmentScope;
   activity_type_id?: string;
   priority?: TaskPriority;
-  due_date?: string;
+  deadline?: string;
   tagged_user_ids?: string[];
 }
 
@@ -111,11 +120,11 @@ export interface UpdateTaskDto {
   title?: string;
   description?: string;
   assigned_to?: string;
-  area_id?: string;
-  rayon_id?: string;
+  location_id?: string;
+  district_id?: string;
   activity_type_id?: string;
   priority?: TaskPriority;
-  due_date?: string;
+  deadline?: string;
   status?: TaskStatus;
 }
 

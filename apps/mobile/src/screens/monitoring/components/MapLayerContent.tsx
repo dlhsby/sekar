@@ -4,16 +4,29 @@
  * Consolidated from MapDashboardScreen lines 620–715.
  */
 
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
+import { useWindowDimensions } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { featureFlags } from '../../../utils/featureFlags';
-import { ClusteredUserMarkers } from '../../../components/monitoring/ClusteredUserMarkers';
 import { AreaStatusOverlay } from '../../../components/monitoring/AreaStatusOverlay';
 import { PlantOverlayLayer } from '../../../components/monitoring/PlantOverlayLayer';
 import { BoundaryOverlay } from '../../../components/monitoring/BoundaryOverlay';
+import { AggregateBubbleLayer, type NodeMarker } from '../../../components/monitoring/AggregateBubbleLayer';
+import { TeamMarkerLayer } from '../../../components/monitoring/TeamMarkerLayer';
+import type { TeamGroup } from '../../../utils/teamGrouping';
 import { UserMarker, type LabelMode } from '../../../components/monitoring/UserMarker';
 import type { LiveUser } from '../../../types/models.types';
-import type { MonitoringV2VisibleLayers } from '../../../store/slices/monitoringV2Slice';
+import { isZoomLike, type MonitoringMode } from '../../../store/slices/monitoringV2Slice';
+import { tiersFor, ALL_TIERS } from '../../../utils/zoomTiers';
+import { deltaToZoom } from '../../../utils/mercator';
+import { useProgressiveReveal } from '../../../utils/progressiveReveal';
+import { useAffinity } from '../../../utils/affinity';
+import {
+  showsBoundary,
+  showsFill,
+  showsNodeLabel,
+  showsPolygon,
+  type MonitoringV2VisibleLayers,
+} from '../../../utils/layerVisibility';
 
 interface MapLayerContentProps {
   mapReady: boolean;
@@ -21,26 +34,40 @@ interface MapLayerContentProps {
   visibleLayers: MonitoringV2VisibleLayers;
   visibleUsers: LiveUser[];
   selectedUser: LiveUser | null;
-  clusters: any[];
   labelMode: LabelMode;
-  useClustering: boolean;
   currentRegion: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number };
   boundaryKey: number;
   /** Current drill scope — gates which boundary layers + markers show. */
-  scope: 'surabaya' | 'city' | 'rayon' | 'area';
-  /** The rayon being viewed (rayon/area scope) — scopes markers to it. */
-  rayonId: string | null;
-  /** The selected area (area scope) — only its boundary is drawn, on demand. */
+  scope: 'city' | 'district' | 'region' | 'location';
+  /** The drilled node's id — the plant layer needs it to know which lokasi. */
+  viewId?: string | null;
+  /** The district being viewed (district/location scope) — scopes markers to it. */
+  districtId: string | null;
+  /** The selected location (location scope) — only its boundary is drawn, on demand. */
   areaId: string | null;
-  /** Attendance ratio per rayon/area id, shown on the geographic markers. */
+  /** The drilled kawasan (region scope) — narrows which kawasan outline draws. */
+  regionId?: string | null;
+  /** Monitoring mode — `zoom` draws every tier of the subtree at once. */
+  mode?: MonitoringMode;
+  /** Attendance ratio per rayon/location id, shown on the geographic markers. */
   rosterById: Record<string, { activeInside: number; scheduled: number }>;
-  /** Unified drill-down: true → worker markers (area scope). */
+  /** Drill bubbles composed from the aggregate (district → regions ∪ region-less
+   *  lokasi; region → the kawasan's lokasi). Replaces the boundary-derived bubbles
+   *  so kawasan (no polygon) can render. */
+  nodeMarkers: NodeMarker[];
+  /** Bubble tap → drill into that node (variant decides the target scope). */
+  onNodeDrill: (node: NodeMarker) => void;
+  /** Collapsed team bubbles (ADR-048) to render alongside worker pins. */
+  teamGroups: TeamGroup[];
+  /** Team bubble tap → select the team (members-only view). */
+  onTeamPress: (team: TeamGroup) => void;
+  /** Unified drill-down: true → worker markers (location scope). */
   showWorkers: boolean;
-  /** Bubble taps — drill into the child level (city→rayon, rayon→area). */
-  onRayonDrill: (rayon: any) => void;
+  /** Bubble taps — drill into the child level (city→district, district→area). */
+  onDistrictDrill: (district: any) => void;
   onAreaDrill: (area: any) => void;
   /** Marker taps — open the current node's detail sheet. */
-  onRayonDetail: (rayon: any) => void;
+  onDistrictDetail: (district: any) => void;
   onAreaDetail: (area: any) => void;
   onMarkerPress: (user: LiveUser) => void;
   onClusterPress: (center: { latitude: number; longitude: number }) => void;
@@ -52,147 +79,268 @@ export function MapLayerContent({
   visibleLayers,
   visibleUsers,
   selectedUser,
-  clusters,
   labelMode,
-  useClustering,
   currentRegion,
   boundaryKey,
   scope,
-  rayonId,
+  viewId,
+  districtId,
   areaId,
+  regionId = null,
+  mode = 'drill',
   rosterById,
+  nodeMarkers,
+  onNodeDrill,
+  teamGroups,
+  onTeamPress,
   showWorkers,
-  onRayonDrill,
+  onDistrictDrill,
   onAreaDrill,
-  onRayonDetail,
+  onDistrictDetail,
   onAreaDetail,
   onMarkerPress,
   onClusterPress,
 }: MapLayerContentProps): React.JSX.Element {
   const { t } = useTranslation();
 
-  // Scope the boundary set to the drill level. City → all rayons; rayon → the
-  // current rayon (its areas are markers, not polygons, so nothing heavy draws);
-  // area → the current rayon but ONLY the selected area's polygon (drawn on
+  // Scope the boundary set to the drill level. City → all districts; district → the
+  // current district (its locations are markers, not polygons, so nothing heavy draws);
+  // location → the current district but ONLY the selected location's polygon (drawn on
   // demand when its marker is tapped) — this keeps the map cheap.
-  const scopedRayons = useMemo(() => {
-    const all = boundaries?.rayons ?? [];
-    if (scope === 'area') {
+  const scopedDistricts = useMemo(() => {
+    const all = boundaries?.districts ?? [];
+    if (scope === 'location') {
       return all
-        .filter((r: any) => r.id === rayonId)
+        .filter((r: any) => r.id === districtId)
         .map((r: any) => ({ ...r, areas: (r.areas ?? []).filter((a: any) => a.id === areaId) }));
     }
-    if (scope === 'rayon') {
-      return all.filter((r: any) => r.id === rayonId);
+    if (scope === 'district') {
+      return all.filter((r: any) => r.id === districtId);
     }
     return all;
-  }, [boundaries, scope, rayonId, areaId]);
+  }, [boundaries, scope, districtId, areaId]);
 
-  // Rayon outline follows its toggle from the city view down. Area outlines draw
-  // ONLY at area scope (the one selected area) — never all-at-once at rayon scope.
-  const showRayonBoundaries = visibleLayers.rayons && scope !== 'surabaya';
-  const showAreaBoundaries = visibleLayers.areas && scope === 'area';
+  // Viewport mode adds DEPTH to the bbox: a box at city height is the whole
+  // city, so "only what is on screen" still drew every kawasan and lokasi at
+  // once. Tiers now arrive as there is room for them.
+  // Scope, not just camera span: drilling into a rayon reveals its subtree at
+  // any span. A rayon that spans the whole city otherwise leaves the camera wide
+  // after the fit and the gate shows nothing at all inside it.
+  const tiers =
+    mode === 'viewport'
+      ? tiersFor({ latitudeDelta: currentRegion.latitudeDelta, scope })
+      : ALL_TIERS;
+  // Rayon outline follows its toggle from the city view down. Location outlines draw
+  // ONLY at location scope (the one selected location) — never all-at-once at district scope.
+  // The Surabaya top level was retired (PR2) — district boundaries show at every
+  // tier when toggled (city is now the top, and it draws the district outlines).
+  // "Show the polygon" is now OR over outline+fill; which of the two actually
+  // paints is decided inside BoundaryOverlay. Gating on the outline alone would
+  // drop a fill-only tier entirely.
+  const showDistrictBoundaries = showsPolygon(visibleLayers.district) && tiers.district;
+  // Lokasi outlines used to draw ONLY at location scope. Web draws them from
+  // district scope down (the lokasi that have a node marker), so a supervisor
+  // sees the shapes as soon as they drill in rather than one at a time.
+  // Viewport draws exactly what zoom draws — the server already narrowed the
+  // payload, so nothing here needs to know which of the two it is.
+  const isZoom = isZoomLike(mode);
+  const showAreaBoundaries =
+    tiers.location &&
+    showsPolygon(visibleLayers.lokasi) &&
+    (isZoom || scope === 'location' || scope === 'district' || scope === 'region');
+  // Kawasan outlines — new. The payload has carried `regions[]` since ADR-045;
+  // mobile had no field for it, so the tier it drills THROUGH was invisible.
+  const showRegionBoundaries =
+    tiers.region &&
+    showsPolygon(visibleLayers.kawasan) &&
+    (isZoom || scope === 'district' || scope === 'region');
 
-  // Bubbles vs markers are separated by scope (gated independently of the
-  // boundary toggles):
-  //   • city  → rayon BUBBLES (ratio, drill into a rayon)
-  //   • rayon → the selected rayon MARKER (detail) + its area BUBBLES (drill)
-  //   • area  → the selected area MARKER (detail) + worker markers
-  const showRayonBubbles = scope === 'city';
-  const showAreaBubbles = scope === 'rayon';
-  const showRayonMarker = scope === 'rayon';
-  const showAreaMarker = scope === 'area';
+  // Drill BUBBLES now come from the aggregate (AggregateBubbleLayer below) so the
+  // kawasan tier — which has no boundary polygon — can render. BoundaryOverlay keeps
+  // the polygons + the current node's DETAIL marker:
+  //   • district → the selected district MARKER (detail)
+  //   • location  → the selected location MARKER (detail) + worker markers
+  const showDistrictBubbles = false;
+  const showAreaBubbles = false;
+  const showDistrictMarker = scope === 'district';
+  const showAreaMarker = scope === 'location';
   const showBoundaryLayer =
-    showRayonBoundaries || showAreaBoundaries ||
-    showRayonBubbles || showAreaBubbles || showRayonMarker || showAreaMarker;
+    showDistrictBoundaries || showAreaBoundaries || showRegionBoundaries ||
+    showDistrictMarker || showAreaMarker;
+
+  // Bubbles obey the same depth gate as the polygons, or a tier would draw its
+  // pins with no shape (and, at city height, hundreds of them at once).
+  const tierScopedNodes = useMemo(
+    () =>
+      nodeMarkers.filter(n =>
+        n.variant === 'district'
+          ? tiers.district
+          : n.variant === 'region'
+            ? tiers.region
+            : tiers.location,
+      ),
+    [nodeMarkers, tiers],
+  );
+
+  // ── Progressive reveal ─────────────────────────────────────────────────────
+  // Ranks what the tiers admitted, so a crowd becomes a handful of full pins and
+  // a field of dots rather than a wall of identical markers. Mirrors web; the
+  // only platform difference is getting to a zoom level, which the camera does
+  // not report directly (see `mercator.deltaToZoom`).
+  const { affinityOf, visit } = useAffinity();
+  // Read per render, not once: the viewport width changes on rotation, and a
+  // stale width would rank against a screen that no longer exists.
+  const { width: viewportWidth } = useWindowDimensions();
+  const zoom = deltaToZoom(currentRegion.longitudeDelta, viewportWidth);
+
+  const revealNodes = useMemo(
+    () =>
+      tierScopedNodes.map(n => ({
+        id: n.id,
+        lat: n.lat,
+        lng: n.lng,
+        variant: n.variant,
+        scheduled: n.scheduled,
+        clocked_in: n.clocked_in,
+        belum_hadir: n.belum_hadir,
+        tidak_hadir: n.tidak_hadir,
+      })),
+    [tierScopedNodes],
+  );
+
+  const revealWorkers = useMemo(
+    () =>
+      visibleUsers.map(u => ({
+        user_id: u.id,
+        lat: u.latitude,
+        lng: u.longitude,
+        status: u.status,
+        is_within_area: u.is_within_area,
+        is_scheduled: u.is_scheduled !== false,
+      })),
+    [visibleUsers],
+  );
+
+  const reveal = useProgressiveReveal({
+    enabled: mode === 'viewport',
+    zoom,
+    nodes: revealNodes,
+    workers: revealWorkers,
+    affinityOf,
+    // Whatever a sheet is describing stays drawn, or the card documents
+    // something the map has left anonymous.
+    exemptWorkerIds: [selectedUser?.id ?? null],
+  });
+
+  /** Engaging with someone is what makes them familiar — see `affinity.ts`. */
+  const pressWorker = useCallback(
+    (user: LiveUser) => {
+      visit(user.id);
+      onMarkerPress(user);
+    },
+    [visit, onMarkerPress],
+  );
 
   return (
     <>
       {/* Boundary overlay — polygons (toggle-gated) + geographic drill markers
           (scope-gated). Keyed by scope so a drill-out fully remounts the layer
           and no stale markers linger. */}
-      {mapReady && scopedRayons.length > 0 && showBoundaryLayer && (
+      {mapReady && scopedDistricts.length > 0 && showBoundaryLayer && (
         <BoundaryOverlay
           key={`boundary-${scope}-${boundaryKey}`}
-          rayons={scopedRayons}
-          onRayonBubblePress={onRayonDrill}
+          districts={scopedDistricts}
+          onDistrictBubblePress={onDistrictDrill}
           onAreaBubblePress={onAreaDrill}
-          onRayonMarkerPress={onRayonDetail}
+          onDistrictMarkerPress={onDistrictDetail}
           onAreaMarkerPress={onAreaDetail}
-          showRayons={showRayonBoundaries}
+          showDistricts={showDistrictBoundaries}
           showAreas={showAreaBoundaries}
-          showRayonBubbles={showRayonBubbles}
+          showRegions={showRegionBoundaries}
+          // Outline and fill are independent facets: the show* flags above mount
+          // the polygon (scope + either facet), these decide which half paints.
+          districtOutline={showsBoundary(visibleLayers.district)}
+          districtFill={showsFill(visibleLayers.district)}
+          regionOutline={showsBoundary(visibleLayers.kawasan)}
+          regionFill={showsFill(visibleLayers.kawasan)}
+          areaOutline={showsBoundary(visibleLayers.lokasi)}
+          areaFill={showsFill(visibleLayers.lokasi)}
+          regionId={regionId}
+          showDistrictBubbles={showDistrictBubbles}
           showAreaBubbles={showAreaBubbles}
-          showRayonMarker={showRayonMarker}
+          showDistrictMarker={showDistrictMarker}
           showAreaMarker={showAreaMarker}
           rosterById={rosterById}
         />
       )}
 
-      {/* Phase 3: Area status overlay (plant health tints) — inside a rayon only */}
-      {mapReady && showAreaBoundaries && scopedRayons.length > 0 && (
+      {/* Drill bubbles from the aggregate — district nodes (city), regions ∪
+          region-less lokasi (district), a kawasan's lokasi (region). Tap → drill. */}
+      {mapReady && tierScopedNodes.length > 0 && (
+        <AggregateBubbleLayer
+          nodes={tierScopedNodes}
+          onDrill={onNodeDrill}
+          latitudeDelta={currentRegion.latitudeDelta}
+          onClusterPress={onClusterPress}
+          // Labels are their own facet: hiding a dense tier's names keeps the
+          // bubbles, which is the common ask at a wide zoom.
+          showLabels={{
+            district: showsNodeLabel(visibleLayers.district),
+            region: showsNodeLabel(visibleLayers.kawasan),
+            location: showsNodeLabel(visibleLayers.lokasi),
+          }}
+        />
+      )}
+
+      {/* Team bubbles (ADR-048) — a ≥2-member team collapses to one team-colored
+          marker; tapping it shows the team's members and hides the other workers. */}
+      {mapReady && showWorkers && teamGroups.length > 0 && (
+        <TeamMarkerLayer teams={teamGroups} onTeamPress={onTeamPress} />
+      )}
+
+      {/* Phase 3: Area status overlay (plant health tints) — inside a district only */}
+      {mapReady && showAreaBoundaries && scopedDistricts.length > 0 && (
         <AreaStatusOverlay
-          rayons={scopedRayons}
+          districts={scopedDistricts}
           boundaryKey={boundaryKey}
         />
       )}
 
-      {/* Phase 3: Plant notable markers */}
+      {/* Notable plants — lokasi scope only, because the endpoint is
+          per-location. Was a stub until now: the toggle controlled nothing. */}
       {mapReady && (
-        <PlantOverlayLayer visible={visibleLayers.plants} />
+        <PlantOverlayLayer
+          visible={visibleLayers.plants}
+          areaId={scope === 'location' ? (viewId ?? null) : null}
+        />
       )}
 
-      {/* Worker markers only at area scope. */}
+      {/* Worker pins. One marker per person — no clustering.
+          Clustering was removed here for the same reason it was removed from
+          web: it HID PEOPLE, which is not a property of screen size. A merged
+          bubble hides its members on a phone exactly as it did on a desktop.
+          The reveal withholds DETAIL and never withholds a marker: a demoted
+          worker still draws, at their true position, still pressable. */}
       {showWorkers &&
-        (featureFlags.clusterMarkersV2 ? (
-        <ClusteredUserMarkers
-          workers={visibleUsers}
-          zoom={currentRegion.latitudeDelta}
-          clusterZoomThreshold={0.05}
-          labelMode={labelMode}
-          selectedUserId={selectedUser?.id ?? null}
-          onUserPress={userId => {
-            const user = visibleUsers.find(u => u.id === userId);
-            if (user) { onMarkerPress(user); }
-          }}
-          onClusterPress={onClusterPress}
-        />
-      ) : (
-        <>
-          {/* User markers (individual) — legacy Phase 2D path */}
-          {!useClustering && visibleUsers.map(user => (
+        visibleUsers.map(user => {
+          const demoted =
+            reveal.promotedWorkers != null && !reveal.promotedWorkers.has(user.id);
+          // The label pass feeds the EXISTING labelMode rather than a second
+          // switch; two switches for one behaviour would eventually disagree.
+          const userLabelMode: LabelMode =
+            reveal.labelledWorkers != null && !reveal.labelledWorkers.has(user.id)
+              ? 'none'
+              : labelMode;
+          return (
             <UserMarker
-              key={`user-${user.id}-${user.status}-${labelMode}`}
+              key={`user-${user.id}-${user.status}-${userLabelMode}-${demoted ? 'dot' : 'pin'}`}
               user={user}
-              onPress={onMarkerPress}
-              labelMode={labelMode}
+              onPress={pressWorker}
+              labelMode={userLabelMode}
+              demoted={demoted}
             />
-          ))}
-
-          {/* Cluster markers — legacy Phase 2D path */}
-          {useClustering && clusters.map(cluster => {
-            const representative: LiveUser = cluster.workers.length > 0
-              ? {
-                  ...cluster.workers[0],
-                  id: cluster.id,
-                  latitude: cluster.coordinate.latitude,
-                  longitude: cluster.coordinate.longitude,
-                  full_name: t('monitoring:clusterCountAria', { count: cluster.pointCount }),
-                } as unknown as LiveUser
-              : null as unknown as LiveUser;
-            if (!representative) { return null; }
-            return (
-              <UserMarker
-                key={cluster.id}
-                user={representative}
-                onPress={() => onClusterPress(cluster.coordinate)}
-                clusterCount={cluster.pointCount}
-                labelMode={labelMode}
-              />
-            );
-          })}
-        </>
-        ))}
+          );
+        })}
     </>
   );
 }

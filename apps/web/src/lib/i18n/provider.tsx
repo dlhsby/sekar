@@ -27,10 +27,33 @@ function HtmlLangSync() {
   return null;
 }
 
+/**
+ * Applies the locally-stored/detected language AFTER hydration. i18n initialises
+ * at the default language (so server + client first paint match); once mounted
+ * we run the detector (localStorage → cookie → `<html lang>`, which the server
+ * already set from the cookie) and switch if it differs. This is a normal
+ * post-hydration update, not a mismatch. `LanguageSync` (user profile) still
+ * wins afterward when signed in.
+ */
+function LocalePreferenceSync() {
+  useEffect(() => {
+    const detector = i18n.services?.languageDetector as
+      | { detect?: () => string | string[] | undefined }
+      | undefined;
+    const detected = detector?.detect?.();
+    const target = normalize(Array.isArray(detected) ? detected[0] : detected);
+    if (target && i18n.language !== target) {
+      void i18n.changeLanguage(target);
+    }
+  }, []);
+  return null;
+}
+
 export function I18nProvider({ children }: { children: ReactNode }) {
   return (
     <I18nextProvider i18n={i18n}>
       <HtmlLangSync />
+      <LocalePreferenceSync />
       {children}
     </I18nextProvider>
   );

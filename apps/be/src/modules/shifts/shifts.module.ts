@@ -2,15 +2,19 @@ import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ShiftsController } from './shifts.controller';
 import { ShiftsService } from './shifts.service';
+import { AttendanceDerivationService } from './services/attendance-derivation.service';
+import { ShiftAttributionService } from './services/shift-attribution.service';
 import { Shift } from './entities/shift.entity';
+import { AttendancePunch } from './entities/attendance-punch.entity';
 import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
 import { User } from '../users/entities/user.entity';
-import { AreasModule } from '../areas/areas.module';
+import { LocationsModule } from '../locations/locations.module';
 import { SharedModule } from '../../shared/shared.module';
 import { MonitoringModule } from '../monitoring/monitoring.module';
 import { AuditModule } from '../audit/audit.module';
-import { UserAreasModule } from '../user-areas/user-areas.module';
+import { UserLocationsModule } from '../user-locations/user-locations.module';
 import { SchedulesModule } from '../schedules/schedules.module';
+import { SettingsModule } from '../settings/settings.module';
 
 /**
  * Shifts Module
@@ -21,16 +25,17 @@ import { SchedulesModule } from '../schedules/schedules.module';
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Shift, ShiftDefinition, User]),
-    forwardRef(() => AreasModule),
+    TypeOrmModule.forFeature([Shift, AttendancePunch, ShiftDefinition, User]),
+    forwardRef(() => LocationsModule),
     SharedModule,
     forwardRef(() => MonitoringModule),
     AuditModule,
-    UserAreasModule,
+    UserLocationsModule,
     SchedulesModule,
+    SettingsModule, // ADR-049: runtime min-shift-duration via SystemConfigService
   ],
   controllers: [ShiftsController],
-  providers: [ShiftsService],
-  exports: [ShiftsService],
+  providers: [ShiftsService, AttendanceDerivationService, ShiftAttributionService],
+  exports: [ShiftsService, AttendanceDerivationService, ShiftAttributionService],
 })
 export class ShiftsModule {}

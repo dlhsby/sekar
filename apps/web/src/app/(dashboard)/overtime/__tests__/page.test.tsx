@@ -98,8 +98,8 @@ const makeUser = (role: string) => ({
 
 const adminSystemUser = makeUser('admin_system');
 const korlapUser = makeUser('korlap');
-const kepalaRayonUser = makeUser('kepala_rayon');
-const adminDataUser = makeUser('admin_data');
+const kepalaDistrictUser = makeUser('kepala_rayon');
+const adminDataUser = makeUser('admin_rayon');
 const satgasUser = makeUser('satgas');
 
 // ─── QueryClient Wrapper ───────────────────────────────────────────────────────
@@ -171,7 +171,7 @@ describe('OvertimePage', () => {
     });
 
     it('should render the page for kepala_rayon role', () => {
-      mockUseAuth.mockReturnValue({ user: kepalaRayonUser, loading: false });
+      mockUseAuth.mockReturnValue({ user: kepalaDistrictUser, loading: false });
 
       render(<OvertimePage />, { wrapper: createWrapper() });
 
@@ -179,7 +179,7 @@ describe('OvertimePage', () => {
       expect(mockPush).not.toHaveBeenCalled();
     });
 
-    it('should render the page for admin_data role', () => {
+    it('should render the page for admin_rayon role', () => {
       mockUseAuth.mockReturnValue({ user: adminDataUser, loading: false });
 
       render(<OvertimePage />, { wrapper: createWrapper() });
@@ -347,7 +347,7 @@ describe('OvertimePage', () => {
     });
 
     it('should show Setujui and Tolak menu items for kepala_rayon on a pending record', async () => {
-      mockUseAuth.mockReturnValue({ user: kepalaRayonUser, loading: false });
+      mockUseAuth.mockReturnValue({ user: kepalaDistrictUser, loading: false });
       const user = userEvent.setup();
 
       render(<OvertimePage />, { wrapper: createWrapper() });
@@ -360,7 +360,7 @@ describe('OvertimePage', () => {
       expect(await screen.findByRole('menuitem', { name: /tolak/i })).toBeInTheDocument();
     });
 
-    it('should NOT show Setujui / Tolak menu items for admin_data (view-only)', async () => {
+    it('should NOT show Setujui / Tolak menu items for admin_rayon (view-only)', async () => {
       mockUseAuth.mockReturnValue({ user: adminDataUser, loading: false });
       const user = userEvent.setup();
 

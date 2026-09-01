@@ -48,7 +48,7 @@ describe('tasksSlice', () => {
     description: 'A test task description',
     status: 'pending',
     priority: 'medium',
-    area_id: 'area-001',
+    location_id: 'area-001',
     created_by: 'user-001',
     created_at: '2026-01-19T10:00:00Z',
     updated_at: '2026-01-19T10:00:00Z',

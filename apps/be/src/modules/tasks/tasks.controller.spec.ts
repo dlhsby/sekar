@@ -28,7 +28,7 @@ describe('TasksController', () => {
     description: 'Test Description',
     status: TaskStatus.PENDING,
     priority: TaskPriority.MEDIUM,
-    area_id: 'area-uuid',
+    location_id: 'area-uuid',
     assigned_to: null,
     created_by: 'creator-uuid',
     deadline: null,
@@ -73,7 +73,7 @@ describe('TasksController', () => {
     it('should create a new task', async () => {
       const createDto: CreateTaskDto = {
         title: 'New Task',
-        area_id: 'area-uuid',
+        location_id: 'area-uuid',
         priority: TaskPriority.HIGH,
       };
       const createdTask = { ...mockTask, ...createDto };
@@ -101,7 +101,7 @@ describe('TasksController', () => {
 
     it('should apply filters', async () => {
       const filters: TaskFilterDto = {
-        area_id: 'area-uuid',
+        location_id: 'area-uuid',
         status: TaskStatus.PENDING,
       };
       const tasks = [mockTask];

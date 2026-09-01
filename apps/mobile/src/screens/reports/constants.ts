@@ -12,8 +12,8 @@ import type { UserRole } from '../../types/models.types';
 export const REPORT_VIEWERS: UserRole[] = [
   'korlap',
   'kepala_rayon',
-  'admin_data',
-  'top_management',
+  'admin_rayon',
+  'management',
   'admin_system',
   'superadmin',
 ];

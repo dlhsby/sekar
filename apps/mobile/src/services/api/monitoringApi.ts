@@ -12,7 +12,7 @@ import type {
   ApiResponse,
   ActiveUserData,
   CityMonitoringResponse,
-  RayonMonitoringResponse,
+  DistrictMonitoringResponse,
   AreaMonitoringResponse,
   LiveUsersResponse,
   LiveUsersFilter,
@@ -30,6 +30,8 @@ import type {
   AreaPlantStatusResponse,
   ReassignmentHistory,
 } from '../../types/models.types';
+import type { LiveUser } from '../../types/monitoring.types';
+import { snapshotWorkerToLiveUser, type SnapshotWorker } from '../../utils/monitoringScope';
 
 export async function getCityMonitoring(
   filters?: MonitoringFilter,
@@ -37,12 +39,12 @@ export async function getCityMonitoring(
   return get<CityMonitoringResponse>('/monitoring/city', filters);
 }
 
-export async function getRayonMonitoring(
-  rayonId: string,
+export async function getDistrictMonitoring(
+  districtId: string,
   filters?: MonitoringFilter,
-): Promise<ApiResponse<RayonMonitoringResponse>> {
-  return get<RayonMonitoringResponse>(
-    `/monitoring/rayon/${rayonId}`,
+): Promise<ApiResponse<DistrictMonitoringResponse>> {
+  return get<DistrictMonitoringResponse>(
+    `/monitoring/district/${districtId}`,
     filters,
   );
 }
@@ -60,10 +62,23 @@ export async function getLiveUsers(
   return get<LiveUsersResponse>('/monitoring/live-users', filters);
 }
 
-export async function getActiveUsers(): Promise<
-  ApiResponse<{ users: ActiveUserData[] }>
-> {
-  return get('/supervisor/active-users');
+/**
+ * Fetch a monitoring snapshot and adapt it to `LiveUser[]`. Unlike `/live-users`,
+ * the snapshot carries `display_scope`/`display_scope_id`, so the map can render
+ * workers at their own drill tier (city/district/region/location) via `scopeMatches`.
+ * The snapshot endpoint scope enum is `city|district|location` (no `region`) — the
+ * caller fetches a region tier via its district snapshot, then filters by scope.
+ */
+export async function getSnapshotWorkers(
+  scope: 'city' | 'district' | 'location',
+  id?: string,
+): Promise<ApiResponse<LiveUser[]>> {
+  const res = await get<{ workers?: SnapshotWorker[] }>(
+    '/monitoring/snapshot',
+    id ? { scope, id } : { scope },
+  );
+  const workers = (res.data?.workers ?? []).map(snapshotWorkerToLiveUser);
+  return { ...res, data: workers };
 }
 
 export async function getAllActivities(
@@ -78,10 +93,20 @@ export async function getActivityDetails(
   return get<Activity>(`/activities/${activityId}`);
 }
 
+/**
+ * Attendance for a WIB service-day.
+ *
+ * Moved off `/supervisor/attendance`: that module is superseded by monitoring,
+ * and its version had a satgas-only roster (linmas invisible), server-local day
+ * bounds (a UTC container reported the PREVIOUS day between 00:00-07:00 WIB),
+ * matched `clock_in_time` instead of `service_day` (night shifts landed on the
+ * wrong day), and emitted one row per SHIFT so a double clock-in counted twice.
+ * The list response shape is unchanged, so this is a URL swap.
+ */
 export async function getAttendance(
   filters: AttendanceFilter = {},
 ): Promise<ApiResponse<AttendanceResponse>> {
-  return get<AttendanceResponse>('/supervisor/attendance', filters);
+  return get<AttendanceResponse>('/monitoring/attendance', filters);
 }
 
 export async function getUserAttendanceDetail(
@@ -89,7 +114,7 @@ export async function getUserAttendanceDetail(
   date?: string,
 ): Promise<ApiResponse<UserAttendanceDetail>> {
   return get<UserAttendanceDetail>(
-    `/supervisor/attendance/${userId}`,
+    `/monitoring/attendance/${userId}`,
     date ? { date } : {},
   );
 }
@@ -118,32 +143,42 @@ export async function getUserLocationHistory(
 }
 
 export async function getStaffingSummary(
-  filters?: { rayon_id?: string; area_id?: string },
+  filters?: { district_id?: string; location_id?: string },
 ): Promise<ApiResponse<StaffingSummaryResponse>> {
   return get<StaffingSummaryResponse>('/monitoring/staffing-summary', filters);
 }
 
 // Phase 2D Gap: Boundaries endpoint.
-// `level='rayon'` returns rayon outlines only (lightest payload for the city
-// view); `level='area'` (+ rayonId) returns that rayon's area geometry.
+// `level='district'` returns district outlines only (lightest payload for the city
+// view); `level='area'` (+ districtId) returns that district's area geometry.
 export async function getBoundaries(
-  rayonId?: string,
-  level?: 'rayon' | 'area',
+  districtId?: string,
+  level?: 'district' | 'area',
+  /**
+   * Viewport mode (ADR-060): `minLng,minLat,maxLng,maxLat`. The server returns
+   * only geometry intersecting the box — the whole point of the mode, since
+   * mobile otherwise pulls every lokasi polygon in the city at every zoom.
+   */
+  bbox?: string | null,
 ): Promise<ApiResponse<BoundariesResponse>> {
   const params: Record<string, string> = {};
-  if (rayonId) {
-    params.rayon_id = rayonId;
+  if (districtId) {
+    params.district_id = districtId;
   }
   if (level) {
     params.level = level;
   }
+  if (bbox) {
+    params.bbox = bbox;
+  }
   return get<BoundariesResponse>('/monitoring/boundaries', params);
 }
 
-// Aggregate ("Ringkasan") rollup — rayon nodes (scope=city) or area nodes
-// (scope=rayon) with grouped status/role counts and centers, no worker coords.
+// Aggregate ("Ringkasan") rollup — district nodes (scope=city), kawasan nodes
+// (scope=region, id=districtId) or lokasi nodes (scope=district) with grouped
+// status/role counts and centers, no worker coords.
 export async function getMonitoringAggregate(
-  scope: 'city' | 'rayon' = 'city',
+  scope: 'city' | 'district' | 'region' = 'city',
   id?: string,
 ): Promise<ApiResponse<MonitoringAggregateResponse>> {
   const params: Record<string, string> = { scope };
@@ -151,6 +186,15 @@ export async function getMonitoringAggregate(
     params.id = id;
   }
   return get<MonitoringAggregateResponse>('/monitoring/aggregate', params);
+}
+
+// Server-side monitoring search (5.7a) — workers clocked in with a fix in the last
+// 24h whose name/lokasi matches, scope-filtered by the caller's role (surfaces
+// off-screen + monitorable-but-unscheduled clock-ins the loaded snapshot omits).
+export async function searchMonitoring(
+  query: string,
+): Promise<ApiResponse<LiveUsersResponse>> {
+  return get<LiveUsersResponse>('/monitoring/search', { q: query });
 }
 
 // Phase 2D Gap: Reassign worker endpoint
@@ -183,10 +227,9 @@ export async function getReassignmentHistory(
 
 export default {
   getCityMonitoring,
-  getRayonMonitoring,
+  getDistrictMonitoring,
   getAreaMonitoring,
   getLiveUsers,
-  getActiveUsers,
   getAllActivities,
   getActivityDetails,
   getAttendance,

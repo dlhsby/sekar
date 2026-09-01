@@ -10,8 +10,8 @@ appId: com.wahyutrip.sekar
     id: welcome-carousel-screen
 
 # Wait for carousel to render
-- wait: 1000
-
+- waitForAnimationToEnd:
+    timeout: 1000
 # Verify first slide title is visible (testID on carousel-slide-WL-2)
 - assertVisible:
     id: carousel-slide-WL-2
@@ -22,8 +22,8 @@ appId: com.wahyutrip.sekar
     end: [200, 400]
     duration: 1000
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 # Verify we've advanced (carousel-slide-WL-3 should be visible now)
 - assertVisible:
     id: carousel-slide-WL-3
@@ -33,8 +33,8 @@ appId: com.wahyutrip.sekar
     start: [800, 400]
     end: [200, 400]
     duration: 1000
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 - assertVisible:
     id: carousel-slide-WL-4
 
@@ -42,8 +42,8 @@ appId: com.wahyutrip.sekar
     start: [800, 400]
     end: [200, 400]
     duration: 1000
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 - assertVisible:
     id: carousel-slide-WL-5
 
@@ -53,14 +53,14 @@ appId: com.wahyutrip.sekar
     start: [200, 400]
     end: [800, 400]
     duration: 1000
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 # Should be back at WL-4, tap "Lewati"
 - tapOn:
     id: carousel-skip
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 # After skip, we should be at the last slide (WL-5)
 - assertVisible:
     id: carousel-slide-WL-5
@@ -69,8 +69,8 @@ appId: com.wahyutrip.sekar
 - tapOn:
     id: carousel-primary
 
-- wait: 1000
-
+- waitForAnimationToEnd:
+    timeout: 1000
 # Should navigate to LoginScreen
 - assertVisible:
     id: username-input

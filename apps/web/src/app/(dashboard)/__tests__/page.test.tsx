@@ -10,7 +10,7 @@ jest.mock('@/lib/auth/hooks', () => ({
 }));
 
 // Current-shift aggregate: 10 scheduled, 8 hadir (7 aktif + 1 tidak-aktif),
-// 2 tidak hadir — for one rayon (Pusat).
+// 2 tidak hadir — for one district (Pusat).
 const aggregate = {
   data: {
     scope: 'city',
@@ -19,7 +19,7 @@ const aggregate = {
       {
         id: 'r1',
         name: 'Pusat',
-        type: 'rayon',
+        type: 'district',
         center_lat: -7.3,
         center_lng: 112.7,
         counts_by_status: { active: 6, inactive: 1, outside_area: 1, missing: 0, offline: 0 },
@@ -28,13 +28,13 @@ const aggregate = {
         online_count: 8,
         required: 10,
         is_understaffed: true,
-        roster: { scheduled: 10, clocked_in: 8, not_clocked_in: 2 },
+        roster: { scheduled: 10, clocked_in: 8, belum_hadir: 0, tidak_hadir: 2 },
         presence: { aktif: { dalam: 6, luar: 1 }, tidak_aktif: { dalam: 1, luar: 0 } },
         area_count: 1,
       },
     ],
     totals: { active: 6, inactive: 1, outside_area: 1, missing: 0, offline: 0 },
-    roster_totals: { scheduled: 10, clocked_in: 8, not_clocked_in: 2 },
+    roster_totals: { scheduled: 10, clocked_in: 8, belum_hadir: 0, tidak_hadir: 2 },
     presence_totals: { aktif: { dalam: 6, luar: 1 }, tidak_aktif: { dalam: 1, luar: 0 } },
     generated_at: new Date().toISOString(),
   },
@@ -55,15 +55,15 @@ jest.mock('@/lib/api/plants', () => ({
   usePlantStatusSummary: () => ({
     data: {
       generated_at: new Date().toISOString(),
-      rayons: [
+      districts: [
         {
-          rayon_id: 'r1',
-          rayon_name: 'Rayon Selatan',
+          district_id: 'r1',
+          district_name: 'Rayon Selatan',
           ok: 4,
           due_soon: 1,
           overdue: 3,
           unknown: 0,
-          overdue_areas: [{ area_id: 'a1', area_name: 'Taman Bungkul', overdue: 3 }],
+          overdue_areas: [{ area_id: 'a1', location_name: 'Taman Bungkul', overdue: 3 }],
         },
       ],
     },
@@ -103,7 +103,7 @@ describe('DashboardPage', () => {
     expect(screen.getByText('5')).toBeInTheDocument(); // lembur
   });
 
-  it('renders the per-rayon hadir/scheduled breakdown from aggregate nodes', () => {
+  it('renders the per-district hadir/scheduled breakdown from aggregate nodes', () => {
     render(<DashboardPage />);
     expect(screen.getByText('Pusat')).toBeInTheDocument();
     expect(screen.getByText('8/10')).toBeInTheDocument();

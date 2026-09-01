@@ -70,6 +70,46 @@ export class LocationLog {
   @Column({ type: 'timestamptz' })
   logged_at: Date;
 
+  /**
+   * Why this ping was refused, or `null` when it was accepted.
+   *
+   * A refused ping is still stored. Dropping it would make a spoofing worker
+   * look identical to one whose phone is simply off, which is the opposite of
+   * the point: the row is what lets a supervisor see "faking location" rather
+   * than a silent gap. What refusal costs the worker is *presence* — a rejected
+   * ping never advances tracking status, so they go inactive until they stop.
+   *
+   * Values are `LocationRejection` (MISSING_COORDINATES | MOCKED |
+   * IMPOSSIBLE_TRAVEL). Stored as text rather than a PG enum so a new rule does
+   * not need a type migration.
+   */
+  @ApiProperty({
+    description: 'Integrity rejection reason, null when the ping was accepted',
+    required: false,
+  })
+  @Column({ type: 'varchar', length: 32, nullable: true })
+  rejection_reason?: string | null;
+
+  @ApiProperty({ description: 'Whether the GPS accuracy was too poor to be reliable' })
+  @Column({ type: 'boolean', default: false })
+  poor_accuracy: boolean;
+
+  /**
+   * `client capture time - server receive time`, in ms. Negative = backdated.
+   * Large negatives are normal for the offline queue, so this is recorded for
+   * review rather than acted on. `logged_at` itself is clamped.
+   */
+  @ApiProperty({ description: 'Client/server clock difference for this ping, in ms' })
+  @Column({
+    type: 'bigint',
+    default: 0,
+    transformer: {
+      to: (value: number) => value,
+      from: (value: string | null) => (value != null ? parseInt(value, 10) : 0),
+    },
+  })
+  clock_skew_ms: number;
+
   // Relations
   /**
    * User who sent the location ping

@@ -23,7 +23,7 @@ export interface ChangePasswordRequest {
  *
  * The backend paginates `/users` and caps `limit`, so a single request drops the
  * tail once the roster exceeds the cap (staging has >1000 users) — assignable-user
- * pickers then silently miss whole rayons. Walk every page and return the full
+ * pickers then silently miss whole districts. Walk every page and return the full
  * list. `limit` is the per-page size.
  *
  * @param limit - Page size for the walk (default 100)

@@ -42,7 +42,7 @@ describe('assetsSlice', () => {
     id: 'asset-1',
     category_id: 'cat-1',
     category: mockCategory,
-    area_id: 'area-1',
+    location_id: 'area-1',
     name: 'Sapu Lidi',
     asset_code: 'PT-RU-001',
     status: 'available',

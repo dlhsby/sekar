@@ -16,7 +16,7 @@ const AUTO_SAVE_INTERVAL = 30000; // 30 s
 // ─── Types ────────────────────────────────────────────────────────
 
 export interface DraftShape {
-  rayonId: string;
+  districtId: string;
   kecamatanName: string;
   address: string;
   treeCount: string;

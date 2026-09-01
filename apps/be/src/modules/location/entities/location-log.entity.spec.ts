@@ -56,7 +56,7 @@ describe('LocationLog Entity', () => {
     const mockShift: Shift = {
       id: 'shift-uuid-789',
       user_id: 'user-uuid-456',
-      area_id: 'area-uuid-123',
+      location_id: 'area-uuid-123',
       clock_in_time: new Date('2026-01-09T08:00:00Z'),
       clock_in_gps_lat: -7.2905,
       clock_in_gps_lng: 112.7398,

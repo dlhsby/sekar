@@ -47,11 +47,11 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 }) => {
   const { t } = useTranslation();
   const defaultUserLabel = t('profile:header.user');
-  const rayonName = user?.rayon?.name ?? null;
+  const districtName = user?.district?.name ?? null;
   const joinedYear = getJoinedYear(user?.created_at);
 
-  const roleLine = rayonName
-    ? `${getRoleLabel(user?.role, defaultUserLabel)} · ${rayonName}`
+  const roleLine = districtName
+    ? `${getRoleLabel(user?.role, defaultUserLabel)} · ${districtName}`
     : getRoleLabel(user?.role, defaultUserLabel);
 
   const metaParts = [`@${user?.username ?? 'unknown'}`];

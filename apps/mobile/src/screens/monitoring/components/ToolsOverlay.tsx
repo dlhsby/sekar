@@ -10,8 +10,10 @@ import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { nbColors, nbSpacing, nbBorders, nbRadius } from '../../../constants/nbTokens';
 import { NBText } from '../../../components/nb/NBText';
-import { LAYER_ROWS } from '../../../components/monitoring/monitoringLayers';
-import type { MonitoringV2VisibleLayers } from '../../../store/slices/monitoringV2Slice';
+import { layerRows, type LayerFacet } from '../../../components/monitoring/monitoringLayers';
+import { toggleFacet } from '../../../utils/layerVisibility';
+import { MODE_OPTIONS } from '../../../components/monitoring/monitoringLayers';
+import type { MonitoringV2VisibleLayers, MonitoringMode } from '../../../store/slices/monitoringV2Slice';
 
 interface ToolsOverlayProps {
   onZoomIn: () => void;
@@ -19,7 +21,9 @@ interface ToolsOverlayProps {
   onMyLocation: () => void;
   resetHeading: () => void;
   visibleLayers: MonitoringV2VisibleLayers;
-  onToggleLayer: (key: keyof MonitoringV2VisibleLayers) => void;
+  onSetLayer: (key: keyof MonitoringV2VisibleLayers, value: string[] | boolean) => void;
+  mode: MonitoringMode;
+  onSetMode: (mode: MonitoringMode) => void;
   filterModalVisible: boolean;
   setFilterModalVisible: (visible: boolean) => void;
 }
@@ -87,13 +91,70 @@ function LayerToggleRow({
   );
 }
 
+/**
+ * A layer row whose facets are INDEPENDENT chips — outline, fill, marker — each
+ * toggling on tap.
+ *
+ * This replaced a tap-to-cycle row over four named states. Cycling made a two-
+ * facet change take up to three taps and hid the options you were not on; the
+ * chips show the whole row at once and each tap means exactly one thing. It is
+ * also the shape web now uses, so the two platforms read the same.
+ */
+function LayerFacetRow({
+  icon,
+  label,
+  facets,
+  value,
+  onToggle,
+}: {
+  icon: string;
+  label: string;
+  facets: LayerFacet[];
+  value: readonly string[];
+  onToggle: (facet: string) => void;
+}): React.JSX.Element {
+  const hidden = value.length === 0;
+  return (
+    <View style={[styles.toolRow, styles.facetRow, !hidden && styles.toolRowActive]}>
+      <View style={styles.toolIconChip}>
+        <MaterialCommunityIcons name={icon} size={16} color={nbColors.black} />
+      </View>
+      <View style={styles.facetBody}>
+        <NBText variant="body-sm" style={styles.layerLabel}>{label}</NBText>
+        <View style={styles.facetChips}>
+          {facets.map(f => {
+            const on = value.includes(f.value);
+            return (
+              <TouchableOpacity
+                key={f.value}
+                style={[styles.facetChip, on && styles.facetChipOn]}
+                onPress={() => onToggle(f.value)}
+                activeOpacity={0.75}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: on }}
+                accessibilityLabel={`${label}: ${f.label}`}
+              >
+                <NBText variant="mono-sm" color={on ? 'black' : 'gray400'}>
+                  {f.label}
+                </NBText>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+    </View>
+  );
+}
+
 export function ToolsOverlay({
   onZoomIn,
   onZoomOut,
   onMyLocation,
   resetHeading,
   visibleLayers,
-  onToggleLayer,
+  onSetLayer,
+  mode,
+  onSetMode,
   filterModalVisible,
   setFilterModalVisible,
 }: ToolsOverlayProps): React.JSX.Element {
@@ -114,19 +175,63 @@ export function ToolsOverlay({
       <ToolActionRow icon="crosshairs-gps" label={t('monitoring:tools.myLocation')} onPress={onMyLocation} />
       <ToolActionRow icon="compass-outline" label={t('monitoring:tools.resetHeading')} onPress={resetHeading} />
 
+      {/* Monitoring mode (ADR-060) — how much of the hierarchy draws at once. */}
+      <NBText variant="mono-sm" uppercase style={styles.toolsHeader}>
+        {t('monitoring:mode.title')}
+      </NBText>
+      {/* Three chips, not a toggle: a two-state button cannot express three
+          modes, and cycling would hide the option you are not on. Same shape as
+          the layer facets below, and as web's select. */}
+      <View style={styles.modeRow}>
+        {MODE_OPTIONS.map(o => {
+          const on = mode === o.value;
+          return (
+            <TouchableOpacity
+              key={o.value}
+              style={[styles.modeChip, on && styles.modeChipOn]}
+              onPress={() => onSetMode(o.value)}
+              activeOpacity={0.75}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: on }}
+              accessibilityLabel={t(o.labelKey)}
+            >
+              <NBText variant="mono-sm" color={on ? 'black' : 'gray400'}>
+                {t(o.labelKey)}
+              </NBText>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+      <NBText variant="caption" color="gray500" style={styles.modeHint}>
+        {t(`monitoring:mode.${mode}Hint`)}
+      </NBText>
+
       {/* Map-layer visibility toggles */}
       <NBText variant="mono-sm" uppercase style={styles.toolsHeader}>
         {t('monitoring:tools.layersSection')}
       </NBText>
-      {LAYER_ROWS.map(row => (
-        <LayerToggleRow
-          key={row.key}
-          icon={row.icon}
-          label={t(`monitoring:layers.${row.key}`)}
-          visible={visibleLayers[row.key]}
-          onPress={() => onToggleLayer(row.key)}
-        />
-      ))}
+      {layerRows().map(row =>
+        row.facets ? (
+          <LayerFacetRow
+            key={row.key}
+            icon={row.icon}
+            label={row.label}
+            facets={row.facets}
+            value={(visibleLayers[row.key] as string[]) ?? []}
+            onToggle={facet =>
+              onSetLayer(row.key, toggleFacet(row.key, visibleLayers[row.key] as string[], facet))
+            }
+          />
+        ) : (
+          <LayerToggleRow
+            key={row.key}
+            icon={row.icon}
+            label={row.label}
+            visible={Boolean(visibleLayers[row.key])}
+            onPress={() => onSetLayer(row.key, !visibleLayers[row.key])}
+          />
+        ),
+      )}
 
       {/* Filter (status / area / jabatan) */}
       <NBText variant="mono-sm" uppercase style={styles.toolsHeader}>
@@ -188,6 +293,51 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: nbColors.white,
+  },
+  modeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    paddingHorizontal: 4,
+    paddingBottom: 4,
+  },
+  modeChip: {
+    borderWidth: 2,
+    borderColor: nbColors.black,
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    backgroundColor: nbColors.white,
+  },
+  modeChipOn: {
+    backgroundColor: nbColors.primary,
+  },
+  modeHint: {
+    paddingHorizontal: 4,
+    paddingBottom: 6,
+  },
+  facetRow: {
+    alignItems: 'flex-start',
+  },
+  facetBody: {
+    flex: 1,
+    gap: 6,
+  },
+  facetChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  facetChip: {
+    borderWidth: 2,
+    borderColor: nbColors.black,
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: nbColors.white,
+  },
+  facetChipOn: {
+    backgroundColor: nbColors.primary,
   },
   layerLabel: {
     flex: 1,

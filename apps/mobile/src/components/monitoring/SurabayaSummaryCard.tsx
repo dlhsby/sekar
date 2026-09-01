@@ -1,7 +1,7 @@
 /**
  * SurabayaSummaryCard — the top-level (city-wide) summary shown before drilling
- * into rayons. Displays today's attendance trio for all of Surabaya
- * (Terjadwal / Hadir / Belum Hadir) and drills into the 7 rayons on tap,
+ * into districts. Displays today's attendance trio for all of Surabaya
+ * (Terjadwal / Hadir / Belum Hadir) and drills into the 7 districts on tap,
  * mirroring the Surabaya map node and the web card.
  */
 import React from 'react';
@@ -39,7 +39,7 @@ export function SurabayaSummaryCard({
     {
       key: 'not_clocked_in',
       label: t('monitoring:aggregate.notClockedInLabel'),
-      value: roster.not_clocked_in,
+      value: (roster.belum_hadir ?? 0) + (roster.tidak_hadir ?? 0),
       color: nbColors.dangerDark,
     },
   ];

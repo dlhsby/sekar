@@ -28,7 +28,7 @@ describe('ShiftsController', () => {
     id: 'shift-uuid-5e6f7a8b-c9d0-1234-ef01-345678901234',
     user_id: mockUser.id,
     user: mockUser as any,
-    area_id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
+    location_id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
     area: {
       id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
       name: 'Taman Bungkul',
@@ -78,13 +78,13 @@ describe('ShiftsController', () => {
 
   describe('clockIn', () => {
     const clockInDto: ClockInDto = {
-      area_id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
+      location_id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
       gps_lat: -7.2905,
       gps_lng: 112.7398,
       selfie_photo: 'data:image/jpeg;base64,/9j/4AAQSkZJRg==',
     };
 
-    it('should clock in a user with provided area_id', async () => {
+    it('should clock in a user with provided location_id', async () => {
       mockShiftsService.clockIn.mockResolvedValue(mockShift);
 
       const result = await controller.clockIn(mockUser as any, clockInDto);

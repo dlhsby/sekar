@@ -1,8 +1,8 @@
 /**
  * Tasks and task tags.
- * Phase 2C: accept/decline + verify/revision support, optional area_id, rayon support.
+ * Phase 2C: accept/decline + verify/revision support, optional location_id, district support.
  */
-import type { Area, Rayon, User } from './user.types';
+import type { Area, District, User } from './user.types';
 
 // Task status - 8 values (Phase 2C: accept/decline + verify/revision)
 export type TaskStatus =
@@ -18,6 +18,9 @@ export type TaskStatus =
 // Task priority
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 
+// Assignment Scope (Phase 3: scope-aware task assignment)
+export type AssignmentScope = 'city' | 'district' | 'region' | 'location' | 'none';
+
 // Task Tag (Phase 2C)
 export interface TaskTag {
   id: string;
@@ -27,7 +30,7 @@ export interface TaskTag {
   created_at: string;
 }
 
-// Task (Phase 2C: accept/decline + verify/revision support, optional area_id, rayon support)
+// Task (Phase 2C: accept/decline + verify/revision support, optional location_id, district support; Phase 3: scope-aware)
 export interface Task {
   id: string;
   title: string;
@@ -35,10 +38,12 @@ export interface Task {
   status: TaskStatus;
   priority: TaskPriority;
   deadline?: string;
-  area_id?: string;
+  location_id?: string;
   area?: Area;
-  rayon_id?: string;
-  rayon?: Rayon;
+  district_id?: string;
+  district?: District;
+  region_id?: string; // Phase 3: Kawasan scope
+  scope?: AssignmentScope; // Phase 3: scope assignment
   assigned_to?: string;
   assignee?: User;
   created_by: string;

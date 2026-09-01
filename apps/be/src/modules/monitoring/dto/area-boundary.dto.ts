@@ -8,7 +8,7 @@ export interface GeoJsonPolygon {
 
 export class AreaBoundaryResponseDto {
   @ApiProperty({ example: 'area-uuid' })
-  area_id: string;
+  location_id: string;
 
   @ApiProperty({ example: 'Taman Bungkul' })
   name: string;
@@ -21,9 +21,6 @@ export class AreaBoundaryResponseDto {
 
   @ApiProperty({ example: 112.7521 })
   gps_lng: number;
-
-  @ApiProperty({ example: 100 })
-  radius_meters: number;
 
   @ApiPropertyOptional({ example: 2500 })
   coverage_area: number | null;

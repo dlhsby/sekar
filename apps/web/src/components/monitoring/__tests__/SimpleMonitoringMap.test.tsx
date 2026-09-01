@@ -5,15 +5,23 @@
 import { useEffect } from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { SimpleMonitoringMap, type SimpleWorker } from '../SimpleMonitoringMap';
+import type { NodeMarker } from '../NodeMarkerLayer';
 import type { BoundariesResponse } from '@/lib/api/monitoring-types';
 
 // Native control stack — createLocateControl pushes the My-Location button here.
 const controlStack: HTMLElement[] = [];
+/**
+ * The zoom the fake map reports. Mutable because tier admission reads it: a
+ * fixed 16 sits above every threshold, so a test asserting that a tier is
+ * WITHHELD would pass for the wrong reason.
+ */
+let fakeZoom = 16;
 const fakeMap = {
   fitBounds: jest.fn(),
   panTo: jest.fn(),
   setZoom: jest.fn(),
-  getZoom: () => 16,
+  getZoom: () => fakeZoom,
+  getCenter: () => ({ lat: () => -7.29, lng: () => 112.75 }),
   controls: { 3: controlStack },
   getBounds: () => ({
     getNorthEast: () => ({ lat: () => -7.0, lng: () => 113.0 }),
@@ -58,21 +66,60 @@ jest.mock('@react-google-maps/api', () => ({
     }, []);
     return <div data-testid="gmap">{children}</div>;
   },
-  Polygon: () => <div data-testid="polygon" />,
-  Marker: ({ onClick }: { onClick?: () => void }) => (
-    <button data-testid="marker" onClick={() => onClick?.()} />
+  // Surfaces the two facet-driven options so a test can tell "outline only" from
+  // "fill only" — both render a Polygon, and the difference is entirely opacity.
+  Polygon: ({ options }: { options?: { strokeOpacity?: number; fillOpacity?: number } }) => (
+    <div
+      data-testid="polygon"
+      data-stroke-opacity={String(options?.strokeOpacity ?? '')}
+      data-fill-opacity={String(options?.fillOpacity ?? '')}
+    />
   ),
+  Polyline: () => <div data-testid="polyline" />,
   InfoWindow: ({ children }: { children?: React.ReactNode }) => (
     <div data-testid="infowindow">{children}</div>
   ),
+  useGoogleMap: () => fakeMap,
 }));
+
+// The node/worker layers + current-node pin now render AdvancedMarker; mock it to
+// a clickable button so the existing marker-count/click assertions still apply.
+jest.mock('@/components/maps/AdvancedMarker', () => ({
+  // `content` is a detached DOM element, so it never reaches the document and
+  // cannot be queried. Surface the two things tests need from it — the title and
+  // whether progressive reveal demoted this marker to a dot — as attributes.
+  AdvancedMarker: ({
+    onClick,
+    content,
+    title,
+  }: {
+    onClick?: () => void;
+    content?: HTMLElement;
+    title?: string;
+  }) => (
+    <button
+      data-testid="marker"
+      title={title}
+      data-dot={content?.classList?.contains('marker-dot') ? '1' : '0'}
+      onClick={() => onClick?.()}
+    />
+  ),
+}));
+
+// AdvancedMarkers need a vector Map ID; stub the resolver so no react-query
+// provider is required in this unit test.
+jest.mock('@/lib/api/config', () => ({ useMapId: () => 'test-map-id' }));
 
 beforeAll(() => {
   (global as unknown as { google: unknown }).google = {
     maps: {
       SymbolPath: { CIRCLE: 0 },
+      // Records what was extended, so a test can assert WHICH points the
+      // initial fit considered.
       LatLngBounds: class {
-        extend = jest.fn();
+        extend = (p: { lat: number; lng: number }) => {
+          (globalThis as any).__boundsExtended.push(p);
+        };
       },
       Size: class {},
       Point: class {},
@@ -82,17 +129,18 @@ beforeAll(() => {
 });
 
 beforeEach(() => {
+  (globalThis as any).__boundsExtended = [];
   jest.clearAllMocks();
   controlStack.length = 0;
 });
 
 const boundaries: BoundariesResponse = {
   generated_at: '2026-01-01T00:00:00Z',
-  rayons: [
+  districts: [
     {
       id: 'r1',
       name: 'Rayon 1',
-      color: 'var(--color-nb-primary)',
+      border_color: 'var(--color-nb-primary)',
       boundary_polygon: {
         type: 'Polygon',
         coordinates: [
@@ -109,6 +157,7 @@ const boundaries: BoundariesResponse = {
       area_count: 1,
       is_understaffed: false,
       understaffed_area_count: 0,
+      regions: [],
       areas: [
         {
           id: 'a1',
@@ -126,9 +175,8 @@ const boundaries: BoundariesResponse = {
           },
           center_lat: -7.287,
           center_lng: 112.747,
-          rayon_id: 'r1',
-          rayon_name: 'Rayon 1',
-          radius_meters: 100,
+          district_id: 'r1',
+          district_name: 'Rayon 1',
           assigned_count: 2,
           is_understaffed: false,
           staffing_summary: [],
@@ -141,55 +189,89 @@ const boundaries: BoundariesResponse = {
 // Far apart so supercluster keeps them as separate leaves at the test zoom.
 const workers: SimpleWorker[] = [
   { user_id: 'w1', full_name: 'Budi', lat: -7.1, lng: 112.6, status: 'active', role: 'satgas', is_within_area: true, is_scheduled: true },
-  { user_id: 'w2', full_name: 'Sari', lat: -7.45, lng: 112.95, status: 'missing', role: 'linmas', is_within_area: false, is_scheduled: false },
+  { user_id: 'w2', full_name: 'Sari', lat: -7.45, lng: 112.95, status: 'absent', role: 'linmas', is_within_area: false, is_scheduled: false },
 ];
 
 const nodeMarkers = [
   {
     id: 'r1',
     name: 'Rayon 1',
-    variant: 'rayon' as const,
+    variant: 'district' as const,
     lat: -7.29,
     lng: 112.75,
     scheduled: 6,
     clocked_in: 4,
-    not_clocked_in: 2,
+    belum_hadir: 0, tidak_hadir: 2,
+    active: 3,
     active_inside: 3,
   },
 ];
 
 describe('SimpleMonitoringMap', () => {
-  it('draws only the rayon outline at rayon scope (area borders are on-demand)', () => {
-    // Area outlines are deferred to area scope; at rayon scope only the rayon
+  it('draws only the district outline at district scope (area borders are on-demand)', () => {
+    // Area outlines are deferred to area scope; at district scope only the district
     // outline draws + its area BUBBLES (the area polygons stay hidden).
-    render(<SimpleMonitoringMap showWorkers={false} scope="rayon" workers={[]} boundaries={boundaries} />);
+    render(<SimpleMonitoringMap scope="district" workers={[]} boundaries={boundaries} />);
     expect(screen.getAllByTestId('polygon')).toHaveLength(1);
   });
 
-  it('draws the rayon outline + only the SELECTED area polygon at area scope', () => {
+  it('draws the district outline + only the SELECTED location polygon at location scope', () => {
     render(
       <SimpleMonitoringMap
-        showWorkers
-        scope="area"
+
+        scope="location"
         areaId="a1"
         workers={[]}
         boundaries={boundaries}
       />
     );
-    // 1 rayon polygon + 1 selected-area polygon (a1).
+    // 1 district polygon + 1 selected-location polygon (a1).
     expect(screen.getAllByTestId('polygon')).toHaveLength(2);
   });
 
   it('hides area boundaries at the top (Surabaya) scope', () => {
-    render(<SimpleMonitoringMap showWorkers={false} scope="surabaya" workers={[]} boundaries={boundaries} />);
-    // Neither rayon nor area outlines at the Surabaya summary level.
+    render(<SimpleMonitoringMap scope="surabaya" workers={[]} boundaries={boundaries} />);
+    // Neither district nor area outlines at the Surabaya summary level.
     expect(screen.queryAllByTestId('polygon')).toHaveLength(0);
+  });
+
+  it('at region scope draws ONLY the drilled kawasan boundary (others hidden)', () => {
+    const poly = (n: number) => ({
+      type: 'Polygon' as const,
+      coordinates: [[[112.74 + n, -7.28], [112.75 + n, -7.28], [112.75 + n, -7.29], [112.74 + n, -7.28]]],
+    });
+    const withRegions: BoundariesResponse = {
+      generated_at: '2026-01-01T00:00:00Z',
+      districts: [
+        {
+          id: 'r1', name: 'Rayon 1', border_color: null, boundary_polygon: poly(0),
+          center_lat: -7.29, center_lng: 112.75, area_count: 0,
+          is_understaffed: false, understaffed_area_count: 0,
+          regions: [
+            { id: 'k1', name: 'Kawasan 1', border_color: null, boundary_polygon: poly(0), center_lat: -7.28, center_lng: 112.74 },
+            { id: 'k2', name: 'Kawasan 2', border_color: null, boundary_polygon: poly(0.1), center_lat: -7.28, center_lng: 112.84 },
+          ],
+          areas: [],
+        },
+      ],
+    };
+    render(
+      <SimpleMonitoringMap
+
+        scope="region"
+        regionId="k1"
+        workers={[]}
+        boundaries={withRegions}
+      />
+    );
+    // district outline (1) + only kawasan k1 (1); k2 is hidden = 2 polygons total.
+    expect(screen.getAllByTestId('polygon')).toHaveLength(2);
   });
 
   it('node view renders one marker per node and no area pins', () => {
     render(
       <SimpleMonitoringMap
-        showWorkers={false}
+
         nodeMarkers={nodeMarkers}
         workers={[]}
         boundaries={boundaries}
@@ -199,11 +281,42 @@ describe('SimpleMonitoringMap', () => {
     expect(screen.getAllByTestId('marker')).toHaveLength(1);
   });
 
+  it('draws worker pins ALONGSIDE node markers at district scope (no zoom gate)', () => {
+    // At district scope the map now shows the kawasan/lokasi node bubbles AND the
+    // workers on the ground at once — workers no longer replace nodes, and there
+    // is no zoom threshold to cross.
+    render(
+      <SimpleMonitoringMap
+
+        scope="district"
+        nodeMarkers={nodeMarkers}
+        workers={workers}
+        boundaries={boundaries}
+      />
+    );
+    // Node markers + worker pins coexist.
+    expect(screen.getAllByTestId('marker')).toHaveLength(nodeMarkers.length + workers.length);
+  });
+
+  it('draws worker pins ALONGSIDE node markers at city scope too', () => {
+    render(
+      <SimpleMonitoringMap
+        scope="city"
+        nodeMarkers={nodeMarkers}
+        workers={workers}
+        boundaries={boundaries}
+      />
+    );
+    // Workers now render at EVERY level, including city — the district node bubbles
+    // and the people on the ground show together.
+    expect(screen.getAllByTestId('marker')).toHaveLength(nodeMarkers.length + workers.length);
+  });
+
   it('drills when a node marker is clicked', () => {
     const onDrillNode = jest.fn();
     render(
       <SimpleMonitoringMap
-        showWorkers={false}
+
         nodeMarkers={nodeMarkers}
         onDrillNode={onDrillNode}
         workers={[]}
@@ -215,32 +328,17 @@ describe('SimpleMonitoringMap', () => {
   });
 
   it('worker view renders just the workers (no scattered area pins)', () => {
-    render(<SimpleMonitoringMap showWorkers workers={workers} boundaries={boundaries} />);
+    render(<SimpleMonitoringMap workers={workers} boundaries={boundaries} />);
     // Area centre pins are now the overdue-plant overlay only, so without
     // overdueByArea the worker view shows just the 2 (far-apart) worker markers.
     expect(screen.getAllByTestId('marker')).toHaveLength(2);
-  });
-
-  it('shows the selected area pin when the overdue overlay is active', () => {
-    render(
-      <SimpleMonitoringMap
-        showWorkers
-        scope="area"
-        areaId="a1"
-        workers={workers}
-        boundaries={boundaries}
-        overdueByArea={{ a1: 3 }}
-      />
-    );
-    // 2 workers + 1 overdue area pin (scoped to the selected area a1).
-    expect(screen.getAllByTestId('marker')).toHaveLength(3);
   });
 
   it('calls onSelect when a worker marker is clicked', () => {
     const onSelect = jest.fn();
     render(
       <SimpleMonitoringMap
-        showWorkers
+
         workers={workers}
         boundaries={boundaries}
         onSelect={onSelect}
@@ -254,7 +352,7 @@ describe('SimpleMonitoringMap', () => {
   it('pans to the selected worker', () => {
     render(
       <SimpleMonitoringMap
-        showWorkers
+
         workers={workers}
         boundaries={boundaries}
         selectedId="w1"
@@ -264,28 +362,333 @@ describe('SimpleMonitoringMap', () => {
   });
 
   it('registers a native My-Location control (stacked with zoom, no overlap)', () => {
-    render(<SimpleMonitoringMap showWorkers={false} workers={[]} boundaries={null} />);
+    render(<SimpleMonitoringMap workers={[]} boundaries={null} />);
     // createLocateControl pushes the button into the RIGHT_BOTTOM control stack.
     expect(controlStack).toHaveLength(1);
     expect(controlStack[0].getAttribute('aria-label')).toMatch(/fokus ke lokasi saya/i);
   });
 
-  it('hides worker markers when the petugas layer is off', () => {
+  it('hides worker markers when the personnel layer is hidden', () => {
     render(
       <SimpleMonitoringMap
-        showWorkers
         workers={workers}
         boundaries={boundaries}
         layers={{
-          rayon: true,
-          area: true,
-          areaPins: false,
-          petugas: false,
-          overdue: false,
+          district: ['boundary', 'fill', 'marker'],
+          kawasan: ['boundary', 'fill', 'marker'],
+          lokasi: ['boundary', 'fill', 'marker'],
+          personnel: [],
+          plants: [],
         }}
       />
     );
-    // Only the rayon + area polygons (no worker/area markers).
+    // Only the district + area polygons (no worker markers).
     expect(screen.queryAllByTestId('marker')).toHaveLength(0);
+  });
+
+  it('culls worker pins outside the viewport, but never the selected one', () => {
+    // The fake map reports bounds lat -7.5..-7.0 / lng 112.5..113.0 on idle.
+    const offscreen: SimpleWorker[] = [
+      { user_id: 'far', full_name: 'Jauh', lat: 0, lng: 0, status: 'active', role: 'satgas', is_within_area: true, is_scheduled: true },
+      ...workers,
+    ];
+    const { rerender } = render(
+      <SimpleMonitoringMap workers={offscreen} boundaries={boundaries} />
+    );
+    // Both in-viewport workers paint; null island does not.
+    const culled = screen.queryAllByTestId('marker').length;
+    expect(culled).toBe(workers.length);
+
+    // Selecting it from the sidebar must keep it drawn even while off-camera —
+    // the map pans to it next, and a pin that blinks out and back reads as a bug.
+    rerender(
+      <SimpleMonitoringMap workers={offscreen} boundaries={boundaries} selectedId="far" />
+    );
+    expect(screen.queryAllByTestId('marker').length).toBe(culled + 1);
+  });
+
+  it('zoom mode draws lokasi outlines at city scope; drill mode does not', () => {
+    const drill = render(
+      <SimpleMonitoringMap
+        scope="city"
+        nodeMarkers={nodeMarkers}
+        workers={[]}
+        boundaries={boundaries}
+      />
+    );
+    const drillPolys = drill.container.querySelectorAll('[data-testid="polygon"]').length;
+    drill.unmount();
+
+    const zoom = render(
+      <SimpleMonitoringMap
+        scope="city"
+        mode="zoom"
+        nodeMarkers={nodeMarkers}
+        workers={[]}
+        boundaries={boundaries}
+      />
+    );
+    // Zoom mode turns on the kawasan + lokasi outline gates that drill mode keeps
+    // shut until you are inside a rayon.
+    expect(
+      zoom.container.querySelectorAll('[data-testid="polygon"]').length
+    ).toBeGreaterThanOrEqual(drillPolys);
+  });
+
+  it('draws the outline but no node marker on "batas saja"', () => {
+    render(
+      <SimpleMonitoringMap
+        nodeMarkers={[
+          {
+            id: 'd1',
+            name: 'Rayon Barat',
+            variant: 'district',
+            lat: -7.25,
+            lng: 112.75,
+            scheduled: 4,
+            clocked_in: 2,
+            belum_hadir: 1,
+            tidak_hadir: 1,
+            active: 2,
+            active_inside: 2,
+          },
+        ]}
+        workers={[]}
+        boundaries={boundaries}
+        layers={{
+          district: ['boundary', 'fill'],
+          kawasan: ['boundary', 'fill', 'marker'],
+          lokasi: ['boundary', 'fill', 'marker'],
+          personnel: [],
+          plants: [],
+        }}
+      />
+    );
+    // The rayon polygon still draws; its count pin does not. Node markers used to
+    // be ungated entirely, so this is the case the facet checkboxes exist to allow.
+    expect(screen.queryAllByTestId('polygon').length).toBeGreaterThan(0);
+    expect(screen.queryAllByTestId('marker')).toHaveLength(0);
+  });
+
+  it('draws the outline without the fill when only the boundary facet is on', () => {
+    // The combination the four-way select had no word for: "Batas saja" always
+    // brought the fill with it, so a fill-free outline was unrequestable.
+    render(
+      <SimpleMonitoringMap
+        workers={[]}
+        boundaries={boundaries}
+        layers={{
+          district: ['boundary'],
+          kawasan: [],
+          lokasi: [],
+          personnel: [],
+          plants: [],
+        }}
+      />
+    );
+    const polys = screen.queryAllByTestId('polygon');
+    expect(polys.length).toBeGreaterThan(0);
+    for (const p of polys) {
+      expect(p.getAttribute('data-fill-opacity')).toBe('0');
+      expect(Number(p.getAttribute('data-stroke-opacity'))).toBeGreaterThan(0);
+    }
+  });
+
+  it('draws the fill without the outline when only the fill facet is on', () => {
+    render(
+      <SimpleMonitoringMap
+        workers={[]}
+        boundaries={boundaries}
+        layers={{
+          district: ['fill'],
+          kawasan: [],
+          lokasi: [],
+          personnel: [],
+          plants: [],
+        }}
+      />
+    );
+    const polys = screen.queryAllByTestId('polygon');
+    // Gating the Polygon on the boundary facet alone would drop it entirely.
+    expect(polys.length).toBeGreaterThan(0);
+    for (const p of polys) {
+      expect(p.getAttribute('data-stroke-opacity')).toBe('0');
+      expect(Number(p.getAttribute('data-fill-opacity'))).toBeGreaterThan(0);
+    }
+  });
+
+  it('fits the initial view to GEOGRAPHY, ignoring where workers stand', () => {
+    // One satgas outside the city used to drag the opening view out to contain
+    // them — a worker in Jakarta turned the first frame into the whole of Java
+    // with Surabaya an unreadable smudge. The served region is a property of
+    // the data, not of where somebody happens to be standing.
+    render(
+      <SimpleMonitoringMap
+        workers={[
+          {
+            user_id: 'far',
+            full_name: 'Jauh',
+            lat: -6.2,
+            lng: 106.8, // Jakarta
+            status: 'active',
+            role: 'satgas',
+            is_within_area: false,
+            is_scheduled: true,
+          },
+        ]}
+        boundaries={boundaries}
+      />
+    );
+
+    const extended = (globalThis as any).__boundsExtended as Array<{ lat: number; lng: number }>;
+    expect(extended.length).toBeGreaterThan(0);
+    expect(extended.some((p) => p.lng > 100 && p.lng < 110)).toBe(false);
+  });
+});
+
+describe('progressive reveal (viewport mode)', () => {
+  afterEach(() => {
+    fakeZoom = 16;
+  });
+
+  /** Two kawasan at effectively the same spot — guaranteed to share a screen cell at zoom 11. */
+  const stacked = (over: Partial<NodeMarker> = {}): NodeMarker[] => [
+    {
+      id: 'calm',
+      name: 'Kawasan Tenang',
+      variant: 'region',
+      lat: -7.28,
+      lng: 112.74,
+      scheduled: 8,
+      clocked_in: 8,
+      belum_hadir: 0,
+      tidak_hadir: 0,
+      active: 8,
+      active_inside: 8,
+      ...over,
+    },
+    {
+      id: 'outage',
+      name: 'Kawasan Kosong',
+      variant: 'region',
+      lat: -7.28001,
+      lng: 112.74,
+      scheduled: 8,
+      clocked_in: 0,
+      belum_hadir: 0,
+      tidak_hadir: 8,
+      active: 0,
+      active_inside: 0,
+    },
+  ];
+
+  it('promotes the area with nobody clocked in over the calm one beside it', () => {
+    // The client's complaint, asserted: in a crowd, the map must draw the thing
+    // that is wrong, not whichever happened to be first in the array.
+    render(
+      <SimpleMonitoringMap
+        mode="viewport"
+        scope="city"
+        workers={[]}
+        boundaries={boundaries}
+        nodeMarkers={stacked()}
+      />
+    );
+    const dots = screen.getAllByTestId('marker').filter((m) => m.dataset.dot === '1');
+    expect(dots).toHaveLength(1);
+    expect(dots[0].getAttribute('title')).toBe('Kawasan Tenang');
+  });
+
+  it('draws a drilled rayon\'s lokasi at city zoom, not an empty map', () => {
+    // The reported defect: "Rayon Taman Aktif" spans the whole city, so drilling
+    // into it leaves the camera at zoom 11 — under the lokasi threshold — and
+    // the map showed nothing at all behind a "zoom in" hint, despite having only
+    // 42 lokasi and 3 petugas to draw.
+    fakeZoom = 11; // whole city on screen — under the lokasi threshold
+    const lokasi: NodeMarker[] = [
+      {
+        id: 'lok-1',
+        name: 'Taman Bungkul',
+        variant: 'location',
+        lat: -7.29,
+        lng: 112.74,
+        scheduled: 3,
+        clocked_in: 3,
+        belum_hadir: 0,
+        tidak_hadir: 0,
+        active: 3,
+        active_inside: 3,
+      },
+    ];
+    render(
+      <SimpleMonitoringMap
+        mode="viewport"
+        scope="district"
+        workers={[]}
+        boundaries={boundaries}
+        nodeMarkers={lokasi}
+      />
+    );
+    expect(screen.getAllByTestId('marker').map((m) => m.getAttribute('title'))).toContain(
+      'Taman Bungkul'
+    );
+  });
+
+  it('still withholds lokasi at city scope, where the subtree is the whole city', () => {
+    // The one place the zoom gate still earns its keep.
+    fakeZoom = 11; // whole city on screen — under the lokasi threshold
+    const lokasi: NodeMarker[] = [
+      {
+        id: 'lok-1',
+        name: 'Taman Bungkul',
+        variant: 'location',
+        lat: -7.29,
+        lng: 112.74,
+        scheduled: 3,
+        clocked_in: 3,
+        belum_hadir: 0,
+        tidak_hadir: 0,
+        active: 3,
+        active_inside: 3,
+      },
+    ];
+    render(
+      <SimpleMonitoringMap
+        mode="viewport"
+        scope="city"
+        workers={[]}
+        boundaries={boundaries}
+        nodeMarkers={lokasi}
+      />
+    );
+    expect(screen.queryAllByTestId('marker').map((m) => m.getAttribute('title'))).not.toContain(
+      'Taman Bungkul'
+    );
+  });
+
+  it('leaves drill mode completely alone', () => {
+    // The load-bearing regression guard for this whole feature.
+    render(
+      <SimpleMonitoringMap
+        scope="city"
+        workers={[]}
+        boundaries={boundaries}
+        nodeMarkers={stacked()}
+      />
+    );
+    expect(screen.getAllByTestId('marker').filter((m) => m.dataset.dot === '1')).toHaveLength(0);
+  });
+
+  it('leaves zoom mode completely alone', () => {
+    render(
+      <SimpleMonitoringMap
+        mode="zoom"
+        scope="city"
+        workers={[]}
+        boundaries={boundaries}
+        nodeMarkers={stacked()}
+      />
+    );
+    expect(screen.getAllByTestId('marker').filter((m) => m.dataset.dot === '1')).toHaveLength(0);
   });
 });

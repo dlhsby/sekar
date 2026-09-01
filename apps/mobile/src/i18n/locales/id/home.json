@@ -4,7 +4,7 @@
       "shiftTime": "Waktu shift: {{hours}} jam {{minutes}} menit"
     },
     "sections": {
-      "attendance": "Kehadiran saya",
+      "attendance": "Kehadiran",
       "summary": "Ringkasan hari ini"
     },
     "alerts": {
@@ -29,6 +29,7 @@
         "clockInStart": "Mulai clock in",
         "status": "Status Kehadiran",
         "assignedArea": "Area Ditugaskan",
+        "areaStatus": "Status Area",
         "duration": "Durasi shift berjalan",
         "currentLocation": "Lokasi sekarang"
       },
@@ -50,6 +51,7 @@
         "title": "Mulai shift hari ini",
         "assignedArea": "Area: {{area}}"
       },
+      "nextShift": "Berikutnya: {{shift}}",
       "a11y": {
         "onDuty": "Sedang bertugas",
         "overtimeActive": "Lembur aktif",
@@ -66,11 +68,22 @@
     },
     "warning": {
       "noAssignedArea": "Anda belum ditugaskan ke area manapun."
+    },
+    "schedule": {
+      "shift": "Shift",
+      "assignment": "Penugasan",
+      "team": "Tim",
+      "noAssignment": "Tanpa penugasan",
+      "none": "Tidak ada jadwal hari ini",
+      "viewAll": "Lihat jadwal lengkap →",
+      "a11y": {
+        "open": "Buka jadwal saya"
+      }
     }
   },
   "fallbacks": {
     "you": "Anda",
-    "noRayon": "Tanpa rayon"
+    "noDistrict": "Tanpa rayon"
   },
   "coordinator": {
     "sections": {
@@ -180,7 +193,7 @@
   "exec": {
     "sections": {
       "summary": "Ringkasan hari ini",
-      "perRayon": "Per rayon"
+      "perDistrict": "Per rayon"
     },
     "hero": {
       "button": {
@@ -197,7 +210,7 @@
       "offline": "Offline",
       "outOfArea": "Di luar area"
     },
-    "rayon": {
+    "district": {
       "detail": "{{active}} aktif dari {{total}} petugas",
       "status": "{{active}}/{{total}}"
     }

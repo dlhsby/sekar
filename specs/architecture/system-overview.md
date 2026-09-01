@@ -87,7 +87,7 @@ Mobile architecture prioritizes offline operation:
 - File upload coordination
 - API rate limiting (Phase 2+)
 
-**Current Status:** Phases 1–5 shipped (33 modules, ~218 endpoints). See `specs/COMPLETION_STATUS.md` for current metrics.
+**Current Status:** shipped through UAT (34 backend modules, ~246 route handlers). See [`../COMPLETION_STATUS.md`](../COMPLETION_STATUS.md) for current metrics.
 
 ### 2. Mobile Application (React Native)
 
@@ -439,20 +439,20 @@ Deploy Method: GitHub OIDC → ECR → SSM (no Elastic Beanstalk)
 
 ## Phase 2E: Planned Architecture Changes (Client Feedback II)
 
-> **Full specification:** See [`specs/phases/phase-2-e-client-feedback-2/`](../phases/phase-2-e-client-feedback-2/)
+> **Full specification:** See [build history](../history/CHANGELOG.md)
 > **ADRs:** [ADR-012](./decisions/ADR-012-phone-number-login.md), [ADR-013](./decisions/ADR-013-multi-area-assignment.md), [ADR-014](./decisions/ADR-014-overtime-clock-in-flow.md), [ADR-015](./decisions/ADR-015-audit-trail.md)
 
 ### Key Architectural Changes
 
 1. **Dual-Identifier Authentication (ADR-012):** Login accepts phone number OR username via `identifier` field. New `phone_number` column on users with unique partial index.
 
-2. **Multi-Area Assignment Model (ADR-013):** New `user_areas` junction table replaces single `users.area_id` for korlap. Supports `permanent` (admin-assigned) and `task_based` (auto-computed from active tasks) types. `users.area_id` kept for backward compatibility.
+2. **Multi-Area Assignment Model (ADR-013):** New `user_locations` junction table replaces single `users.location_id` for korlap. Supports `permanent` (admin-assigned) and `task_based` (auto-computed from active tasks) types. `users.location_id` kept for backward compatibility.
 
 3. **Overtime as Flagged Shift (ADR-014):** Overtime reuses shift infrastructure with `shifts.is_overtime` boolean. New `overtimes.shift_id` FK links overtime record to its clock-in/out shift. Requires normal shift clock-out before overtime clock-in.
 
 4. **Generic Audit Trail (ADR-015):** New `audit_logs` table with JSONB `old_value`/`new_value` for tracking entity changes. Append-only, `actor_id` uses `ON DELETE RESTRICT` for immutability. BRIN index for time-range queries.
 
-5. **Expanded Clockable Roles:** `CLOCKABLE_ROLES` expands from [satgas, linmas, korlap] to include admin_data, kepala_rayon. Rayon-level boundary checking for admin_data/kepala_rayon (uses `rayons.boundary_polygon`).
+5. **Expanded Clockable Roles:** `CLOCKABLE_ROLES` expands from [satgas, linmas, korlap] to include admin_rayon, kepala_rayon. Rayon-level boundary checking for admin_rayon/kepala_rayon (uses `rayons.boundary_polygon`).
 
 ### Breaking Changes
 - Login API: `{ username, password }` → `{ identifier, password }`

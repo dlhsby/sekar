@@ -211,7 +211,6 @@ export function isWithinAreaBoundary(
       | null;
     gps_lat?: number | null;
     gps_lng?: number | null;
-    radius_meters?: number | null;
   },
 ): boolean {
   // 1. Polygon / MultiPolygon check (preferred) — check each outer ring.
@@ -220,7 +219,7 @@ export function isWithinAreaBoundary(
   //
   // Defensive: only trust the geometry when `coordinates` is an array of the
   // expected depth. Some legacy callers/tests pass a bare ring or `[[lng,lat],
-  // ...]` directly; in that case we fall through to the radius check.
+  // ...]` directly; in that case we fail open below.
   const geom = area.boundary_polygon as { type?: string; coordinates?: unknown } | null | undefined;
   if (geom && Array.isArray(geom.coordinates)) {
     let rings: [number, number][][] = [];
@@ -240,23 +239,11 @@ export function isWithinAreaBoundary(
     }
   }
 
-  // 2. Radius fallback
-  if (
-    area.gps_lat != null &&
-    area.gps_lng != null &&
-    area.radius_meters != null &&
-    area.radius_meters > 0
-  ) {
-    return isWithinBoundary(
-      lat,
-      lng,
-      Number(area.gps_lat),
-      Number(area.gps_lng),
-      Number(area.radius_meters),
-    );
-  }
-
-  // 3. No boundary defined — allow
+  // No usable ring — fail OPEN, matching the backend (`GpsUtil.isWithinAreaBoundary`).
+  // An un-mapped lokasi must not mark a worker standing in it as outside-area.
+  // The radius fallback that used to sit here is retired: `radius_meters` was
+  // never data (every row carried a hardcoded 100) and migration
+  // 17504000000000 converted the radius-only lokasi into real polygons.
   return true;
 }
 

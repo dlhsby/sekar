@@ -12,16 +12,42 @@ import {
   nbShadows,
 } from '../../constants/nbTokens';
 import { formatDateTime } from '../../utils/dateUtils';
-import { calculateDistance } from '../../utils/gpsUtils';
+import { calculateDistance, isWithinAreaBoundary } from '../../utils/gpsUtils';
 import type { Shift } from '../../types/models.types';
 
 interface ShiftDetailModalProps {
   visible: boolean;
   onClose: () => void;
   shift: Shift | null;
+  /**
+   * Assignment scope label when the shift has no lokasi (kota/rayon/kawasan
+   * scope). Without it the modal said "Area: Tidak diketahui" and flagged
+   * "Luar Area / 0m" for a worker who was correctly assigned city-wide — there
+   * was simply no polygon to be inside of.
+   */
+  scopeLabel?: string | null;
+  // ── The card was simplified to two pills; the detail it used to show now lives
+  // here (all optional so other callers of this modal are unaffected). ──
+  /** "Shift 3 · 21:00–05:00". */
+  shiftText?: string | null;
+  /** Elapsed shift time "HH:MM". */
+  durationText?: string | null;
+  /** Live wall clock → "Waktu Sekarang". */
+  currentTime?: Date | string | null;
+  /** Live GPS → "Lokasi sekarang". */
+  currentLocation?: { latitude: number | null; longitude: number | null; accuracy: number | null } | null;
 }
 
-export function ShiftDetailModal({ visible, onClose, shift }: ShiftDetailModalProps) {
+export function ShiftDetailModal({
+  visible,
+  onClose,
+  shift,
+  scopeLabel,
+  shiftText,
+  durationText,
+  currentTime,
+  currentLocation,
+}: ShiftDetailModalProps) {
   const { t: tAttendance } = useTranslation('attendance');
   const { t } = useTranslation();
 
@@ -34,13 +60,22 @@ export function ShiftDetailModal({ visible, onClose, shift }: ShiftDetailModalPr
     ) {
       return { isInside: false, distance: 0 };
     }
+    // Distance is still to the centre — that is what the UI reports. But
+    // containment now uses the lokasi's POLYGON, via the same helper the backend
+    // mirrors. It used to be `distance <= (radius_meters ?? 100)`, which was a
+    // circle the server had already stopped believing in: `radius_meters` is
+    // retired, so that `?? 100` would have silently invented a geofence the
+    // server does not share.
     const distance = calculateDistance(
       shift.clock_in_gps_lat,
       shift.clock_in_gps_lng,
       shift.area.gps_lat,
       shift.area.gps_lng,
     );
-    return { isInside: distance <= (shift.area.radius_meters ?? 100), distance };
+    return {
+      isInside: isWithinAreaBoundary(shift.clock_in_gps_lat, shift.clock_in_gps_lng, shift.area),
+      distance,
+    };
   }, [shift]);
 
   const { isInside, distance } = locationStatus;
@@ -61,12 +96,20 @@ export function ShiftDetailModal({ visible, onClose, shift }: ShiftDetailModalPr
         </View>
       ) : (
         <View>
+          {!!shiftText && (
+            <InfoRow icon="calendar-clock" label={tAttendance('infoCard.shift')}>
+              <NBText variant="body" color="black">{shiftText}</NBText>
+            </InfoRow>
+          )}
+
           <InfoRow
             icon="map-marker"
             label={tAttendance('shiftDetail.area')}
             even
           >
-            <NBText variant="body" color="black">{shift.area?.name || tAttendance('shifts.unknown')}</NBText>
+            <NBText variant="body" color="black">
+              {shift.area?.name || scopeLabel || tAttendance('shifts.unknown')}
+            </NBText>
             {!!shift.area?.address && (
               <NBText variant="caption" color="gray600">{shift.area.address}</NBText>
             )}
@@ -77,9 +120,9 @@ export function ShiftDetailModal({ visible, onClose, shift }: ShiftDetailModalPr
             )}
           </InfoRow>
 
-          {!!shift.area?.areaType?.name && (
+          {!!shift.area?.locationType?.name && (
             <InfoRow icon="office-building" label={tAttendance('shiftDetail.areaType')}>
-              <NBText variant="body" color="black">{shift.area.areaType.name}</NBText>
+              <NBText variant="body" color="black">{shift.area.locationType.name}</NBText>
             </InfoRow>
           )}
 
@@ -95,7 +138,35 @@ export function ShiftDetailModal({ visible, onClose, shift }: ShiftDetailModalPr
             </NBText>
           </InfoRow>
 
-          {/* Location validation */}
+          {!!durationText && (
+            <InfoRow icon="timer-outline" label={tAttendance('infoCard.duration')} even>
+              <NBText variant="body" color="black">{durationText}</NBText>
+            </InfoRow>
+          )}
+
+          {!!currentTime && (
+            <InfoRow icon="clock-outline" label={tAttendance('infoCard.currentTime')}>
+              <NBText variant="body" color="black">{formatDateTime(currentTime)}</NBText>
+            </InfoRow>
+          )}
+
+          {!!currentLocation && currentLocation.latitude != null && currentLocation.longitude != null && (
+            <InfoRow icon="map-marker-radius-outline" label={tAttendance('infoCard.currentLocation')} even>
+              <NBText variant="mono-sm" color="black">
+                {`${currentLocation.latitude.toFixed(6)}, ${currentLocation.longitude.toFixed(6)}`}
+              </NBText>
+              {currentLocation.accuracy != null && (
+                <NBText variant="caption" color="gray600">
+                  {tAttendance('infoCard.accuracy', { value: Math.round(currentLocation.accuracy) })}
+                </NBText>
+              )}
+            </InfoRow>
+          )}
+
+          {/* Location validation — only meaningful when there IS a boundary.
+              A kota/rayon/kawasan-scope shift has none, so showing "Luar Area, 0m"
+              was reporting a violation that cannot exist. */}
+          {!shift.area ? null : (
           <View
             style={[
               styles.validationSection,
@@ -143,10 +214,10 @@ export function ShiftDetailModal({ visible, onClose, shift }: ShiftDetailModalPr
 
               <View style={styles.metricsRow}>
                 <MetricTile label={tAttendance('shiftDetail.distance')} value={`${Math.round(distance)}m`} />
-                <MetricTile label={tAttendance('shiftDetail.radius')} value={`${shift.area?.radius_meters || 100}m`} />
               </View>
             </View>
           </View>
+          )}
         </View>
       )}
     </NBModal>
@@ -223,8 +294,10 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     fontWeight: '600',
   },
+  // Values align to the right so every row reads label-left / value-right.
   rowValue: {
     flex: 1,
+    alignItems: 'flex-end',
   },
   // Validation section
   validationSection: {

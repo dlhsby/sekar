@@ -218,9 +218,14 @@ describe('offlineQueue - Uncovered Scenarios', () => {
 
       await offlineQueue.clearOrphanedItems();
 
+      // Item '2' is PENDING with no user_id. It used to be deleted here, on the
+      // reasoning that a missing owner means a foreign leftover — but a forced
+      // logout wipes the storage `user_id` is read from, so that is also the
+      // shape of a worker's own unsent ping. Only the explicitly-orphaned item
+      // ('3') goes. `syncManager` syncs by status, not by owner, so '2' still
+      // reaches the server.
       const remaining = await offlineQueue.getQueuedItems();
-      expect(remaining).toHaveLength(1);
-      expect(remaining[0].id).toBe('1');
+      expect(remaining.map((item) => item.id)).toEqual(['1', '2']);
     });
   });
 

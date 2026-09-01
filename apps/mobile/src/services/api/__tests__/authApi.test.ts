@@ -32,11 +32,11 @@ describe('authApi', () => {
       };
       (apiClient.post as jest.Mock).mockResolvedValue(mockResponse);
 
-      const result = await login('worker1', 'Password123!');
+      const result = await login('worker1', '12345678');
 
       expect(apiClient.post).toHaveBeenCalledWith('/auth/login', {
         identifier: 'worker1',
-        password: 'Password123!',
+        password: '12345678',
       });
       expect(result).toEqual(mockResponse);
     });

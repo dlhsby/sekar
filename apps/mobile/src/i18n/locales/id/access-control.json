@@ -1,0 +1,56 @@
+{
+  "title": "Manajemen Peran",
+  "subtitle": "Kelola peran, izin, cakupan monitoring, dan penanda peta",
+  "addRole": "Tambah Peran",
+  "roleList": "Daftar Peran",
+  "systemBadge": "Sistem",
+  "counts": {
+    "permissions": "{{count}} izin",
+    "users": "{{count}} pengguna"
+  },
+  "empty": {
+    "selectRole": "Pilih peran untuk melihat dan mengubah izin",
+    "noPermissions": "Belum ada izin",
+    "loadError": "Gagal memuat data peran"
+  },
+  "superuser": "Peran ini memiliki semua izin (superuser) dan tidak dapat diubah izinnya.",
+  "fields": {
+    "name": "Nama Peran",
+    "namePlaceholder": "mis. Pengawas Taman",
+    "description": "Deskripsi",
+    "scope": "Cakupan Monitoring",
+    "markerIcon": "Ikon Penanda",
+    "markerIconPlaceholder": "mis. shield",
+    "markerColor": "Warna Penanda"
+  },
+  "scope": {
+    "city": "Seluruh Kota (Surabaya)",
+    "district": "Rayon",
+    "region": "Kawasan",
+    "location": "Lokasi",
+    "none": "Tanpa Monitoring"
+  },
+  "permissions": {
+    "title": "Izin",
+    "selectedOfTotal": "{{selected}}/{{total}}"
+  },
+  "actions": {
+    "save": "Simpan",
+    "saving": "Menyimpan…",
+    "delete": "Hapus Peran",
+    "create": "Buat",
+    "cancel": "Batal"
+  },
+  "dialog": {
+    "createTitle": "Tambah Peran Baru",
+    "createHint": "Peran baru dibuat tanpa izin. Pilih izin lalu simpan.",
+    "deleteTitle": "Hapus Peran",
+    "deleteMessage": "Hapus peran \"{{name}}\"? Tindakan ini tidak dapat dibatalkan."
+  },
+  "toast": {
+    "created": "Peran \"{{name}}\" dibuat",
+    "updated": "Peran \"{{name}}\" diperbarui",
+    "deleted": "Peran dihapus"
+  },
+  "denied": "Anda tidak memiliki akses ke manajemen peran"
+}

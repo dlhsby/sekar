@@ -16,7 +16,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
  * - Overtime submission with activity (Satgas, Linmas)
  * - Overtime approval/rejection (Korlap)
  * - Activity type validation
- * - Area-scoped approvals
+ * - Location-scoped approvals
  */
 @Module({
   imports: [

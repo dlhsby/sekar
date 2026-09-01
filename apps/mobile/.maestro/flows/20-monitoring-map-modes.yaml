@@ -1,0 +1,147 @@
+appId: com.wahyutrip.sekar
+---
+# 20-monitoring-map-modes.yaml
+# Monitoring map settings (ADR-060) — the wrench sheet: mode + layer selects.
+# Scenario: log in as a supervisor, open the map, open the tools sheet, switch to
+#          zoom mode, and cycle the KAWASAN layer through its four options.
+#
+# Why this flow exists: mobile drilled THROUGH the kawasan tier while never
+# drawing it — the boundary payload's regions[] had no field on the client and
+# was discarded on arrival. There was no control for it either, so nothing on
+# screen could have revealed the gap. The kawasan row below is the regression.
+#
+# NOTE ON SYNTAX: this flow uses `extendedWaitUntil` / `waitForAnimationToEnd`.
+# Maestro has no bare `wait` command — every other flow in this directory uses
+# one and therefore fails to parse on Maestro 2.x.
+
+# NOT clearState: this flow is about the map, not onboarding. A cleared install
+# opens the welcome carousel, so the skip below handles a first launch without
+# making every run pay for it.
+- launchApp
+
+# Wait for the JS bundle to actually mount before deciding which screen we are
+# on. A conditional evaluated straight after launchApp always sees an empty
+# hierarchy — React Native needs seconds here, and far longer on a software-GPU
+# emulator. The regex covers both landing screens.
+- extendedWaitUntil:
+    visible: "Lewati|Lanjut|Masuk|Nama pengguna"
+    timeout: 120000
+
+# Match the LABEL, not the container id: `carousel-skip` wraps the button and
+# carries no text of its own, so Maestro's visibility check never matched it.
+- runFlow:
+    when:
+      visible: "Lewati"
+    commands:
+      # "Lewati" jumps to the LAST slide, not to login — the carousel still
+      # wants its final confirm. Skipping that second tap leaves the flow
+      # stranded on slide 4 with a misleading "element not found" on the login
+      # field.
+      - tapOn: "Lewati"
+      # The label is "Mulai (Masuk)" and Maestro treats selectors as REGEX, so
+      # the parentheses would be read as a capture group and never match.
+      - extendedWaitUntil:
+          visible: "Mulai.*"
+          timeout: 30000
+      - tapOn: "Mulai.*"
+      - waitForAnimationToEnd:
+          timeout: 8000
+
+- extendedWaitUntil:
+    visible:
+      id: username-input
+    timeout: 60000
+
+# kepala_rayon lands on the rayon scope; superadmin would open at city.
+- tapOn:
+    id: username-input
+- inputText: kepala_rayon_pusat_1
+
+- tapOn:
+    id: password-input
+- inputText: 12345678
+
+- tapOn:
+    id: login-button
+
+- extendedWaitUntil:
+    visible:
+      text: "Beranda|Monitoring|Peta"
+    timeout: 30000
+
+# Open the map dashboard
+- tapOn:
+    text: "Monitoring|Peta"
+
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# The tools (wrench) FAB owns Mode + the layer selects.
+- tapOn:
+    text: "Alat peta|Alat"
+
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# ── Mode ────────────────────────────────────────────────────────────────────
+# Default is tap-to-drill, so nobody's map gets heavier without asking.
+- assertVisible:
+    text: "Mode Monitoring|Monitoring Mode"
+
+- assertVisible:
+    text: "Ketuk & Telusuri|Tap & Drill"
+
+# Switch to zoom: every tier of the subtree draws at once.
+- tapOn:
+    text: "Ketuk & Telusuri|Tap & Drill"
+
+- extendedWaitUntil:
+    visible:
+      text: "Zoom"
+    timeout: 10000
+
+# ── Layers ──────────────────────────────────────────────────────────────────
+- assertVisible:
+    text: "Tampilan|Lapisan"
+
+# Kawasan is the row that did not exist before — mobile could neither show nor
+# hide a tier it drilled through.
+- assertVisible:
+    text: "Kawasan"
+
+# Each geo row now carries THREE independent chips instead of one cycling value.
+# "Isian" (fill) is the one the old four-way select had no word for at all: its
+# "Batas saja" silently meant outline AND fill.
+- assertVisible:
+    text: "Batas"
+- assertVisible:
+    text: "Isian"
+- assertVisible:
+    text: "Marker"
+
+# Untick fill on the kawasan row, then the outline: the chips are independent, so
+# each tap changes exactly one thing (the old row needed up to 3 taps to get here
+# and hid the options you were not on).
+- tapOn:
+    text: "Isian"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- tapOn:
+    text: "Batas"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Petugas + Tim are the same control shape. Tim alone is now a legal state — it
+# means "teams only", and the map collapses non-team workers out of view.
+- assertVisible:
+    text: "Petugas & Tim|Personnel"
+
+# MANUAL: with the sheet closed, confirm on-device that
+#   1. KAWASAN OUTLINES actually draw (they never did before this change) and
+#      disappear when both Batas and Isian are unticked;
+#   2. unticking ISIAN alone leaves the outline and removes the wash — the two
+#      were inseparable under every earlier version of this control;
+#   3. in Zoom mode the city view draws every rayon, kawasan and lokasi at once.
+#      On a large dataset this is the heavy case by design; note whether it is
+#      usable on the target device, because that is the trade the client accepted.

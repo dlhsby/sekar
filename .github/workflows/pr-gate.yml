@@ -38,13 +38,13 @@ jobs:
               - '.github/workflows/pr-gate.yml'
             web:
               - 'apps/web/**'
-              - 'specs/ui-ux/tokens.json'
+              - 'specs/design-system/tokens.json'
               - 'tools/eslint-plugin-sekar-design/**'
               - '.github/workflows/web-quality.yml'
               - '.github/workflows/pr-gate.yml'
             mobile:
               - 'apps/mobile/**'
-              - 'specs/ui-ux/tokens.json'
+              - 'specs/design-system/tokens.json'
               - 'scripts/build-tokens.ts'
               - 'tools/eslint-plugin-sekar-design/**'
               - '.github/workflows/mobile-quality.yml'
@@ -65,9 +65,23 @@ jobs:
     if: needs.detect.outputs.mobile == 'true'
     uses: ./.github/workflows/mobile-quality.yml
 
+  # Cross-cutting, so it is NOT path-filtered: an edit in web or mobile SOURCE can
+  # break a key without touching a single locale file, which is exactly the defect
+  # invariant 4 exists to catch. Needs no npm install (node builtins only), so
+  # running it on every PR costs seconds.
+  i18n:
+    name: i18n parity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node scripts/i18n-parity-check.mjs
+
   gate:
     name: gate
-    needs: [detect, backend, web, mobile]
+    needs: [detect, backend, web, mobile, i18n]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -77,11 +91,16 @@ jobs:
           be='${{ needs.backend.result }}'
           web='${{ needs.web.result }}'
           mob='${{ needs.mobile.result }}'
-          echo "detect=$det backend=$be web=$web mobile=$mob"
+          i18n='${{ needs.i18n.result }}'
+          echo "detect=$det backend=$be web=$web mobile=$mob i18n=$i18n"
           if [ "$det" != "success" ]; then
             echo "::error::change detection failed ($det) — cannot determine which suites to run"; exit 1
           fi
           fail=0
+          # i18n is unconditional, so unlike the others it must never be "skipped".
+          if [ "$i18n" != "success" ]; then
+            echo "::error::i18n parity check did not pass ($i18n)"; fail=1
+          fi
           for r in "$be" "$web" "$mob"; do
             case "$r" in
               success|skipped|"") : ;;            # skipped = component unchanged → OK

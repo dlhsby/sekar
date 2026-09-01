@@ -115,13 +115,30 @@ async function bootstrap() {
   app.use(bodyParser.json({ limit: '15mb' }));
   app.use(bodyParser.urlencoded({ limit: '15mb', extended: true }));
 
-  // Enable CORS with secure defaults
-  const corsOrigin = process.env.CORS_ORIGIN?.split(',');
-  if (!corsOrigin && process.env.NODE_ENV === 'production') {
+  // Enable CORS. Production: strict allowlist from CORS_ORIGIN (required).
+  // Development: allow any localhost / 127.0.0.1 origin on ANY port (so changing
+  // the web dev port via WEB_PORT never breaks cross-origin calls) plus any
+  // origins explicitly listed in CORS_ORIGIN.
+  const isProduction = process.env.NODE_ENV === 'production';
+  const configuredOrigins = process.env.CORS_ORIGIN?.split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+  if (!configuredOrigins && isProduction) {
     throw new Error('CORS_ORIGIN must be set in production environment');
   }
+  const isLocalhostOrigin = (origin: string): boolean =>
+    /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
   app.enableCors({
-    origin: corsOrigin || ['http://localhost:3001', 'http://localhost:19006'],
+    origin: isProduction
+      ? configuredOrigins
+      : (origin, callback) => {
+          // No Origin header (curl / same-origin / mobile WebView) → allow.
+          if (!origin || isLocalhostOrigin(origin) || configuredOrigins?.includes(origin)) {
+            callback(null, true);
+            return;
+          }
+          callback(null, false);
+        },
     credentials: true,
   });
 
@@ -160,17 +177,17 @@ async function bootstrap() {
     .setVersion('1.0')
     .addTag('auth', 'Authentication endpoints')
     .addTag('users', 'User management endpoints')
-    .addTag('area-types', 'Area type management endpoints')
-    .addTag('areas', 'Area management endpoints')
+    .addTag('area-types', 'Location type management endpoints')
+    .addTag('areas', 'Location management endpoints')
     .addTag('shifts', 'Worker shift tracking endpoints')
     .addTag('reports', 'Work report endpoints')
     .addTag('location', 'Location tracking endpoints')
     .addTag('supervisor', 'Management dashboard endpoints (Korlap, Kepala Rayon, Top Management)')
     // Phase 2 tags
-    .addTag('rayons', 'Rayon (geographic sector) management endpoints')
+    .addTag('districts', 'District (geographic sector) management endpoints')
     .addTag('shift-definitions', 'Shift definition endpoints')
     .addTag('activity-types', 'Activity type management endpoints')
-    .addTag('area-staff-requirements', 'Area staff requirements endpoints')
+    .addTag('area-staff-requirements', 'Location staff requirements endpoints')
     .addTag('schedules', 'Worker schedule management endpoints')
     .addTag('special-day-overrides', 'Special day override endpoints (holidays, weekends)')
     .addTag('tasks', 'Task management endpoints')

@@ -1,0 +1,776 @@
+[
+  {
+    "id": "8cc197db-f0e1-58f1-b29e-4f09c882dedf",
+    "name": "Kawasan Darmo",
+    "rayon_id": "d564809d-316f-4a2a-a1c6-671eebb49653",
+    "rayon_name": "Rayon Pusat"
+  },
+  {
+    "id": "f8fd18d9-d2e1-54e1-b785-b03f2facc0a1",
+    "name": "Kawasan Polisi Istimewa",
+    "rayon_id": "d564809d-316f-4a2a-a1c6-671eebb49653",
+    "rayon_name": "Rayon Pusat"
+  },
+  {
+    "id": "8e172e84-39bd-5f57-a48a-c9d3a650ef49",
+    "name": "Kawasan Urip Sumoharjo",
+    "rayon_id": "d564809d-316f-4a2a-a1c6-671eebb49653",
+    "rayon_name": "Rayon Pusat"
+  },
+  {
+    "id": "2e325fb9-32df-52e7-aca5-5ef3fe44b2d3",
+    "name": "Kawasan Panglima Sudirman",
+    "rayon_id": "d564809d-316f-4a2a-a1c6-671eebb49653",
+    "rayon_name": "Rayon Pusat"
+  },
+  {
+    "id": "1062aff3-4192-55e8-ad7c-5c187e9a39e6",
+    "name": "Kawasan Dr. Soetomo",
+    "rayon_id": "d564809d-316f-4a2a-a1c6-671eebb49653",
+    "rayon_name": "Rayon Pusat"
+  },
+  {
+    "id": "9ca9bf97-9d5a-53d8-9e80-ec76ef0f98ab",
+    "name": "Kawasan Kartini",
+    "rayon_id": "d564809d-316f-4a2a-a1c6-671eebb49653",
+    "rayon_name": "Rayon Pusat"
+  },
+  {
+    "id": "cd2e8869-0cda-5106-8293-072a0ec9b0ca",
+    "name": "Kawasan Diponegoro - Selatan",
+    "rayon_id": "d564809d-316f-4a2a-a1c6-671eebb49653",
+    "rayon_name": "Rayon Pusat"
+  },
+  {
+    "id": "3fd5e1ce-dc68-5fc3-b2a3-a8c73032a698",
+    "name": "Kawasan Diponegoro - Utara",
+    "rayon_id": "d564809d-316f-4a2a-a1c6-671eebb49653",
+    "rayon_name": "Rayon Pusat"
+  },
+  {
+    "id": "0a1b63ba-e46e-5ac8-8dce-c1c8cef1f95c",
+    "name": "Kawasan Arjuno",
+    "rayon_id": "d564809d-316f-4a2a-a1c6-671eebb49653",
+    "rayon_name": "Rayon Pusat"
+  },
+  {
+    "id": "05a5214f-147f-53e4-b1b9-6c65ec119d36",
+    "name": "Kawasan Bubutan",
+    "rayon_id": "d564809d-316f-4a2a-a1c6-671eebb49653",
+    "rayon_name": "Rayon Pusat"
+  },
+  {
+    "id": "7bf5a374-3d58-5e32-9773-1faf77ae1435",
+    "name": "Kawasan Pahlawan",
+    "rayon_id": "d564809d-316f-4a2a-a1c6-671eebb49653",
+    "rayon_name": "Rayon Pusat"
+  },
+  {
+    "id": "93d000ca-1da0-514b-bf56-3e7354630146",
+    "name": "Kawasan Pasar Kembang",
+    "rayon_id": "d564809d-316f-4a2a-a1c6-671eebb49653",
+    "rayon_name": "Rayon Pusat"
+  },
+  {
+    "id": "46916497-d9d8-5e34-b638-1e8a050add95",
+    "name": "Kawasan Kombespol M. Duryat",
+    "rayon_id": "d564809d-316f-4a2a-a1c6-671eebb49653",
+    "rayon_name": "Rayon Pusat"
+  },
+  {
+    "id": "a7efee3d-b9f3-5da7-9e84-4a4eae367c97",
+    "name": "Kawasan Praban",
+    "rayon_id": "d564809d-316f-4a2a-a1c6-671eebb49653",
+    "rayon_name": "Rayon Pusat"
+  },
+  {
+    "id": "ea388dae-249b-5119-8d4a-505023ac6b28",
+    "name": "Kawasan Kusuma Bangsa",
+    "rayon_id": "d564809d-316f-4a2a-a1c6-671eebb49653",
+    "rayon_name": "Rayon Pusat"
+  },
+  {
+    "id": "13b74eba-8f39-54af-8ce1-55785fa39273",
+    "name": "Kawasan Genteng Kali",
+    "rayon_id": "d564809d-316f-4a2a-a1c6-671eebb49653",
+    "rayon_name": "Rayon Pusat"
+  },
+  {
+    "id": "ee4aef80-85c5-5af3-b0d4-cbf13bed34ec",
+    "name": "Kawasan Undaan",
+    "rayon_id": "d564809d-316f-4a2a-a1c6-671eebb49653",
+    "rayon_name": "Rayon Pusat"
+  },
+  {
+    "id": "2dee3dfe-467c-5d36-8c3d-03a44e3d4208",
+    "name": "Kawasan Ambengan",
+    "rayon_id": "d564809d-316f-4a2a-a1c6-671eebb49653",
+    "rayon_name": "Rayon Pusat"
+  },
+  {
+    "id": "96482ad6-8ac5-5983-8aa4-eafcc9abf5e4",
+    "name": "Kawasan Yos Sudarso",
+    "rayon_id": "d564809d-316f-4a2a-a1c6-671eebb49653",
+    "rayon_name": "Rayon Pusat"
+  },
+  {
+    "id": "fb49101e-4b00-5967-8b24-b00fb93107a4",
+    "name": "Kawasan Jaksa Agung Suprapto",
+    "rayon_id": "d564809d-316f-4a2a-a1c6-671eebb49653",
+    "rayon_name": "Rayon Pusat"
+  },
+  {
+    "id": "86d4434f-d765-537d-be52-4795cf1c6b1d",
+    "name": "Kawasan Prof. Dr. Mustopo",
+    "rayon_id": "d564809d-316f-4a2a-a1c6-671eebb49653",
+    "rayon_name": "Rayon Pusat"
+  },
+  {
+    "id": "d1a2b197-753b-5c07-902c-f94241f1bb5c",
+    "name": "Kawasan Dharmahusada Indah",
+    "rayon_id": "742a135b-ddeb-45ca-8d0a-88d7d08aa78a",
+    "rayon_name": "Rayon Timur 2"
+  },
+  {
+    "id": "d4d66a39-1960-5006-b430-19d8a4f2ee9e",
+    "name": "Kawasan Raya Dharmahusada Indah",
+    "rayon_id": "742a135b-ddeb-45ca-8d0a-88d7d08aa78a",
+    "rayon_name": "Rayon Timur 2"
+  },
+  {
+    "id": "dce90881-d025-5410-97bf-40a0df4a5a18",
+    "name": "Kawasan Dharmahusada",
+    "rayon_id": "742a135b-ddeb-45ca-8d0a-88d7d08aa78a",
+    "rayon_name": "Rayon Timur 2"
+  },
+  {
+    "id": "6da7d715-8dd5-5aa9-b07a-187c3f33cf30",
+    "name": "Kawasan Dharmawangsa, Dr. Moestofo, Karang Menjangan dan Menur",
+    "rayon_id": "742a135b-ddeb-45ca-8d0a-88d7d08aa78a",
+    "rayon_name": "Rayon Timur 2"
+  },
+  {
+    "id": "b993df87-6102-581a-8965-eb704fb86350",
+    "name": "Kawasan Putro Agung",
+    "rayon_id": "742a135b-ddeb-45ca-8d0a-88d7d08aa78a",
+    "rayon_name": "Rayon Timur 2"
+  },
+  {
+    "id": "431fe6f4-b04a-5050-89a8-7d5152ce9ee2",
+    "name": "Kawasan Tambaksari",
+    "rayon_id": "742a135b-ddeb-45ca-8d0a-88d7d08aa78a",
+    "rayon_name": "Rayon Timur 2"
+  },
+  {
+    "id": "0eb12c0c-5107-543c-a533-52b3e911531f",
+    "name": "Kawasan Menur dan Manyar",
+    "rayon_id": "742a135b-ddeb-45ca-8d0a-88d7d08aa78a",
+    "rayon_name": "Rayon Timur 2"
+  },
+  {
+    "id": "3b6f7e9d-28a4-5333-afab-b88dc3c90d2b",
+    "name": "Kawasan Pucang Anom Timur",
+    "rayon_id": "742a135b-ddeb-45ca-8d0a-88d7d08aa78a",
+    "rayon_name": "Rayon Timur 2"
+  },
+  {
+    "id": "e6ff6d8d-c678-5cce-865f-2ae2d948c863",
+    "name": "Kawasan Kertajaya",
+    "rayon_id": "742a135b-ddeb-45ca-8d0a-88d7d08aa78a",
+    "rayon_name": "Rayon Timur 2"
+  },
+  {
+    "id": "78da0212-002c-5195-a5a8-b4166a59c143",
+    "name": "Kawasan Mulyosari",
+    "rayon_id": "742a135b-ddeb-45ca-8d0a-88d7d08aa78a",
+    "rayon_name": "Rayon Timur 2"
+  },
+  {
+    "id": "596009a8-9854-5bd9-9a49-e5182cad2c55",
+    "name": "Kawasan Ir. Soekarno Merr Kampus C Unair",
+    "rayon_id": "742a135b-ddeb-45ca-8d0a-88d7d08aa78a",
+    "rayon_name": "Rayon Timur 2"
+  },
+  {
+    "id": "7a7d4219-ec30-5eb5-8b20-de17cea43d02",
+    "name": "Kawasan Ir. Soekarno Merr Kalijudan",
+    "rayon_id": "742a135b-ddeb-45ca-8d0a-88d7d08aa78a",
+    "rayon_name": "Rayon Timur 2"
+  },
+  {
+    "id": "69181d19-cbf6-561e-99ff-24f9c5d8dcae",
+    "name": "Kawasan Raya Kertajaya Indah",
+    "rayon_id": "742a135b-ddeb-45ca-8d0a-88d7d08aa78a",
+    "rayon_name": "Rayon Timur 2"
+  },
+  {
+    "id": "6e0ef1b9-6239-5957-a84e-948bd670db2f",
+    "name": "Kawasan Kertajaya Indah Timur",
+    "rayon_id": "742a135b-ddeb-45ca-8d0a-88d7d08aa78a",
+    "rayon_name": "Rayon Timur 2"
+  },
+  {
+    "id": "b2cec12b-e1df-59a7-81df-e10853733e41",
+    "name": "Kawasan Manyar Kertoarjo",
+    "rayon_id": "742a135b-ddeb-45ca-8d0a-88d7d08aa78a",
+    "rayon_name": "Rayon Timur 2"
+  },
+  {
+    "id": "68a94e60-7043-5322-a95b-e2f6a6e97f56",
+    "name": "Kawasan Ir. Soekarno Merr Koperties",
+    "rayon_id": "742a135b-ddeb-45ca-8d0a-88d7d08aa78a",
+    "rayon_name": "Rayon Timur 2"
+  },
+  {
+    "id": "067e9984-03ca-5f06-9605-c94e6151cd9c",
+    "name": "Kawasan Stren Kali Jl. Arif Rahman Hakim",
+    "rayon_id": "742a135b-ddeb-45ca-8d0a-88d7d08aa78a",
+    "rayon_name": "Rayon Timur 2"
+  },
+  {
+    "id": "cd727866-87a9-55b4-bbe9-b397c60349b6",
+    "name": "Kawasan Tanjungsari",
+    "rayon_id": "861a7e7c-8bd5-4e73-8aa7-e92988959dca",
+    "rayon_name": "Rayon Utara"
+  },
+  {
+    "id": "b3bf258c-a4b1-5dfc-9a49-eecb3af239aa",
+    "name": "Kawasan Dupak Rukun",
+    "rayon_id": "861a7e7c-8bd5-4e73-8aa7-e92988959dca",
+    "rayon_name": "Rayon Utara"
+  },
+  {
+    "id": "df1baba5-a59a-59cc-adb2-465cf271181e",
+    "name": "Kawasan Demak",
+    "rayon_id": "861a7e7c-8bd5-4e73-8aa7-e92988959dca",
+    "rayon_name": "Rayon Utara"
+  },
+  {
+    "id": "4e3d64ed-8b95-5e23-899c-b953344a6e24",
+    "name": "Kawasan Gresik",
+    "rayon_id": "861a7e7c-8bd5-4e73-8aa7-e92988959dca",
+    "rayon_name": "Rayon Utara"
+  },
+  {
+    "id": "75c42a9f-55b7-51f1-b9f5-4b6b1f05ee67",
+    "name": "Kawasan Perak",
+    "rayon_id": "861a7e7c-8bd5-4e73-8aa7-e92988959dca",
+    "rayon_name": "Rayon Utara"
+  },
+  {
+    "id": "bba64776-7016-5441-9c3d-69c169d41e2d",
+    "name": "Kawasan Palmbom",
+    "rayon_id": "861a7e7c-8bd5-4e73-8aa7-e92988959dca",
+    "rayon_name": "Rayon Utara"
+  },
+  {
+    "id": "c51ee793-0b14-5299-a3bb-2fb7854bfc7d",
+    "name": "Kawasan Rajawali",
+    "rayon_id": "861a7e7c-8bd5-4e73-8aa7-e92988959dca",
+    "rayon_name": "Rayon Utara"
+  },
+  {
+    "id": "712f73d1-1227-543d-8cc1-8f51fa723065",
+    "name": "Kawasan Taman Polrestabes",
+    "rayon_id": "861a7e7c-8bd5-4e73-8aa7-e92988959dca",
+    "rayon_name": "Rayon Utara"
+  },
+  {
+    "id": "d072e5c8-0239-5c03-833a-789496db6945",
+    "name": "Kawasan Kebonrojo",
+    "rayon_id": "861a7e7c-8bd5-4e73-8aa7-e92988959dca",
+    "rayon_name": "Rayon Utara"
+  },
+  {
+    "id": "6b85bcd2-b88e-546a-8aec-d6ac94b5ffcb",
+    "name": "Kawasan Indrapura",
+    "rayon_id": "861a7e7c-8bd5-4e73-8aa7-e92988959dca",
+    "rayon_name": "Rayon Utara"
+  },
+  {
+    "id": "9fc27ac3-57fc-5998-885f-3bd623f5eac0",
+    "name": "Kawasan Dupak, Pasar Turi",
+    "rayon_id": "861a7e7c-8bd5-4e73-8aa7-e92988959dca",
+    "rayon_name": "Rayon Utara"
+  },
+  {
+    "id": "1feceb0e-9a7e-5b45-a197-3ac3edb92eca",
+    "name": "Kawasan Pasar Turi , Taman pertukangan",
+    "rayon_id": "861a7e7c-8bd5-4e73-8aa7-e92988959dca",
+    "rayon_name": "Rayon Utara"
+  },
+  {
+    "id": "121af2f6-31a5-56c1-a889-6e2665dc326b",
+    "name": "Kawasan Jakarta",
+    "rayon_id": "861a7e7c-8bd5-4e73-8aa7-e92988959dca",
+    "rayon_name": "Rayon Utara"
+  },
+  {
+    "id": "5e132bd2-8614-5357-b57f-6b8167d32616",
+    "name": "Kawasan Bunguran",
+    "rayon_id": "861a7e7c-8bd5-4e73-8aa7-e92988959dca",
+    "rayon_name": "Rayon Utara"
+  },
+  {
+    "id": "c7c8f59f-b73a-518c-98ae-9866fa593018",
+    "name": "Kawasan Kembang Jepun, Rot Kapasan",
+    "rayon_id": "861a7e7c-8bd5-4e73-8aa7-e92988959dca",
+    "rayon_name": "Rayon Utara"
+  },
+  {
+    "id": "5c03f40d-fc9f-5e5e-b53d-934c88319af7",
+    "name": "Kawasan Stasiun Kota",
+    "rayon_id": "861a7e7c-8bd5-4e73-8aa7-e92988959dca",
+    "rayon_name": "Rayon Utara"
+  },
+  {
+    "id": "8f67d020-66b0-5a4c-bdf1-e73f7bbcdc7e",
+    "name": "Kawasan Pegirian",
+    "rayon_id": "861a7e7c-8bd5-4e73-8aa7-e92988959dca",
+    "rayon_name": "Rayon Utara"
+  },
+  {
+    "id": "44267c6d-5f72-5a5d-84ad-42eafc8642e8",
+    "name": "Kawasan Tm Gapura Ampel",
+    "rayon_id": "861a7e7c-8bd5-4e73-8aa7-e92988959dca",
+    "rayon_name": "Rayon Utara"
+  },
+  {
+    "id": "4f6ce307-284b-578f-a978-974ada847338",
+    "name": "Kawasan Kenjeran Rangka",
+    "rayon_id": "861a7e7c-8bd5-4e73-8aa7-e92988959dca",
+    "rayon_name": "Rayon Utara"
+  },
+  {
+    "id": "47238d98-3b94-5526-b947-3c5d33552eb5",
+    "name": "Kawasan Karet,Taman Stasiun Kota",
+    "rayon_id": "861a7e7c-8bd5-4e73-8aa7-e92988959dca",
+    "rayon_name": "Rayon Utara"
+  },
+  {
+    "id": "0a644706-f46d-58e6-a5f1-17d891fec0cd",
+    "name": "Kawasan Benteng",
+    "rayon_id": "861a7e7c-8bd5-4e73-8aa7-e92988959dca",
+    "rayon_name": "Rayon Utara"
+  },
+  {
+    "id": "b99b3493-50bd-5e6a-86e4-73ff31332eca",
+    "name": "Kawasan Sidotopo Wetan",
+    "rayon_id": "861a7e7c-8bd5-4e73-8aa7-e92988959dca",
+    "rayon_name": "Rayon Utara"
+  },
+  {
+    "id": "41685733-94a4-55ea-ab8b-171894af8672",
+    "name": "Kawasan Iskandar Muda",
+    "rayon_id": "861a7e7c-8bd5-4e73-8aa7-e92988959dca",
+    "rayon_name": "Rayon Utara"
+  },
+  {
+    "id": "b24f90f7-356c-5775-b396-5ef1c475dfb0",
+    "name": "Kawasan Simokerto",
+    "rayon_id": "861a7e7c-8bd5-4e73-8aa7-e92988959dca",
+    "rayon_name": "Rayon Utara"
+  },
+  {
+    "id": "4350c043-1165-5455-9367-4b7dd9a6e797",
+    "name": "Kawasan Kenjeran",
+    "rayon_id": "861a7e7c-8bd5-4e73-8aa7-e92988959dca",
+    "rayon_name": "Rayon Utara"
+  },
+  {
+    "id": "83c82303-9292-50da-90e4-07ca57703037",
+    "name": "Kawasan Stren Kali Kenjeran",
+    "rayon_id": "861a7e7c-8bd5-4e73-8aa7-e92988959dca",
+    "rayon_name": "Rayon Utara"
+  },
+  {
+    "id": "77564a74-9a7d-5262-a983-b2fc4a48bb16",
+    "name": "Kawasan Kenjeran Pantai Batu2",
+    "rayon_id": "861a7e7c-8bd5-4e73-8aa7-e92988959dca",
+    "rayon_name": "Rayon Utara"
+  },
+  {
+    "id": "ed16e651-8d24-5d8a-a600-4120138ecf79",
+    "name": "Kawasan Suramadu",
+    "rayon_id": "861a7e7c-8bd5-4e73-8aa7-e92988959dca",
+    "rayon_name": "Rayon Utara"
+  },
+  {
+    "id": "70175fe9-f6b7-5ce3-b477-5ee9ac02987e",
+    "name": "Kawasan Stren Kali Kalitebu",
+    "rayon_id": "861a7e7c-8bd5-4e73-8aa7-e92988959dca",
+    "rayon_name": "Rayon Utara"
+  },
+  {
+    "id": "29e1d375-dd4a-552b-9e54-8c487f8f546c",
+    "name": "Kawasan Mayjend Sungkono",
+    "rayon_id": "7422e6ee-0693-4565-9016-d4f759bdeed2",
+    "rayon_name": "Rayon Barat 1"
+  },
+  {
+    "id": "8162cca6-8e5b-53a5-a52b-e36e72fa6122",
+    "name": "Kawasan Bintang Diponggo",
+    "rayon_id": "7422e6ee-0693-4565-9016-d4f759bdeed2",
+    "rayon_name": "Rayon Barat 1"
+  },
+  {
+    "id": "f69699d7-cc81-5f3c-bd66-57754a43fac5",
+    "name": "Kawasan Dukuh Kupang",
+    "rayon_id": "7422e6ee-0693-4565-9016-d4f759bdeed2",
+    "rayon_name": "Rayon Barat 1"
+  },
+  {
+    "id": "84f4eee7-278e-5fea-a991-62e6f10698fd",
+    "name": "Kawasan Kh Abdul Wahab Siamin",
+    "rayon_id": "7422e6ee-0693-4565-9016-d4f759bdeed2",
+    "rayon_name": "Rayon Barat 1"
+  },
+  {
+    "id": "b088c34c-979a-5fe3-b156-d49e7dda3fdf",
+    "name": "Kawasan Underpass - Tmp Mayjend",
+    "rayon_id": "7422e6ee-0693-4565-9016-d4f759bdeed2",
+    "rayon_name": "Rayon Barat 1"
+  },
+  {
+    "id": "7bfb7889-57eb-5006-b745-8015182bc0fd",
+    "name": "Kawasan Mayjend Jonosoewoyo",
+    "rayon_id": "7422e6ee-0693-4565-9016-d4f759bdeed2",
+    "rayon_name": "Rayon Barat 1"
+  },
+  {
+    "id": "59f25f8b-69ab-51e9-a8cb-c3788b107989",
+    "name": "Kawasan Mayjend Hr. Muhammad Jalur Hijau",
+    "rayon_id": "7422e6ee-0693-4565-9016-d4f759bdeed2",
+    "rayon_name": "Rayon Barat 1"
+  },
+  {
+    "id": "428634fc-9669-5057-8ac1-fdc47f21c30b",
+    "name": "Kawasan Banyu Urip - Tandes",
+    "rayon_id": "7422e6ee-0693-4565-9016-d4f759bdeed2",
+    "rayon_name": "Rayon Barat 1"
+  },
+  {
+    "id": "435ac59c-b525-563b-a6d3-75fdc42947b7",
+    "name": "Kawasan Darmo Permai-Darmo Indah",
+    "rayon_id": "7422e6ee-0693-4565-9016-d4f759bdeed2",
+    "rayon_name": "Rayon Barat 1"
+  },
+  {
+    "id": "71ca2d20-0356-532e-bd4a-833054929bbd",
+    "name": "Kawasan Dukuh Kupang Barat-Kupang Jaya",
+    "rayon_id": "7422e6ee-0693-4565-9016-d4f759bdeed2",
+    "rayon_name": "Rayon Barat 1"
+  },
+  {
+    "id": "7f4ffc38-6e17-500b-98b0-855cb28c30c5",
+    "name": "Kawasan Sukomanunggal Jaya",
+    "rayon_id": "7422e6ee-0693-4565-9016-d4f759bdeed2",
+    "rayon_name": "Rayon Barat 1"
+  },
+  {
+    "id": "64fb5e49-9560-586e-830e-1067b540ac8f",
+    "name": "Kawasan Wiyung",
+    "rayon_id": "085a298f-d8e9-435c-8a3b-998ffa47a26e",
+    "rayon_name": "Rayon Selatan"
+  },
+  {
+    "id": "2e0283c2-29ca-5c49-a96e-38deb72ee1da",
+    "name": "Kawasan Gunungsari",
+    "rayon_id": "085a298f-d8e9-435c-8a3b-998ffa47a26e",
+    "rayon_name": "Rayon Selatan"
+  },
+  {
+    "id": "d0874490-18e0-5bdf-a67b-968aa66eb7e3",
+    "name": "Kawasan A. Yani Asenering Mayangkara",
+    "rayon_id": "085a298f-d8e9-435c-8a3b-998ffa47a26e",
+    "rayon_name": "Rayon Selatan"
+  },
+  {
+    "id": "3f0727fb-acb7-54bf-9d9f-62dedb5edb23",
+    "name": "Kawasan Jambangan Swk",
+    "rayon_id": "085a298f-d8e9-435c-8a3b-998ffa47a26e",
+    "rayon_name": "Rayon Selatan"
+  },
+  {
+    "id": "291b2f6b-32a9-56ff-9909-a1628b30d8b9",
+    "name": "Kawasan Ketintang Selatan",
+    "rayon_id": "085a298f-d8e9-435c-8a3b-998ffa47a26e",
+    "rayon_name": "Rayon Selatan"
+  },
+  {
+    "id": "f6ecbb02-01bc-535f-9547-7bd1f444146c",
+    "name": "Kawasan A. Yani Frontage Barat",
+    "rayon_id": "085a298f-d8e9-435c-8a3b-998ffa47a26e",
+    "rayon_name": "Rayon Selatan"
+  },
+  {
+    "id": "394e65d1-c0ba-560b-9411-498f08f20ae3",
+    "name": "Kawasan A. Yani Lama",
+    "rayon_id": "085a298f-d8e9-435c-8a3b-998ffa47a26e",
+    "rayon_name": "Rayon Selatan"
+  },
+  {
+    "id": "93a1d7c0-217b-55c2-9070-82ceac6ac161",
+    "name": "Kawasan Bunderan Waru",
+    "rayon_id": "085a298f-d8e9-435c-8a3b-998ffa47a26e",
+    "rayon_name": "Rayon Selatan"
+  },
+  {
+    "id": "a13ddf92-d03d-5d0d-a909-507554a16ae9",
+    "name": "Kawasan Pagesangan, Gayungsari",
+    "rayon_id": "085a298f-d8e9-435c-8a3b-998ffa47a26e",
+    "rayon_name": "Rayon Selatan"
+  },
+  {
+    "id": "dd2c2a27-1823-5bda-babc-fb613003368b",
+    "name": "Kawasan Adityawarman",
+    "rayon_id": "085a298f-d8e9-435c-8a3b-998ffa47a26e",
+    "rayon_name": "Rayon Selatan"
+  },
+  {
+    "id": "461debd6-0aa3-5e32-838e-8a000587ce45",
+    "name": "Kawasan Wonokromo Ss",
+    "rayon_id": "085a298f-d8e9-435c-8a3b-998ffa47a26e",
+    "rayon_name": "Rayon Selatan"
+  },
+  {
+    "id": "35c19b1f-6cb9-597f-b047-328179847161",
+    "name": "Kawasan KBS",
+    "rayon_id": "085a298f-d8e9-435c-8a3b-998ffa47a26e",
+    "rayon_name": "Rayon Selatan"
+  },
+  {
+    "id": "176d67d2-2dcc-5840-8b1c-1843141b9f7b",
+    "name": "Kawasan Timur KBS",
+    "rayon_id": "085a298f-d8e9-435c-8a3b-998ffa47a26e",
+    "rayon_name": "Rayon Selatan"
+  },
+  {
+    "id": "7a70a6b6-5184-5a73-9935-ce47e8fa973d",
+    "name": "Kawasan Ngagel Jembatan Ujung Galuh",
+    "rayon_id": "085a298f-d8e9-435c-8a3b-998ffa47a26e",
+    "rayon_name": "Rayon Selatan"
+  },
+  {
+    "id": "0a7c946b-9e3a-5672-8fae-86143c71992b",
+    "name": "Kawasan Jagir",
+    "rayon_id": "085a298f-d8e9-435c-8a3b-998ffa47a26e",
+    "rayon_name": "Rayon Selatan"
+  },
+  {
+    "id": "686a915d-00eb-5b00-b0d4-9d572986cb61",
+    "name": "Kawasan Bung Tomo",
+    "rayon_id": "085a298f-d8e9-435c-8a3b-998ffa47a26e",
+    "rayon_name": "Rayon Selatan"
+  },
+  {
+    "id": "c7a8bc84-7e08-5c1c-9b97-721e215bf7a5",
+    "name": "Kawasan Jemursari",
+    "rayon_id": "085a298f-d8e9-435c-8a3b-998ffa47a26e",
+    "rayon_name": "Rayon Selatan"
+  },
+  {
+    "id": "c73e3964-eab5-5cec-8b05-e6714a9977d0",
+    "name": "Kawasan Raya Kendangsari",
+    "rayon_id": "42934ad5-4ea0-4537-abb6-cf7e984e2d39",
+    "rayon_name": "Rayon Timur 1"
+  },
+  {
+    "id": "85e7519f-cf29-5b1b-a525-a499bb9d8485",
+    "name": "Kawasan Raya Tenggilis",
+    "rayon_id": "42934ad5-4ea0-4537-abb6-cf7e984e2d39",
+    "rayon_name": "Rayon Timur 1"
+  },
+  {
+    "id": "f686ab21-aa80-5815-ba0e-8a512eadcc85",
+    "name": "Kawasan Tenggilis Mejoyo",
+    "rayon_id": "42934ad5-4ea0-4537-abb6-cf7e984e2d39",
+    "rayon_name": "Rayon Timur 1"
+  },
+  {
+    "id": "a315c42b-0e73-58df-91d2-c2f47563d2f2",
+    "name": "Kawasan Jemurhandayani",
+    "rayon_id": "42934ad5-4ea0-4537-abb6-cf7e984e2d39",
+    "rayon_name": "Rayon Timur 1"
+  },
+  {
+    "id": "ec92b4f9-93ae-5fa4-9d98-fd6db7c1b31f",
+    "name": "Kawasan Rungkut Mejoyo",
+    "rayon_id": "42934ad5-4ea0-4537-abb6-cf7e984e2d39",
+    "rayon_name": "Rayon Timur 1"
+  },
+  {
+    "id": "80056de3-9089-505e-b292-4a4db3f6dcc7",
+    "name": "Kawasan Tenggilis Tengah",
+    "rayon_id": "42934ad5-4ea0-4537-abb6-cf7e984e2d39",
+    "rayon_name": "Rayon Timur 1"
+  },
+  {
+    "id": "11741f10-87ed-5ce4-b3a7-b38a7f7c06cf",
+    "name": "Kawasan Rungkut Asri",
+    "rayon_id": "42934ad5-4ea0-4537-abb6-cf7e984e2d39",
+    "rayon_name": "Rayon Timur 1"
+  },
+  {
+    "id": "e8fca10a-c5e9-5550-b721-2f552b6cb0df",
+    "name": "Kawasan Rungkut Asri Timur",
+    "rayon_id": "42934ad5-4ea0-4537-abb6-cf7e984e2d39",
+    "rayon_name": "Rayon Timur 1"
+  },
+  {
+    "id": "197c96d8-aa98-5d09-b5d1-31a8a9cad36a",
+    "name": "Kawasan Rungkut Alang Alang",
+    "rayon_id": "42934ad5-4ea0-4537-abb6-cf7e984e2d39",
+    "rayon_name": "Rayon Timur 1"
+  },
+  {
+    "id": "208b412a-7e6d-50ac-93ce-d3ce558d97c2",
+    "name": "Kawasan Raya Kedung Baruk",
+    "rayon_id": "42934ad5-4ea0-4537-abb6-cf7e984e2d39",
+    "rayon_name": "Rayon Timur 1"
+  },
+  {
+    "id": "57c78579-e2e0-567d-a358-8352ca5e3125",
+    "name": "Kawasan Rungkut Madya",
+    "rayon_id": "42934ad5-4ea0-4537-abb6-cf7e984e2d39",
+    "rayon_name": "Rayon Timur 1"
+  },
+  {
+    "id": "88319998-8f4e-53a7-b2fc-e484a35f4e8e",
+    "name": "Kawasan Rungkut Mapan",
+    "rayon_id": "42934ad5-4ea0-4537-abb6-cf7e984e2d39",
+    "rayon_name": "Rayon Timur 1"
+  },
+  {
+    "id": "0c80831a-93ff-5aca-8037-d6d38a900aee",
+    "name": "Kawasan Panjang Jiwo",
+    "rayon_id": "42934ad5-4ea0-4537-abb6-cf7e984e2d39",
+    "rayon_name": "Rayon Timur 1"
+  },
+  {
+    "id": "bcf78c60-0959-501c-afbe-cace9eb30832",
+    "name": "Kawasan Nginden",
+    "rayon_id": "42934ad5-4ea0-4537-abb6-cf7e984e2d39",
+    "rayon_name": "Rayon Timur 1"
+  },
+  {
+    "id": "87319725-43f5-509a-97c3-2022f16cc7d5",
+    "name": "Kawasan Raya Manyar",
+    "rayon_id": "42934ad5-4ea0-4537-abb6-cf7e984e2d39",
+    "rayon_name": "Rayon Timur 1"
+  },
+  {
+    "id": "8764eabf-b9ed-513d-a859-c4d3d2095795",
+    "name": "Kawasan Raya Prapen",
+    "rayon_id": "42934ad5-4ea0-4537-abb6-cf7e984e2d39",
+    "rayon_name": "Rayon Timur 1"
+  },
+  {
+    "id": "1f724f84-41c4-58a0-a036-68c818281abc",
+    "name": "Kawasan Panjang Jiwo Permai",
+    "rayon_id": "42934ad5-4ea0-4537-abb6-cf7e984e2d39",
+    "rayon_name": "Rayon Timur 1"
+  },
+  {
+    "id": "d7155db5-1290-5810-98f4-692d18f56eff",
+    "name": "Kawasan Roronde Air Mancur Jemursari",
+    "rayon_id": "42934ad5-4ea0-4537-abb6-cf7e984e2d39",
+    "rayon_name": "Rayon Timur 1"
+  },
+  {
+    "id": "141a7517-390c-5a5e-82e4-5b9015f31193",
+    "name": "Kawasan Jemursari",
+    "rayon_id": "42934ad5-4ea0-4537-abb6-cf7e984e2d39",
+    "rayon_name": "Rayon Timur 1"
+  },
+  {
+    "id": "723ed698-0deb-517f-aeec-9594aecde080",
+    "name": "Kawasan Semolowaru Utara",
+    "rayon_id": "42934ad5-4ea0-4537-abb6-cf7e984e2d39",
+    "rayon_name": "Rayon Timur 1"
+  },
+  {
+    "id": "404594f3-1d73-5b5c-bab0-3d8c97d5a2b6",
+    "name": "Kawasan Merr Gunung Anyar",
+    "rayon_id": "42934ad5-4ea0-4537-abb6-cf7e984e2d39",
+    "rayon_name": "Rayon Timur 1"
+  },
+  {
+    "id": "ca1eb9b7-f75f-51fd-82de-cda371d463f7",
+    "name": "Kawasan Merr Rungkut",
+    "rayon_id": "42934ad5-4ea0-4537-abb6-cf7e984e2d39",
+    "rayon_name": "Rayon Timur 1"
+  },
+  {
+    "id": "43fd2498-2d4f-5234-8ed0-3c1dcfc9e548",
+    "name": "Kawasan Merr Pandugo",
+    "rayon_id": "42934ad5-4ea0-4537-abb6-cf7e984e2d39",
+    "rayon_name": "Rayon Timur 1"
+  },
+  {
+    "id": "b7fd75cf-3d9f-502b-8eb2-8305b0a083d1",
+    "name": "Kawasan Merr Kedung Baruk",
+    "rayon_id": "42934ad5-4ea0-4537-abb6-cf7e984e2d39",
+    "rayon_name": "Rayon Timur 1"
+  },
+  {
+    "id": "83717c3b-8235-529c-9415-95974c8725b5",
+    "name": "Kawasan Raya Pandugo",
+    "rayon_id": "42934ad5-4ea0-4537-abb6-cf7e984e2d39",
+    "rayon_name": "Rayon Timur 1"
+  },
+  {
+    "id": "16017bdc-1db9-5b30-941d-ea17e99aa8b5",
+    "name": "Kawasan Merr Semampir",
+    "rayon_id": "42934ad5-4ea0-4537-abb6-cf7e984e2d39",
+    "rayon_name": "Rayon Timur 1"
+  },
+  {
+    "id": "f33e03dd-38fc-5db6-bdd3-99fa7e765f23",
+    "name": "Kawasan Merr Semolowaru",
+    "rayon_id": "42934ad5-4ea0-4537-abb6-cf7e984e2d39",
+    "rayon_name": "Rayon Timur 1"
+  },
+  {
+    "id": "583f795c-3f6f-5684-aef9-9933ac75fdee",
+    "name": "Kawasan Merr Delles",
+    "rayon_id": "42934ad5-4ea0-4537-abb6-cf7e984e2d39",
+    "rayon_name": "Rayon Timur 1"
+  },
+  {
+    "id": "4538a54c-5e06-56a0-b079-e6ad1cc2afe8",
+    "name": "Kawasan Margomulyo",
+    "rayon_id": "bf040137-fce4-4016-b5e7-704ad82c1594",
+    "rayon_name": "Rayon Barat 2"
+  },
+  {
+    "id": "575ecbb4-40a3-5aa0-8c7c-ca21e5241008",
+    "name": "Kawasan Manukan Balongsari S.D Manukan",
+    "rayon_id": "bf040137-fce4-4016-b5e7-704ad82c1594",
+    "rayon_name": "Rayon Barat 2"
+  },
+  {
+    "id": "043a8c5e-5cdd-58d0-b004-fe74f667ec99",
+    "name": "Kawasan Banjarsugihan",
+    "rayon_id": "bf040137-fce4-4016-b5e7-704ad82c1594",
+    "rayon_name": "Rayon Barat 2"
+  },
+  {
+    "id": "535cfcc2-e8b3-5a92-b224-6c4ffdb1283d",
+    "name": "Kawasan Sememi",
+    "rayon_id": "bf040137-fce4-4016-b5e7-704ad82c1594",
+    "rayon_name": "Rayon Barat 2"
+  },
+  {
+    "id": "640aaaa9-8aaf-56ba-b0b1-dd0d6e01b871",
+    "name": "Kawasan PBI",
+    "rayon_id": "bf040137-fce4-4016-b5e7-704ad82c1594",
+    "rayon_name": "Rayon Barat 2"
+  },
+  {
+    "id": "249efefd-ad49-5b1f-b80c-b68480c119d0",
+    "name": "Kawasan GBT",
+    "rayon_id": "bf040137-fce4-4016-b5e7-704ad82c1594",
+    "rayon_name": "Rayon Barat 2"
+  }
+]

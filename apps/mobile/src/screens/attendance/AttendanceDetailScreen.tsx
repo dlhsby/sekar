@@ -17,10 +17,12 @@ import { useTranslation } from 'react-i18next';
 import { NBBackgroundPattern, NBText, NBButton, NBBadge, NBCard } from '../../components/nb';
 import { InfoTableRow } from '../../components/common';
 import { TodayWorkHoursModal, ShiftDetailModal } from '../../components/modals';
+import { PunchTimeline } from '../../components/attendance/PunchTimeline';
 import { getAttendanceForDate } from '../../services/api/shiftsApi';
 import { summarizeAttendance } from '../../utils/attendance';
 import { formatLongDate, formatTime, calculateDuration } from '../../utils/dateUtils';
 import { nbColors, nbSpacing } from '../../constants/nbTokens';
+import { screenContent } from '../../constants/layout';
 import type { MainTabParamList, MainTabScreenProps } from '../../types/navigation.types';
 import type { Shift } from '../../types/models.types';
 
@@ -116,6 +118,9 @@ export function AttendanceDetailScreen(): React.JSX.Element {
             accessibilityLabel={t('attendance:detail.a11y.viewShifts')}
           />
         </NBCard>
+
+        {/* ADR-055 Phase 4: the raw punch timeline behind the day's attendance. */}
+        <PunchTimeline date={date} />
       </ScrollView>
 
       <TodayWorkHoursModal
@@ -140,7 +145,7 @@ export function AttendanceDetailScreen(): React.JSX.Element {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: nbSpacing.md },
+  content: screenContent,
   centered: {
     flex: 1,
     alignItems: 'center',

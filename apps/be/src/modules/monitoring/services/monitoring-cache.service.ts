@@ -1,4 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { OnEvent } from '@nestjs/event-emitter';
+import { SETTINGS_CHANGED_EVENT } from '../../settings/services/system-config.service';
 
 interface CacheEntry<T> {
   data: T;
@@ -7,10 +9,12 @@ interface CacheEntry<T> {
 
 export interface StatusThresholds {
   active_max_age_seconds: number;
-  inactive_threshold_seconds: number;
-  missing_threshold_seconds: number;
   location_ping_interval_seconds: number;
+  late_grace_seconds: number;
 }
+
+/** A geofence subject tier — the table a boundary polygon is loaded from. */
+export type BoundaryScope = 'location' | 'region' | 'district';
 
 export enum DayTypeEnum {
   WEEKDAY = 'WEEKDAY',
@@ -24,10 +28,9 @@ export interface GeofencingConfig {
 }
 
 const DEFAULT_THRESHOLDS: StatusThresholds = {
-  active_max_age_seconds: 300,
-  inactive_threshold_seconds: 900,
-  missing_threshold_seconds: 3600,
+  active_max_age_seconds: 600,
   location_ping_interval_seconds: 60,
+  late_grace_seconds: 900,
 };
 
 const DEFAULT_GEOFENCING: GeofencingConfig = {
@@ -57,13 +60,15 @@ export class MonitoringCacheService {
 
   private thresholdsLoader: (() => Promise<StatusThresholds>) | null = null;
   private geofencingLoader: (() => Promise<GeofencingConfig>) | null = null;
-  private boundaryLoader: ((areaId: string) => Promise<number[][][] | null>) | null = null;
+  private boundaryLoader:
+    | ((scope: BoundaryScope, id: string) => Promise<number[][][] | null>)
+    | null = null;
   private dayTypeLoader: (() => Promise<DayTypeEnum>) | null = null;
 
   setLoaders(loaders: {
     thresholds?: () => Promise<StatusThresholds>;
     geofencing?: () => Promise<GeofencingConfig>;
-    boundary?: (areaId: string) => Promise<number[][][] | null>;
+    boundary?: (scope: BoundaryScope, id: string) => Promise<number[][][] | null>;
     dayType?: () => Promise<DayTypeEnum>;
   }): void {
     if (loaders.thresholds) this.thresholdsLoader = loaders.thresholds;
@@ -110,20 +115,31 @@ export class MonitoringCacheService {
     return DEFAULT_GEOFENCING;
   }
 
-  async getAreaBoundary(areaId: string): Promise<number[][][] | null> {
+  /** Location boundary (back-compat alias for `getBoundary('location', id)`). */
+  async getAreaBoundary(locationId: string): Promise<number[][][] | null> {
+    return this.getBoundary('location', locationId);
+  }
+
+  /**
+   * Boundary polygon coordinates for a geofence subject — a lokasi, a kawasan
+   * (region) or a district (ADR-050 / 5.4e). Cached per `scope:id` so region/district
+   * ids never collide with location ids in the shared cache.
+   */
+  async getBoundary(scope: BoundaryScope, id: string): Promise<number[][][] | null> {
     const now = Date.now();
-    const cached = this.areaBoundaryCache.get(areaId);
+    const key = `${scope}:${id}`;
+    const cached = this.areaBoundaryCache.get(key);
     if (cached && cached.expiresAt > now) {
       return cached.data;
     }
 
     if (this.boundaryLoader) {
       try {
-        const data = await this.boundaryLoader(areaId);
-        this.areaBoundaryCache.set(areaId, { data, expiresAt: now + this.BOUNDARY_TTL_MS });
+        const data = await this.boundaryLoader(scope, id);
+        this.areaBoundaryCache.set(key, { data, expiresAt: now + this.BOUNDARY_TTL_MS });
         return data;
       } catch (error) {
-        this.logger.warn(`Failed to load boundary for area ${areaId}: ${error.message}`);
+        this.logger.warn(`Failed to load ${scope} boundary for ${id}: ${error.message}`);
       }
     }
 
@@ -136,10 +152,18 @@ export class MonitoringCacheService {
     this.logger.debug('Invalidated thresholds and geofencing cache');
   }
 
-  invalidateAreaBoundary(areaId?: string): void {
-    if (areaId) {
-      this.areaBoundaryCache.delete(areaId);
-      this.logger.debug(`Invalidated boundary cache for area ${areaId}`);
+  /** A monitoring/geofence system setting changed — drop the TTL caches now so
+   * status calculation picks the new value up immediately (not after 60s). */
+  @OnEvent(SETTINGS_CHANGED_EVENT)
+  onSettingsChanged(payload: { key: string; group: string }): void {
+    if (payload?.group === 'monitoring') this.invalidateThresholds();
+  }
+
+  invalidateAreaBoundary(locationId?: string, scope: BoundaryScope = 'location'): void {
+    if (locationId) {
+      // Keys are `scope:id` (5.4e); default scope keeps the existing lokasi callers working.
+      this.areaBoundaryCache.delete(`${scope}:${locationId}`);
+      this.logger.debug(`Invalidated ${scope} boundary cache for ${locationId}`);
     } else {
       this.areaBoundaryCache.clear();
       this.logger.debug('Invalidated all boundary caches');

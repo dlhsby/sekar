@@ -23,8 +23,8 @@ export class SeedTransaction {
   @Column({ type: 'text', nullable: true, name: 'receipt_url' })
   receiptUrl: string | null;
 
-  @Column({ type: 'uuid', nullable: true, name: 'to_rayon_id' })
-  toRayonId: string | null;
+  @Column({ type: 'uuid', nullable: true, name: 'to_district_id' })
+  toDistrictId: string | null;
 
   @Column({ type: 'uuid', nullable: true, name: 'to_area_id' })
   toAreaId: string | null;

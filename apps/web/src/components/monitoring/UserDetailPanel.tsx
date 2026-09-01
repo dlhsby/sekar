@@ -5,15 +5,23 @@
  * Shows shift info, location, activities, tasks, and contact links
  */
 
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { intlLocale } from '@/lib/i18n/date-locale';
-import { ArrowLeft, Clock, MapPin, Battery, CheckSquare, FileText } from 'lucide-react';
+import { ArrowLeft, ArrowLeftRight, Clock, MapPin, Battery, CheckSquare, FileText, Camera } from 'lucide-react';
 import { Badge } from '@/components/ui';
+import { PhotoLightbox } from '@/components/ui/photo-lightbox';
 import { ROLE_LABELS } from '@/lib/constants/roles';
 import { cn } from '@/lib/utils/cn';
 import { formatRelativeTime, formatDuration, formatTime } from '@/lib/utils/formatters';
 import { STATUS_BADGE_CLASSES, getStatusLabels } from '@/lib/constants/monitoring';
-import type { UserDaySummary } from '@/lib/api/monitoring';
+import type { UserDaySummary, ReassignmentHistoryEntry } from '@/lib/api/monitoring';
+import {
+  lifecycleFlagPills,
+  lifecycleStatePill,
+  type LifecycleFacts,
+} from '@/lib/monitoring/lifecyclePills';
+import { PRESENCE_TONE_CLASS } from '@/lib/presence/tone';
 import type { UserRole } from '@/types/models';
 
 export interface UserDetailPanelProps {
@@ -21,7 +29,21 @@ export interface UserDetailPanelProps {
   isLoading: boolean;
   onBack: () => void;
   onViewLocationHistory: () => void;
+  /**
+   * The worker's live snapshot row, when the map has one.
+   *
+   * The day summary has no presence LIFECYCLE — that is derived per snapshot
+   * (ADR-050) and rides `SnapshotWorker`. Passing it in keeps the panel a pure
+   * renderer while still showing the same pills mobile's sheet does, and the
+   * panel degrades to the summary alone when it is absent (e.g. a worker found
+   * by search who is not on the current map).
+   */
+  worker?: LifecycleFacts | null;
+  /** Reassignment audit trail — mobile's "Riwayat Pemindahan". */
+  reassignments?: ReassignmentHistoryEntry[];
+  isReassignmentsLoading?: boolean;
 }
+
 
 const TASK_STATUS_VARIANT: Record<
   string,
@@ -39,8 +61,14 @@ export function UserDetailPanel({
   isLoading,
   onBack,
   onViewLocationHistory,
+  worker,
+  reassignments,
+  isReassignmentsLoading,
 }: UserDetailPanelProps) {
   const { t } = useTranslation(['monitoring']);
+  // One photo per activity today (the API sends `photo_urls[0]`), so the
+  // lightbox gets a single-element set and hides its navigation.
+  const [photo, setPhoto] = useState<string | null>(null);
   const statusLabels = getStatusLabels();
 
   if (isLoading) {
@@ -75,6 +103,10 @@ export function UserDetailPanel({
     'bg-[var(--color-status-offline-bg)] text-[var(--color-status-offline)] border-[var(--color-status-offline)]';
   const statusLabel = statusLabels[summary.status] ?? summary.status;
   const roleLabel = ROLE_LABELS[summary.role as UserRole] || summary.role;
+  // Both pill sets come from the shared helper (the web twin of mobile's
+  // statusHelpers), so a worker reads identically on either platform.
+  const statePill = worker ? lifecycleStatePill(worker) : null;
+  const flagPills = worker ? lifecycleFlagPills(worker) : [];
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -112,15 +144,72 @@ export function UserDetailPanel({
                 >
                   {statusLabel}
                 </span>
+                {/* Attendance lifecycle (ADR-050 axis 1) — a live pin is always
+                    `bertugas`, but a worker reached from search or the roster may
+                    be belum_hadir / terlambat / pulang, and that is the first
+                    thing a supervisor wants to read. */}
+                {statePill && (
+                  <span
+                    className={cn(
+                      'rounded-nb-sm border px-2 py-0.5 text-xs font-semibold',
+                      PRESENCE_TONE_CLASS[statePill.tone].text,
+                      PRESENCE_TONE_CLASS[statePill.tone].border
+                    )}
+                  >
+                    {t(statePill.labelKey)}
+                  </span>
+                )}
+                {/* Flags are additive, not exclusive — a worker can be late AND
+                    on overtime. Ordering + which sources count live in the shared
+                    helper, so web and mobile cannot drift. */}
+                {flagPills.map((p) => (
+                  <span
+                    key={p.labelKey}
+                    className={cn(
+                      'rounded-nb-sm border px-2 py-0.5 text-xs font-semibold',
+                      PRESENCE_TONE_CLASS[p.tone].text,
+                      PRESENCE_TONE_CLASS[p.tone].border
+                    )}
+                  >
+                    {t(p.labelKey)}
+                  </span>
+                ))}
+                {/* Presence is two axes (ADR-050): the status pill above is the
+                    live/activity axis; this is the inside/outside-area axis, shown
+                    alongside it (matching mobile's worker detail) instead of buried
+                    in the last-location block. */}
+                {summary.last_location && (
+                  <span
+                    role="status"
+                    aria-label={
+                      summary.last_location.is_within_area
+                        ? t('monitoring:userDetail.withinArea')
+                        : t('monitoring:userDetail.outsideArea')
+                    }
+                    className={cn(
+                      'text-xs font-semibold border px-2 py-0.5 rounded-nb-sm',
+                      // Outside uses the dedicated `outside` token (purple), NOT
+                      // `missing` (red) — it's a location axis, not a critical status,
+                      // and stays consistent with the last-location block below.
+                      summary.last_location.is_within_area
+                        ? 'bg-[var(--color-status-active-bg)] text-[var(--color-status-active)] border-[var(--color-status-active)]'
+                        : 'bg-[var(--color-status-outside-bg)] text-[var(--color-status-outside)] border-[var(--color-status-outside)]'
+                    )}
+                  >
+                    {summary.last_location.is_within_area
+                      ? t('monitoring:userDetail.withinArea')
+                      : t('monitoring:userDetail.outsideArea')}
+                  </span>
+                )}
               </div>
             </div>
           </div>
 
           {/* Area / Rayon */}
-          {(summary.area_name || summary.rayon_name) && (
+          {(summary.location_name || summary.district_name) && (
             <div className="mt-2 flex flex-wrap gap-2 text-xs text-nb-gray-600">
-              {summary.rayon_name && <span>{t('monitoring:userDetail.rayonLabel')} {summary.rayon_name}</span>}
-              {summary.area_name && <span>{t('monitoring:userDetail.areaLabel')} {summary.area_name}</span>}
+              {summary.district_name && <span>{t('monitoring:userDetail.districtLabel')} {summary.district_name}</span>}
+              {summary.location_name && <span>{t('monitoring:userDetail.areaLabel')} {summary.location_name}</span>}
             </div>
           )}
         </div>
@@ -185,7 +274,7 @@ export function UserDetailPanel({
                   {summary.last_location.battery_level}%
                 </div>
               )}
-              <div className="text-nb-gray-400">
+              <div className="text-nb-gray-500">
                 {formatRelativeTime(summary.last_location.logged_at)}
               </div>
               <div
@@ -224,7 +313,23 @@ export function UserDetailPanel({
                 <li key={activity.id} className="flex items-center gap-2 text-xs">
                   <span className="h-1.5 w-1.5 rounded-full bg-nb-primary flex-shrink-0" />
                   <span className="text-nb-black font-medium truncate">{activity.title}</span>
-                  <span className="text-nb-gray-400 flex-shrink-0 ml-auto">
+                  {/* The verification photo was on the wire the whole time and
+                      rendered by neither platform. A camera button is enough of
+                      an affordance at this size; the photo opens in the lightbox. */}
+                  {activity.photo_url && (
+                    <button
+                      type="button"
+                      onClick={() => setPhoto(activity.photo_url)}
+                      className="flex-shrink-0 rounded-nb-sm border border-nb-black bg-white p-0.5 text-nb-black transition-colors hover:bg-nb-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nb-primary"
+                      aria-label={t('monitoring:userDetail.viewPhoto')}
+                      data-testid={`activity-photo-${activity.id}`}
+                    >
+                      <Camera className="h-3 w-3" aria-hidden="true" />
+                    </button>
+                  )}
+                  {/* gray-400 on white is 2.52:1 and fails AA for text this size;
+                      gray-500 is 4.80:1. */}
+                  <span className="text-nb-gray-500 flex-shrink-0 ml-auto">
                     {new Date(activity.created_at).toLocaleTimeString(intlLocale(), {
                       hour: '2-digit',
                       minute: '2-digit',
@@ -263,6 +368,33 @@ export function UserDetailPanel({
           </div>
         )}
 
+        {/* Reassignment history — parity with mobile's "Riwayat Pemindahan". */}
+        {(isReassignmentsLoading || (reassignments && reassignments.length > 0)) && (
+          <div className="border-2 border-nb-black rounded-nb-base p-3 bg-white shadow-nb-sm">
+            <h3 className="text-xs font-bold uppercase text-nb-gray-500 mb-2 flex items-center gap-1">
+              <ArrowLeftRight className="w-3.5 h-3.5" />
+              {t('monitoring:userDetail.reassignmentHistory')}
+            </h3>
+            {isReassignmentsLoading ? (
+              <p className="text-xs text-nb-gray-500">{t('monitoring:userDetail.loadingHistory')}</p>
+            ) : (
+              <ul className="space-y-1.5">
+                {(reassignments ?? []).slice(0, 5).map((r) => (
+                  <li key={r.id} className="text-xs">
+                    <div className="font-medium text-nb-black">
+                      {r.previous_area_name ?? '—'} → {r.new_area_name ?? '—'}
+                    </div>
+                    <div className="text-nb-gray-500">
+                      {r.actor_name}
+                      {r.reason ? ` · ${r.reason}` : ''}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
         {/* WhatsApp / Call links */}
         {summary.whatsapp_links && (
           <div className="border-2 border-nb-black rounded-nb-base p-3 bg-white shadow-nb-sm">
@@ -294,6 +426,13 @@ export function UserDetailPanel({
           </div>
         )}
       </div>
+
+      <PhotoLightbox
+        photos={photo ? [photo] : []}
+        index={photo ? 0 : null}
+        onIndexChange={(i) => i == null && setPhoto(null)}
+        alt={t('monitoring:userDetail.viewPhoto')}
+      />
     </div>
   );
 }

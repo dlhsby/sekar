@@ -25,7 +25,7 @@ import {
   withAlpha,
 } from '../../constants/nbTokens';
 import type { RootState } from '../../store/store';
-import type { RayonBoundary } from '../../types/models.types';
+import type { DistrictBoundary } from '../../types/models.types';
 import { geometryToRings } from '../../utils/geoJsonUtils';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -37,7 +37,7 @@ export interface AreaStatusById {
 }
 
 interface AreaStatusOverlayProps {
-  rayons: RayonBoundary[];
+  districts: DistrictBoundary[];
   /**
    * Incrementing integer — callers pass a new value on tab focus and after
    * manual refresh so Android native Polygon overlays are force-recreated.
@@ -72,7 +72,7 @@ function statusToFillColor(status: AreaPlantStatus | undefined): string {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function AreaStatusOverlay({
-  rayons,
+  districts,
   boundaryKey,
   areaStatusById: areaStatusByIdProp,
 }: AreaStatusOverlayProps): React.JSX.Element {
@@ -89,14 +89,14 @@ export function AreaStatusOverlay({
   // ships its own fetch action. The parent (MapDashboardScreen) already
   // dispatches fetchSnapshot on focus — no extra effect needed here yet.
 
-  if (!rayons || rayons.length === 0) {
+  if (!districts || districts.length === 0) {
     return <></>;
   }
 
   const polygons: React.JSX.Element[] = [];
 
-  for (const rayon of rayons) {
-    for (const area of rayon.areas) {
+  for (const district of districts) {
+    for (const area of district.areas) {
       // Handles Polygon + MultiPolygon — one <Polygon> per outer ring.
       const rings = geometryToRings(area.boundary_polygon);
       if (rings.length === 0) { continue; }

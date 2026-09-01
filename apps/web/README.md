@@ -39,7 +39,7 @@ npm run test:e2e:ui      # E2E with UI
 
 ## Design Tokens & PWA
 
-**Tokens** (generated, source of truth at `/specs/ui-ux/tokens.json`):
+**Tokens** (generated, source of truth at `/specs/design-system/tokens.json`):
 ```bash
 npm run tokens:build     # From project root
 ```
@@ -59,8 +59,8 @@ registry — these self-update on each mobile release.
 - **Root guide (conventions, all services, deploy):** [`/README.md`](/README.md)
 - **Full contributor guide:** [`/CLAUDE.md`](/CLAUDE.md)
 - **Web development & components:** [`CLAUDE.md`](CLAUDE.md)
-- **Design tokens & Neo Brutalism:** [`/specs/ui-ux/design-tokens.md`](/specs/ui-ux/design-tokens.md)
+- **Design tokens & Neo Brutalism:** [`/specs/design-system/design-tokens.md`](/specs/design-system/design-tokens.md)
 - **E2E testing guide:** [`/specs/testing/web-testing.md`](/specs/testing/web-testing.md)
-- **Web specs:** [`/specs/web/`](/specs/web/)
-- **Deploy (CI/CD, staging, production):** [`/specs/deployment/deployment-guide.md`](/specs/deployment/deployment-guide.md)
+- **Web specs:** [`/specs/platforms/web/`](/specs/platforms/web/)
+- **Deploy (CI/CD, staging, production):** [`/specs/deployment/README.md`](/specs/deployment/README.md)
 - **All specs:** [`/specs/README.md`](/specs/README.md)

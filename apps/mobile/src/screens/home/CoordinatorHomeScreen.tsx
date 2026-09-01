@@ -13,6 +13,7 @@ import { AttendanceSummaryRow } from '../../components/home/AttendanceSummaryRow
 import { ShiftDetailModal, TodayActivitiesModal, TodayWorkHoursModal, TodayTasksModal } from '../../components/modals';
 import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows } from '../../constants/nbTokens';
 import { TASK_RECEIVERS } from '../../constants/roles';
+import { screenContentGrow } from '../../constants/layout';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { fetchLiveUsers } from '../../store/slices/monitoringSlice';
 import { setCurrentShift, setShiftHistory, setError } from '../../store/slices/shiftSlice';
@@ -161,35 +162,35 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
   const total = liveUsers.length;
   const active = statusCounts.active;
 
-  // Derived alerts: out-of-area + missing personnel (no SLA feed on mobile).
+  // Derived alerts: out-of-area + absent personnel (no SLA feed on mobile).
   const alerts = useMemo<TeamAlert[]>(() => {
     const out = liveUsers
-      .filter((u) => u.status === 'outside_area' || u.outside_boundary)
+      .filter((u) => u.outside_boundary)
       .map((u) => ({
         id: `out-${u.id}`,
         tone: 'bad' as StatusTone,
         pill: t('home:coordinator.alerts.outOfArea'),
         title: t('home:coordinator.alerts.outOfAreaTitle', { name: u.full_name }),
         meta: formatRelativeTime(u.last_update),
-        sub: u.area_name || undefined,
+        sub: u.location_name || undefined,
       }));
-    const missing = liveUsers
-      .filter((u) => u.status === 'missing')
+    const absent = liveUsers
+      .filter((u) => u.status === 'absent')
       .map((u) => ({
-        id: `miss-${u.id}`,
+        id: `abs-${u.id}`,
         tone: 'warn' as StatusTone,
         pill: t('home:coordinator.alerts.absent'),
         title: t('home:coordinator.alerts.absentTitle', { name: u.full_name }),
         meta: formatRelativeTime(u.last_update),
-        sub: u.area_name || undefined,
+        sub: u.location_name || undefined,
       }));
-    return [...out, ...missing];
+    return [...out, ...absent];
   }, [liveUsers, t]);
 
   const outsideNames = useMemo(
     () =>
       liveUsers
-        .filter((u) => u.status === 'outside_area' || u.outside_boundary)
+        .filter((u) => u.outside_boundary)
         .map((u) => u.full_name.split(/\s+/)[0])
         .slice(0, 2)
         .join(' · '),
@@ -254,7 +255,7 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[nbColors.primary]} />}
         >
           {/* Kehadiran saya — clock-in card (matches FieldHomeScreen structure) */}
-          <HomeSectionDivider label={t('home:coordinator.sections.attendance')} />
+          <HomeSectionDivider label={t('home:coordinator.sections.attendance')} first />
           {currentShift ? (
             <TouchableOpacity
               style={[styles.absensi, currentShift.is_overtime ? styles.absensiLembur : styles.absensiActive]}
@@ -414,7 +415,7 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
             />
           </View>
           <View style={styles.tilesRow}>
-            <HomeStatTile label={t('home:coordinator.kpi.absent')} value={statusCounts.missing} variant="warn" testID="kpi-missing" />
+            <HomeStatTile label={t('home:coordinator.kpi.absent')} value={statusCounts.absent} variant="warn" testID="kpi-absent" />
             <HomeStatTile label={t('home:coordinator.kpi.offline')} value={statusCounts.offline} variant="neutral" testID="kpi-offline" />
           </View>
 
@@ -469,7 +470,7 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'transparent' },
   scrollView: { flex: 1 },
-  content: { paddingHorizontal: nbSpacing.md, paddingTop: nbSpacing.sm, paddingBottom: nbSpacing.md, flexGrow: 1 },
+  content: screenContentGrow,
 
   hero: {
     backgroundColor: nbColors.bgAccentMint,
@@ -477,7 +478,8 @@ const styles = StyleSheet.create({
     borderColor: nbColors.black,
     borderRadius: nbRadius.md,
     padding: nbSpacing.md,
-    marginBottom: nbSpacing.md,
+    // Intra-section gap to the tile rows below (same summary section).
+    marginBottom: nbSpacing.sm,
     ...nbShadows.md,
   },
   heroTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -499,7 +501,7 @@ const styles = StyleSheet.create({
   avatarText: { fontSize: 11, fontWeight: '700' },
 
   tilesRow: { flexDirection: 'row', gap: nbSpacing.sm, marginBottom: nbSpacing.sm },
-  statTiles: { flexDirection: 'row', gap: nbSpacing.sm, marginBottom: nbSpacing.md },
+  statTiles: { flexDirection: 'row', gap: nbSpacing.sm, marginBottom: nbSpacing.sm },
   list: { gap: nbSpacing.sm },
 
   absensi: {
@@ -507,7 +509,6 @@ const styles = StyleSheet.create({
     borderColor: nbColors.black,
     borderRadius: nbRadius.md,
     padding: nbSpacing.md,
-    marginBottom: nbSpacing.md,
     ...nbShadows.md,
   },
   absensiActive: { backgroundColor: nbColors.statusActiveBg },

@@ -13,6 +13,7 @@ import axios, {
 import i18n from '../../i18n/config';
 import config from '../../constants/config';
 import { getToken, setToken, getRefreshToken, setRefreshToken, clearAll } from '../storage/secureStorage';
+import { emitSessionExpired } from '../auth/sessionEvents';
 import type { ApiError, ApiResponse } from '../../types/api.types';
 import { getErrorMessage } from '../../constants/errorCodes';
 
@@ -66,15 +67,33 @@ function onTokenRefreshed(token: string | null): void {
 }
 
 /**
- * Attempt to refresh the access token
+ * The outcome of a refresh attempt.
+ *
+ * `rejected` and `unavailable` are NOT the same event, and collapsing them into
+ * a single null - as this function used to - is what made a flaky connection
+ * indistinguishable from a dead session. A field worker in a basement or under
+ * canopy would have been logged out and lost their shift context because a
+ * request timed out.
  */
-async function refreshAccessToken(): Promise<string | null> {
-  try {
-    const refreshToken = await getRefreshToken();
-    if (!refreshToken) {
-      return null;
-    }
+type RefreshOutcome =
+  /** The server issued a new token. */
+  | { status: 'refreshed'; token: string }
+  /** The server refused the refresh token. The session is genuinely over. */
+  | { status: 'rejected' }
+  /** We never got an answer. Keep the credentials and try again later. */
+  | { status: 'unavailable' };
 
+/**
+ * Attempt to refresh the access token.
+ */
+async function refreshAccessToken(): Promise<RefreshOutcome> {
+  const refreshToken = await getRefreshToken().catch(() => null);
+  if (!refreshToken) {
+    // Nothing to refresh WITH. There is no server to ask, so this is terminal.
+    return { status: 'rejected' };
+  }
+
+  try {
     const response = await axios.post(`${config.API_BASE_URL}/auth/refresh`, {
       refresh_token: refreshToken,
     });
@@ -88,14 +107,48 @@ async function refreshAccessToken(): Promise<string | null> {
         await setRefreshToken(newRefreshToken);
       }
 
-      return access_token;
+      return { status: 'refreshed', token: access_token };
     }
 
-    return null;
+    // A 200 with no token is a broken contract, not a refusal — but there is
+    // no token to continue with either.
+    return { status: 'rejected' };
   } catch (error) {
-    console.error('Token refresh failed:', error);
-    return null;
+    const axiosError = error as AxiosError;
+    const status = axiosError.response?.status;
+
+    // Only the server saying THIS TOKEN IS BAD may end a session. Everything
+    // else — no response at all (timeout, DNS, aeroplane mode) and any answer
+    // that is about the server rather than the credential — is a reason to try
+    // again later, not to sign a worker out mid-shift.
+    //
+    // The 5xx half matters most on deploy: behind nginx or an ALB a rolling
+    // restart does not connection-refuse, it answers 502/503. Treating "the
+    // server answered" as "the server refused me" would log out every worker
+    // whose token happened to expire during the deploy window.
+    if (status !== 401 && status !== 403) {
+      console.warn(
+        `[ApiClient] Token refresh unavailable (${status ?? 'no response'}), keeping session`,
+      );
+      return { status: 'unavailable' };
+    }
+
+    console.error('[ApiClient] Refresh token rejected:', status);
+    return { status: 'rejected' };
   }
+}
+
+/**
+ * Tear down a session the server will no longer accept: drop the credentials
+ * and tell the app, which stops tracking and returns to the login screen.
+ *
+ * The queue is deliberately NOT touched. A forced logout arrives mid-shift with
+ * no chance to sync, so anything already captured has to survive it - the
+ * voluntary logout path clears the queue only after offering to sync it first.
+ */
+async function endSession(reason: 'refresh_rejected' | 'retry_exhausted'): Promise<void> {
+  await clearAll();
+  emitSessionExpired(reason);
 }
 
 /**
@@ -189,10 +242,11 @@ apiClient.interceptors.response.use(
       if (error.response.status === 401 && error.config) {
         const originalRequest = error.config as any;
 
-        // Prevent infinite retry loop
+        // Prevent infinite retry loop. A request that 401s again with a token
+        // we just minted is not a refresh problem — the session is finished.
         if (originalRequest._retry) {
-          console.debug('🔒 Token refresh failed, clearing auth');
-          await clearAll();
+          console.debug('🔒 Retried request still unauthorized, ending session');
+          await endSession('retry_exhausted');
           return Promise.reject(apiError);
         }
 
@@ -201,30 +255,44 @@ apiClient.interceptors.response.use(
           originalRequest._retry = true;
 
           try {
-            const newToken = await refreshAccessToken();
+            const outcome = await refreshAccessToken();
+            isRefreshing = false;
 
-            if (newToken) {
+            if (outcome.status === 'refreshed') {
               console.debug('✅ Token refreshed successfully');
-              isRefreshing = false;
-              onTokenRefreshed(newToken);
+              onTokenRefreshed(outcome.token);
 
               // Retry original request with new token
               if (originalRequest.headers) {
-                originalRequest.headers.Authorization = `Bearer ${newToken}`;
+                originalRequest.headers.Authorization = `Bearer ${outcome.token}`;
               }
               return apiClient(originalRequest);
-            } else {
-              console.debug('❌ Token refresh failed, clearing auth');
-              isRefreshing = false;
-              onTokenRefreshed(null); // Notify all subscribers of failure
-              await clearAll();
-              return Promise.reject(apiError);
             }
+
+            onTokenRefreshed(null); // Notify all subscribers of failure
+
+            if (outcome.status === 'unavailable') {
+              // We could not REACH the server to ask. Keep the credentials and
+              // report it as what it is, so the caller queues the work offline
+              // instead of the worker being signed out by a bad signal.
+              console.warn('📴 Refresh unreachable — keeping session for retry');
+              return Promise.reject({
+                status: 0,
+                code: 'NETWORK_ERROR',
+                message: getErrorMessage('NETWORK_ERROR'),
+              } as ApiError);
+            }
+
+            console.debug('❌ Refresh token rejected, ending session');
+            await endSession('refresh_rejected');
+            return Promise.reject(apiError);
           } catch (refreshError) {
+            // `refreshAccessToken` handles its own errors; reaching here means
+            // storage failed, which leaves us unable to prove a session exists.
             console.error('❌ Token refresh error:', refreshError);
             isRefreshing = false;
-            onTokenRefreshed(null); // Notify all subscribers of failure
-            await clearAll();
+            onTokenRefreshed(null);
+            await endSession('refresh_rejected');
             return Promise.reject(apiError);
           }
         } else {

@@ -3,17 +3,24 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { z } from 'zod';
 import { MonitoringConfig } from '../entities/monitoring-config.entity';
-import {
-  MonitoringCacheService,
-  StatusThresholds,
-  GeofencingConfig,
-} from './monitoring-cache.service';
+import { MonitoringCacheService, type BoundaryScope } from './monitoring-cache.service';
+import { SystemConfigService } from '../../settings/services/system-config.service';
+
+/**
+ * Threshold + geofencing config moved to SystemConfigService (ADR-049 unify) —
+ * editing these via the monitoring-config surface is rejected; use /settings.
+ */
+const MOVED_TO_SETTINGS = new Set(['status_thresholds', 'geofencing']);
 
 const statusThresholdsSchema = z.object({
-  active_max_age_seconds: z.number().int().min(60).max(600),
-  inactive_threshold_seconds: z.number().int().min(300).max(3600),
-  missing_threshold_seconds: z.number().int().min(1800).max(7200),
+  // The single surviving boundary: past this a clocked-in worker is OFFLINE.
+  // `inactive_threshold_seconds` + `missing_threshold_seconds` were retired with
+  // the 5→3 status collapse — with idle and missing both folding into offline,
+  // nothing could ever read them. Default 600 s / 10 min (ADR-050); ceiling
+  // raised above the default so the value is tunable upward, not pinned to it.
+  active_max_age_seconds: z.number().int().min(60).max(1800),
   location_ping_interval_seconds: z.number().int().min(30).max(300),
+  late_grace_seconds: z.number().int().min(0).max(7200),
 });
 
 const geofencingSchema = z.object({
@@ -56,16 +63,36 @@ export class MonitoringConfigService {
     @InjectRepository(MonitoringConfig)
     private readonly configRepository: Repository<MonitoringConfig>,
     private readonly cacheService: MonitoringCacheService,
+    private readonly systemConfig: SystemConfigService,
   ) {
+    // Thresholds + geofencing now resolve from SystemConfigService (DB → env →
+    // default), so operator overrides in /settings drive status calculation.
     this.cacheService.setLoaders({
-      thresholds: () => this.getTypedConfig<StatusThresholds>('status_thresholds'),
-      geofencing: () => this.getTypedConfig<GeofencingConfig>('geofencing'),
-      boundary: (areaId: string) => this.loadAreaBoundary(areaId),
+      thresholds: () =>
+        Promise.resolve({
+          active_max_age_seconds: this.systemConfig.getNumber('monitoring.active_max_age_sec', 600),
+          location_ping_interval_seconds: this.systemConfig.getNumber(
+            'monitoring.location_ping_interval_sec',
+            60,
+          ),
+          late_grace_seconds: this.systemConfig.getNumber('monitoring.late_grace_sec', 900),
+        }),
+      geofencing: () =>
+        Promise.resolve({
+          tolerance_meters: this.systemConfig.getNumber('geofence.tolerance_m', 50),
+          outside_area_grace_seconds: this.systemConfig.getNumber(
+            'geofence.outside_area_grace_sec',
+            120,
+          ),
+        }),
+      boundary: (scope, id) => this.loadBoundary(scope, id),
     });
   }
 
   async findAll(): Promise<MonitoringConfig[]> {
-    return this.configRepository.find({ order: { key: 'ASC' } });
+    // Hide the sections that moved to /settings (status_thresholds/geofencing).
+    const rows = await this.configRepository.find({ order: { key: 'ASC' } });
+    return rows.filter((c) => !MOVED_TO_SETTINGS.has(c.key));
   }
 
   async findByKey(key: string): Promise<MonitoringConfig> {
@@ -77,6 +104,11 @@ export class MonitoringConfigService {
   }
 
   async updateByKey(key: string, value: Record<string, any>): Promise<MonitoringConfig> {
+    if (MOVED_TO_SETTINGS.has(key)) {
+      throw new BadRequestException(
+        `'${key}' is now managed in System Settings (Pengaturan → Sistem), not here.`,
+      );
+    }
     const schema = SCHEMAS[key];
     if (schema) {
       const result = schema.safeParse(value);
@@ -89,27 +121,20 @@ export class MonitoringConfigService {
     config.value = value;
     const saved = await this.configRepository.save(config);
 
-    if (key === 'status_thresholds' || key === 'geofencing') {
-      this.cacheService.invalidateThresholds();
-    }
-
     this.logger.log(`Updated monitoring config: ${key}`);
     return saved;
   }
 
-  private async getTypedConfig<T>(key: string): Promise<T> {
-    const config = await this.configRepository.findOne({ where: { key } });
-    if (!config) {
-      throw new NotFoundException(`Config '${key}' not found`);
-    }
-    return config.value as T;
-  }
-
-  private async loadAreaBoundary(areaId: string): Promise<number[][][] | null> {
-    const area = await this.configRepository.manager.query(
-      'SELECT boundary_polygon FROM areas WHERE id = $1',
-      [areaId],
+  /**
+   * Boundary polygon coordinates for a geofence subject. The table is chosen from
+   * a fixed allowlist keyed by scope (never interpolate a caller string into SQL).
+   */
+  private async loadBoundary(scope: BoundaryScope, id: string): Promise<number[][][] | null> {
+    const table = { location: 'locations', region: 'regions', district: 'districts' }[scope];
+    const rows = await this.configRepository.manager.query(
+      `SELECT boundary_polygon FROM ${table} WHERE id = $1`,
+      [id],
     );
-    return area?.[0]?.boundary_polygon?.coordinates || null;
+    return rows?.[0]?.boundary_polygon?.coordinates || null;
   }
 }

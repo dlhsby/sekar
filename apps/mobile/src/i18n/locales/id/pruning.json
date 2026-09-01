@@ -32,9 +32,9 @@
     "dateRange": "Rentang Tanggal",
     "dateFrom": "Dari",
     "dateTo": "Sampai",
-    "rayon": "Rayon",
-    "rayonAll": "Semua Rayon",
-    "rayonMine": "Rayon Saya",
+    "district": "Rayon",
+    "districtAll": "Semua Rayon",
+    "districtMine": "Rayon Saya",
     "referenceCodeLabel": "Nomor Permohonan",
     "reset": "Reset",
     "resetLabel": "Reset filter permohonan",
@@ -47,8 +47,8 @@
     "pageTitle": "Buat Permohonan Perantingan",
     "locationCardTitle": "Lokasi Perantingan",
     "locationCardTitleRequired": "Lokasi *",
-    "rayonLabel": "Rayon",
-    "rayonPlaceholder": "Pilih Rayon",
+    "districtLabel": "Rayon",
+    "districtPlaceholder": "Pilih Rayon",
     "notSetLabel": "Belum diatur",
     "kecamatanLabel": "Kecamatan",
     "kecamatanPlaceholder": "Contoh: Tegalsari",
@@ -308,7 +308,7 @@
   },
   "filterChip": {
     "dateLabel": "Tanggal",
-    "rayonLabel": "Rayon"
+    "districtLabel": "Rayon"
   },
   "listScreen": {
     "sortLabel": "Urutan: {{label}}",
@@ -327,7 +327,7 @@
   "locationCard": {
     "sectionTitle": "📍 LOKASI",
     "kecamatanLabel": "Kecamatan",
-    "rayonLabel": "Rayon",
+    "districtLabel": "Rayon",
     "addressLabel": "Alamat",
     "gpsLabel": "Koordinat GPS",
     "mapButtonLabel": "Lihat di Peta",

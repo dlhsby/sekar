@@ -8,13 +8,13 @@ import {
 } from 'typeorm';
 
 @Entity('service_capacity')
-@Unique('uq_service_capacity', ['rayonId', 'year', 'isoWeek', 'serviceType'])
+@Unique('uq_service_capacity', ['districtId', 'year', 'isoWeek', 'serviceType'])
 export class ServiceCapacity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'uuid', name: 'rayon_id' })
-  rayonId: string;
+  @Column({ type: 'uuid', name: 'district_id' })
+  districtId: string;
 
   @Column({ type: 'int' })
   year: number;

@@ -134,7 +134,7 @@ describe('Auth Hooks', () => {
     it('should allow user with required role', () => {
       mockAuthContext(mockUser);
 
-      renderHook(() => useRequireAuth(['admin_system', 'top_management']));
+      renderHook(() => useRequireAuth(['admin_system', 'management']));
 
       expect(mockPush).not.toHaveBeenCalled();
     });

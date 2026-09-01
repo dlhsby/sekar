@@ -35,6 +35,7 @@ import { getAttendanceDays } from '../../services/api/shiftsApi';
 import { useRoleAccess } from '../../hooks/useRoleAccess';
 import { useAppSelector } from '../../store/hooks';
 import { nbColors, nbSpacing } from '../../constants/nbTokens';
+import { screenContentGrow } from '../../constants/layout';
 import type { MainTabParamList } from '../../types/navigation.types';
 import type { AttendanceFilter, AttendanceDaySummary } from '../../types/api.types';
 
@@ -324,9 +325,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    paddingHorizontal: nbSpacing.md,
+    ...screenContentGrow,
     paddingBottom: nbSpacing['2xl'],
-    flexGrow: 1,
   },
   footerLoader: {
     paddingVertical: nbSpacing.md,

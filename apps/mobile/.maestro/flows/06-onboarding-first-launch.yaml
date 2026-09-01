@@ -12,14 +12,14 @@ appId: com.wahyutrip.sekar
 
 # May see welcome carousel or login depending on app logic
 # For this test, we assume carousel is shown first (or is skipped)
-- wait: 1000
-
+- waitForAnimationToEnd:
+    timeout: 1000
 # If carousel is shown, skip to login
 - tryTapOn:
     id: carousel-skip
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 # Now at login — use a fresh test user
 - tryTapOn:
     id: username-input
@@ -27,13 +27,13 @@ appId: com.wahyutrip.sekar
 
 - tryTapOn:
     id: password-input
-- inputText: password123
+- inputText: 12345678
 
 - tapOn:
     id: login-button
 
-- wait: 2000
-
+- waitForAnimationToEnd:
+    timeout: 2000
 # Should redirect to OB-1 (OnboardingWelcomeScreen)
 - assertVisible:
     id: onboarding-welcome-screen
@@ -50,8 +50,8 @@ appId: com.wahyutrip.sekar
 - tapOn:
     id: onboarding-welcome-continue
 
-- wait: 1000
-
+- waitForAnimationToEnd:
+    timeout: 1000
 # Now at OB-2 (OnboardingPermissionsScreen)
 - assertVisible:
     id: perm-row-notifications
@@ -80,42 +80,42 @@ appId: com.wahyutrip.sekar
 - tapOn:
     id: perm-grant-notifications
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 - tapOn:
     id: perm-grant-location
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 - tapOn:
     id: perm-grant-background_location
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 - tapOn:
     id: perm-grant-camera
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 - tapOn:
     id: perm-grant-gallery
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 # After all permissions are granted (or denied), "Lanjut" should be enabled
 # Scroll down to see the "Lanjut" button if needed
 - scroll:
     direction: down
     duration: 500
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 # Tap "Lanjut" to proceed to OB-3
 - tapOn:
     text: Lanjut
 
-- wait: 1000
-
+- waitForAnimationToEnd:
+    timeout: 1000
 # Should now be at OB-3 (OnboardingAreaPreviewScreen)
 - assertVisible:
     text: Area Anda|Assigned Area|Lokasi Anda
@@ -124,8 +124,8 @@ appId: com.wahyutrip.sekar
 - tryTapOn:
     text: Selesai
 
-- wait: 1500
-
+- waitForAnimationToEnd:
+    timeout: 1500
 # After onboarding, should reach home screen (FieldHomeScreen for satgas)
 - assertVisible:
     text: Beranda

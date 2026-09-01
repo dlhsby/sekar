@@ -7,7 +7,7 @@ import { ArrowDownRight, ArrowUpRight } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
 /**
- * KpiTile + KpiGrid — dashboard / rayon-detail summary tiles.
+ * KpiTile + KpiGrid — dashboard / district-detail summary tiles.
  *
  * Mirrors the hi-fi `.card.kpi` + `.kpi-h/.kpi-v/.kpi-d` primitives:
  * mono uppercase eyebrow, Space-Grotesk numeral, optional delta with arrow.

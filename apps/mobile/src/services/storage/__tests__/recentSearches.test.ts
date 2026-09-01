@@ -40,8 +40,8 @@ describe('recentSearches', () => {
   });
 
   it('keeps same id under different types as separate entries', async () => {
-    await addRecentSearch(mk('1', 'area'));
-    await addRecentSearch(mk('1', 'rayon'));
+    await addRecentSearch(mk('1', 'location'));
+    await addRecentSearch(mk('1', 'district'));
     expect(await getRecentSearches()).toHaveLength(2);
   });
 

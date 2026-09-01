@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
 /**
@@ -19,8 +19,8 @@ export function usePageTitle() {
       '/overtime': t('pageTitle.overtime'),
       '/schedules': t('pageTitle.schedules'),
       '/users': t('pageTitle.users'),
-      '/areas': t('pageTitle.areas'),
-      '/rayons': t('pageTitle.rayons'),
+      '/locations': t('pageTitle.locations'),
+      '/districts': t('pageTitle.districts'),
       '/plants': t('pageTitle.plants'),
       '/seeds': t('pageTitle.seeds'),
       '/assets': t('pageTitle.assets'),
@@ -42,7 +42,7 @@ export function usePageTitle() {
       '/import': t('pageTitle.import'),
       '/import/csv': t('pageTitle.importCsv'),
       '/analytics': t('pageTitle.analytics'),
-      '/analytics/areas': t('pageTitle.analyticsAreas'),
+      '/analytics/locations': t('pageTitle.analyticsLocations'),
       '/analytics/workers': t('pageTitle.analyticsWorkers'),
     };
 
@@ -75,8 +75,8 @@ export function useBreadcrumbTrail() {
       '/schedules': [t('breadcrumb.work'), t('pageTitle.schedules')],
       '/pruning-requests': [t('breadcrumb.work'), t('pageTitle.pruningRequests')],
       '/users': [t('breadcrumb.access'), t('pageTitle.users')],
-      '/areas': [t('breadcrumb.data'), t('pageTitle.areas')],
-      '/rayons': [t('breadcrumb.data'), t('pageTitle.rayons')],
+      '/locations': [t('breadcrumb.data'), t('pageTitle.locations')],
+      '/districts': [t('breadcrumb.data'), t('pageTitle.districts')],
       '/plants': [t('breadcrumb.data'), t('pageTitle.plants')],
       '/seeds': [t('breadcrumb.data'), t('pageTitle.seeds')],
       '/assets': [t('breadcrumb.data'), t('pageTitle.assets')],
@@ -89,7 +89,7 @@ export function useBreadcrumbTrail() {
       '/reports/schedules': [t('pageTitle.reports'), t('pageTitle.reportsSchedules')],
       '/reports/reporting': [t('pageTitle.reports'), t('pageTitle.reportsReporting')],
       '/analytics': [t('pageTitle.analytics')],
-      '/analytics/areas': [t('pageTitle.analytics'), t('pageTitle.analyticsAreas')],
+      '/analytics/locations': [t('pageTitle.analytics'), t('pageTitle.analyticsLocations')],
       '/analytics/workers': [t('pageTitle.analytics'), t('pageTitle.analyticsWorkers')],
       '/pruning-submit': [t('breadcrumb.kecamatan'), t('pageTitle.pruningSubmit')],
       '/pruning-submit/my': [t('breadcrumb.kecamatan'), t('pageTitle.pruningMy')],

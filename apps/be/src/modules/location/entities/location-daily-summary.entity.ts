@@ -50,13 +50,13 @@ export class LocationDailySummary {
   @Column({ type: 'int', default: 0 })
   outside_area_pings: number;
 
-  @ApiPropertyOptional({ description: 'Area the user was assigned to that day' })
+  @ApiPropertyOptional({ description: 'Location the user was assigned to that day' })
   @Column({ type: 'uuid', nullable: true })
-  area_id?: string | null;
+  location_id?: string | null;
 
-  @ApiPropertyOptional({ description: 'Rayon of the assigned area' })
+  @ApiPropertyOptional({ description: 'District of the assigned area' })
   @Column({ type: 'uuid', nullable: true })
-  rayon_id?: string | null;
+  district_id?: string | null;
 
   @ApiProperty({ description: 'True when written by the retention backfill, not the daily cron' })
   @Column({ type: 'boolean', default: false })

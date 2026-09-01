@@ -9,7 +9,11 @@ import { AppDispatch } from '../../../store/store';
 import websocketService from '../../../services/websocket/websocketService';
 import type { UserLocationEvent } from '../../../services/websocket/websocketService';
 import type { TrackingStatus, PresenceActivity, PresenceLocation } from '../../../types/models.types';
-import { updateLiveUser, fetchStaffingSummary } from '../../../store/slices/monitoringSlice';
+import {
+  updateLiveUser,
+  removeLiveUser,
+  fetchStaffingSummary,
+} from '../../../store/slices/monitoringSlice';
 
 export function useWebSocketUpdates(dispatch: AppDispatch): void {
   useEffect(() => {
@@ -69,14 +73,21 @@ export function useWebSocketUpdates(dispatch: AppDispatch): void {
       if (!mounted) return;
       dispatch(updateLiveUser({
         id: data.user_id,
-        area_id: data.new_area_id,
-        area_name: data.new_area_name,
+        location_id: data.new_area_id,
+        location_name: data.new_area_name,
       }));
     });
 
     const unsubStaffing = websocketService.onAreaStaffingChanged(() => {
       if (!mounted) return;
       dispatch(fetchStaffingSummary(undefined));
+    });
+
+    // When a worker clocks out, drop their pin immediately (mirrors web's snapshot
+    // removal). The event carries `user_id`; removeLiveUser no-ops if absent.
+    const unsubClockOut = websocketService.onUserClockOut((data) => {
+      if (!mounted) return;
+      dispatch(removeLiveUser({ id: data.user_id }));
     });
 
     return () => {
@@ -87,6 +98,7 @@ export function useWebSocketUpdates(dispatch: AppDispatch): void {
       unsubEnteredArea();
       unsubReassigned();
       unsubStaffing();
+      unsubClockOut();
     };
   }, [dispatch]);
 }

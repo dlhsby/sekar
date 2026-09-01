@@ -42,7 +42,7 @@ const mockTransaction = {
   unitPrice: 10000,
   supplier: 'Supplier A',
   receiptUrl: 's3://bucket/receipt.pdf',
-  toRayonId: null,
+  toDistrictId: null,
   toAreaId: null,
   recipientName: null,
   occurredAt: '2026-04-20',

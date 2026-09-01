@@ -12,9 +12,17 @@ import {
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { User } from '../../users/entities/user.entity';
-import { Rayon } from '../../rayons/entities/rayon.entity';
+import { District } from '../../districts/entities/district.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
-import { ScheduleArea } from './schedule-area.entity';
+import { Location } from '../../locations/entities/location.entity';
+import { Region } from '../../regions/entities/region.entity';
+import { TeamCategory } from '../../teams/entities/team-category.entity';
+import { ScheduleEvent } from './schedule-event.entity';
+import type {
+  LeaveReason,
+  LifecycleFlag,
+  LifecycleState,
+} from '../../monitoring/lib/presence-lifecycle';
 
 /**
  * Per-worker, per-WIB-day roster status.
@@ -36,22 +44,23 @@ export enum ScheduleStatus {
   OFF = 'off',
 }
 
-export type ScheduleSource = 'template' | 'manual';
+export type ScheduleSource = 'template' | 'manual' | 'event';
 
 /**
  * Schedule — one materialized roster row per worker per WIB day,
- * generated from the worker's standing template (rayon + permanent areas + one
+ * generated from the worker's standing template (district + permanent areas + one
  * shift) and editable per-day by admins. See ADR-013.
  */
 @Entity('schedules')
 @Index('IDX_schedules_date', ['schedule_date'])
-@Index('IDX_schedules_rayon_date', ['rayon_id', 'schedule_date'])
-// One live roster row per worker per day (soft-deleted rows excluded so a
-// delete + regenerate is possible). Mirrors the migration's partial index.
-@Index('UQ_schedules_user_date', ['user_id', 'schedule_date'], {
-  unique: true,
-  where: '"deleted_at" IS NULL',
-})
+@Index('IDX_schedules_rayon_date', ['district_id', 'schedule_date'])
+// Roster uniqueness is now time-based, not per (user, day): a user can have
+// multiple non-overlapping shifts. The overlap guard enforces real conflicts.
+// ADR-053: the real key is (user, date, shift, PLACE) and is a partial index over
+// COALESCE(location_id, region_id, district_id, nil) — see migration 17517.
+// TypeORM cannot express that, so it is NOT declared here; synchronize must not
+// recreate the old 3-column form.
+@Index('IDX_schedules_location', ['location_id'])
 export class Schedule {
   @ApiProperty({ description: 'Unique identifier' })
   @PrimaryGeneratedColumn('uuid')
@@ -65,9 +74,9 @@ export class Schedule {
   @Column({ type: 'date' })
   schedule_date: string;
 
-  @ApiProperty({ description: 'Single rayon for the day (null = none)', required: false })
+  @ApiProperty({ description: 'Single district for the day (null = none)', required: false })
   @Column({ type: 'uuid', nullable: true })
-  rayon_id: string | null;
+  district_id: string | null;
 
   @ApiProperty({ description: 'Single shift for the day (null = no shift / off)', required: false })
   @Column({ type: 'uuid', nullable: true })
@@ -97,6 +106,70 @@ export class Schedule {
   @Column({ type: 'text', nullable: true })
   notes: string | null;
 
+  @ApiProperty({
+    description: 'If materialized from a ScheduleEvent, the event id',
+    required: false,
+  })
+  @Column({ type: 'uuid', nullable: true })
+  schedule_event_id: string | null;
+
+  @ApiProperty({
+    description: 'Region (for mobile-scope events)',
+    required: false,
+  })
+  @Column({ type: 'uuid', nullable: true })
+  region_id: string | null;
+
+  @ApiProperty({
+    description:
+      'Lokasi this occurrence is scoped to. ADR-053: a row has ONE place. Part ' +
+      'of the uniqueness key (user, date, shift, place).',
+    required: false,
+  })
+  @Column({ type: 'uuid', nullable: true })
+  location_id: string | null;
+
+  @ApiProperty({
+    description: 'Team type (crew category; for team events)',
+    required: false,
+  })
+  @Column({ type: 'uuid', nullable: true })
+  team_category_id: string | null;
+
+  @ApiProperty({
+    description: 'Is this occurrence detached (overridden from the event)',
+    default: false,
+  })
+  @Column({ type: 'boolean', default: false })
+  is_detached: boolean;
+
+  /**
+   * Virtual flag (not persisted): marks a row as a projection beyond the
+   * materialization horizon (Phase 4, ADR-047). Omitted/false for materialized rows.
+   */
+  is_projected?: boolean;
+
+  /**
+   * Virtual presence axes (not persisted) — ADR-050, attached by
+   * `RosterPresenceService` on roster reads.
+   *
+   * `status` alone can only say planned / present / absent / leave. The board's
+   * coloured bullet needs the rest of the model — on duty but OUTSIDE the area,
+   * terlambat, pulang, ad-hoc — so these ride along rather than being re-derived
+   * per client (which is how web and mobile drifted apart before).
+   *
+   * `null` lifecycle means **not applicable**, not "off duty": rows dated in the
+   * future are never derived, because "where is this worker in their day" has no
+   * answer three weeks out.
+   */
+  lifecycle_state?: LifecycleState | null;
+  lifecycle_flags?: LifecycleFlag[];
+  leave_reason?: LeaveReason | null;
+  /** Live inside/outside axis; only set while `bertugas`, else null. */
+  is_within_area?: boolean | null;
+  /** False when a punch exists with no roster row for the subject (ad-hoc). */
+  is_scheduled?: boolean;
+
   // Actor audit (set explicitly by the service; no FK — historical reference).
   @Column({ type: 'uuid', nullable: true })
   created_by: string | null;
@@ -122,9 +195,9 @@ export class Schedule {
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @ManyToOne(() => Rayon, { nullable: true, onDelete: 'SET NULL' })
-  @JoinColumn({ name: 'rayon_id' })
-  rayon?: Rayon | null;
+  @ManyToOne(() => District, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'district_id' })
+  district?: District | null;
 
   @ManyToOne(() => ShiftDefinition, { eager: true, nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'shift_definition_id' })
@@ -134,6 +207,19 @@ export class Schedule {
   @JoinColumn({ name: 'replacement_user_id' })
   replacement_user?: User | null;
 
-  @OneToMany(() => ScheduleArea, (dsa) => dsa.schedule, { cascade: true })
-  schedule_areas: ScheduleArea[];
+  @ManyToOne(() => ScheduleEvent, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'schedule_event_id' })
+  schedule_event?: ScheduleEvent | null;
+
+  @ManyToOne(() => Region, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'region_id' })
+  region?: Region | null;
+
+  @ManyToOne(() => TeamCategory, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'team_category_id' })
+  team_category?: TeamCategory | null;
+
+  @ManyToOne(() => Location, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'location_id' })
+  location?: Location | null;
 }

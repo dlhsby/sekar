@@ -72,7 +72,7 @@ Backend already sends via FCM (`FCM_ENABLED=true` + service account) — no back
 1. Add the dependency: `npm i @invertase/react-native-apple-authentication`, then `pod install`.
 2. Enable the **Sign in with Apple** capability (§3).
 3. Frontend: add an "Sign in with Apple" button on the login screen (gate behind `Platform.OS === 'ios'`); on success POST the identity token to the backend.
-4. Backend: add `POST /api/v1/auth/apple` — verify the Apple identity token (audience = the app's bundle id / services id, issuer `https://appleid.apple.com`, validate against Apple's public keys), then find-or-link the user and issue the normal SEKAR JWT pair. Mirror the existing `AuthService` token-issuing path. (Spec: `specs/phases/phase-5-finishing-ios/backend.md §D`.)
+4. Backend: add `POST /api/v1/auth/apple` — verify the Apple identity token (audience = the app's bundle id / services id, issuer `https://appleid.apple.com`, validate against Apple's public keys), then find-or-link the user and issue the normal SEKAR JWT pair. Mirror the existing `AuthService` token-issuing path. (Spec: history/CHANGELOG.md §D`.)
 5. App Store note: Sign in with Apple is **required** by Apple if any other third-party social login is offered.
 
 ## 6. Biometric login (Face ID / Touch ID — integration plan)
@@ -89,7 +89,7 @@ Backend already sends via FCM (`FCM_ENABLED=true` + service account) — no back
 2. **Archive:** Xcode → Product → Destination "Any iOS Device" → **Product → Archive**.
 3. **Validate & upload:** Organizer → Distribute App → App Store Connect → Upload.
 4. **TestFlight:** App Store Connect → TestFlight → add internal/external testers; complete the test-information + export-compliance prompts. Field-test the 17-feature parity list (§8) on a real device.
-5. **App Store submission:** create the app listing (screenshots for required device sizes, description, keywords, support URL, **privacy policy URL**), fill the **App Privacy** questionnaire (location, camera, photos, identifiers), attach a working **demo account** (e.g. `admin/Password123!` on a reachable backend), then submit for review. Budget ~1–3 days review; location-always usage often draws extra scrutiny — justify it with the shift-tracking description.
+5. **App Store submission:** create the app listing (screenshots for required device sizes, description, keywords, support URL, **privacy policy URL**), fill the **App Privacy** questionnaire (location, camera, photos, identifiers), attach a working **demo account** (e.g. `admin/12345678` on a reachable backend), then submit for review. Budget ~1–3 days review; location-always usage often draws extra scrutiny — justify it with the shift-tracking description.
 
 ## 8. Android → iOS parity checklist (verify on device before submission)
 
@@ -101,4 +101,4 @@ Login (incl. phone login) · clock-in/out with selfie · GPS shift tracking **in
 - Apple Sign-In + biometrics are **planned, not implemented** (§5–§6).
 - All of §B is unverified until run on a Mac — treat this guide as the execution checklist, not a record of completed work.
 
-See also: ADR-027 (iOS build & distribution), `specs/phases/phase-5-finishing-ios/ios.md`, `specs/phases/phase-5-finishing-ios/backend.md §D`.
+See also: ADR-027 (iOS build & distribution), history/CHANGELOG.md, history/CHANGELOG.md §D`.

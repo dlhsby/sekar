@@ -37,11 +37,11 @@ WHERE "deleted_at" IS NULL;
 #### 2. idx_shifts_area_date
 ```sql
 CREATE INDEX "idx_shifts_area_date"
-ON "shifts" ("area_id", "clock_in_time" DESC)
+ON "shifts" ("location_id", "clock_in_time" DESC)
 WHERE "deleted_at" IS NULL;
 ```
 - **Purpose:** Supervisor area filtering and monitoring
-- **Columns:** area_id, clock_in_time DESC
+- **Columns:** location_id, clock_in_time DESC
 - **Filter:** Excludes soft-deleted records
 - **Expected Impact:** 20-80x faster for area-based queries
 
@@ -139,11 +139,11 @@ WHERE "is_reviewed" = FALSE AND "deleted_at" IS NULL;
 #### 11. idx_reports_area_date
 ```sql
 CREATE INDEX "idx_reports_area_date"
-ON "reports" ("area_id", "created_at" DESC)
+ON "reports" ("location_id", "created_at" DESC)
 WHERE "deleted_at" IS NULL;
 ```
 - **Purpose:** Area-based report filtering
-- **Columns:** area_id, created_at DESC
+- **Columns:** location_id, created_at DESC
 - **Filter:** Excludes soft-deleted records
 
 ---
@@ -184,9 +184,9 @@ ALTER TABLE "reports" ADD CONSTRAINT "chk_reports_gps_lng"
 
 #### Areas Table
 ```sql
-ALTER TABLE "areas" ADD CONSTRAINT "chk_areas_gps_lat"
+ALTER TABLE "locations" ADD CONSTRAINT "chk_areas_gps_lat"
   CHECK (gps_lat >= -90 AND gps_lat <= 90);
-ALTER TABLE "areas" ADD CONSTRAINT "chk_areas_gps_lng"
+ALTER TABLE "locations" ADD CONSTRAINT "chk_areas_gps_lng"
   CHECK (gps_lng >= -180 AND gps_lng <= 180);
 ```
 
@@ -230,7 +230,7 @@ ALTER TABLE "reports" ADD CONSTRAINT "chk_reports_condition"
 
 #### Area Radius Validation
 ```sql
-ALTER TABLE "areas" ADD CONSTRAINT "chk_areas_radius"
+ALTER TABLE "locations" ADD CONSTRAINT "chk_areas_radius"
   CHECK (radius_meters >= 1 AND radius_meters <= 10000);
 ```
 - **Purpose:** Enforce reasonable geofence sizes
@@ -243,16 +243,16 @@ ALTER TABLE "areas" ADD CONSTRAINT "chk_areas_radius"
 
 ### New Columns Added to Reports Table
 
-#### 1. area_id (UUID, NOT NULL)
+#### 1. location_id (UUID, NOT NULL)
 ```sql
-ALTER TABLE "reports" ADD "area_id" uuid NOT NULL;
+ALTER TABLE "reports" ADD "location_id" uuid NOT NULL;
 ALTER TABLE "reports" ADD CONSTRAINT "FK_reports_area"
-  FOREIGN KEY ("area_id") REFERENCES "areas"("id") ON DELETE NO ACTION;
+  FOREIGN KEY ("location_id") REFERENCES "locations"("id") ON DELETE NO ACTION;
 ```
 - **Purpose:** Direct area association for reports
 - **Type:** UUID, NOT NULL
 - **Relationship:** Foreign key to areas table
-- **Migration:** Backfilled from shifts.area_id
+- **Migration:** Backfilled from shifts.location_id
 - **Impact:** Enables area-based report filtering without joins
 
 #### 2. is_reviewed (BOOLEAN, DEFAULT FALSE)
@@ -412,10 +412,10 @@ WHERE gps_lat IS NOT NULL AND (gps_lat < -90 OR gps_lat > 90);
 SELECT 'Invalid reports lng' as issue, COUNT(*) FROM reports
 WHERE gps_lng IS NOT NULL AND (gps_lng < -180 OR gps_lng > 180);
 
-SELECT 'Invalid areas lat' as issue, COUNT(*) FROM areas
+SELECT 'Invalid areas lat' as issue, COUNT(*) FROM locations
 WHERE gps_lat < -90 OR gps_lat > 90;
 
-SELECT 'Invalid areas lng' as issue, COUNT(*) FROM areas
+SELECT 'Invalid areas lng' as issue, COUNT(*) FROM locations
 WHERE gps_lng < -180 OR gps_lng > 180;
 ```
 
@@ -437,7 +437,7 @@ SELECT 'Invalid report types' as issue, COUNT(*) FROM reports
 WHERE report_type NOT IN ('task_completion', 'incident', 'maintenance_request');
 
 -- Check for invalid area radius
-SELECT 'Invalid area radius' as issue, COUNT(*) FROM areas
+SELECT 'Invalid area radius' as issue, COUNT(*) FROM locations
 WHERE radius_meters < 1 OR radius_meters > 10000;
 ```
 
@@ -593,9 +593,9 @@ ALTER TABLE reports DROP CONSTRAINT IF EXISTS chk_reports_gps_lat;
 ALTER TABLE reports DROP CONSTRAINT IF EXISTS chk_reports_gps_lng;
 ALTER TABLE reports DROP CONSTRAINT IF EXISTS chk_reports_type;
 ALTER TABLE reports DROP CONSTRAINT IF EXISTS chk_reports_condition;
-ALTER TABLE areas DROP CONSTRAINT IF EXISTS chk_areas_gps_lat;
-ALTER TABLE areas DROP CONSTRAINT IF EXISTS chk_areas_gps_lng;
-ALTER TABLE areas DROP CONSTRAINT IF EXISTS chk_areas_radius;
+ALTER TABLE locations DROP CONSTRAINT IF EXISTS chk_areas_gps_lat;
+ALTER TABLE locations DROP CONSTRAINT IF EXISTS chk_areas_gps_lng;
+ALTER TABLE locations DROP CONSTRAINT IF EXISTS chk_areas_radius;
 
 -- 3. Revert FK cascade (back to RESTRICT)
 ALTER TABLE location_logs DROP CONSTRAINT FK_6938df393d1969889c5b0633a08;
@@ -605,7 +605,7 @@ ALTER TABLE location_logs ADD CONSTRAINT FK_6938df393d1969889c5b0633a08
 -- 4. Drop new columns from reports
 ALTER TABLE reports DROP CONSTRAINT IF EXISTS FK_reports_area;
 ALTER TABLE reports DROP CONSTRAINT IF EXISTS FK_reports_reviewed_by;
-ALTER TABLE reports DROP COLUMN IF EXISTS area_id;
+ALTER TABLE reports DROP COLUMN IF EXISTS location_id;
 ALTER TABLE reports DROP COLUMN IF EXISTS is_reviewed;
 ALTER TABLE reports DROP COLUMN IF EXISTS reviewed_by;
 ALTER TABLE reports DROP COLUMN IF EXISTS reviewed_at;
@@ -636,10 +636,10 @@ deleted_at: Date;
 ```typescript
 // Add new columns
 @Column({ type: 'uuid' })
-area_id: string;
+location_id: string;
 
 @ManyToOne(() => Area)
-@JoinColumn({ name: 'area_id' })
+@JoinColumn({ name: 'location_id' })
 area: Area;
 
 @Column({ type: 'boolean', default: false })

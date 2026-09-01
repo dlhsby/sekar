@@ -9,7 +9,7 @@ export interface SekarMarkProps extends React.SVGProps<SVGSVGElement> {
 }
 
 /**
- * SEKAR pinwheel brand mark — the canonical in-app logo (8 sage blades = 8 rayons,
+ * SEKAR pinwheel brand mark — the canonical in-app logo (8 sage blades = 8 districts,
  * yellow center = DLH Surabaya). Colors come from design tokens via CSS vars so the
  * mark tracks theme changes and satisfies the `no-inline-hex-colors` lint rule.
  * For raster icons (favicon/app icon) use `@/lib/brand/pinwheel` instead.

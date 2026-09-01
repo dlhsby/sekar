@@ -18,13 +18,13 @@ import type { NBSelectOption } from '../../../components/nb/NBSelect';
 import { styles } from '../styles';
 
 interface LocationSectionProps {
-  rayonId: string;
-  onRayonChange: (rayonId: string) => void;
-  isRayonFixed: boolean;
-  isLoadingRayons: boolean;
-  rayonOptions: NBSelectOption[];
-  userRayonId?: string;
-  userRayonName?: string;
+  districtId: string;
+  onDistrictChange: (districtId: string) => void;
+  isDistrictFixed: boolean;
+  isLoadingDistricts: boolean;
+  districtOptions: NBSelectOption[];
+  userDistrictId?: string;
+  userDistrictName?: string;
 
   areaId: string;
   onAreaChange: (areaId: string) => void;
@@ -36,13 +36,13 @@ interface LocationSectionProps {
 }
 
 export const LocationSection: React.FC<LocationSectionProps> = ({
-  rayonId,
-  onRayonChange,
-  isRayonFixed,
-  isLoadingRayons,
-  rayonOptions,
-  userRayonId,
-  userRayonName,
+  districtId,
+  onDistrictChange,
+  isDistrictFixed,
+  isLoadingDistricts,
+  districtOptions,
+  userDistrictId,
+  userDistrictName,
 
   areaId,
   onAreaChange,
@@ -64,34 +64,34 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
           </NBText>
         </View>
         <NBText variant="body-sm" style={styles.sectionSubtitle}>
-          {isRayonFixed && isAreaFixed ? t('tasks:locationSection.autoFromProfile') : t('tasks:locationSection.selectAssignment')}
+          {isDistrictFixed && isAreaFixed ? t('tasks:locationSection.autoFromProfile') : t('tasks:locationSection.selectAssignment')}
         </NBText>
       </NBCardHeader>
       <NBCardContent>
         <NBText variant="body-sm" style={styles.fieldLabel}>
-          {t('tasks:locationSection.rayonLabel')}
+          {t('tasks:locationSection.districtLabel')}
         </NBText>
-        {isLoadingRayons ? (
+        {isLoadingDistricts ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator color={nbColors.primary} />
             <NBText variant="body-sm" color="gray600" style={styles.loadingText}>
-              {t('tasks:locationSection.loadingRayon')}
+              {t('tasks:locationSection.loadingDistrict')}
             </NBText>
           </View>
         ) : (
           <NBSelect
-            label={t('tasks:locationSection.rayonLabel')}
-            value={rayonId}
-            onValueChange={onRayonChange}
+            label={t('tasks:locationSection.districtLabel')}
+            value={districtId}
+            onValueChange={onDistrictChange}
             options={
-              isRayonFixed
-                ? userRayonId
-                  ? [{ label: userRayonName || t('tasks:locationSection.yourRayon'), value: userRayonId }]
+              isDistrictFixed
+                ? userDistrictId
+                  ? [{ label: userDistrictName || t('tasks:locationSection.yourDistrict'), value: userDistrictId }]
                   : []
-                : rayonOptions
+                : districtOptions
             }
-            placeholder={t('tasks:locationSection.rayonPlaceholder')}
-            disabled={isRayonFixed}
+            placeholder={t('tasks:locationSection.districtPlaceholder')}
+            disabled={isDistrictFixed}
           />
         )}
 
@@ -119,8 +119,8 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
                   : []
                 : areaOptions
             }
-            placeholder={!rayonId && !isAreaFixed ? t('location:selector.selectRayonFirst') : t('location:selector.selectArea')}
-            disabled={isAreaFixed || (!isAreaFixed && !rayonId)}
+            placeholder={!districtId && !isAreaFixed ? t('location:selector.selectDistrictFirst') : t('location:selector.selectArea')}
+            disabled={isAreaFixed || (!isAreaFixed && !districtId)}
           />
         )}
       </NBCardContent>

@@ -126,6 +126,159 @@ describe('LocationService', () => {
       expect(mockQueryRunner.release).toHaveBeenCalled();
     });
 
+    describe('integrity enforcement', () => {
+      /** Build a batch of one ping, overriding whatever the test cares about. */
+      const oneRecentPing = (overrides: Record<string, unknown> = {}) => ({
+        shift_id: shiftId,
+        locations: [
+          {
+            gps_lat: -7.2905,
+            gps_lng: 112.7398,
+            accuracy_meters: 12.5,
+            battery_level: 85,
+            // Relative so the ping stays inside the backdate window as the
+            // calendar moves; a fixed date would age out and get clamped.
+            logged_at: new Date().toISOString(),
+            ...overrides,
+          },
+        ],
+      });
+
+      beforeEach(() => {
+        mockShiftsRepository.findOne.mockResolvedValue(mockShift);
+        mockLocationLogsRepository.create.mockImplementation((data) => data);
+        mockLocationLogsRepository.findOne.mockResolvedValue(null);
+        mockQueryRunner.manager.save.mockImplementation((_e, rows) => Promise.resolve(rows));
+      });
+
+      it('stores a mocked ping but marks it refused', async () => {
+        // Storing it is the point: a dropped ping is indistinguishable from a
+        // phone being off, which would hide the cheating rather than surface it.
+        const result = await service.createBatch(
+          oneRecentPing({ is_mocked: true }) as never,
+          userId,
+        );
+
+        expect(result.count).toBe(1);
+        expect(result.rejected).toBe(1);
+        const [, rows] = mockQueryRunner.manager.save.mock.calls[0];
+        expect(rows[0].rejection_reason).toBe('MOCKED');
+      });
+
+      it('keeps a refused ping out of presence entirely', async () => {
+        // What refusal costs the worker: they stop being tracked and read as
+        // inactive until they stop spoofing.
+        await service.createBatch(oneRecentPing({ is_mocked: true }) as never, userId);
+
+        expect(mockStatusCalculator.onLocationPing).not.toHaveBeenCalled();
+      });
+
+      it('refuses null island as a missing fix', async () => {
+        const result = await service.createBatch(
+          oneRecentPing({ gps_lat: 0, gps_lng: 0 }) as never,
+          userId,
+        );
+
+        const [, rows] = mockQueryRunner.manager.save.mock.calls[0];
+        expect(rows[0].rejection_reason).toBe('MISSING_COORDINATES');
+        expect(result.rejected).toBe(1);
+      });
+
+      it('lets a clean ping through to presence', async () => {
+        const result = await service.createBatch(oneRecentPing() as never, userId);
+
+        expect(result.rejected).toBe(0);
+        const [, rows] = mockQueryRunner.manager.save.mock.calls[0];
+        expect(rows[0].rejection_reason).toBeNull();
+        expect(mockStatusCalculator.onLocationPing).toHaveBeenCalled();
+      });
+
+      it('judges each ping on its own rather than failing the whole batch', async () => {
+        // Rejecting the batch would punish an honest client for one bad fix and
+        // the offline queue would retry the same payload forever.
+        const mixed = {
+          shift_id: shiftId,
+          locations: [
+            { gps_lat: -7.2905, gps_lng: 112.7398, logged_at: new Date().toISOString() },
+            {
+              gps_lat: -7.2906,
+              gps_lng: 112.7399,
+              logged_at: new Date().toISOString(),
+              is_mocked: true,
+            },
+          ],
+        };
+
+        const result = await service.createBatch(mixed as never, userId);
+
+        expect(result.count).toBe(2);
+        expect(result.rejected).toBe(1);
+      });
+
+      it('thins redundant stationary pings but keeps a heartbeat', async () => {
+        // A worker standing still currently writes ~100 rows/hour that all say
+        // the same thing. Thin them — but never past the heartbeat, or presence
+        // (derived from the newest ping's age) would report them OFFLINE.
+        const base = Date.now() - 60 * 60 * 1000;
+        const stationary = (offsetMs: number) => ({
+          gps_lat: -7.2905,
+          gps_lng: 112.7398,
+          accuracy_meters: 10,
+          logged_at: new Date(base + offsetMs).toISOString(),
+        });
+
+        await service.createBatch(
+          {
+            shift_id: shiftId,
+            locations: [
+              stationary(0),
+              stationary(30_000),
+              stationary(60_000),
+              stationary(90_000),
+              stationary(5 * 60_000), // past the heartbeat -> must survive
+            ],
+          } as never,
+          userId,
+        );
+
+        const [, rows] = mockQueryRunner.manager.save.mock.calls[0];
+        // First ping + the heartbeat; the three redundant ones are dropped.
+        expect(rows).toHaveLength(2);
+      });
+
+      it('never thins a refused ping — that row is the evidence', async () => {
+        const base = Date.now() - 60 * 60 * 1000;
+        const sameSpot = { gps_lat: -7.2905, gps_lng: 112.7398, accuracy_meters: 10 };
+
+        await service.createBatch(
+          {
+            shift_id: shiftId,
+            locations: [
+              { ...sameSpot, logged_at: new Date(base).toISOString() },
+              { ...sameSpot, logged_at: new Date(base + 30_000).toISOString(), is_mocked: true },
+            ],
+          } as never,
+          userId,
+        );
+
+        const [, rows] = mockQueryRunner.manager.save.mock.calls[0];
+        expect(rows).toHaveLength(2);
+        expect(rows[1].rejection_reason).toBe('MOCKED');
+      });
+
+      it('clamps an over-old backdate rather than trusting logged_at', async () => {
+        // logged_at drives presence freshness, so an unbounded backdate would
+        // let a client fabricate its own attendance history.
+        const ancient = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+        await service.createBatch(oneRecentPing({ logged_at: ancient }) as never, userId);
+
+        const [, rows] = mockQueryRunner.manager.save.mock.calls[0];
+        expect(rows[0].logged_at.getTime()).toBeGreaterThan(Date.now() - 25 * 60 * 60 * 1000);
+        expect(rows[0].clock_skew_ms).toBeLessThan(-29 * 24 * 60 * 60 * 1000);
+      });
+    });
+
     it('should throw NotFoundException if shift not found', async () => {
       mockShiftsRepository.findOne.mockResolvedValue(null);
 

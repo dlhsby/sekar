@@ -1,4 +1,4 @@
-# ADR-036: Design Tokens — Single Source of Truth at `specs/ui-ux/tokens.json`
+# ADR-036: Design Tokens — Single Source of Truth at `specs/design-system/tokens.json`
 
 ## Status
 
@@ -27,7 +27,7 @@ Leaving the two hand-maintained files as-is and hoping new code "matches" has be
 
 ## Decision
 
-**`specs/ui-ux/tokens.json` is the single source of truth** for every Layer 1 design token (colors, shadows, radii, type scale, motion timing, spacing, font stacks). `specs/ui-ux/tokens.schema.json` validates it; CI rejects structural violations.
+**`specs/design-system/tokens.json` is the single source of truth** for every Layer 1 design token (colors, shadows, radii, type scale, motion timing, spacing, font stacks). `specs/design-system/tokens.schema.json` validates it; CI rejects structural violations.
 
 Web and mobile consume **generated** files emitted by `scripts/build-tokens.ts`:
 
@@ -42,7 +42,7 @@ The three-layer model:
 - **Layer 2 (platform-adapted primitives)** — same intent, different syntax. Shadow emitter, press animation, focus ring, hit target, safe area. Owned by the generator.
 - **Layer 3 (intentional divergence)** — input-model-driven patterns that *should* differ. Nav (bottom tabs vs sidebar), data display (cards vs tables), modals (bottom sheets vs dialogs), menus, keyboard shortcuts, offline UX. Not parity targets.
 
-Full registry and emitter rules: [specs/ui-ux/design-tokens.md](../../ui-ux/design-tokens.md).
+Full registry and emitter rules: [specs/design-system/design-tokens.md](../../design-system/design-tokens.md).
 
 ## Consequences
 
@@ -69,9 +69,9 @@ Full registry and emitter rules: [specs/ui-ux/design-tokens.md](../../ui-ux/desi
 
 ## References
 
-- [design-tokens.md](../../ui-ux/design-tokens.md) — full registry, three-layer model, emitter rules, PWA, responsive breakpoints
-- [tokens.json](../../ui-ux/tokens.json) — the source of truth
-- [tokens.schema.json](../../ui-ux/tokens.schema.json) — CI validator
-- [neo-brutalism.md](../../ui-ux/neo-brutalism.md) — design language reference
+- [design-tokens.md](../../design-system/design-tokens.md) — full registry, three-layer model, emitter rules, PWA, responsive breakpoints
+- [tokens.json](../../design-system/tokens.json) — the source of truth
+- [tokens.schema.json](../../design-system/tokens.schema.json) — CI validator
+- [neo-brutalism.md](../../design-system/neo-brutalism.md) — design language reference
 - [ADR-037](./ADR-037-web-pwa.md) — PWA adoption (consumes these tokens for manifest `theme_color` / `background_color`)
-- Phase 3: [README](../../phases/phase-3-plants-monitoring-rebuild/README.md) · [ui-ux](../../phases/phase-3-plants-monitoring-rebuild/ui-ux.md) · [mobile](../../phases/phase-3-plants-monitoring-rebuild/mobile.md) · [web](../../phases/phase-3-plants-monitoring-rebuild/web.md)
+- Phase 3: [README](../../history/CHANGELOG.md) · [ui-ux](../../history/CHANGELOG.md) · [mobile](../../history/CHANGELOG.md) · [web](../../history/CHANGELOG.md)

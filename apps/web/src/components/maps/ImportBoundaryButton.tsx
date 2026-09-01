@@ -25,7 +25,7 @@ interface ImportBoundaryButtonProps {
 }
 
 /**
- * Import an area/rayon boundary from a Google-Earth KML file or pasted KML /
+ * Import an area/district boundary from a Google-Earth KML file or pasted KML /
  * GeoJSON text — lets the user maintain the shape in Google Earth and re-import
  * it here. Parsing is client-side (see parseKmlToGeometry).
  */

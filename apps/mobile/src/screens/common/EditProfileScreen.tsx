@@ -30,6 +30,7 @@ import {
   nbBorders,
   nbShadows,
 } from '../../constants/nbTokens';
+import { screenContent } from '../../constants/layout';
 import type { UserRole } from '../../types/models.types';
 import type { MainTabScreenProps } from '../../types/navigation.types';
 
@@ -155,13 +156,13 @@ export function EditProfileScreen(): React.JSX.Element {
 
   const displayImageUri = previewUri ?? user?.profile_picture_url ?? null;
   const roleLabel = user?.role ? (ROLE_LABELS[user.role as UserRole] ?? user.role) : '—';
-  const rayonName = user?.rayon?.name ?? null;
-  const roleAndRayon = rayonName ? `${roleLabel} · ${rayonName}` : roleLabel;
+  const districtName = user?.district?.name ?? null;
+  const roleAndDistrict = districtName ? `${roleLabel} · ${districtName}` : roleLabel;
 
   const lockedRows: { label: string; value: string }[] = [
     { label: t('profile:edit.labels.fullName'), value: user?.full_name ?? '—' },
     { label: t('profile:edit.labels.username'), value: user?.username ?? '—' },
-    { label: t('profile:edit.labels.roleRayon'), value: roleAndRayon },
+    { label: t('profile:edit.labels.roleDistrict'), value: roleAndDistrict },
     ...(user?.phone_number
       ? [{ label: t('profile:edit.labels.phoneNumber'), value: user.phone_number }]
       : []),
@@ -268,7 +269,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   scrollContent: {
-    padding: nbSpacing.md,
+    ...screenContent,
     paddingBottom: nbSpacing.xl,
   },
   avatarSection: {

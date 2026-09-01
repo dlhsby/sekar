@@ -1,93 +1,99 @@
 # Architecture Decision Records (ADRs)
 
-This directory contains Architecture Decision Records (ADRs) for the SEKAR project. ADRs document significant architectural decisions, their context, and consequences.
+Why the significant technical decisions were made. Each ADR follows **Status · Context · Decision · Consequences**. Statuses: **Active**, **Superseded by ADR-XXX**, **Proposed**. To add one: create `ADR-NNN-title.md` (next free number — 020–023 & 039 were skipped), follow the section structure of a recent ADR, and add a row below.
 
-## What is an ADR?
+## Index (all 46)
 
-An Architecture Decision Record (ADR) captures an important architecture decision made along with its context and consequences. It provides a historical record of why certain technical decisions were made, which is valuable for:
+| ADR | Title | Status |
+|-----|-------|--------|
+| [001](./ADR-001-uuid-primary-keys.md) | Use UUID for All Primary Keys | Active |
+| [002](./ADR-002-offline-first-mobile.md) | Offline-First Mobile Architecture | Active |
+| [003](./ADR-003-asyncstorage-phase1.md) | AsyncStorage for Phase 1 Offline Queue | Active |
+| [004](./ADR-004-jwt-authentication.md) | JWT Authentication with Refresh Tokens | Active |
+| [005](./ADR-005-gps-boundary-tolerance.md) | 100m GPS Boundary Tolerance | Superseded by [010](./ADR-010-phase2c-terminology-cleanup.md) |
+| [006](./ADR-006-postgresql-partitioning.md) | PostgreSQL Partitioning for Location Logs | Active |
+| [007](./ADR-007-react-native-over-flutter.md) | React Native over Flutter | Active |
+| [008](./ADR-008-modular-monolith.md) | Modular Monolith over Microservices | Active |
+| [009](./ADR-009-phase2c-role-system-overhaul.md) | Phase 2C Role System Overhaul | Active · amended by 032/033 |
+| [010](./ADR-010-phase2c-terminology-cleanup.md) | Phase 2C Terminology Cleanup, Schema Redesign & Polygon Geofencing | Active |
+| [011](./ADR-011-phase2d-monitoring-status-model.md) | Phase 2D Materialized Status Tracking with Configurable Thresholds | Superseded by [029](./ADR-029-monitoring-v2-event-sourced-redis.md) |
+| [012](./ADR-012-phone-number-login.md) | Phone Number Login with Identifier-Based Authentication | Active |
+| [013](./ADR-013-multi-area-assignment.md) | Multi-Area Assignment with Junction Table | Active |
+| [014](./ADR-014-overtime-clock-in-flow.md) | Overtime as Clock-In/Clock-Out Shift Flow | Active |
+| [015](./ADR-015-audit-trail.md) | Generic Audit Trail for Entity Change Tracking | Active |
+| [016](./ADR-016-redis-websocket-scaling.md) | Redis for WebSocket Scaling, Caching, and Notification Retry | Active |
+| [017](./ADR-017-maestro-mobile-e2e.md) | Maestro for Mobile E2E Testing | Active |
+| [018](./ADR-018-export-format-strategy.md) | Export Format Strategy (CSV + Excel via exceljs) | Active |
+| [019](./ADR-019-offline-connectivity-model.md) | Two-Tier Offline Connectivity Model | Active |
+| [024](./ADR-024-pdf-report-generation.md) | PDF Report Generation — Puppeteer | Active |
+| [025](./ADR-025-analytics-materialized-views.md) | Analytics Data Aggregation — Materialized Views | Active |
+| [026](./ADR-026-asset-qr-code-strategy.md) | Asset QR Code Strategy | Active |
+| [027](./ADR-027-ios-build-distribution.md) | iOS Build & Distribution Strategy | Active |
+| [028](./ADR-028-staging-environment.md) | Staging Environment Strategy | Active |
+| [029](./ADR-029-monitoring-v2-event-sourced-redis.md) | Monitoring v2 — Event-Sourced Status via Redis Streams + Socket.IO Redis Adapter | Active |
+| [030](./ADR-030-area-aggregate-plant-inventory.md) | Area-Aggregate Plant Inventory with Optional Notable-Plant Records | Active |
+| [031](./ADR-031-task-typing-and-custom-fields.md) | Task Typing via `task_type` Enum + JSONB `custom_fields` Validated by Per-Type Schema Registry | Active · amended by 038 |
+| [032](./ADR-032-admin-data-disposition-authority-pruning-requests.md) | Extend `admin_rayon` with Disposition Authority over `pruning_requests`, Scoped by `users.rayon_id` | Active |
+| [033](./ADR-033-staff-kecamatan-role.md) | New External Role `staff_kecamatan` for Public Pruning Intake | Active |
+| [034](./ADR-034-pruning-cycle-prediction.md) | Pruning Cycle Prediction — Species × Area_Type Lookup (No ML), with Manual Override | Active |
+| [035](./ADR-035-service-capacity-model.md) | Generic `service_capacity` Model (Rayon × ISO-Week × Service_Type) | Active |
+| [036](./ADR-036-design-tokens-single-source.md) | Design Tokens — Single Source of Truth at `specs/design-system/tokens.json` | Palette superseded by [040](./ADR-040-design-system-v2.1.md) |
+| [037](./ADR-037-web-pwa.md) | Web becomes an installable PWA (service worker + offline shell + web push) | Active |
+| [038](./ADR-038-pruning-workflow-entry-points.md) | Pruning Workflow Entry Points, Activity Tagging, and Task Delegation Audit | Active |
+| [040](./ADR-040-design-system-v2.1.md) | Design System v2.1 — sage-primary token re-baseline + pinwheel brand identity | Active |
+| [041](./ADR-041-forgot-password-contact-admin.md) | Forgot-password = contact admin (no self-serve reset) | Active |
+| [042](./ADR-042-onboarding-flow.md) | First-launch onboarding — pre-login carousel + permissions priming + area preview | Active |
+| [043](./ADR-043-production-gap-closure.md) | Production gap-closure decisions — offline sync / push / background location / message broker | Proposed |
+| [044](./ADR-044-dynamic-rbac.md) | Dynamic RBAC — data-driven roles, permissions, monitoring scope | Active · amends 009/032/033 |
+| [045](./ADR-045-four-level-location-hierarchy.md) | Four-Level Location Hierarchy — Region (Kawasan) + per-level styling | Active · amends 010/013 |
+| [046](./ADR-046-monitoring-subject-model.md) | Monitoring Subject Model & Revamp — monitorable vs scheduled, static vs mobile | Accepted (impl. Phase 5) · extends 029 · **amended 2026-07-16** (status enum 5→3); **subject/static-mobile model stays Active; status-enum portion superseded by [050](./ADR-050-presence-attendance-model.md)** |
+| [047](./ADR-047-schedule-redesign.md) | Schedule Redesign — rule-based recurrence + occurrences, calendar, teams | Active · amends 013 |
+| [048](./ADR-048-teams.md) | Teams — grouped monitoring subjects with typed markers | Active |
+| [049](./ADR-049-settings-architecture.md) | Settings Architecture — personal preferences vs system settings | Active |
+| [051](./ADR-051-unified-icon-color-markers.md) | Unified Icon + Color Marker System — one glyph+color pin everywhere; retire marker_image_url | Accepted (impl. in progress) · supersedes image-marker part of 045 |
+| [050](./ADR-050-presence-attendance-model.md) | Presence & Attendance Model — lifecycle · live presence · counting axes | Accepted (impl. Phase 5.4) · supersedes 046's status model · extends 046 · depends on 047/013 |
+| [052](./ADR-052-rayon-to-district-rename.md) | `rayon` → `district` — code/DB English-canonical; UI keeps "Rayon" | Accepted (**implemented** — DB/be/web/mobile) · extends 010 |
+| [053](./ADR-053-schedule-row-per-place.md) | One schedule row = one worker, one shift, one **place**; presence belongs to the worker, not the row | Accepted · **implemented** · rests on 050 · settles korlap scope in 046 |
+| [054](./ADR-054-unscheduled-workers.md) | "Belum Dijadwalkan" — the complement of the day's roster, so a gap is visible before it becomes an understaffed lokasi | Accepted · **implemented** (be + web) · rests on 053 + 047 |
+| [055](./ADR-055-punch-attendance-model.md) | Attendance as an immutable punch log — clock-in/out become append-only events; session (Masuk/Keluar, hours, open?) is derived; preserves ADR-050 presence | Accepted · **design locked, not started** · re-bases 050's source |
+| [056](./ADR-056-schedule-status-lifecycle.md) | Schedule status lifecycle — clock-in sets `present`, an hourly cron + lazy display flip a past no-show to `absent`; `present`/`absent` were previously never written | Active · **implemented** · rests on 053 + 055 |
 
-- Onboarding new team members
-- Revisiting decisions when context changes
-- Understanding system constraints
-- Preventing repeated discussions
+| [057](./ADR-057-summary-first-day-board.md) | Summary-first day board — the collapsed board reads aggregate counts (`/schedules/day-summary`); a container's rows are fetched when it is expanded. Day payload 3.87 MB → 83 KB, month 57 MB → 226 KB | Active · **implemented** · rests on 053 + 047 |
+| [058](./ADR-058-no-inline-media-in-postgres.md) | No inline media in Postgres — photos live in object storage (MinIO local/prod, S3 staging) and the column holds a URL; global interceptor converts on write and presigns on read. Was 528 MB of a 658 MB database | Active · **implemented** |
+| [059](./ADR-059-location-integrity.md) | Location integrity (anti-spoofing) — reject missing/forged fixes (null island, mock provider, impossible travel) but NEVER "outside area"; one shared evaluator for punches + pings; timestamps clamped both sides | Active · **implemented** |
+| [060](./ADR-060-monitoring-map-modes.md) | Two monitoring map modes — `drill` (worker at their schedule tier, ADR-046) vs `zoom` (every tier + everyone standing in the subtree); modes change what is DRAWN, never what is COUNTED; `aggregate?scope=all` composed from the drill builders; viewport culling, never clustering | Active · **web implemented** |
 
-## ADR Format
+## By domain
 
-Each ADR follows this structure:
+- **Data & persistence:** [001](./ADR-001-uuid-primary-keys.md) · [006](./ADR-006-postgresql-partitioning.md) · [013](./ADR-013-multi-area-assignment.md) · [025](./ADR-025-analytics-materialized-views.md) · [030](./ADR-030-area-aggregate-plant-inventory.md)
+- **Auth & roles:** [004](./ADR-004-jwt-authentication.md) · [009](./ADR-009-phase2c-role-system-overhaul.md) · [012](./ADR-012-phone-number-login.md) · [032](./ADR-032-admin-data-disposition-authority-pruning-requests.md) · [033](./ADR-033-staff-kecamatan-role.md) · [041](./ADR-041-forgot-password-contact-admin.md) · [042](./ADR-042-onboarding-flow.md) · [044](./ADR-044-dynamic-rbac.md)
+- **Location, scheduling & teams:** [045](./ADR-045-four-level-location-hierarchy.md) · [047](./ADR-047-schedule-redesign.md) · [048](./ADR-048-teams.md) · [056](./ADR-056-schedule-status-lifecycle.md) · [057](./ADR-057-summary-first-day-board.md)
+- **Media & storage:** [058](./ADR-058-no-inline-media-in-postgres.md)
+- **Location integrity:** [059](./ADR-059-location-integrity.md)
+- **Settings & config:** [049](./ADR-049-settings-architecture.md)
+- **Mobile & offline:** [002](./ADR-002-offline-first-mobile.md) · [003](./ADR-003-asyncstorage-phase1.md) · [007](./ADR-007-react-native-over-flutter.md) · [017](./ADR-017-maestro-mobile-e2e.md) · [019](./ADR-019-offline-connectivity-model.md) · [027](./ADR-027-ios-build-distribution.md)
+- **Realtime & monitoring:** [011](./ADR-011-phase2d-monitoring-status-model.md) · [016](./ADR-016-redis-websocket-scaling.md) · [029](./ADR-029-monitoring-v2-event-sourced-redis.md) · [046](./ADR-046-monitoring-subject-model.md) · [050](./ADR-050-presence-attendance-model.md)
+- **Attendance & geo:** [005](./ADR-005-gps-boundary-tolerance.md) · [006](./ADR-006-postgresql-partitioning.md)
+- **Work, pruning & capacity:** [010](./ADR-010-phase2c-terminology-cleanup.md) · [014](./ADR-014-overtime-clock-in-flow.md) · [015](./ADR-015-audit-trail.md) · [018](./ADR-018-export-format-strategy.md) · [024](./ADR-024-pdf-report-generation.md) · [026](./ADR-026-asset-qr-code-strategy.md) · [031](./ADR-031-task-typing-and-custom-fields.md) · [034](./ADR-034-pruning-cycle-prediction.md) · [035](./ADR-035-service-capacity-model.md) · [038](./ADR-038-pruning-workflow-entry-points.md)
+- **Platform & infra:** [008](./ADR-008-modular-monolith.md) · [028](./ADR-028-staging-environment.md) · [037](./ADR-037-web-pwa.md) · [043](./ADR-043-production-gap-closure.md)
+- **Design system:** [036](./ADR-036-design-tokens-single-source.md) · [040](./ADR-040-design-system-v2.1.md)
 
-```markdown
-# ADR-NNN: [Title]
+## Superseded / amended
 
-## Status
-[Proposed | Accepted | Deprecated | Superseded by ADR-XXX]
+- **005 → 010** — hard 100 m GPS radius replaced by soft polygon geofencing.
+- **011 → 029** — materialized status tracking replaced by event-sourced Redis Streams.
+- **036 palette → 040** — design-token palette re-baselined (sage-primary + pinwheel).
+- **009 amended by 032, 033 & 044** — admin_rayon pruning disposition; external staff_kecamatan role; then data-driven RBAC (roles/permissions/scope).
+- **031 amended by 038** — task typing extended with pruning workflow entry points.
+- **010 & 013 amended by 045** — 3-level spatial model gains a Region (Kawasan) tier + per-level styling.
+- **013 amended by 047** — template-derived roster → rule-based recurring events materialized into occurrences.
+- **029 extended by 046** — event-sourced status gains the monitorable-vs-scheduled subject model + static/mobile.
+- **046 amended (2026-07-16)** — status model collapsed 5 → 3; retires `inactive`/`missing` + their thresholds, and `outside_area` stops being a status.
+- **046 status model superseded by 050 (2026-07-16)** — the flat status enum splits into three axes (attendance lifecycle · live presence · counting); the six-state lifecycle is *derived*, not stored, so it can't drift the way the 5.3 enum did.
 
-## Context
-[What is the issue we're seeing that is motivating this decision?]
+- **046 korlap scope settled by 053 (2026-07-23)** — monitoring coverage is schedule-driven only; the static user assignment stops being a monitoring-scope source.
+- **050 source re-based by 055 (2026-07-25)** — attendance moves to an immutable punch log; `bertugas` = "last punch is a clock-in" replaces `clock_out_time IS NULL`. The presence lifecycle/axes/counting contract is unchanged — only storage + derivation.
+- **005→010 reaffirmed by 059 (2026-08-02)** — anti-spoofing blocks *missing/forged* location only; being outside an area stays advisory and still never blocks, so the Phase 2C removal is NOT reversed.
+- **046 amended by 060 (2026-08-12)** — `display_scope` still decides where a worker renders in drill mode; zoom mode adds a second, geography-based predicate for the same question. ADR-046's rule is unchanged, it is now one of two readings, selected by an explicit mode.
 
-## Decision
-[What is the change we're proposing/making?]
-
-## Consequences
-### Positive
-[Benefits of this decision]
-
-### Negative
-[Drawbacks or trade-offs]
-
-## Alternatives Considered
-[What other options were considered and why were they rejected?]
-```
-
-## Index of ADRs
-
-| ADR | Title | Status | Date |
-|-----|-------|--------|------|
-| [001](./ADR-001-uuid-primary-keys.md) | Use UUID for All Primary Keys | Accepted | 2026-01-09 |
-| [002](./ADR-002-offline-first-mobile.md) | Offline-First Mobile Architecture | Accepted | 2026-01-09 |
-| [003](./ADR-003-asyncstorage-phase1.md) | AsyncStorage for Phase 1 Offline Queue | Accepted | 2026-01-16 |
-| [004](./ADR-004-jwt-authentication.md) | JWT Authentication with 7-Day Expiration | Accepted | 2026-01-09 |
-| [005](./ADR-005-gps-boundary-tolerance.md) | 100m GPS Boundary Tolerance | Accepted | 2026-01-16 |
-| [006](./ADR-006-postgresql-partitioning.md) | PostgreSQL Partitioning for Location Logs | Accepted | 2026-01-16 |
-| [007](./ADR-007-react-native-over-flutter.md) | React Native over Flutter | Accepted | 2026-01-09 |
-| [008](./ADR-008-modular-monolith.md) | Modular Monolith over Microservices | Accepted | 2026-01-09 |
-| [009](./ADR-009-phase2c-role-system-overhaul.md) | Phase 2C 8-Role System Overhaul | Accepted | 2026-02-10 |
-| [010](./ADR-010-phase2c-terminology-cleanup.md) | Phase 2C Terminology Cleanup | Accepted | 2026-02-10 |
-| [011](./ADR-011-phase2d-monitoring-status-model.md) | Phase 2D Materialized Status Tracking with Configurable Thresholds | Accepted | 2026-03-03 |
-| [012](./ADR-012-phone-number-login.md) | Phone Number Login (Identifier-Based Auth) | Accepted | 2026-03-10 |
-| [013](./ADR-013-multi-area-assignment.md) | Multi-Area Korlap Assignment | Accepted | 2026-03-10 |
-| [014](./ADR-014-overtime-clock-in-flow.md) | Overtime Clock-In/Clock-Out Flow Redesign | Accepted | 2026-03-10 |
-| [015](./ADR-015-audit-trail.md) | Audit Trail for Entity Revisions | Accepted | 2026-03-10 |
-| [016](./ADR-016-redis-websocket-scaling.md) | Redis for WebSocket Scaling, Caching, and Notification Retry | Accepted | 2026-03-12 |
-| [017](./ADR-017-maestro-mobile-e2e.md) | Maestro for Mobile E2E Testing | Accepted | 2026-03-12 |
-| [018](./ADR-018-export-format-strategy.md) | Export Format Strategy (CSV + Excel via exceljs) | Accepted | 2026-03-12 |
-| [019](./ADR-019-offline-connectivity-model.md) | Two-Tier Offline Connectivity Model | Accepted | 2026-03-12 |
-| [029](./ADR-029-monitoring-v2-event-sourced-redis.md) | Monitoring v2: Event-Sourced Status via Redis Streams + Socket.IO Redis Adapter | Accepted (supersedes ADR-011) | 2026-04-24 |
-| [030](./ADR-030-area-aggregate-plant-inventory.md) | Area-Aggregate Plant Inventory with Optional Notable-Plant Records | Accepted | 2026-04-24 |
-| [031](./ADR-031-task-typing-and-custom-fields.md) | Task Typing via `task_type` Enum + JSONB `custom_fields` Validated by Per-Type Schema Registry | Accepted | 2026-04-24 |
-| [032](./ADR-032-admin-data-disposition-authority-pruning-requests.md) | Extend `admin_data` with Disposition Authority over `pruning_requests`, Scoped by `users.rayon_id` | Accepted (amends ADR-009) | 2026-04-24 |
-| [033](./ADR-033-staff-kecamatan-role.md) | New External Role `staff_kecamatan` for Public Pruning Intake | Accepted (extends ADR-009) | 2026-04-24 |
-| [034](./ADR-034-pruning-cycle-prediction.md) | Pruning Cycle Prediction: Species × Area_Type Lookup (No ML), with Manual Override | Accepted | 2026-04-24 |
-| [035](./ADR-035-service-capacity-model.md) | Generic `service_capacity` Model (Rayon × ISO-Week × Service_Type) | Accepted | 2026-04-24 |
-| [036](./ADR-036-design-tokens-single-source.md) | Design Tokens — Single Source of Truth at `specs/ui-ux/tokens.json` | Accepted | 2026-04-25 |
-| [037](./ADR-037-web-pwa.md) | Web Becomes an Installable PWA (Service Worker + Offline Shell + Web Push) | Accepted | 2026-04-25 |
-| [040](./ADR-040-design-system-v2.1.md) | Design System v2.1 — sage-primary token re-baseline + pinwheel brand identity | Accepted (supersedes ADR-036 palette) | 2026-05-23 |
-| [041](./ADR-041-forgot-password-contact-admin.md) | Forgot-password = contact admin (no self-serve reset) | Accepted | 2026-05-24 |
-| [042](./ADR-042-onboarding-flow.md) | First-launch onboarding — pre-login carousel + permissions priming + area preview | Accepted | 2026-05-24 |
-| [043](./ADR-043-production-gap-closure.md) | Production gap-closure decisions — offline / push / background location / BullMQ on existing Redis | Proposed | 2026-05-22 |
-
-## How to Create a New ADR
-
-1. Copy `ADR-template.md` to `ADR-NNN-title.md` (increment NNN)
-2. Fill in all sections
-3. Get review from tech lead and architect
-4. Merge to main branch with status "Accepted"
-5. Update this README with the new ADR
-
-## Related Documentation
-
-- [System Overview](../system-overview.md)
-- [Tech Stack](../tech-stack.md)
-- [Project Brief](../../sekar_brief.md)
-
-**Last Updated:** 2026-06-20 (Phases 1–5 shipped; ADRs 001–043 finalized)
-**Maintained By:** System Architect
+**Related:** [system-overview](../system-overview.md) · [tech-stack](../tech-stack.md) · [features](../../features/README.md)

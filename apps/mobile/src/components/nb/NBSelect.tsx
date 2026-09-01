@@ -456,10 +456,13 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   triggerTextPlaceholder: {
-    color: nbColors.gray400,
+    color: nbColors.gray500,
     fontWeight: '400',
   },
   triggerTextDisabled: {
+    // gray400 is 2.52:1 and would fail AA as text — kept deliberately:
+    // WCAG 1.4.3 exempts inactive controls, and darkening this would make a
+    // disabled select look enabled.
     color: nbColors.gray400,
   },
   overlay: {

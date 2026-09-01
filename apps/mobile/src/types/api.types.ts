@@ -40,6 +40,17 @@ export interface LoginResponse {
 
 export interface MeResponse extends User {
   assigned_area?: Area;
+  /**
+   * The role's monitoring scope (ADR-044/046): city | district | region | location | none.
+   * Drives where the caller lands + what they may view on the map. Always sent by /me.
+   */
+  monitoring_scope: 'city' | 'district' | 'region' | 'location' | 'none';
+  /**
+   * Permanent location assignments (korlap multi-location) — the STATIC fallback for
+   * monitoring coverage; live coverage is derived server-side from today's schedule.
+   * Always sent by /me (empty array for non-korlap roles).
+   */
+  assigned_location_ids: string[];
 }
 
 // Users API
@@ -50,7 +61,7 @@ export interface ChangePasswordRequest {
 
 // Shifts API
 export interface ClockInRequest {
-  area_id?: string; // Phase 2C: optional, auto-detected from schedule
+  location_id?: string; // Phase 2C: optional, auto-detected from schedule
   gps_lat: number;
   gps_lng: number;
   selfie_photo?: string; // Phase 2E: base64 encoded with data URI prefix, optional
@@ -74,9 +85,65 @@ export interface ClockOutResponse {
 }
 
 export interface CurrentShiftResponse extends Shift {
-  area_name: string;
+  location_name: string;
   area_type: string;
   hours_worked: number;
+}
+
+// ADR-055 Phase 3: GET /shifts/current-state — live attendance state + shift picker.
+export type ShiftOptionPhase = 'early' | 'covering' | 'grace';
+
+export interface ShiftOption {
+  shift_definition_id: string;
+  shift_name?: string;
+  start_time: string; // 'HH:MM[:SS]'
+  end_time: string; // 'HH:MM[:SS]'
+  crosses_midnight: boolean;
+  service_day: string; // YYYY-MM-DD (WIB)
+  phase: ShiftOptionPhase;
+  minutes_to_start: number; // negative = already started
+  is_default: boolean;
+}
+
+export interface OpenSessionInfo {
+  id: string;
+  service_day: string | null;
+  shift_definition_id: string | null;
+  clock_in_time: string;
+  location_id: string | null;
+  is_overtime: boolean;
+}
+
+export interface ShiftCurrentStateResponse {
+  open_session: OpenSessionInfo | null;
+  options: ShiftOption[];
+}
+
+// ADR-055 Phase 4: GET /shifts/attendance/:date/punches — the punch timeline.
+export interface PunchEntry {
+  id: string;
+  label: 'clock_in' | 'clock_out';
+  punched_at: string; // ISO 8601
+  gps_lat: number | null;
+  gps_lng: number | null;
+  accuracy_m: number | null;
+  outside_boundary: boolean;
+  photo_url: string | null;
+}
+
+export interface PunchSession {
+  shift_definition_id: string | null;
+  is_overtime: boolean;
+  jam_masuk: string | null;
+  jam_keluar: string | null;
+  worked_minutes: number;
+  is_open: boolean;
+  punches: PunchEntry[];
+}
+
+export interface PunchLogDay {
+  date: string; // YYYY-MM-DD (WIB)
+  sessions: PunchSession[];
 }
 
 // Attendance history (GET /shifts/attendance) — one WIB calendar day, regular shifts only.
@@ -117,6 +184,9 @@ export interface AttendanceDayDetail {
   shifts: Shift[];
 }
 
+// Assignment Scope (Phase 3: scope-aware task + activity assignment)
+export type AssignmentScope = 'city' | 'district' | 'region' | 'location' | 'none';
+
 // Activities API (was Reports)
 export interface CreateActivityRequest {
   activity_type_id: string;
@@ -127,6 +197,8 @@ export interface CreateActivityRequest {
   // ADR-038 (May 2026) — tag involved users on this activity. Owner remains
   // the sole writer; tagged users gain feed visibility on `?involving_me=true`.
   tagged_user_ids?: string[];
+  // Phase 3: when activity is submitted against a task, send task_id to inherit task's scope
+  task_id?: string;
 }
 
 export interface CreateActivityResponse {
@@ -137,9 +209,9 @@ export interface CreateActivityResponse {
 export interface ActivitiesFilter {
   from_date?: string; // YYYY-MM-DD (from date) — matches backend ActivitiesFilterDto
   to_date?: string; // YYYY-MM-DD (to date)
-  area_id?: string;
+  location_id?: string;
   user_id?: string;
-  rayon_id?: string;
+  district_id?: string;
   activity_type_id?: string;
   status?: 'pending' | 'approved' | 'rejected';
   sort_by?: string;
@@ -157,6 +229,12 @@ export interface LocationPoint {
   accuracy_meters?: number;
   battery_level?: number;
   logged_at: string; // ISO 8601 timestamp
+  /**
+   * Client's report of whether the OS flagged this fix as mock-provided.
+   * Advisory: the server records it and excludes flagged pings from presence,
+   * but never treats a `false` here as proof the fix is genuine.
+   */
+  is_mocked?: boolean;
 }
 
 export interface LocationBatchRequest {
@@ -205,7 +283,7 @@ export interface PaginatedActiveUsersResponse {
 
 export interface AttendanceFilter {
   date?: string;
-  area_id?: string;
+  location_id?: string;
   area_type?: string;
 }
 
@@ -262,14 +340,20 @@ export interface UserAttendanceDetail {
     area: AttendanceArea | null;
   };
   clocked_in: boolean;
-  shift: {
+  /**
+   * EVERY session on the day, earliest first — not one.
+   *
+   * The superseded endpoint returned a single `shift`, which silently hid the
+   * second session of any worker who clocked in twice (break, area change).
+   */
+  shifts: {
     id: string;
     clock_in_time: string;
     clock_out_time: string | null;
     duration_minutes: number | null;
     clock_in_outside_boundary: boolean;
     clock_out_outside_boundary: boolean;
-  } | null;
+  }[];
 }
 
 // Master Data API
@@ -309,7 +393,7 @@ export interface ApiError {
 export interface TasksFilter {
   status?: TaskStatus;
   priority?: TaskPriority;
-  area_id?: string;
+  location_id?: string;
   assigned_to?: string;
   created_by?: string;
   from_date?: string;
@@ -325,10 +409,12 @@ export interface CreateTaskRequest {
   description?: string;
   priority: TaskPriority;
   deadline?: string;
-  area_id?: string; // Phase 2C: optional
-  rayon_id?: string; // Phase 2C: rayon-scoped tasks
+  location_id?: string; // Phase 2C: optional; Phase 3: location scope
+  district_id?: string; // Phase 2C: district-scoped tasks
+  region_id?: string; // Phase 3: region scope (Kawasan)
   assigned_to?: string;
   tagged_user_ids?: string[]; // Phase 2C: task tagging
+  scope?: AssignmentScope; // Phase 3: scope (auto-derived if omitted)
 }
 
 export interface UpdateTaskRequest {
@@ -430,8 +516,8 @@ export interface OvertimeFilter {
   status?: OvertimeStatus;
   from_date?: string;
   to_date?: string;
-  rayon_id?: string;
-  area_id?: string;
+  district_id?: string;
+  location_id?: string;
   user_id?: string;
   sort_by?: 'created_at' | 'start_datetime';
   sort_dir?: 'asc' | 'desc';
@@ -492,28 +578,28 @@ export interface BroadcastNotificationRequest {
   body: string;
   target_roles?: UserRole[];
   target_area_id?: string;
-  target_rayon_id?: string;
+  target_district_id?: string;
   data?: Record<string, unknown>;
 }
 
 // Monitoring API
 export interface MonitoringFilter {
-  rayon_id?: string;
-  area_id?: string;
+  district_id?: string;
+  location_id?: string;
   date?: string;
 }
 
 export interface CityMonitoringResponse extends MonitoringStats {
-  rayons: {
+  districts: {
     id: string;
     name: string;
     stats: MonitoringStats;
   }[];
 }
 
-export interface RayonMonitoringResponse extends MonitoringStats {
-  rayon_id: string;
-  rayon_name: string;
+export interface DistrictMonitoringResponse extends MonitoringStats {
+  district_id: string;
+  district_name: string;
   areas: {
     id: string;
     name: string;
@@ -523,8 +609,8 @@ export interface RayonMonitoringResponse extends MonitoringStats {
 }
 
 export interface AreaMonitoringResponse extends MonitoringStats {
-  area_id: string;
-  area_name: string;
+  location_id: string;
+  location_name: string;
   staffing_status: 'adequate' | 'understaffed' | 'overstaffed';
   required_users: number;
   actual_users: number;
@@ -532,8 +618,8 @@ export interface AreaMonitoringResponse extends MonitoringStats {
 }
 
 export interface LiveUsersFilter {
-  area_id?: string;
-  rayon_id?: string;
+  location_id?: string;
+  district_id?: string;
   shift_definition_id?: string;
   status?: TrackingStatus[];
   role?: string;
@@ -542,8 +628,8 @@ export interface LiveUsersFilter {
 
 // Phase 2D: MonitoringFilters (used in filter modal and slice)
 export interface MonitoringFilters {
-  rayon_id?: string;
-  area_id?: string;
+  district_id?: string;
+  location_id?: string;
   role?: string;
   status?: TrackingStatus[];
   /** CP6 — location axis filter (dalam_area / luar_area), applied client-side. */

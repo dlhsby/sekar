@@ -12,8 +12,8 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { S3Service } from '../../shared/services/s3.service';
 import { User, UserRole } from '../users/entities/user.entity';
-import { Area } from '../areas/entities/area.entity';
-import { Rayon } from '../rayons/entities/rayon.entity';
+import { Location } from '../locations/entities/location.entity';
+import { District } from '../districts/entities/district.entity';
 import { Task } from '../tasks/entities/task.entity';
 import { Activity } from '../activities/entities/activity.entity';
 import { Overtime } from '../overtime/entities/overtime.entity';
@@ -26,7 +26,7 @@ import { toKmz } from './exporters/kmz.exporter';
 import {
   usersDataset,
   areasDataset,
-  rayonsDataset,
+  districtDataset,
   tasksDataset,
   activitiesDataset,
   overtimeDataset,
@@ -38,7 +38,7 @@ export const SYNC_ROW_LIMIT = 5000;
 const MAX_RETRIES = 3;
 const STUCK_AFTER_MS = 10 * 60 * 1000;
 
-/** Entity types a kepala_rayon may export (scopable to their own rayon). */
+/** Entity types a kepala_rayon may export (scopable to their own district). */
 const KEPALA_RAYON_ENTITIES: ExportEntityType[] = ['tasks', 'activities', 'overtime'];
 
 interface EntityConfig {
@@ -48,8 +48,8 @@ interface EntityConfig {
   dateColumn: string | null;
   /** Column matched by the areaId filter, or null. */
   areaColumn: string | null;
-  /** Column matched directly by the rayonId filter, or null. */
-  rayonColumn: string | null;
+  /** Column matched directly by the districtId filter, or null. */
+  districtColumn: string | null;
   toDataset: (rows: ObjectLiteral[]) => Dataset;
 }
 
@@ -67,8 +67,8 @@ export class ExportService {
     @InjectRepository(ExportJob)
     private readonly exportJobRepo: Repository<ExportJob>,
     @InjectRepository(User) private readonly userRepo: Repository<User>,
-    @InjectRepository(Area) private readonly areaRepo: Repository<Area>,
-    @InjectRepository(Rayon) private readonly rayonRepo: Repository<Rayon>,
+    @InjectRepository(Location) private readonly locationRepo: Repository<Location>,
+    @InjectRepository(District) private readonly districtRepo: Repository<District>,
     @InjectRepository(Task) private readonly taskRepo: Repository<Task>,
     @InjectRepository(Activity) private readonly activityRepo: Repository<Activity>,
     @InjectRepository(Overtime) private readonly overtimeRepo: Repository<Overtime>,
@@ -80,48 +80,48 @@ export class ExportService {
         repo: () => this.userRepo as Repository<ObjectLiteral>,
         alias: 'users',
         dateColumn: 'created_at',
-        areaColumn: 'area_id',
-        rayonColumn: 'rayon_id',
+        areaColumn: 'location_id',
+        districtColumn: 'district_id',
         toDataset: cast(usersDataset),
       },
       areas: {
-        repo: () => this.areaRepo as Repository<ObjectLiteral>,
+        repo: () => this.locationRepo as Repository<ObjectLiteral>,
         alias: 'areas',
         dateColumn: 'created_at',
         areaColumn: 'id',
-        rayonColumn: 'rayon_id',
+        districtColumn: 'district_id',
         toDataset: cast(areasDataset),
       },
-      rayons: {
-        repo: () => this.rayonRepo as Repository<ObjectLiteral>,
-        alias: 'rayons',
+      districts: {
+        repo: () => this.districtRepo as Repository<ObjectLiteral>,
+        alias: 'districts',
         dateColumn: 'created_at',
         areaColumn: null,
-        rayonColumn: 'id',
-        toDataset: cast(rayonsDataset),
+        districtColumn: 'id',
+        toDataset: cast(districtDataset),
       },
       tasks: {
         repo: () => this.taskRepo as Repository<ObjectLiteral>,
         alias: 'tasks',
         dateColumn: 'created_at',
-        areaColumn: 'area_id',
-        rayonColumn: 'rayon_id',
+        areaColumn: 'location_id',
+        districtColumn: 'district_id',
         toDataset: cast(tasksDataset),
       },
       activities: {
         repo: () => this.activityRepo as Repository<ObjectLiteral>,
         alias: 'activities',
         dateColumn: 'created_at',
-        areaColumn: 'area_id',
-        rayonColumn: null,
+        areaColumn: 'location_id',
+        districtColumn: null,
         toDataset: cast(activitiesDataset),
       },
       overtime: {
         repo: () => this.overtimeRepo as Repository<ObjectLiteral>,
         alias: 'overtimes',
         dateColumn: 'created_at',
-        areaColumn: 'area_id',
-        rayonColumn: null,
+        areaColumn: 'location_id',
+        districtColumn: null,
         toDataset: cast(overtimeDataset),
       },
     };
@@ -168,7 +168,7 @@ export class ExportService {
 
   /**
    * Apply role scoping: admins export anything; kepala_rayon is limited to
-   * tasks/activities/overtime within their own rayon.
+   * tasks/activities/overtime within their own district.
    */
   private scopeFilters(dto: ExportRequestDto, user: User): ExportRequestDto {
     if (user.role !== UserRole.KEPALA_RAYON) {
@@ -179,10 +179,10 @@ export class ExportService {
         `kepala_rayon may only export: ${KEPALA_RAYON_ENTITIES.join(', ')}`,
       );
     }
-    if (!user.rayon_id) {
-      throw new ForbiddenException('kepala_rayon account is missing a rayon assignment');
+    if (!user.district_id) {
+      throw new ForbiddenException('kepala_rayon account is missing a district assignment');
     }
-    return { ...dto, rayonId: user.rayon_id };
+    return { ...dto, districtId: user.district_id };
   }
 
   private async countRows(
@@ -212,27 +212,27 @@ export class ExportService {
     if (filters.areaId && cfg.areaColumn) {
       qb.andWhere(`${cfg.alias}.${cfg.areaColumn} = :areaId`, { areaId: filters.areaId });
     }
-    if (filters.rayonId) {
-      this.applyRayonFilter(qb, cfg, filters.rayonId);
+    if (filters.districtId) {
+      this.applyDistrictFilter(qb, cfg, filters.districtId);
     }
     return qb;
   }
 
-  /** Scope by rayon directly when the entity carries rayon_id, else via its areas. */
-  private applyRayonFilter(
+  /** Scope by district directly when the entity carries district_id, else via its areas. */
+  private applyDistrictFilter(
     qb: SelectQueryBuilder<ObjectLiteral>,
     cfg: EntityConfig,
-    rayonId: string,
+    districtId: string,
   ): void {
-    if (cfg.rayonColumn) {
-      qb.andWhere(`${cfg.alias}.${cfg.rayonColumn} = :rayonId`, { rayonId });
+    if (cfg.districtColumn) {
+      qb.andWhere(`${cfg.alias}.${cfg.districtColumn} = :districtId`, { districtId });
     } else if (cfg.areaColumn) {
       qb.andWhere(
-        `${cfg.alias}.${cfg.areaColumn} IN (SELECT id FROM areas WHERE rayon_id = :rayonId)`,
-        { rayonId },
+        `${cfg.alias}.${cfg.areaColumn} IN (SELECT id FROM locations WHERE district_id = :districtId)`,
+        { districtId },
       );
     } else {
-      throw new BadRequestException('This entity cannot be filtered by rayon');
+      throw new BadRequestException('This entity cannot be filtered by district');
     }
   }
 
@@ -245,7 +245,7 @@ export class ExportService {
     const rows = await this.buildQuery(entityType, filters).getMany();
 
     if (format === 'kmz') {
-      return toKmz(areasPlacemarks(rows as Area[]));
+      return toKmz(areasPlacemarks(rows as Location[]));
     }
     const dataset = this.configs[entityType].toDataset(rows);
     return format === 'xlsx' ? toXlsx(dataset, entityType) : toCsv(dataset);

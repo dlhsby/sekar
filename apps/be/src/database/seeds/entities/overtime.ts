@@ -3,7 +3,7 @@ import type { SeedContext } from '../lib/context';
 /**
  * Seed overtime records (Phase 2C).
  *
- * 10 overtime rows across 5 roles: satgas (3), linmas (3), korlap (2), admin_data (2).
+ * 10 overtime rows across 5 roles: satgas (3), linmas (3), korlap (2), admin_rayon (2).
  * Covers pending, approved, rejected statuses.
  */
 export async function seedOvertimes(ctx: SeedContext): Promise<void> {
@@ -23,12 +23,12 @@ export async function seedOvertimes(ctx: SeedContext): Promise<void> {
     SELECT id FROM users WHERE username = 'korlap_pusat_2' LIMIT 1
   `);
 
-  const kepalaRayonOtResult = await ctx.qr.query(`
+  const kepalaDistrictOtResult = await ctx.qr.query(`
     SELECT id FROM users WHERE username = 'kepala_rayon_selatan_1' LIMIT 1
   `);
 
   const tamanBungkulIdResult = await ctx.qr.query(`
-    SELECT id FROM areas WHERE name = 'Taman Bungkul' LIMIT 1
+    SELECT id FROM locations WHERE name = 'Taman Bungkul' LIMIT 1
   `);
 
   if (korlapOtResult.length > 0 && satgasOtResult.length > 0 && tamanBungkulIdResult.length > 0) {
@@ -36,7 +36,8 @@ export async function seedOvertimes(ctx: SeedContext): Promise<void> {
     const satgasOtId = satgasOtResult[0].id;
     const linmasOtId = linmasOtResult.length > 0 ? linmasOtResult[0].id : null;
     const korlap1OtId = korlapDarmoOtResult.length > 0 ? korlapDarmoOtResult[0].id : null;
-    const kepalaRayonOtId = kepalaRayonOtResult.length > 0 ? kepalaRayonOtResult[0].id : null;
+    const kepalaDistrictOtId =
+      kepalaDistrictOtResult.length > 0 ? kepalaDistrictOtResult[0].id : null;
     const tamanBungkulId = tamanBungkulIdResult[0].id;
 
     // Get activity type IDs for varied overtime
@@ -66,7 +67,7 @@ export async function seedOvertimes(ctx: SeedContext): Promise<void> {
       // Satgas overtimes (3: pending, approved, rejected + overnight example)
       await ctx.qr.query(`
         INSERT INTO overtimes (
-          id, user_id, area_id, start_datetime, end_datetime,
+          id, user_id, location_id, start_datetime, end_datetime,
           activity_type_id, description, photo_urls,
           gps_lat, gps_lng, status, approved_by, approved_at,
           created_at, updated_at
@@ -102,7 +103,7 @@ export async function seedOvertimes(ctx: SeedContext): Promise<void> {
       if (linmasOtId) {
         await ctx.qr.query(`
           INSERT INTO overtimes (
-            id, user_id, area_id, start_datetime, end_datetime,
+            id, user_id, location_id, start_datetime, end_datetime,
             activity_type_id, description, photo_urls,
             gps_lat, gps_lng, status, approved_by, approved_at,
             created_at, updated_at
@@ -139,7 +140,7 @@ export async function seedOvertimes(ctx: SeedContext): Promise<void> {
       if (korlap1OtId) {
         await ctx.qr.query(`
           INSERT INTO overtimes (
-            id, user_id, area_id, start_datetime, end_datetime,
+            id, user_id, location_id, start_datetime, end_datetime,
             activity_type_id, description, photo_urls,
             gps_lat, gps_lng, status, approved_by, approved_at,
             created_at, updated_at
@@ -149,7 +150,7 @@ export async function seedOvertimes(ctx: SeedContext): Promise<void> {
               '2026-02-09T16:00:00+07:00', '2026-02-09T19:00:00+07:00',
               '${cekKendaraanId}', 'Koordinasi tim malam dan cek kendaraan',
               ARRAY['https://example.com/overtime-korlap.jpg'],
-              -7.2756, 112.7395, 'approved', ${kepalaRayonOtId ? `'${kepalaRayonOtId}'` : 'NULL'}, ${kepalaRayonOtId ? "NOW() - INTERVAL '10 days'" : 'NULL'},
+              -7.2756, 112.7395, 'approved', ${kepalaDistrictOtId ? `'${kepalaDistrictOtId}'` : 'NULL'}, ${kepalaDistrictOtId ? "NOW() - INTERVAL '10 days'" : 'NULL'},
               NOW() - INTERVAL '11 days', NOW() - INTERVAL '11 days'
             ),
             (
@@ -165,22 +166,22 @@ export async function seedOvertimes(ctx: SeedContext): Promise<void> {
         ctx.log('  ✓ Created 2 korlap overtime records (approved, pending)');
       }
 
-      // Admin Data overtimes (2: pending, approved)
+      // Admin Rayon overtimes (2: pending, approved)
       const adminDataOtResult = await ctx.qr.query(`
-        SELECT id, area_id FROM users WHERE username = 'admin_data_pusat_1' LIMIT 1
+        SELECT id, location_id FROM users WHERE username = 'admin_rayon_pusat_1' LIMIT 1
       `);
       if (adminDataOtResult.length > 0) {
         const OVERTIME_9_ID = 'a8b9c0d1-e2f3-4a4b-8b6d-6e7f8a9b0c1d';
         const OVERTIME_10_ID = 'b9c0d1e2-f3a4-4b5c-8d7e-7f8a9b0c1d2e';
         const adminDataOtId = adminDataOtResult[0].id;
-        // admin_data is in Rayon Pusat but has no area_id; use tamanBungkulId as fallback
-        const adminDataAreaId = adminDataOtResult[0].area_id || tamanBungkulId;
+        // admin_rayon is in Rayon Pusat but has no location_id; use tamanBungkulId as fallback
+        const adminDataAreaId = adminDataOtResult[0].location_id || tamanBungkulId;
         const cekAbsensiId = otActivityTypes.find((a: any) => a.code === 'cek_absensi')?.id;
 
         if (cekAbsensiId) {
           await ctx.qr.query(`
             INSERT INTO overtimes (
-              id, user_id, area_id, start_datetime, end_datetime,
+              id, user_id, location_id, start_datetime, end_datetime,
               activity_type_id, description, photo_urls,
               gps_lat, gps_lng, status, approved_by, approved_at,
               created_at, updated_at
@@ -198,18 +199,18 @@ export async function seedOvertimes(ctx: SeedContext): Promise<void> {
                 '2026-02-11T16:00:00+07:00', '2026-02-11T19:00:00+07:00',
                 '${cekAbsensiId}', 'Rekap laporan mingguan di luar jam kerja',
                 ARRAY['https://example.com/overtime-admin-data2.jpg'],
-                -7.2756, 112.7395, 'approved', ${kepalaRayonOtId ? `'${kepalaRayonOtId}'` : 'NULL'}, ${kepalaRayonOtId ? "NOW() - INTERVAL '8 days'" : 'NULL'},
+                -7.2756, 112.7395, 'approved', ${kepalaDistrictOtId ? `'${kepalaDistrictOtId}'` : 'NULL'}, ${kepalaDistrictOtId ? "NOW() - INTERVAL '8 days'" : 'NULL'},
                 NOW() - INTERVAL '9 days', NOW() - INTERVAL '8 days'
               )
             ON CONFLICT (id) DO NOTHING;
           `);
-          ctx.log('  ✓ Created 2 admin_data overtime records (pending, approved)');
+          ctx.log('  ✓ Created 2 admin_rayon overtime records (pending, approved)');
         }
       }
     } else {
       ctx.log('  ⚠ Activity types not found, skipping overtime seeding');
     }
   } else {
-    ctx.log('  ⚠ Required users or areas not found, skipping overtime seeding');
+    ctx.log('  ⚠ Required users or locations not found, skipping overtime seeding');
   }
 }

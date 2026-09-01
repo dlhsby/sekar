@@ -1,23 +1,30 @@
 'use client';
 
 /**
- * WorkerClusterLayer — renders individual worker pins clustered with
- * supercluster ("Semua Petugas" mode). Zoomed out, dense workers collapse into
- * count bubbles; zooming in (or clicking a cluster) splits them into pins. This
- * keeps the map responsive even when hundreds of workers are on screen — the old
- * map rendered one Google overlay per worker with no clustering.
+ * WorkerClusterLayer — renders EVERY worker as an individual pin (no clustering).
+ * Clustering (the supercluster count bubbles) was removed on request: it hid
+ * people and confused operators. Each worker is always drawn; the only optional
+ * collapse is team bubbles (the "Tim" layer toggle), which group a team's members
+ * into one bubble that expands on click. Team identity otherwise rides each pin's
+ * color.
+ *
+ * Renders on `AdvancedMarkerElement` via {@link AdvancedPinMarker}. Each pin's
+ * content is memoized by visual signature, so a GPS ping that only moves a worker
+ * repositions the marker in place instead of rebuilding it (reposition-on-patch,
+ * profiled 47× cheaper than clear-and-rebuild) — which is what keeps hundreds of
+ * live pins smooth at district/kawasan/lokasi scope.
  */
 import { useMemo } from 'react';
-import { Marker } from '@react-google-maps/api';
-import Supercluster from 'supercluster';
-import { workerPinIcon, statusToActivity } from '@/lib/monitoring/markers';
+import { AdvancedPinMarker } from './AdvancedPinMarker';
+import {
+  workerPinElement,
+  statusToActivity,
+  teamMarkerElement,
+  dotElement,
+  workerStatusColor,
+} from '@/lib/monitoring/markers';
+import { groupWorkersByTeam, type TeamGroup } from '@/lib/monitoring/teamGrouping';
 import type { SimpleWorker } from './SimpleMonitoringMap';
-
-/* eslint-disable sekar-design/no-inline-hex-colors -- Google overlay options, not rendered style tokens */
-const BLACK = '#1C1917';
-const WHITE = '#FFFFFF';
-const CLUSTER = '#1A4D2E';
-/* eslint-enable sekar-design/no-inline-hex-colors */
 
 export interface MapBounds {
   west: number;
@@ -29,112 +36,129 @@ export interface MapBounds {
 export interface WorkerClusterLayerProps {
   workers: SimpleWorker[];
   zoom: number;
-  bounds: MapBounds | null;
+  /** Retained for signature compatibility; unused now that there is no clustering. */
+  bounds?: MapBounds | null;
   selectedId?: string | null;
   onSelect?: (userId: string) => void;
-  onClusterClick?: (lat: number, lng: number, expansionZoom: number) => void;
+  /** Clicking a team marker opens its member list (no zoom-to-reveal). */
+  onTeamClick?: (team: TeamGroup) => void;
+  /** Collapse ≥2-member teams into one team marker. When false, every worker
+   *  (team members included) renders as its own pin. */
+  teamBubbles?: boolean;
+  /**
+   * Progressive reveal (viewport mode). User ids in this set draw as full pins;
+   * the rest draw as a status-coloured dot — still positioned, still clickable,
+   * still carrying their state in its colour. `null` means draw everyone in
+   * full, which is drill and zoom mode.
+   *
+   * Team markers are never demoted: a team bubble is already a collapse of many
+   * people into one marker, so demoting it would hide a group behind a dot.
+   */
+  promoted?: Set<string> | null;
+  /** Of the promoted workers, the ones whose name is printed. See NodeMarkerLayer. */
+  labelled?: Set<string> | null;
 }
 
-type WorkerProps = {
-  workerId: string;
-  status: string;
-  role: string;
-  full_name: string;
-  within: boolean;
-  scheduled: boolean;
-};
-
-function clusterSymbol(pointCount: number): google.maps.Symbol {
-  return {
-    path: google.maps.SymbolPath.CIRCLE,
-    scale: Math.min(24, 12 + Math.log2(pointCount + 1) * 3),
-    fillColor: CLUSTER,
-    fillOpacity: 0.92,
-    strokeColor: BLACK,
-    strokeWeight: 2,
-  };
-}
+type Renderable = SimpleWorker | TeamGroup;
+const isTeam = (r: Renderable): r is TeamGroup => 'kind' in r && r.kind === 'team';
 
 export function WorkerClusterLayer({
   workers,
   zoom,
-  bounds,
   selectedId,
   onSelect,
-  onClusterClick,
+  onTeamClick,
+  teamBubbles = true,
+  promoted,
+  labelled,
 }: WorkerClusterLayerProps) {
-  // Build the supercluster index from workers with valid coordinates.
-  const index = useMemo(() => {
-    const sc = new Supercluster<WorkerProps>({ radius: 60, maxZoom: 18 });
-    sc.load(
-      workers
-        .filter((w) => Number.isFinite(w.lat) && Number.isFinite(w.lng))
-        .map((w) => ({
-          type: 'Feature' as const,
-          properties: {
-            workerId: w.user_id,
-            status: w.status,
-            role: w.role,
-            full_name: w.full_name,
-            within: w.is_within_area,
-            scheduled: w.is_scheduled,
-          },
-          geometry: { type: 'Point' as const, coordinates: [w.lng, w.lat] },
-        }))
-    );
-    return sc;
-  }, [workers]);
-
-  const clusters = useMemo(() => {
-    const bbox: [number, number, number, number] = bounds
-      ? [bounds.west, bounds.south, bounds.east, bounds.north]
-      : [-180, -85, 180, 85];
-    return index.getClusters(bbox, Math.round(zoom));
-  }, [index, bounds, zoom]);
+  // Group workers by team when the Tim layer is on. Teams ALWAYS collapse into
+  // one marker regardless of zoom (expandZoom = Infinity) — you reveal the members
+  // by CLICKING the team marker, never by zooming. Tim off → every worker renders
+  // individually. No supercluster: drawn one-to-one.
+  const renderables = useMemo<Renderable[]>(
+    () =>
+      groupWorkersByTeam(workers, zoom, teamBubbles ? Number.POSITIVE_INFINITY : 0).filter(
+        (r) => Number.isFinite(r.lat) && Number.isFinite(r.lng)
+      ),
+    [workers, zoom, teamBubbles]
+  );
 
   return (
     <>
-      {clusters.map((feature) => {
-        const [lng, lat] = feature.geometry.coordinates;
-        const props = feature.properties as
-          | (WorkerProps & { cluster?: false })
-          | { cluster: true; cluster_id: number; point_count: number };
-
-        if ('cluster' in props && props.cluster) {
+      {renderables.map((r) => {
+        if (isTeam(r)) {
+          // Team marker (≥2-member team, Tim layer on) — click reveals members.
+          const signature = `team|${r.team_color ?? ''}|${r.team_opacity ?? ''}|${r.team_icon ?? ''}|${r.member_count}|${r.team_name}`;
           return (
-            <Marker
-              key={`cluster-${props.cluster_id}`}
-              position={{ lat, lng }}
-              icon={clusterSymbol(props.point_count)}
-              label={{
-                text: String(props.point_count),
-                color: WHITE,
-                fontSize: '11px',
-                fontWeight: '700',
-              }}
-              onClick={() => {
-                const expansionZoom = Math.min(index.getClusterExpansionZoom(props.cluster_id), 18);
-                onClusterClick?.(lat, lng, expansionZoom);
-              }}
-              zIndex={6}
+            <AdvancedPinMarker
+              key={`team-${r.team_id}`}
+              position={{ lat: r.lat, lng: r.lng }}
+              signature={signature}
+              build={() =>
+                teamMarkerElement(
+                  r.team_color,
+                  r.member_count,
+                  r.team_icon,
+                  // People sit ABOVE their pin: workers are the densest layer and
+                  // the space below is where the geo tiers put their names.
+                  { text: r.team_name, className: 'worker-marker-label', placement: 'top' },
+                  r.team_opacity,
+                )
+              }
+              onClick={() => onTeamClick?.(r)}
+              title={r.team_name}
+              zIndex={5}
             />
           );
         }
-
-        const leaf = props as WorkerProps;
-        const selected = leaf.workerId === selectedId;
+        // Individual worker pin. `selected` is baked into the signature so selecting
+        // a worker rebuilds only that one pin.
+        const selected = r.user_id === selectedId;
+        // Demoted: lost its screen cell to a more salient neighbour. Selection
+        // always wins a slot upstream, so a selected worker is never a dot.
+        const demoted = promoted != null && !promoted.has(r.user_id);
+        const withLabel = labelled == null || labelled.has(r.user_id);
+        const signature =
+          `worker|${r.role}|${r.status}|${r.is_within_area}|${r.is_scheduled}` +
+          `|${r.role_marker_icon ?? ''}|${r.role_marker_color ?? ''}|${selected ? 1 : 0}|${r.full_name}` +
+          `|${demoted ? 'dot' : 'pin'}|${withLabel ? 1 : 0}`;
         return (
-          <Marker
-            key={`worker-${leaf.workerId}`}
-            position={{ lat, lng }}
-            icon={workerPinIcon(leaf.role, {
-              activity: statusToActivity(leaf.status),
-              outside: !leaf.within,
-              adHoc: !leaf.scheduled,
-              selected,
-            })}
-            onClick={() => onSelect?.(leaf.workerId)}
-            zIndex={selected ? 10 : 4}
+          <AdvancedPinMarker
+            key={`worker-${r.user_id}`}
+            position={{ lat: r.lat, lng: r.lng }}
+            signature={signature}
+            build={() => {
+              const presence = {
+                activity: statusToActivity(r.status),
+                outside: !r.is_within_area,
+                adHoc: !r.is_scheduled,
+                lifecycleState: r.lifecycle_state ?? null,
+                leaveReason: r.leave_reason ?? null,
+              } as const;
+              if (demoted) return dotElement(workerStatusColor(presence));
+              return workerPinElement(
+                r.role,
+                {
+                  activity: statusToActivity(r.status),
+                  outside: !r.is_within_area,
+                  adHoc: !r.is_scheduled,
+                  selected,
+                  markerIcon: r.role_marker_icon ?? null,
+                  // Identity on the body, status on the ring — the two never
+                  // compete for the same colour.
+                  markerColor: r.role_marker_color ?? null,
+                  lifecycleState: r.lifecycle_state ?? null,
+                  leaveReason: r.leave_reason ?? null,
+                },
+                withLabel
+                  ? { text: r.full_name, className: 'worker-marker-label', placement: 'top' }
+                  : undefined
+              );
+            }}
+            onClick={() => onSelect?.(r.user_id)}
+            title={r.full_name}
+            zIndex={selected ? 10 : demoted ? 2 : 4}
           />
         );
       })}

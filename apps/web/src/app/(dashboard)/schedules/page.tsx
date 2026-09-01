@@ -1,676 +1,782 @@
 /**
- * Jadwal (Schedules) Page — the daily roster, the single schedule concept
- * (ADR-013): date picker, status tracking, and row actions (absence, edit, delete).
+ * Jadwal (Schedules) page — calendar-first (ADR-047), redesigned: a single
+ * range select (Tahun/Bulan/Minggu/Hari, default Hari) with drill-down; the day
+ * view is the Rayon▸Kawasan▸Lokasi coverage board. Rule-based ScheduleEvents sit
+ * behind create/edit (this / this-and-future / series semantics).
  */
 
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
-import type { FilterFn } from '@tanstack/react-table';
-import { Plus, Calendar, Pencil, Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { useQueries } from '@tanstack/react-query';
+import { CalendarClock, CalendarOff, RefreshCw, UserPlus } from 'lucide-react';
+import {
+  addDays,
+  addMonths,
+  addWeeks,
+  addYears,
+  endOfMonth,
+  endOfWeek,
+  formatISO,
+  startOfMonth,
+  startOfWeek,
+} from 'date-fns';
 import {
   Button,
-  DataTable,
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogBody,
-  DialogFooter,
-  FormSelect,
-  Textarea,
-  PageHeader,
-  RoleAvatar,
-  StatusPill,
-  enumArrayFilterFn,
-  type ColumnDef,
-  type DataTableRowAction,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  CreateButton,
+  Skeleton,
 } from '@/components/ui';
-import { RolePill } from '@/components/users/RolePill';
-import { AddScheduleModal } from '@/components/schedules/AddScheduleModal';
-import { EditScheduleModal } from '@/components/schedules/EditScheduleModal';
-import { AreaListSheet, type AreaListSheetItem } from '@/components/areas/AreaListSheet';
-import { getErrorMessage } from '@/lib/api/client';
+import { ScheduleSearch } from '@/components/schedules/ScheduleSearch';
+import { ScheduleFilterChips } from '@/components/schedules/ScheduleFilterChips';
+import { DateNav } from '@/components/schedules/DateNav';
+import { MonthGrid } from '@/components/schedules/MonthGrid';
+import { WeekGrid } from '@/components/schedules/WeekGrid';
+import { DayBoard, type AssignContext } from '@/components/schedules/DayBoard';
+import { UnscheduledWorkersSheet } from '@/components/schedules/UnscheduledWorkersSheet';
+import { YearView } from '@/components/schedules/YearView';
+import { ScheduleDetailModal } from '@/components/schedules/ScheduleDetailModal';
+import { AreaMapModal, type AreaMapSubject } from '@/components/schedules/AreaMapModal';
+import { CapacityModal } from '@/components/schedules/CapacityModal';
+import { HolidayManagerModal } from '@/components/schedules/HolidayManagerModal';
+import { ShiftDefinitionsModal } from '@/components/schedules/ShiftDefinitionsModal';
 import {
-  useDailyRoster,
-  useGenerateRoster,
-  useSetLeave,
-  useUpdateRosterAreas,
-  useUpdateRosterShift,
-  useAddSchedule,
-  useDeleteSchedule,
-  type Schedule,
-  type LeaveType,
-} from '@/lib/api/schedules';
-import { useUser } from '@/lib/auth/hooks';
-import { ADMIN_ROLES } from '@/lib/constants/roles';
-import { useAreas } from '@/lib/api/areas';
-import { useRayons } from '@/lib/api/rayons';
+  CITY_NODE_ID,
+  containerTotal,
+  dedupeOccurrences,
+  indexDaySummary,
+  type BoardMasterData,
+} from '@/lib/schedules/dayBoard';
+import { useScheduleEditFlow } from '@/lib/schedules/useScheduleEditFlow';
+import { ScheduleEventModal } from '@/components/schedules/ScheduleEventModal';
+import { EditScopeChooser } from '@/components/schedules/EditScopeChooser';
+import { DeleteScopeChooser } from '@/components/schedules/DeleteScopeChooser';
+import { EditScheduleModal } from '@/components/schedules/EditScheduleModal';
+import {
+  useScheduleRange,
+  useDaySummary,
+  useRangeSummary,
+  containerOccurrencesQuery,
+  type ContainerTier,
+  useScheduleYearSummary,
+  type ScheduleRangeFilters,
+} from '@/lib/api/schedule-events';
+import {
+  useStaffRequirements,
+  requirementTotalMap,
+  requirementRoleMap,
+  type StaffSubject,
+} from '@/lib/api/location-staff-requirements';
+import { resolveDayType, useSpecialDayOverrides } from '@/lib/api/special-day-overrides';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
-import { useUsers } from '@/lib/api/users';
-import { useUserAreas } from '@/lib/api/user-areas';
-import { canEditTargetRole, isGlobalRosterEditor } from '@/lib/schedule-permissions';
+import { useDistrictLookup } from '@/lib/api/districts';
+import { useRegionLookup } from '@/lib/api/regions';
+import { useLocationLookup } from '@/lib/api/locations';
+import { usePermissions } from '@/lib/auth/usePermissions';
+import { useUser } from '@/lib/auth/hooks';
 import { todayJakartaISODate } from '@/lib/utils/formatters';
 
-/** Full known value set, so the status column filter can list every status
- *  (incl. ones with zero matching rows on the selected date) instead of only
- *  the ones that happen to appear in today's roster. */
-const SCHEDULE_STATUSES: Schedule['status'][] = [
-  'planned',
-  'present',
-  'absent',
-  'leave_sick',
-  'leave_annual',
-  'leave_permit',
-  'replaced',
-  'off',
-];
+/** Calendar range, ordered highest → lowest; drilling zooms in a level. */
+import { useCalendarNav, type CalendarView } from '@/lib/schedules/useCalendarNav';
 
-/**
- * Map status to tone for StatusPill
- */
-function getStatusTone(status: Schedule['status']): 'ok' | 'warn' | 'bad' | 'info' | 'neutral' {
-  switch (status) {
-    case 'present':
-      return 'ok';
-    case 'planned':
-      return 'info';
-    case 'absent':
-      return 'bad';
-    case 'leave_sick':
-    case 'leave_annual':
-    case 'leave_permit':
-      return 'warn';
-    case 'replaced':
-    case 'off':
-      return 'neutral';
-    default:
-      return 'neutral';
-  }
-}
+/** Roles pinned to their own district server-side — they can't pick a district. */
+const RAYON_SCOPED_ROLES = ['kepala_rayon', 'admin_rayon'];
 
-/**
- * Get area names for a schedule (helper)
- */
-function getAreaNames(schedule: Schedule, areaById: Map<string, any>): string[] {
-  return schedule.schedule_areas
-    .map((sa) => areaById.get(sa.area_id)?.name)
-    .filter(Boolean) as string[];
-}
+const isoDate = (d: Date): string => formatISO(d, { representation: 'date' });
+
+/** WIB "today" as a local-midnight Date — roster days are WIB days, so the
+ * calendar anchors on the WIB calendar day even for non-WIB browsers. */
+const wibTodayDate = (): Date => new Date(`${todayJakartaISODate()}T00:00:00`);
 
 export default function SchedulesPage() {
-  const { t } = useTranslation(['schedules', 'common']);
+  const { t, i18n } = useTranslation(['schedules', 'common']);
+  const { can } = usePermissions();
+  const user = useUser();
+
+  // Default to the day view on both web and mobile (manager board + a worker's
+  // own schedule both open on today's calendar).
+  const [calendarView, setCalendarView] = useState<CalendarView>('day');
+  const [anchor, setAnchor] = useState<Date>(() => wibTodayDate());
+  const [filters, setFilters] = useState<ScheduleRangeFilters>({});
+
+  const lockDistrict = !!user && RAYON_SCOPED_ROLES.includes(user.role);
+  // Only admin_system/superadmin can set capacity (matches the backend gate).
+  const canManageCapacity = !!user && ['admin_system', 'superadmin'].includes(user.role);
+  const [capacitySubject, setCapacitySubject] = useState<StaffSubject | null>(null);
+  const [holidayOpen, setHolidayOpen] = useState(false);
+  const [shiftDefsOpen, setShiftDefsOpen] = useState(false);
   const currentUser = useUser();
-  // Only admins generate the roster (backend: USER_MANAGERS).
-  const canGenerate = !!currentUser && ADMIN_ROLES.includes(currentUser.role);
+  // Shift definitions are system config — only system managers may edit (backend
+  // enforces via USER_MANAGERS); others see a read-only list.
+  const canManageShifts =
+    currentUser?.role === 'admin_system' || currentUser?.role === 'superadmin';
+  /** "Belum Dijadwalkan" panel (ADR-054) — the complement of the board. */
+  const [unscheduledOpen, setUnscheduledOpen] = useState(false);
+  const [createUserId, setCreateUserId] = useState<string | undefined>();
+  /** Name for `createUserId` — the worker combobox is server-paged and can't resolve it. */
+  const [createUserName, setCreateUserName] = useState<string | undefined>();
+  /**
+   * Buat Jadwal was opened FROM the gap panel, so closing it — saved or
+   * cancelled — should hand the operator back to the list. Filling a day means
+   * placing several people, and bouncing to the board after each one turns one
+   * task into N round trips.
+   */
+  const [returnToUnscheduled, setReturnToUnscheduled] = useState(false);
+  // The Year view spans >62 days (the range API's cap) so it doesn't fetch
+  // occurrences — it's a month picker until an aggregate endpoint exists.
+  const fetchOccurrences = calendarView !== 'year';
 
-  // Format status display — use useMemo to handle t dependency
-  const formatStatus = useCallback((status: Schedule['status']): string => {
-    const statusKey = `status.${status}` as const;
-    return t(statusKey, status);
-  }, [t]);
+  // Visible range per calendar view (month view spans the full Mon–Sun grid;
+  // stays well under the API's 62-day cap).
+  const { from, to } = useMemo(() => {
+    if (calendarView === 'week') {
+      return {
+        from: isoDate(startOfWeek(anchor, { weekStartsOn: 1 })),
+        to: isoDate(endOfWeek(anchor, { weekStartsOn: 1 })),
+      };
+    }
+    if (calendarView === 'day' || calendarView === 'year') {
+      const d = isoDate(anchor);
+      return { from: d, to: d };
+    }
+    return {
+      from: isoDate(startOfWeek(startOfMonth(anchor), { weekStartsOn: 1 })),
+      to: isoDate(endOfWeek(endOfMonth(anchor), { weekStartsOn: 1 })),
+    };
+  }, [calendarView, anchor]);
 
-  // Default to "today" in WIB (matches the server's roster date) so the roster
-  // isn't empty for browsers outside UTC+7.
-  const [selectedDate, setSelectedDate] = useState(todayJakartaISODate());
+  // The DAY view no longer pulls the whole day's rows. Its collapsed cards are
+  // counts, so it reads the aggregate and fetches a container's rows only when
+  // that card is opened — 3.9 MB of JSON became ~80 KB.
+  //
+  // Week and month are unchanged here and still fetch rows. They have the same
+  // problem (an unfiltered month is 57 MB) and the same shape of fix, but they
+  // need a per-(date, district) aggregate this endpoint doesn't answer — see
+  // the follow-up noted in the changelog.
+  const dayView = calendarView === 'day';
+  // Week and month draw occurrence CHIPS only when narrowed to a worker or a
+  // lokasi; otherwise they render headcounts, which the aggregate answers. This
+  // is the single definition — the grids receive it as `subjectFiltered`, and it
+  // decides whether the rows are fetched at all, so the two cannot disagree and
+  // leave a chip view with nothing to draw.
+  const subjectFiltered = !!(filters.userId || filters.locationId);
+  const rangeNeedsRows = !dayView && subjectFiltered;
+  const {
+    data: occurrences = [],
+    isLoading,
+    isFetching,
+  } = useScheduleRange(from, to, filters, fetchOccurrences && rangeNeedsRows);
 
-  const { data: rosters, isLoading, error, refetch } = useDailyRoster(selectedDate);
-  const schedules = useMemo(() => rosters ?? [], [rosters]);
-  // Workers who already have a live row for the selected date — excluded from
-  // the "Tambah Jadwal" worker picker so an admin can't try to create a second
-  // schedule for the same worker/day (the backend also rejects it with a 400).
-  const scheduledUserIds = useMemo(
-    () => new Set(schedules.map((s) => s.user_id)),
-    [schedules],
+  const {
+    data: daySummaryPayload,
+    isLoading: summaryLoading,
+    isFetching: summaryFetching,
+  } = useDaySummary(from, filters, dayView);
+  const {
+    data: rangeSummary,
+    isLoading: rangeSummaryLoading,
+    isFetching: rangeSummaryFetching,
+  } = useRangeSummary(from, to, filters, fetchOccurrences && !dayView && !subjectFiltered);
+
+  const daySummary = useMemo(
+    () => (daySummaryPayload ? indexDaySummary(daySummaryPayload) : undefined),
+    [daySummaryPayload]
+  );
+  // The "memperbarui jadwal…" line and the spinning refresh icon must follow
+  // whichever query the CURRENT view is actually driven by.
+  const viewFetching = dayView
+    ? summaryFetching
+    : rangeNeedsRows
+      ? isFetching
+      : rangeSummaryFetching;
+  const viewLoading = dayView ? summaryLoading : rangeNeedsRows ? isLoading : rangeSummaryLoading;
+
+  // Rows for the containers the operator has opened, merged into one list for
+  // the board. Each container is its own cached query, so re-opening a card is
+  // instant and closing one costs nothing.
+  const [openContainers, setOpenContainers] = useState<string[]>([]);
+  const onExpandContainer = useCallback((id: string) => {
+    setOpenContainers((prev) => (prev.includes(id) ? prev : [...prev, id]));
+  }, []);
+  // A new day or a new filter invalidates what was open — the ids may not even
+  // exist in the new result set.
+  const containerResetKey = `${from}|${JSON.stringify(filters)}`;
+  const [seenContainerKey, setSeenContainerKey] = useState(containerResetKey);
+  if (seenContainerKey !== containerResetKey) {
+    setSeenContainerKey(containerResetKey);
+    setOpenContainers([]);
+  }
+
+  // Year view: per-day occupancy counts drive the load heatmap.
+  const { data: yearCounts = [] } = useScheduleYearSummary(
+    anchor.getFullYear(),
+    filters,
+    calendarView === 'year'
+  );
+  const yearCountMap = useMemo(
+    () => new Map(yearCounts.map((d) => [d.date, d.count])),
+    [yearCounts]
   );
 
-  // include_inactive: a schedule's assigned area may have since been
-  // deactivated — keep resolving its name (and offering it as a filter
-  // option) rather than silently showing "—" for that assignment.
-  const { data: areasData } = useAreas({ limit: 1000, include_inactive: true });
-  const allAreas = useMemo(() => areasData?.data ?? [], [areasData]);
-  // O(1) area lookup for the rayon column (avoids a per-row find over all areas).
-  const areaById = useMemo(() => new Map(allAreas.map((a) => [a.id, a])), [allAreas]);
+  // ── Create flow ──────────────────────────────────────────────────────────
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createDate, setCreateDate] = useState<string | undefined>();
+  // Pre-fill context when "+ Tugaskan" is clicked on a specific board row.
+  const [createCtx, setCreateCtx] = useState<AssignContext | undefined>();
+  // Boundary map for a board container — fetched (and its map bundle loaded)
+  // only once one is actually asked for.
+  const [mapSubject, setMapSubject] = useState<AreaMapSubject | null>(null);
 
-  // All 7 rayons, straight from the authoritative endpoint — NOT derived from
-  // loaded areas. Deriving from areas silently dropped any rayon with zero
-  // areas (or areas outside the page), so the cascade only ever showed the
-  // rayons that happened to have areas loaded.
-  const { data: rayonsData } = useRayons();
-  const allRayons = useMemo(() => rayonsData ?? [], [rayonsData]);
-  const rayonById = useMemo(() => new Map(allRayons.map((r) => [r.id, r])), [allRayons]);
-  const rayonFilterOptions = useMemo(
-    () => allRayons.map((r) => ({ value: r.name, label: r.name })),
-    [allRayons],
-  );
-  const areaFilterOptions = useMemo(
-    () => allAreas.map((a) => ({ value: a.name, label: a.name })),
-    [allAreas],
-  );
+  const openCreate = (
+    date?: string,
+    ctx?: AssignContext,
+    user?: { id: string; name: string },
+  ) => {
+    if (!can('schedule:create')) return;
+    setCreateDate(date);
+    setCreateCtx(ctx);
+    // Cleared unless this call prefilled one — otherwise a worker picked in the
+    // gap panel would haunt the next Buat Jadwal opened from anywhere else.
+    setCreateUserId(user?.id);
+    setCreateUserName(user?.name);
+    setCreateOpen(true);
+  };
 
-  // A korlap edits only rows in their own assigned areas — fetch those to gate
-  // the per-row actions (mirrors the backend hierarchy; backend is the real gate).
-  const { data: myAreas } = useUserAreas(
-    currentUser?.role === 'korlap' ? currentUser.id : undefined,
-  );
-  const myAreaIds = useMemo(() => (myAreas ?? []).map((a) => a.id), [myAreas]);
+  /** Close Buat Jadwal, returning to the gap panel when it came from there. */
+  const closeCreate = (open: boolean) => {
+    setCreateOpen(open);
+    if (!open && returnToUnscheduled) {
+      setReturnToUnscheduled(false);
+      setUnscheduledOpen(true);
+    }
+  };
 
-  /** Per-row edit permission — mirrors be `SchedulesService.assertCanEdit`. */
-  const canEditRoster = useCallback(
-    (roster: Schedule): boolean => {
-      if (!currentUser) return false;
-      const targetRole = roster.user?.role;
-      if (!targetRole || !canEditTargetRole(currentUser.role, targetRole)) return false;
-      if (isGlobalRosterEditor(currentUser.role)) return true;
-      if (currentUser.role === 'kepala_rayon' || currentUser.role === 'admin_data') {
-        if (!currentUser.rayon_id) return false;
-        if (roster.rayon_id === currentUser.rayon_id) return true;
-        return roster.schedule_areas.some(
-          (a) => areaById.get(a.area_id)?.rayon?.id === currentUser.rayon_id,
-        );
-      }
-      if (currentUser.role === 'korlap') {
-        return roster.schedule_areas.some((a) => myAreaIds.includes(a.area_id));
-      }
-      return false;
-    },
-    [currentUser, areaById, myAreaIds],
-  );
+  // The whole click → detail → edit/delete state machine (see the hook).
+  const {
+    chosen,
+    setChosen,
+    detailOpen,
+    setDetailOpen,
+    editChooserOpen,
+    setEditChooserOpen,
+    deleteChooserOpen,
+    setDeleteChooserOpen,
+    rowEditOpen,
+    setRowEditOpen,
+    pendingEdit,
+    setPendingEdit,
+    pendingScope,
+    eventEdit,
+    setEventEdit,
+    chosenEvent,
+    rowUnderEdit,
+    editPending,
+    refreshCalendar,
+    onOccurrenceClick,
+    onDetailEdit,
+    onRowEditSubmit,
+    onDetailDelete,
+    onEditScope,
+    onDeleteScope,
+  } = useScheduleEditFlow();
+
 
   const { data: shifts = [] } = useShiftDefinitions();
-  const shiftFilterOptions = useMemo(
-    () => shifts.map((s) => ({ value: `${s.name} (${s.start_time}-${s.end_time})`, label: s.name })),
-    [shifts],
-  );
-  const { data: usersData } = useUsers({ limit: 1000 });
-  const allUsers = useMemo(() => usersData?.data ?? [], [usersData]);
-
-  const generateRoster = useGenerateRoster();
-  const setLeave = useSetLeave();
-  const updateAreas = useUpdateRosterAreas();
-  const updateShift = useUpdateRosterShift();
-  const addSchedule = useAddSchedule();
-  const deleteSchedule = useDeleteSchedule();
-
-  // Modal states
-  const [absenceModalOpen, setAbsenceModalOpen] = useState(false);
-  const [absenceRosterId, setAbsenceRosterId] = useState<string | null>(null);
-  const [absenceType, setAbsenceType] = useState<'sick' | 'annual' | 'permit' | 'off'>('sick');
-  const [absenceNotes, setAbsenceNotes] = useState('');
-
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [deleteRosterId, setDeleteRosterId] = useState<string | null>(null);
-
-  const [editModalOpen, setEditModalOpen] = useState(false);
-  const [editRosterId, setEditRosterId] = useState<string | null>(null);
-
-  const [addModalOpen, setAddModalOpen] = useState(false);
-
-  const [areasSheetRoster, setAreasSheetRoster] = useState<Schedule | null>(null);
-  const areasSheetItems = useMemo<AreaListSheetItem[]>(() => {
-    if (!areasSheetRoster) return [];
-    return areasSheetRoster.schedule_areas.map((sa) => {
-      const area = areaById.get(sa.area_id);
-      return {
-        id: sa.area_id,
-        name: area?.name ?? '—',
-      };
-    });
-  }, [areasSheetRoster, areaById]);
-
-  // Delete target: the roster being deleted
-  const deleteTarget = useMemo(
-    () => schedules.find((r) => r.id === deleteRosterId) ?? null,
-    [schedules, deleteRosterId],
+  // Lookup, not the full entity — the tree reads a name and the capacity tier,
+  // never a boundary. Deactivated rayon are filtered for the pickers below.
+  const { data: districts = [] } = useDistrictLookup();
+  // Lookup, not the full entity — the tree reads a name and a parent.
+  const { data: regions = [] } = useRegionLookup();
+  // Four fields per lokasi, not the whole entity. `useLocations({ limit: 1000 })`
+  // sends no page/limit, so the backend returned all 952 areas as FULL entities —
+  // nested district, boundary polygon and all — 12.5 MB on every page load.
+  // The BOARD includes deactivated lokasi; the pickers below do not.
+  //
+  // A live schedule row at a deactivated lokasi still has a worker standing in
+  // it, and the rayon's headcount counts that row — but with the lokasi missing
+  // from the master list the tree had no node to hang them on, so the people
+  // were invisible while the number above them included them. The cell
+  // contradicted its own header.
+  const { data: allLocations = [] } = useLocationLookup();
+  const placeable = useMemo(
+    () => allLocations.filter((l): l is typeof l & { district_id: string } => !!l.district_id),
+    [allLocations]
   );
 
-  const handleSetAbsence = async () => {
-    if (!absenceRosterId) return;
-
-    // Map UI type to API leave_type
-    const leaveTypeMap: Record<typeof absenceType, LeaveType> = {
-      sick: 'sick',
-      annual: 'annual',
-      permit: 'permit',
-      off: 'off',
-    };
-
-    try {
-      await setLeave.mutateAsync({
-        id: absenceRosterId,
-        leave_type: leaveTypeMap[absenceType],
-        notes: absenceNotes || undefined,
-      });
-      toast.success(t('messages.absenceSuccess'));
-      setAbsenceModalOpen(false);
-      refetch();
-    } catch (err) {
-      toast.error(getErrorMessage(err));
-    }
-  };
-
-  const handleDeleteSchedule = async () => {
-    if (!deleteRosterId) return;
-    try {
-      await deleteSchedule.mutateAsync(deleteRosterId);
-      toast.success(t('messages.deleteSuccess'));
-      setDeleteModalOpen(false);
-      refetch();
-    } catch (err) {
-      toast.error(getErrorMessage(err));
-    }
-  };
-
-  const handleUpdateShiftForEdit = async (id: string, shiftId: string | null) => {
-    await updateShift.mutateAsync({
-      id,
-      shift_definition_id: shiftId,
-    });
-    refetch();
-  };
-
-  const handleUpdateAreasForEdit = async (id: string, areaIds: string[]) => {
-    await updateAreas.mutateAsync({
-      id,
-      area_ids: areaIds,
-    });
-    refetch();
-  };
-
-  const handleAddSchedule = async (input: { user_id: string; date: string; shift_definition_id?: string | null; area_ids?: string[] }) => {
-    try {
-      await addSchedule.mutateAsync(input);
-      setAddModalOpen(false);
-      refetch();
-    } catch (err) {
-      throw err;
-    }
-  };
-
-  const handleGenerate = async () => {
-    try {
-      const result = await generateRoster.mutateAsync(selectedDate);
-      toast.success(`${result.generated} ${t('messages.generateSuccess')}`);
-      refetch();
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : t('messages.generateError')
-      );
-    }
-  };
-
-  const columns = useMemo<ColumnDef<Schedule>[]>(
-    () => [
-      {
-        id: 'full_name',
-        accessorFn: (row) => row.user?.full_name ?? '',
-        header: t('table.worker'),
-        meta: { label: t('table.worker'), filterVariant: 'text' },
-        cell: ({ row }) => {
-          const roster = row.original;
-          const fullName = roster.user?.full_name ?? '—';
-          return (
-            <div className="flex items-center gap-2.5">
-              <RoleAvatar
-                name={fullName}
-                role={roster.user?.role ?? 'satgas'}
-                size="sm"
-              />
-              <div className="min-w-0">
-                <p className="truncate font-bold text-nb-black">{fullName}</p>
-                <p className="truncate font-mono text-[11px] text-nb-gray-600">
-                  {roster.user?.username ?? '—'}
-                </p>
-              </div>
-            </div>
-          );
-        },
-      },
-      {
-        // The row's own `rayon_id` — NOT derived from its first area — so it
-        // still shows correctly even when the worker has zero areas assigned
-        // (e.g. right after clearing areas, or for a rayon manager row).
-        id: 'rayon',
-        accessorFn: (row) => rayonById.get(row.rayon_id ?? '')?.name ?? '',
-        header: t('table.rayon'),
-        meta: {
-          label: t('table.rayon'),
-          filterVariant: 'enum',
-          filterOptions: rayonFilterOptions,
-        },
-        cell: ({ row }) => (
-          <span className="text-nb-body-sm">
-            {rayonById.get(row.original.rayon_id ?? '')?.name ?? '—'}
-          </span>
-        ),
-      },
-      {
-        id: 'areas',
-        accessorFn: (row) => getAreaNames(row, areaById),
-        header: t('table.area'),
-        filterFn: enumArrayFilterFn as FilterFn<Schedule>,
-        meta: {
-          label: t('table.area'),
-          filterVariant: 'enum',
-          filterOptions: areaFilterOptions,
-        },
-        cell: ({ row }) => {
-          const roster = row.original;
-          const count = roster.schedule_areas.length;
-          if (count === 0) return <span className="text-nb-body-sm text-nb-gray-500">—</span>;
-          return (
-            <button
-              type="button"
-              onClick={() => setAreasSheetRoster(roster)}
-              aria-label={t('buttons.areaCountAriaLabel', { count, name: roster.user?.full_name ?? 'pekerja' })}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 border-2 border-nb-black rounded-nb-base bg-nb-white text-nb-body-sm font-bold shadow-nb-xs hover:shadow-nb-sm active:shadow-none transition-shadow duration-100"
-            >
-              📍
-              {t('buttons.areaCount', { count })}
-            </button>
-          );
-        },
-      },
-      {
-        id: 'shift',
-        accessorFn: (row) => {
-          const shift = row.shift_definition;
-          return shift ? `${shift.name} (${shift.start_time}-${shift.end_time})` : '';
-        },
-        header: t('table.shift'),
-        meta: {
-          label: t('table.shift'),
-          filterVariant: 'enum',
-          filterOptions: shiftFilterOptions,
-        },
-        cell: ({ row }) => {
-          const shift = row.original.shift_definition;
-          return (
-            <span className="text-nb-body-sm">
-              {shift ? `${shift.name} (${shift.start_time}-${shift.end_time})` : '—'}
-            </span>
-          );
-        },
-      },
-      {
-        id: 'status',
-        accessorKey: 'status',
-        header: t('table.status'),
-        meta: {
-          label: t('table.status'),
-          filterVariant: 'enum',
-          filterOptions: SCHEDULE_STATUSES.map((s) => ({ value: formatStatus(s), label: formatStatus(s) })),
-        },
-        cell: ({ row }) => (
-          <StatusPill tone={getStatusTone(row.original.status)} dot>
-            {formatStatus(row.original.status)}
-          </StatusPill>
-        ),
-      },
-      {
-        id: 'role',
-        accessorFn: (row) => row.user?.role ?? '',
-        header: t('table.role'),
-        meta: { label: t('table.role'), filterVariant: 'text', defaultHidden: true },
-        cell: ({ row }) =>
-          row.original.user ? <RolePill role={row.original.user.role} /> : <span>—</span>,
-      },
-      {
-        id: 'replacement',
-        accessorFn: (row) => row.replacement_user?.full_name ?? '',
-        header: t('table.replacement'),
-        meta: { label: t('table.replacement'), filterVariant: 'text', defaultHidden: true },
-        cell: ({ row }) => (
-          <span className="text-nb-body-sm">
-            {row.original.replacement_user?.full_name ?? '—'}
-          </span>
-        ),
-      },
-    ],
-    [areaById, rayonById, t, formatStatus, rayonFilterOptions, areaFilterOptions, shiftFilterOptions],
+  /**
+   * The board's lokasi. A deactivated one appears ONLY when it still holds
+   * assignments — otherwise every closed lokasi would add an empty card — and it
+   * carries `is_active` so the card can say why it is there.
+   */
+  const boardLocations = useMemo(
+    () =>
+      placeable
+        .filter((l) => l.is_active !== false || (containerTotal(daySummary, l.id) ?? 0) > 0)
+        .map((l) => ({
+          id: l.id,
+          name: l.name,
+          district_id: l.district_id,
+          region_id: l.region_id ?? null,
+          is_active: l.is_active !== false,
+        })),
+    [placeable, daySummary]
   );
 
-  const rowActions = useCallback(
-    (roster: Schedule): DataTableRowAction<Schedule>[] => {
-      if (!canEditRoster(roster)) return [];
+  /** Pickers offer only kawasan you can actually roster someone into. */
+  const pickerRegions = useMemo(() => regions.filter((r) => r.is_active), [regions]);
 
-      const actions: DataTableRowAction<Schedule>[] = [
-        {
-          key: 'absence',
-          label: t('rowActions.absence'),
-          icon: Calendar,
-          onClick: () => {
-            setAbsenceRosterId(roster.id);
-            setAbsenceType('sick');
-            setAbsenceNotes('');
-            setAbsenceModalOpen(true);
-          },
-        },
-        {
-          key: 'edit',
-          label: t('rowActions.edit'),
-          icon: Pencil,
-          onClick: () => {
-            setEditRosterId(roster.id);
-            setEditModalOpen(true);
-          },
-        },
-      ];
+  /** Pickers offer only rayon you can actually roster someone into. */
+  const pickerDistricts = useMemo(() => districts.filter((d) => d.is_active), [districts]);
 
-      // Delete action: admin only
-      if (currentUser && ADMIN_ROLES.includes(currentUser.role)) {
-        actions.push({
-          key: 'delete',
-          label: t('rowActions.delete'),
-          icon: Trash2,
-          onClick: () => {
-            setDeleteRosterId(roster.id);
-            setDeleteModalOpen(true);
-          },
-        });
-      }
+  /** Pickers offer only lokasi you can actually roster someone into. */
+  const pickerLocations = useMemo(
+    () =>
+      placeable
+        .filter((l) => l.is_active !== false)
+        .map((l) => ({
+          id: l.id,
+          name: l.name,
+          district_id: l.district_id,
+          region_id: l.region_id ?? null,
+        })),
+    [placeable]
+  );
 
-      return actions;
+  // Special-day overrides (holidays/days off) → the anchor's staffing day type,
+  // matching monitoring's DayTypeService (holiday requirements fire on holidays).
+  const year = anchor.getFullYear();
+  const { data: overrides = [] } = useSpecialDayOverrides(
+    `${year}-01-01`,
+    `${year}-12-31`,
+    calendarView === 'day'
+  );
+  const overrideMap = useMemo(
+    () => new Map(overrides.map((o) => [o.date, o.day_type])),
+    [overrides]
+  );
+
+  // Staffing requirements → understaffing pills on the day board (per day type).
+  const { data: requirementRows = [] } = useStaffRequirements(calendarView === 'day');
+  const capacities = useMemo(
+    () => requirementTotalMap(requirementRows, resolveDayType(isoDate(anchor), overrideMap)),
+    [requirementRows, anchor, overrideMap]
+  );
+  // Per-role targets: the aggregate above can't say which role is short, which
+  // is what the hint and the shift+role cards need.
+  const roleCapacities = useMemo(
+    () => requirementRoleMap(requirementRows, resolveDayType(isoDate(anchor), overrideMap)),
+    [requirementRows, anchor, overrideMap]
+  );
+
+  // Master data for the day board's Rayon → Kawasan → Lokasi tree.
+  const boardMaster = useMemo<BoardMasterData>(
+    () => ({
+      // staffing_level must survive this mapping: it decides which single tier
+      // (district / kawasan / lokasi) may edit capacity. Dropping it here is what
+      // made the board offer the capacity control on every tier but the district.
+      districts: districts.map((r) => ({ id: r.id, name: r.name, staffing_level: r.staffing_level })),
+      regions: regions.map((r) => ({ id: r.id, name: r.name, district_id: r.district_id })),
+      // A lokasi with no rayon has no place in a Rayon → Kawasan → Lokasi tree,
+      // so it is dropped rather than rendered under a missing parent.
+      locations: boardLocations,
+      shifts: shifts.map((s) => ({
+        id: s.id,
+        name: s.name,
+        start_time: s.start_time,
+        end_time: s.end_time,
+      })),
+    }),
+    [districts, regions, boardLocations, shifts]
+  );
+
+  // Which tier a container id belongs to, so the leaf fetch knows which filter
+  // to scope by. Resolved from master data the page already holds.
+  const containerTier = useCallback(
+    (id: string): ContainerTier | null => {
+      if (id === CITY_NODE_ID) return 'city';
+      if (boardLocations.some((l) => l.id === id)) return 'location';
+      if (regions.some((r) => r.id === id)) return 'region';
+      if (districts.some((d) => d.id === id)) return 'district';
+      return null;
     },
-    [canEditRoster, currentUser, t],
+    [boardLocations, regions, districts]
   );
 
-  // Edit target: the roster being edited in the modal
-  const editRoster = useMemo(
-    () => schedules.find((r) => r.id === editRosterId) ?? null,
-    [schedules, editRosterId],
+  // One cached query per opened container. `useQueries` keeps them independent:
+  // opening a second card doesn't refetch the first, and closing one keeps its
+  // rows warm for the next open.
+  const containerQueries = useQueries({
+    queries: openContainers.map((id) => {
+      const tier = containerTier(id);
+      // The summary already knows whether this container holds anything; an
+      // empty one needs no request at all.
+      return containerOccurrencesQuery(
+        from,
+        tier ? { id, tier } : null,
+        filters,
+        containerTotal(daySummary, id)
+      );
+    }),
+  });
+  // Nested containers return overlapping rows — see `dedupeOccurrences`.
+  const containerOccurrences = useMemo(
+    () => dedupeOccurrences(containerQueries.map((q) => q.data)),
+    [containerQueries]
+  );
+  const loadingContainers = useMemo(
+    () => new Set(openContainers.filter((_, i) => containerQueries[i]?.isLoading)),
+    [openContainers, containerQueries]
   );
 
-  // Determine if roster is empty (show/hide Generate button)
-  const alreadyGenerated = schedules.length > 0;
+
+
+  const { dateLabel, navStep, localeCode } = useCalendarNav(calendarView, anchor, setAnchor);
 
   return (
     <div className="space-y-5">
-      {/* No `title` — the dashboard top bar's breadcrumb already shows the
-          page name, so a second "Jadwal" H1 here was pure duplication. The
-          date picker rides in `actions` (right-aligned, same row as the
-          count) rather than its own row, ahead of the DataTable's toolbar. */}
-      <PageHeader
-        description={schedules.length ? t('page.totalCount', { count: schedules.length }) : undefined}
-        actions={
-          <div className="flex items-center gap-3">
-            <label htmlFor="date-picker" className="text-nb-body font-medium">
-              {t('page.dateLabel')}
-            </label>
-            <input
-              id="date-picker"
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="rounded-nb-base border-2 border-nb-black px-3 py-2 text-nb-body"
-            />
-          </div>
-        }
-      />
-
-      {/* Data Table — refresh/filter/columns live in the table's own toolbar row;
-          "Tambah Jadwal" (and "Buat Jadwal Hari Ini" when applicable) are passed
-          via `actions` so they render rightmost in that SAME row, same as
-          Users/Areas. Do not add a second manual refresh button here. */}
-      <DataTable
-        columns={columns}
-        data={schedules}
-        loading={isLoading}
-        error={!!error}
-        onRetry={() => refetch()}
-        onRefresh={() => refetch()}
-        getRowId={(r) => r.id}
-        searchPlaceholder={t('page.searchPlaceholder')}
-        rowActions={rowActions}
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            {canGenerate && !alreadyGenerated && !isLoading && (
-              <Button
-                onClick={handleGenerate}
-                loading={generateRoster.isPending}
-                variant="outline"
-                leftIcon={<Plus className="h-4 w-4" />}
-              >
-                {t('buttons.generate')}
-              </Button>
-            )}
-
-            {canEditRoster(
-              schedules[0] ?? ({ rayon_id: currentUser?.rayon_id } as Schedule)
-            ) && (
-              <Button onClick={() => setAddModalOpen(true)} leftIcon={<Plus className="h-4 w-4" />}>
-                {t('buttons.addOne')}
-              </Button>
-            )}
-          </div>
-        }
-        emptyTitle={schedules.length === 0 ? t('page.emptyTitle') : undefined}
-        emptyDescription={schedules.length === 0 ? t('page.emptyDescription') : undefined}
-      />
-
-      {/* Absence Modal (Ketidakhadiran) */}
-      <Dialog open={absenceModalOpen} onOpenChange={setAbsenceModalOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t('modals.absence.title')}</DialogTitle>
-          </DialogHeader>
-
-          <DialogBody>
-            <div className="space-y-4">
-              <FormSelect
-                label={t('modals.absence.typeLabel')}
-                value={absenceType}
-                onChange={(value) => setAbsenceType(value as 'sick' | 'annual' | 'permit' | 'off')}
-                options={[
-                  { value: 'sick', label: t('modals.absence.typeSick') },
-                  { value: 'annual', label: t('modals.absence.typeAnnual') },
-                  { value: 'permit', label: t('modals.absence.typePermit') },
-                  { value: 'off', label: t('modals.absence.typeOff') },
-                ]}
-              />
-              <Textarea
-                label={t('modals.absence.notesLabel')}
-                value={absenceNotes}
-                onChange={(e) => setAbsenceNotes(e.target.value)}
-                placeholder={t('modals.absence.notesPlaceholder')}
-                rows={3}
-              />
-            </div>
-          </DialogBody>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAbsenceModalOpen(false)}>
-              {t('common:actions.cancel')}
-            </Button>
-            <Button onClick={handleSetAbsence} loading={setLeave.isPending}>
-              {t('common:actions.save')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Confirmation Modal */}
-      <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t('modals.delete.title')}</DialogTitle>
-          </DialogHeader>
-
-          <DialogBody>
-            <div className="space-y-3">
-              <p className="text-nb-body">
-                {t('modals.delete.confirm', {
-                  name: deleteTarget?.user?.full_name ?? '—',
-                  date: selectedDate,
-                })}
-              </p>
-              <p className="text-nb-body-sm text-nb-gray-600">
-                {t('modals.delete.warning')}
-              </p>
-            </div>
-          </DialogBody>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteModalOpen(false)}>
-              {t('common:actions.cancel')}
-            </Button>
+      {/* Same toolbar shape as every list page (see specs/platforms/web/data-tables.md):
+          date nav, then a LEFT slot holding search, then the right-hand group.
+          Search used to sit inside the right cluster, which put it furthest from
+          the edge it belongs on. `w-full` below `sm` keeps it on a row of its own
+          so the group wraps underneath. The parent stays `relative` — an active
+          search overlays the whole row. */}
+      <div className="relative flex flex-wrap items-center gap-3">
+        <DateNav
+          label={dateLabel}
+          value={isoDate(anchor)}
+          // Picking a day resolves to the period containing it — the current
+          // view is preserved, so a month view jumps to that day's month.
+          onValueChange={(iso) => setAnchor(new Date(`${iso}T00:00:00`))}
+          onPrev={() => navStep(-1)}
+          onNext={() => navStep(1)}
+          onToday={() => setAnchor(wibTodayDate())}
+        />
+        <div className="flex w-full items-center gap-2 sm:w-auto">
+          <ScheduleSearch
+            filters={filters}
+            onChange={setFilters}
+            lockDistrict={lockDistrict}
+            onNavigateDate={(iso) => {
+              setAnchor(new Date(`${iso}T00:00:00`));
+              setCalendarView('day');
+            }}
+          />
+        </div>
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <Select value={calendarView} onValueChange={(v) => setCalendarView(v as CalendarView)}>
+            <SelectTrigger className="w-32 h-10" aria-label={t('schedules:controls.viewLabel')}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="year">{t('schedules:calendar.views.year')}</SelectItem>
+              <SelectItem value="month">{t('schedules:calendar.views.month')}</SelectItem>
+              <SelectItem value="week">{t('schedules:calendar.views.week')}</SelectItem>
+              <SelectItem value="day">{t('schedules:calendar.views.day')}</SelectItem>
+            </SelectContent>
+          </Select>
+          {/* The standard toolbar icon button — this was a hand-rolled <button>
+              with its own size/border, so it didn't match the filter/refresh
+              buttons it sits beside on every other page. */}
+          {/* Shift settings (ADR-055 configurable shifts) — sits to the LEFT of
+              Hari Libur, both being schedule-wide config. */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShiftDefsOpen(true)}
+            aria-label={t('schedules:shiftDefs.title')}
+            title={t('schedules:shiftDefs.title')}
+          >
+            <CalendarClock className="h-4 w-4" aria-hidden />
+            <span className="ml-1.5 hidden sm:inline">{t('schedules:shiftDefs.buttonLabel')}</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setHolidayOpen(true)}
+            aria-label={t('schedules:holidays.manage')}
+            title={t('schedules:holidays.manage')}
+          >
+            <CalendarOff className="h-4 w-4" aria-hidden />
+            {/* `manage` ("Hari Libur"), not `title` ("Hari Libur & Hari Khusus")
+                — the latter is the panel's heading and is far too long here. */}
+            <span className="ml-1.5 hidden sm:inline">{t('schedules:holidays.manage')}</span>
+          </Button>
+          {can('schedule:create') && (
             <Button
-              onClick={handleDeleteSchedule}
-              loading={deleteSchedule.isPending}
-              variant="destructive"
+              variant="outline"
+              size="sm"
+              onClick={() => setUnscheduledOpen(true)}
+              aria-label={t('schedules:unscheduled.title')}
+              title={t('schedules:unscheduled.description')}
             >
-              {t('modals.delete.title')}
+              <UserPlus className="h-4 w-4" aria-hidden />
+              <span className="ml-1.5 hidden sm:inline">
+                {t('schedules:unscheduled.buttonLabel')}
+              </span>
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          )}
+          {/* Manual refresh. The board is cached for 30 s and a write elsewhere
+              (another operator, the materializer cron) will not push, so an
+              explicit "reload" is the only way to see it without a page reload. */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void refreshCalendar()}
+            disabled={viewFetching}
+            aria-label={t('common:actions.refresh')}
+            title={t('common:actions.refresh')}
+          >
+            <RefreshCw
+              className={`h-4 w-4 ${viewFetching ? 'animate-spin' : ''}`}
+              aria-hidden
+            />
+            <span className="ml-1.5 hidden sm:inline">{t('common:actions.refresh')}</span>
+          </Button>
+          {can('schedule:create') && (
+            <CreateButton
+              label={t('schedules:calendar.event.createTitle')}
+              onClick={() => openCreate(isoDate(anchor))}
+            />
+          )}
+        </div>
+      </div>
 
-      {/* Edit Schedule Modal — worker is fixed; only shift/areas are editable
-          (see EditScheduleModal for why: changing the worker here could corrupt
-          data, so that's only offered via delete + Tambah Jadwal). */}
+      <ScheduleFilterChips filters={filters} onChange={setFilters} lockDistrict={lockDistrict} />
+
+      {/* A background refetch keeps the STALE board on screen, so after saving a
+          schedule the success toast landed while the row was still missing —
+          which reads as "it didn't work". Say the board is catching up. */}
+      {viewFetching && !viewLoading && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex items-center gap-2 text-nb-caption text-nb-gray-600"
+        >
+          <RefreshCw className="h-3.5 w-3.5 animate-spin" aria-hidden />
+          {t('schedules:calendar.refreshing')}
+        </div>
+      )}
+
+      {calendarView === 'year' ? (
+        <YearView
+          year={anchor.getFullYear()}
+          onSelectMonth={(m) => {
+            setAnchor(new Date(anchor.getFullYear(), m, 1));
+            setCalendarView('month');
+          }}
+          onSelectDay={(iso) => {
+            setAnchor(new Date(`${iso}T00:00:00`));
+            setCalendarView('day');
+          }}
+          localeCode={localeCode}
+          counts={yearCountMap}
+        />
+      ) : viewLoading ? (
+        <Skeleton variant="card" />
+      ) : calendarView === 'month' ? (
+        <MonthGrid
+          occurrences={occurrences}
+          summary={subjectFiltered ? undefined : rangeSummary}
+          currentMonth={anchor}
+          master={boardMaster}
+          onDayClick={(d) => {
+            setAnchor(d);
+            setCalendarView('day');
+          }}
+          onOccurrenceClick={onOccurrenceClick}
+          subjectFiltered={subjectFiltered}
+        />
+      ) : calendarView === 'week' ? (
+        <WeekGrid
+          occurrences={occurrences}
+          summary={subjectFiltered ? undefined : rangeSummary}
+          currentDate={anchor}
+          master={boardMaster}
+          onDayClick={(d) => {
+            setAnchor(d);
+            setCalendarView('day');
+          }}
+          onOccurrenceClick={onOccurrenceClick}
+          subjectFiltered={subjectFiltered}
+        />
+      ) : (
+        <DayBoard
+          // Only the opened containers' rows — the counts come from `summary`.
+          occurrences={containerOccurrences}
+          summary={daySummary}
+          onExpandContainer={onExpandContainer}
+          loadingContainers={loadingContainers}
+          master={boardMaster}
+          capacities={capacities}
+          roleCapacities={roleCapacities}
+          onOccurrenceClick={onOccurrenceClick}
+          canAssign={can('schedule:create')}
+          onAssign={(ctx) => openCreate(isoDate(anchor), ctx)}
+          onEditCapacity={canManageCapacity ? (subject) => setCapacitySubject(subject) : undefined}
+          filters={filters}
+          onClearFilters={() => setFilters({})}
+          onShowMap={setMapSubject}
+        />
+      )}
+
+      <AreaMapModal subject={mapSubject} onOpenChange={(o) => !o && setMapSubject(null)} />
+
+      {/* Read-only detail (shown first on click; Ubah/Hapus route onward) */}
+      <ScheduleDetailModal
+        open={detailOpen}
+        onOpenChange={(open) => {
+          setDetailOpen(open);
+          if (!open && !editChooserOpen && !rowEditOpen && !deleteChooserOpen) setChosen(null);
+        }}
+        occurrence={chosen}
+        event={chosen?.schedule_event_id ? chosenEvent : null}
+        onEdit={onDetailEdit}
+        onDelete={onDetailDelete}
+        canEdit={can('schedule:update')}
+        canDelete={can('schedule:delete')}
+        localeCode={localeCode}
+      />
+
+      {/* Holidays / days-off manager (reachable from the Jadwal page) */}
+      <ShiftDefinitionsModal
+        open={shiftDefsOpen}
+        onOpenChange={setShiftDefsOpen}
+        canManage={canManageShifts}
+      />
+      <HolidayManagerModal
+        open={holidayOpen}
+        onOpenChange={setHolidayOpen}
+        year={year}
+        canManage={can('schedule:create')}
+      />
+
+      {/* Staffing capacity editor (admin_system/superadmin) */}
+      <CapacityModal
+        open={capacitySubject !== null}
+        onOpenChange={(open) => {
+          if (!open) setCapacitySubject(null);
+        }}
+        subject={capacitySubject}
+      />
+
+      {/* Create */}
+      {createOpen && (
+        <ScheduleEventModal
+          open={createOpen}
+          onOpenChange={closeCreate}
+          initialDate={createDate}
+          initialDistrictId={createCtx?.district_id}
+          initialRegionId={createCtx?.region_id}
+          initialLocationId={createCtx?.location_id}
+          initialShiftId={createCtx?.shiftId}
+          initialCityWide={createCtx?.city}
+          initialTeam={createCtx?.team}
+          initialRole={createCtx?.role}
+          initialUserId={createUserId}
+          initialUserName={createUserName}
+          // From the gap panel the geography/shift are the panel's FILTERS, not
+          // a clicked board cell — a prefill to adjust, not a fact to obey.
+          lockPrefill={!returnToUnscheduled}
+        />
+      )}
+
+      {/* Series / this-and-future edit — needs the rule behind the occurrence */}
+      {eventEdit && chosenEvent && (
+        <ScheduleEventModal
+          open={!!eventEdit}
+          onOpenChange={(open) => {
+            if (!open) setEventEdit(null);
+          }}
+          event={chosenEvent}
+          editScope={eventEdit.scope}
+          fromDate={eventEdit.fromDate}
+          onSuccess={() => {
+            // No refresh here: `useUpdateScheduleEvent` invalidates and awaits it,
+            // so the board is already current when this fires.
+            setEventEdit(null);
+            setChosen(null);
+          }}
+        />
+      )}
+
+      {/* "This occurrence" edit — reuses the roster row editor (detaches the row) */}
       <EditScheduleModal
-        open={editModalOpen}
-        onClose={() => setEditModalOpen(false)}
-        roster={editRoster}
-        onUpdateShift={handleUpdateShiftForEdit}
-        onUpdateAreas={handleUpdateAreasForEdit}
-        shiftLoading={updateShift.isPending}
-        areasLoading={updateAreas.isPending}
+        open={rowEditOpen && !!rowUnderEdit}
+        onClose={() => {
+          setRowEditOpen(false);
+          setChosen(null);
+        }}
+        onSubmit={onRowEditSubmit}
+        roster={rowUnderEdit}
+        pendingEdit={pendingEdit}
+        loading={editPending}
         shifts={shifts}
-        allRayons={allRayons}
-        allAreas={allAreas}
-        error={
-          updateShift.isError || updateAreas.isError
-            ? getErrorMessage(updateShift.error || updateAreas.error)
-            : undefined
-        }
+        allDistricts={pickerDistricts}
+        allAreas={pickerLocations}
+        allRegions={pickerRegions}
       />
 
-      {/* Add Schedule Modal */}
-      <AddScheduleModal
-        open={addModalOpen}
-        onClose={() => setAddModalOpen(false)}
-        onSubmit={handleAddSchedule}
-        loading={addSchedule.isPending}
-        date={selectedDate}
-        allUsers={allUsers}
-        scheduledUserIds={scheduledUserIds}
+      <UnscheduledWorkersSheet
+        open={unscheduledOpen}
+        onOpenChange={setUnscheduledOpen}
+        initialDate={isoDate(anchor)}
         shifts={shifts}
-        allRayons={allRayons}
-        allAreas={allAreas}
-        error={addSchedule.isError ? getErrorMessage(addSchedule.error) : undefined}
+        districts={pickerDistricts}
+        regions={pickerRegions}
+        locations={pickerLocations}
+        onSchedule={(worker, target) => {
+          // Hand off to the normal create flow. The WORKER and their role are
+          // facts — they were picked from the list — so they lock. The target is
+          // a suggestion: it prefills but stays editable (`lockPrefill={false}`),
+          // because the filters describe where the operator was looking, not
+          // necessarily where this particular person should go.
+          setUnscheduledOpen(false);
+          setReturnToUnscheduled(true);
+          openCreate(
+            target.date,
+            {
+              shiftId: target.shiftId ?? '',
+              role: worker.role,
+              district_id: target.districtId ?? undefined,
+              region_id: target.regionId ?? undefined,
+              location_id: target.locationId ?? undefined,
+            },
+            { id: worker.id, name: worker.full_name },
+          );
+        }}
       />
 
-      {/* Read-only side sheet listing a roster's areas */}
-      <AreaListSheet
-        open={!!areasSheetRoster}
-        title={t('modals.areaList.title')}
-        subtitle={areasSheetRoster?.user?.full_name ?? '—'}
-        items={areasSheetItems}
-        resetKey={areasSheetRoster?.id}
-        onClose={() => setAreasSheetRoster(null)}
+      <EditScopeChooser
+        open={editChooserOpen}
+        onOpenChange={(open) => {
+          setEditChooserOpen(open);
+          // Cancelling DISCARDS the collected edit — nothing was written. Going
+          // BACK re-opens the form, so `rowEditOpen` guards the edit from being
+          // dropped on the way there.
+          if (!open && !rowEditOpen) setPendingEdit(null);
+          if (!open && !eventEdit && !rowEditOpen && !deleteChooserOpen) setChosen(null);
+        }}
+        onSelect={onEditScope}
+        // Back to the form, edit intact. Deleting is NOT offered mid-edit — it
+        // lives on the row's detail modal, which is where the user meant to go.
+        onBack={() => {
+          setEditChooserOpen(false);
+          setRowEditOpen(true);
+        }}
+        selectedDate={chosen?.schedule_date}
+        pendingScope={pendingScope}
+      />
+
+      <DeleteScopeChooser
+        open={deleteChooserOpen}
+        onOpenChange={setDeleteChooserOpen}
+        onSelect={onDeleteScope}
+        selectedDate={chosen?.schedule_date}
       />
     </div>
   );

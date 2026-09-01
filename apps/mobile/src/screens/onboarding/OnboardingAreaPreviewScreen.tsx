@@ -75,13 +75,6 @@ export function OnboardingAreaPreviewScreen(): React.JSX.Element {
             <View style={styles.map}>
               <View style={styles.geofence} />
               <MaterialCommunityIcons name="map-marker" size={36} color={nbColors.statusActive} />
-              {area.radius_meters ? (
-                <View style={styles.radiusChip}>
-                  <NBText variant="mono-sm" color="black">
-                    {t('onboarding:areaPreview.radiusLabel')} {area.radius_meters}m
-                  </NBText>
-                </View>
-              ) : null}
             </View>
             <NBCard style={styles.card} testID="area-preview-clockable">
               <NBText variant="mono-sm" color="gray600">

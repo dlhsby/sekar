@@ -55,9 +55,9 @@ export function UserListItem({ user, isSelected, onClick }: UserListItemProps) {
             </span>
           </div>
           <div className="flex items-center gap-1.5 mt-0.5">
-            <span className="text-xs text-nb-gray-500 truncate">{user.area_name || '—'}</span>
-            <span className="text-xs text-nb-gray-400">·</span>
-            <span className="text-xs text-nb-gray-400">{formatRelativeTime(user.last_update)}</span>
+            <span className="text-xs text-nb-gray-500 truncate">{user.location_name || '—'}</span>
+            <span className="text-xs text-nb-gray-500">·</span>
+            <span className="text-xs text-nb-gray-500">{formatRelativeTime(user.last_update)}</span>
           </div>
         </div>
 

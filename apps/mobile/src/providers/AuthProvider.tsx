@@ -118,7 +118,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
             const meResponse = await Promise.race([getMe(), timeoutPromise]);
 
             if (meResponse.data) {
-              // Token is valid, restore auth state with latest area/rayon data
+              // Token is valid, restore auth state with latest area/district data
               // Transform GeoJSON Polygon → flat [lng, lat][] for mobile gpsUtils
               const rawArea = meResponse.data.assigned_area;
               const rawPolygon = (rawArea as any)?.boundary_polygon;
@@ -127,8 +127,14 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
                 : null;
               const updatedUser = {
                 ...storedUser,
-                area_id: meResponse.data.area_id ?? storedUser.area_id,
-                rayon_id: meResponse.data.rayon_id ?? storedUser.rayon_id,
+                location_id: meResponse.data.location_id ?? storedUser.location_id,
+                district_id: meResponse.data.district_id ?? storedUser.district_id,
+                // The avatar is a PRESIGNED url now, not a base64 data URI, so the
+                // copy cached at login goes stale (24 h TTL) and then answers 403.
+                // `me` already carries a freshly-signed one — take it, rather than
+                // keeping a cached value this call has just superseded.
+                profile_picture_url:
+                  meResponse.data.profile_picture_url ?? storedUser.profile_picture_url,
               };
               dispatch(
                 restoreAuth({

@@ -34,6 +34,13 @@ services:
     environment:
       NODE_ENV: staging
       REDIS_URL: redis://redis:6379
+      # Pin the V8 old-space cap explicitly. Node otherwise auto-derives it from the
+      # cgroup limit (~256 MB at mem_limit 448m) — a value that was silently reached
+      # and crashed the process (F9). Kept below mem_limit so V8 GC's hard-fail is
+      # reached before the kernel OOM-kills the container (a clean heap error is
+      # debuggable; a SIGKILL is not). The real relief is not loading activity photo
+      # data-URIs into the heap (see the query changes) — this is the safety net.
+      NODE_OPTIONS: "--max-old-space-size=384"
     expose:
       - "3000" # internal only; reached via Caddy on the edge network
     depends_on:

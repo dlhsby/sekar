@@ -17,9 +17,19 @@ for f in $(git diff --cached --name-only --diff-filter=ACM | grep -E '(^|/)\.env
   esac
   # Look at the staged content; ignore comments/blank lines. If any assignment
   # has a non-empty, non-`encrypted:` value, the file carries plaintext secrets.
+  #
+  # DOTENV_PUBLIC_KEY_* is exempt: dotenvx writes the *public* half of the
+  # keypair into every encrypted file as plaintext by design. Without this
+  # exemption the guard fires on every dotenvx file and makes any edit to one
+  # uncommittable — which is not a secret leak, just the format.
+  #
+  # The exemption is matched on the VALUE too (a 66-char compressed secp256k1
+  # hex key), not the name alone — otherwise naming a secret
+  # DOTENV_PUBLIC_KEY_ANYTHING would smuggle it past the guard.
   if git show ":$f" 2>/dev/null \
       | grep -vE '^[[:space:]]*(#|$)' \
       | grep -E '^[A-Za-z_][A-Za-z0-9_]*=' \
+      | grep -vE '^DOTENV_PUBLIC_KEY[A-Za-z0-9_]*="?[0-9a-fA-F]{66}"?[[:space:]]*$' \
       | grep -qvE '=[[:space:]]*("?encrypted:|$)'; then
     blocked="$blocked $f"
   fi

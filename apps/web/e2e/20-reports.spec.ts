@@ -129,7 +129,10 @@ async function setupMockReportRoutes(page: Page) {
   });
 }
 
-test.describe('Reports Pages (Phase 5-1)', () => {
+// PARKED (built, hidden from nav) — see specs/features/_archived/. Navigation.ts line 208-247.
+// Routes still accessible at /reports, /reports/builder, /reports/schedules, but feature was archived 2026-07-07 per request.
+// Only /reports/reporting is active in nav. Re-enable when restored.
+test.describe.skip('Reports Pages (Phase 5-1)', () => {
   test('reports list renders with title and create button', async ({ page }) => {
     await quickLogin(page, 'korlap', '/reports');
     await setupMockReportRoutes(page);

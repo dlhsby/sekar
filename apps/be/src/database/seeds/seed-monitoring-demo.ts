@@ -18,6 +18,20 @@ import { v4 as uuidv4 } from 'uuid';
  * Usage: npm run db:seed:monitoring-demo
  */
 
+/**
+ * Map the demo's legacy 5-value scenarios to the current 3-value tracking status
+ * (ADR-050 / Phase 5.3): inside/outside is a separate axis (`is_within_area`), not a
+ * status. `inactive`/`missing` → `offline` (clocked in, unreachable); `outside_area`
+ * stays clocked-in-and-reachable (`active`) with `is_within_area=false`.
+ */
+const TRACKING_STATUS_MAP: Record<string, string> = {
+  active: 'active',
+  inactive: 'offline',
+  outside_area: 'active',
+  missing: 'offline',
+  offline: 'offline',
+};
+
 async function seedMonitoringDemo() {
   console.log('🌱 Monitoring Demo Seeding Started...');
   console.log('');
@@ -41,19 +55,19 @@ async function seedMonitoringDemo() {
   try {
     console.log('🔍 Finding existing field workers...');
 
-    // Fetch all field workers (satgas, linmas, korlap) across all rayons
+    // Fetch all field workers (satgas, linmas, korlap) across all districts
     const workers = await queryRunner.query(`
       SELECT
         u.id,
         u.username,
         u.role,
-        ua.area_id,
-        a.name as area_name,
+        ua.location_id,
+        a.name as location_name,
         a.boundary_polygon
       FROM users u
-      LEFT JOIN user_areas ua ON u.id = ua.user_id AND ua.assignment_type = 'permanent'
-      LEFT JOIN areas a ON ua.area_id = a.id
-      LEFT JOIN rayons r ON a.rayon_id = r.id
+      LEFT JOIN user_locations ua ON u.id = ua.user_id AND ua.assignment_type = 'permanent'
+      LEFT JOIN locations a ON ua.location_id = a.id
+      LEFT JOIN districts r ON a.district_id = r.id
       WHERE u.role IN ('satgas', 'linmas', 'korlap')
         AND u.deleted_at IS NULL
       ORDER BY u.username, a.name
@@ -140,10 +154,10 @@ async function seedMonitoringDemo() {
         workerIndex++;
 
         // Pick an area for this worker
-        const area = worker.area_id
+        const area = worker.location_id
           ? worker
-          : workers.find((w: any) => w.area_id && w.area_id !== null);
-        if (!area || !area.area_id) {
+          : workers.find((w: any) => w.location_id && w.location_id !== null);
+        if (!area || !area.location_id) {
           console.log(`  ⚠️  Skipping ${worker.username}: no assigned area`);
           continue;
         }
@@ -155,13 +169,13 @@ async function seedMonitoringDemo() {
           const clockInTime = new Date(now.getTime() - 2 * 60 * 60 * 1000); // 2h ago
 
           await queryRunner.query(
-            `INSERT INTO shifts (id, user_id, area_id, clock_in_time, clock_in_gps_lat,
+            `INSERT INTO shifts (id, user_id, location_id, clock_in_time, clock_in_gps_lat,
               clock_in_gps_lng, created_at, updated_at)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
             [
               shiftId,
               worker.id,
-              area.area_id,
+              area.location_id,
               clockInTime,
               -7.2905, // Bungkul center
               112.7398,
@@ -212,7 +226,7 @@ async function seedMonitoringDemo() {
           await queryRunner.query(
             `INSERT INTO user_tracking_status (user_id, shift_id, status, last_latitude,
               last_longitude, last_accuracy_meters, last_battery_level, last_location_at,
-              is_within_area, area_id, updated_at)
+              is_within_area, location_id, updated_at)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
              ON CONFLICT (user_id) DO UPDATE SET
                shift_id = $2,
@@ -223,19 +237,19 @@ async function seedMonitoringDemo() {
                last_battery_level = $7,
                last_location_at = $8,
                is_within_area = $9,
-               area_id = $10,
+               location_id = $10,
                updated_at = $11`,
             [
               worker.id,
               shiftId,
-              status.name,
+              TRACKING_STATUS_MAP[status.name] ?? 'offline',
               gpsLat,
               gpsLng,
               12.5,
               status.name === 'offline' ? 10 : 75,
               lastPingTime,
               status.isWithinArea ?? true,
-              area.area_id,
+              area.location_id,
               now,
             ],
           );
@@ -260,6 +274,58 @@ async function seedMonitoringDemo() {
           console.log(`  ✓ ${worker.username} (${worker.role}) → offline (no shift)`);
         }
       }
+    }
+
+    // ─── Demo team (ADR-048) ────────────────────────────────────────────────
+    // Put two co-located active workers on one team so the monitoring map shows a
+    // team bubble that expands to its members. Idempotent (rewrites today's rows).
+    console.log('');
+    console.log('👥 Seeding a demo team...');
+    const teamDate = new Date().toISOString().slice(0, 10);
+    let teamCatId: string;
+    const existingCat = await queryRunner.query(
+      `SELECT id FROM team_categories WHERE name = 'Penyiraman' LIMIT 1`,
+    );
+    if (existingCat.length > 0) {
+      teamCatId = existingCat[0].id;
+    } else {
+      teamCatId = uuidv4();
+      await queryRunner.query(
+        `INSERT INTO team_categories (id, name, marker_color, marker_icon, is_active)
+         VALUES ($1, 'Penyiraman', '#69D2E7', 'droplets', true)`,
+        [teamCatId],
+      );
+    }
+    // Two active satgas that share a location (so they group into one bubble).
+    const teamPair = await queryRunner.query(`
+      SELECT s.user_id, s.location_id
+      FROM shifts s
+      JOIN users u ON u.id = s.user_id
+      WHERE s.clock_out_time IS NULL AND u.role = 'satgas' AND s.location_id IS NOT NULL
+        AND s.location_id IN (
+          SELECT location_id FROM shifts
+          WHERE clock_out_time IS NULL AND location_id IS NOT NULL
+          GROUP BY location_id HAVING COUNT(*) >= 2
+        )
+      ORDER BY s.location_id, s.user_id
+      LIMIT 2
+    `);
+    if (teamPair.length >= 2 && teamPair[0].location_id === teamPair[1].location_id) {
+      for (const m of teamPair) {
+        await queryRunner.query(`DELETE FROM schedules WHERE user_id = $1 AND schedule_date = $2`, [
+          m.user_id,
+          teamDate,
+        ]);
+        await queryRunner.query(
+          `INSERT INTO schedules (user_id, schedule_date, status, source, team_category_id,
+             is_overtime, is_detached, created_at, updated_at)
+           VALUES ($1, $2, 'planned', 'template', $3, false, false, now(), now())`,
+          [m.user_id, teamDate, teamCatId],
+        );
+      }
+      console.log(`  ✓ Team "Penyiraman" → ${teamPair.length} members at one location`);
+    } else {
+      console.log('  ⚠️  No location with 2+ active workers — skipped team demo');
     }
 
     console.log('');

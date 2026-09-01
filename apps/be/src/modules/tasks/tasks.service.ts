@@ -20,7 +20,7 @@ import { PartialCompleteTaskDto } from './dto/partial-complete-task.dto';
 import { TaskFilterDto } from './dto/task-filter.dto';
 import { TaskTypeRegistry } from './registry/task-type-registry';
 import { UsersService } from '../users/users.service';
-import { AreasService } from '../areas/areas.service';
+import { LocationsService } from '../locations/locations.service';
 import { User, UserRole } from '../users/entities/user.entity';
 import { AuditLogService } from '../audit/audit.service';
 import { TaskFinderService } from './services/task-finder.service';
@@ -28,6 +28,14 @@ import { TaskDelegationService } from './services/task-delegation.service';
 import { TaskStatusTransitionsService } from './services/task-status-transitions.service';
 import { TaskVerificationService } from './services/task-verification.service';
 import { TaskAreaSyncService } from './services/task-area-sync.service';
+import { ScheduleScopeResolverService } from '../schedules/services/schedule-scope-resolver.service';
+import { TimezoneUtil } from '../../common/utils/timezone.util';
+import {
+  AssignmentScope,
+  NO_SCOPE,
+  ResolvedScope,
+  scopeFromIds,
+} from '../../common/enums/assignment-scope.enum';
 import {
   assertTaskReadAccess,
   assertValidAssignee,
@@ -75,7 +83,7 @@ export class TasksService {
     @InjectRepository(TaskTag)
     private readonly taskTagRepository: Repository<TaskTag>,
     private readonly usersService: UsersService,
-    private readonly areasService: AreasService,
+    private readonly locationsService: LocationsService,
     private readonly auditLogService: AuditLogService,
     private readonly taskTypeRegistry: TaskTypeRegistry,
     private readonly taskFinder: TaskFinderService,
@@ -83,6 +91,7 @@ export class TasksService {
     private readonly transitionsService: TaskStatusTransitionsService,
     private readonly verificationService: TaskVerificationService,
     private readonly taskAreaSync: TaskAreaSyncService,
+    private readonly scheduleScopeResolver: ScheduleScopeResolverService,
   ) {}
 
   /**
@@ -97,12 +106,13 @@ export class TasksService {
   ): Promise<Task> {
     this.logger.log(`Creating task: ${createTaskDto.title}`);
     const creator = await this.usersService.findOne(creatorId);
-    await this.validateCreateTarget(creator, createTaskDto.area_id);
+    await this.validateCreateTarget(creator, createTaskDto.location_id);
     const assignee = await this.resolveInitialAssignee(createTaskDto.assigned_to, creator);
     const typedFields = this.validateTypedFields(createTaskDto);
+    const scope = await this.resolveTaskScope(createTaskDto, assignee);
 
     const savedTask = await this.taskRepository.save(
-      this.buildTask(createTaskDto, creatorId, assignee, typedFields),
+      this.buildTask(createTaskDto, creatorId, assignee, typedFields, scope),
     );
     await this.recordInitialDelegation(savedTask, creator, assignee);
     await this.createInitialTags(savedTask.id, createTaskDto.tagged_user_ids);
@@ -115,7 +125,7 @@ export class TasksService {
   }
 
   private async validateCreateTarget(creator: User, areaId?: string): Promise<void> {
-    if (areaId) await this.areasService.findOne(areaId);
+    if (areaId) await this.locationsService.findOne(areaId);
     await this.validateScope(creator, areaId);
   }
 
@@ -151,20 +161,117 @@ export class TasksService {
     creatorId: string,
     assignee: User | null,
     typedFields: Pick<Task, 'taskType' | 'customFields' | 'targetPlantCount'>,
+    scope: ResolvedScope,
   ): Task {
     return this.taskRepository.create({
       title: dto.title,
       description: dto.description,
       priority: dto.priority || TaskPriority.MEDIUM,
       deadline: dto.deadline ? new Date(dto.deadline) : null,
-      area_id: dto.area_id || null,
-      rayon_id: dto.rayon_id || null,
+      // Scope + its ids come from resolveTaskScope (override → derive → none), so
+      // the persisted binding is always internally consistent.
+      scope: scope.scope,
+      location_id: scope.location_id,
+      region_id: scope.region_id,
+      district_id: scope.district_id,
       assigned_to: dto.assigned_to || null,
       status: assignee ? TaskStatus.ASSIGNED : TaskStatus.PENDING,
       created_by: creatorId,
       assigned_at: dto.assigned_to ? new Date() : null,
       ...typedFields,
     });
+  }
+
+  /**
+   * Resolve a new task's scope (ADR-046), hybrid per the user directive:
+   *   1. Explicit override — the creator passed `scope` and/or a level id.
+   *   2. Derive from the assignee's schedule occurrence on the task date
+   *      (deadline day, else today) — "follows the schedule assigned".
+   *   3. `none` — no override and no scheduled assignee (e.g. an ad-hoc task for
+   *      an unscheduled worker). Assignment + taking are never blocked by this.
+   */
+  private async resolveTaskScope(
+    dto: CreateTaskDto,
+    assignee: User | null,
+  ): Promise<ResolvedScope> {
+    const hasExplicitScope =
+      dto.scope !== undefined ||
+      Boolean(dto.location_id) ||
+      Boolean(dto.region_id) ||
+      Boolean(dto.district_id);
+
+    if (hasExplicitScope) {
+      return this.coerceExplicitScope(dto);
+    }
+
+    if (assignee) {
+      const date = TimezoneUtil.jakartaDateString(
+        dto.deadline ? new Date(dto.deadline) : undefined,
+      );
+      const derived = await this.scheduleScopeResolver.resolveForUserOnDate(assignee.id, date);
+      if (derived.scope !== AssignmentScope.NONE) return derived;
+    }
+
+    return NO_SCOPE;
+  }
+
+  /**
+   * Turn a creator-supplied scope override into a consistent {@link ResolvedScope}.
+   * When `scope` is given explicitly it wins and the matching id is required
+   * (a `location` scope with no `location_id` is a client error); when only ids
+   * are given the deepest one decides the tier.
+   */
+  private coerceExplicitScope(dto: CreateTaskDto): ResolvedScope {
+    if (dto.scope === undefined) {
+      return scopeFromIds({
+        district_id: dto.district_id,
+        region_id: dto.region_id,
+        location_id: dto.location_id,
+      });
+    }
+    switch (dto.scope) {
+      case AssignmentScope.LOCATION:
+        this.requireScopeId(dto.location_id, 'location', 'location_id');
+        return {
+          scope: AssignmentScope.LOCATION,
+          district_id: dto.district_id ?? null,
+          region_id: dto.region_id ?? null,
+          location_id: dto.location_id!,
+        };
+      case AssignmentScope.REGION:
+        this.requireScopeId(dto.region_id, 'region', 'region_id');
+        return {
+          scope: AssignmentScope.REGION,
+          district_id: dto.district_id ?? null,
+          region_id: dto.region_id!,
+          location_id: null,
+        };
+      case AssignmentScope.DISTRICT:
+        this.requireScopeId(dto.district_id, 'district', 'district_id');
+        return {
+          scope: AssignmentScope.DISTRICT,
+          district_id: dto.district_id!,
+          region_id: null,
+          location_id: null,
+        };
+      case AssignmentScope.CITY:
+        return {
+          scope: AssignmentScope.CITY,
+          district_id: null,
+          region_id: null,
+          location_id: null,
+        };
+      case AssignmentScope.NONE:
+      default:
+        return NO_SCOPE;
+    }
+  }
+
+  /** Require the id that an explicit scope needs, or 400. */
+  private requireScopeId(id: string | undefined, scope: string, field: string): void {
+    if (!id) {
+      throw new BadRequestException(`A ${scope}-scoped task requires ${field}.`);
+    }
   }
 
   /**
@@ -204,7 +311,7 @@ export class TasksService {
         entity_id: task.id,
         action: 'create',
         actor_id: creatorId,
-        new_value: { title: task.title, status: task.status, area_id: task.area_id },
+        new_value: { title: task.title, status: task.status, location_id: task.location_id },
       })
       .catch((err) => this.logger.error(`Audit log failed: ${err.message}`));
   }
@@ -224,7 +331,7 @@ export class TasksService {
     return this.taskRepository
       .createQueryBuilder('task')
       .leftJoinAndSelect('task.area', 'area')
-      .leftJoinAndSelect('task.rayon', 'rayon')
+      .leftJoinAndSelect('task.district', 'district')
       .leftJoinAndSelect('task.assignee', 'assignee')
       .leftJoinAndSelect('task.creator', 'creator')
       .leftJoinAndSelect('task.tags', 'tags')
@@ -234,7 +341,7 @@ export class TasksService {
   private buildWhere(filters?: TaskFilterDto): FindOptionsWhere<Task> {
     if (!filters) return {};
     const where: FindOptionsWhere<Task> = {};
-    if (filters.area_id) where.area_id = filters.area_id;
+    if (filters.location_id) where.location_id = filters.location_id;
     if (filters.assigned_to) where.assigned_to = filters.assigned_to;
     if (filters.created_by) where.created_by = filters.created_by;
     if (filters.status) where.status = filters.status;
@@ -255,7 +362,7 @@ export class TasksService {
     [UserRole.LINMAS]: (qb, user) => this.scopeToFieldWorker(qb, user),
     [UserRole.KORLAP]: (qb, user) => this.scopeToKorlap(qb, user),
     [UserRole.KEPALA_RAYON]: (qb, user) => this.scopeToKepalaRayon(qb, user),
-    // top_management, admin_system, superadmin: no scope restriction
+    // management, admin_system, superadmin: no scope restriction
   };
 
   /** Field workers: only tasks assigned to them or where they're tagged. */
@@ -267,25 +374,25 @@ export class TasksService {
 
   /** Korlap: tasks in their area + tasks they created. */
   private scopeToKorlap(qb: SelectQueryBuilder<Task>, user: User): void {
-    if (!user.area_id) {
+    if (!user.location_id) {
       qb.andWhere('task.created_by = :scopeUserId', { scopeUserId: user.id });
       return;
     }
-    qb.andWhere('(task.area_id = :scopeAreaId OR task.created_by = :scopeUserId)', {
-      scopeAreaId: user.area_id,
+    qb.andWhere('(task.location_id = :scopeAreaId OR task.created_by = :scopeUserId)', {
+      scopeAreaId: user.location_id,
       scopeUserId: user.id,
     });
   }
 
-  /** Kepala Rayon: tasks in their rayon + tasks they created. */
+  /** Kepala Rayon: tasks in their district + tasks they created. */
   private scopeToKepalaRayon(qb: SelectQueryBuilder<Task>, user: User): void {
-    if (!user.rayon_id) {
+    if (!user.district_id) {
       qb.andWhere('task.created_by = :scopeUserId', { scopeUserId: user.id });
       return;
     }
     qb.andWhere(
-      '(area.rayon_id = :scopeRayonId OR task.rayon_id = :scopeRayonId OR task.created_by = :scopeUserId)',
-      { scopeRayonId: user.rayon_id, scopeUserId: user.id },
+      '(area.district_id = :scopeDistrictId OR task.district_id = :scopeDistrictId OR task.created_by = :scopeUserId)',
+      { scopeDistrictId: user.district_id, scopeUserId: user.id },
     );
   }
 
@@ -377,7 +484,7 @@ export class TasksService {
     return this.taskRepository
       .createQueryBuilder('task')
       .leftJoinAndSelect('task.area', 'area')
-      .leftJoinAndSelect('task.rayon', 'rayon')
+      .leftJoinAndSelect('task.district', 'district')
       .leftJoinAndSelect('task.creator', 'creator')
       .leftJoinAndSelect('task.tags', 'tags')
       .leftJoinAndSelect('tags.user', 'taggedUser')
@@ -405,7 +512,7 @@ export class TasksService {
     this.logger.log(`Updating task with ID: ${id}`);
     const task = await this.findOne(id);
     this.assertUpdateAllowed(task, callerId);
-    await this.validateAreaChange(task, updateTaskDto.area_id);
+    await this.validateAreaChange(task, updateTaskDto.location_id);
     await this.taskRepository.save(this.withUpdates(task, updateTaskDto));
     return this.findOne(id);
   }
@@ -417,8 +524,8 @@ export class TasksService {
   }
 
   private async validateAreaChange(task: Task, newAreaId?: string): Promise<void> {
-    if (newAreaId && newAreaId !== task.area_id) {
-      await this.areasService.findOne(newAreaId);
+    if (newAreaId && newAreaId !== task.location_id) {
+      await this.locationsService.findOne(newAreaId);
     }
   }
 
@@ -429,7 +536,7 @@ export class TasksService {
       description: dto.description !== undefined ? dto.description : task.description,
       priority: dto.priority || task.priority,
       deadline: dto.deadline ? new Date(dto.deadline) : task.deadline,
-      area_id: dto.area_id !== undefined ? dto.area_id : task.area_id,
+      location_id: dto.location_id !== undefined ? dto.location_id : task.location_id,
     };
   }
 
@@ -500,12 +607,12 @@ export class TasksService {
     this.logger.log(`Fetching tasks for area: ${areaId}`);
     const queryBuilder = this.taskRepository
       .createQueryBuilder('task')
-      .leftJoinAndSelect('task.rayon', 'rayon')
+      .leftJoinAndSelect('task.district', 'district')
       .leftJoinAndSelect('task.assignee', 'assignee')
       .leftJoinAndSelect('task.creator', 'creator')
       .leftJoinAndSelect('task.tags', 'tags')
       .leftJoinAndSelect('tags.user', 'taggedUser')
-      .where('task.area_id = :areaId', { areaId });
+      .where('task.location_id = :areaId', { areaId });
 
     if (activeOnly) {
       queryBuilder.andWhere('task.status NOT IN (:...completedStatuses)', {
@@ -525,7 +632,7 @@ export class TasksService {
       .createQueryBuilder('t')
       .select('t.status', 'status')
       .addSelect('COUNT(*)', 'count')
-      .where('t.area_id = :areaId AND t.deleted_at IS NULL', { areaId })
+      .where('t.location_id = :areaId AND t.deleted_at IS NULL', { areaId })
       .groupBy('t.status')
       .getRawMany<{ status: string; count: string }>();
 
@@ -554,7 +661,7 @@ export class TasksService {
       .createQueryBuilder('task')
       .innerJoin('task.tags', 'tag', 'tag.user_id = :userId', { userId })
       .leftJoinAndSelect('task.area', 'area')
-      .leftJoinAndSelect('task.rayon', 'rayon')
+      .leftJoinAndSelect('task.district', 'district')
       .leftJoinAndSelect('task.creator', 'creator')
       .leftJoinAndSelect('task.assignee', 'assignee')
       .leftJoinAndSelect('task.tags', 'tags')
@@ -626,19 +733,19 @@ export class TasksService {
 
   /**
    * Validate geographic scope for task creation:
-   * kepala_rayon may only target areas in their rayon; korlap only their area.
+   * kepala_rayon may only target areas in their district; korlap only their area.
    */
   private async validateScope(creator: User, areaId?: string): Promise<void> {
-    if (creator.role === UserRole.KEPALA_RAYON && creator.rayon_id && areaId) {
-      const area = await this.areasService.findOne(areaId);
-      if (area.rayon_id !== creator.rayon_id) {
+    if (creator.role === UserRole.KEPALA_RAYON && creator.district_id && areaId) {
+      const area = await this.locationsService.findOne(areaId);
+      if (area.district_id !== creator.district_id) {
         throw new ForbiddenException(
-          'Kepala Rayon can only create tasks for areas within their rayon',
+          'Kepala Rayon can only create tasks for areas within their district',
         );
       }
     }
-    if (creator.role === UserRole.KORLAP && creator.area_id && areaId) {
-      if (areaId !== creator.area_id) {
+    if (creator.role === UserRole.KORLAP && creator.location_id && areaId) {
+      if (areaId !== creator.location_id) {
         throw new ForbiddenException('Korlap can only create tasks for their own area');
       }
     }

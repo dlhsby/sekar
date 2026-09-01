@@ -4,6 +4,7 @@ import {
   Get,
   Patch,
   Param,
+  ParseUUIDPipe,
   Body,
   Query,
   UseGuards,
@@ -93,7 +94,7 @@ export class PruningRequestsController {
    * Get pruning requests.
    *
    * When `mine=true`: Returns requests submitted by the authenticated user (staff_kecamatan only).
-   * Otherwise: Admin-only list with filtering by status, rayon, date range, and pagination.
+   * Otherwise: Admin-only list with filtering by status, district, date range, and pagination.
    *
    * @param mine - If true, return only user's own submissions
    * @param limit - Maximum results (default 20)
@@ -106,7 +107,7 @@ export class PruningRequestsController {
   @ApiOperation({
     summary: 'Get pruning requests',
     description:
-      'Retrieve pruning requests. mine=true returns your own submissions; admin=true returns filtered list with status/rayon/date filters.',
+      'Retrieve pruning requests. mine=true returns your own submissions; admin=true returns filtered list with status/district/date filters.',
   })
   @ApiQuery({
     name: 'mine',
@@ -133,8 +134,8 @@ export class PruningRequestsController {
     type: String,
   })
   @ApiQuery({
-    name: 'rayonId',
-    description: 'Filter by rayon ID (admin only; auto-forced for admin_data)',
+    name: 'districtId',
+    description: 'Filter by district ID (admin only; auto-forced for admin_rayon)',
     required: false,
     type: String,
   })
@@ -190,11 +191,11 @@ export class PruningRequestsController {
       return this.pruningRequestsService.findMine(user, parsedLimit, parsedOffset);
     }
 
-    // Admin list: status/rayon/date filters
+    // Admin list: status/district/date filters
     if (!mine || mine === 'false') {
       return this.pruningRequestsService.findAll(user!, {
         status: query?.status,
-        rayonId: query?.rayonId,
+        districtId: query?.districtId,
         from: query?.from,
         to: query?.to,
         page: query?.page ?? 1,
@@ -213,9 +214,9 @@ export class PruningRequestsController {
    *
    * Access is allowed to:
    * - The submitter (owner)
-   * - admin_data users with matching rayon
-   * - kepala_rayon users with matching rayon
-   * - top_management, admin_system, and superadmin users (unrestricted)
+   * - admin_rayon users with matching district
+   * - kepala_rayon users with matching district
+   * - management, admin_system, and superadmin users (unrestricted)
    *
    * @param id - Pruning request ID (UUID)
    * @param user - Authenticated user (injected from JWT)
@@ -225,13 +226,13 @@ export class PruningRequestsController {
   // Defence-in-depth: the controller-level RolesGuard already runs, but listing
   // the allowed roles at the method level prevents a future refactor of the
   // service-side scope check (or its removal) from silently widening access.
-  // Ownership / rayon scoping is still enforced inside `findById`.
+  // Ownership / district scoping is still enforced inside `findById`.
   @Roles(
     UserRole.STAFF_KECAMATAN,
-    UserRole.ADMIN_DATA,
+    UserRole.ADMIN_RAYON,
     UserRole.KEPALA_RAYON,
     UserRole.KORLAP,
-    UserRole.TOP_MANAGEMENT,
+    UserRole.MANAGEMENT,
     UserRole.ADMIN_SYSTEM,
     UserRole.SUPERADMIN,
   )
@@ -263,14 +264,17 @@ export class PruningRequestsController {
     status: 404,
     description: 'Pruning request not found',
   })
-  async findOne(@Param('id') id: string, @GetUser() user: User): Promise<PruningRequest> {
+  async findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @GetUser() user: User,
+  ): Promise<PruningRequest> {
     return this.pruningRequestsService.findById(id, user);
   }
 
   /**
    * Review a pruning request (approve or reject).
    *
-   * Only admin_data (rayon-scoped), kepala_rayon, top_management, admin_system, and superadmin can review.
+   * Only admin_rayon (district-scoped), kepala_rayon, management, admin_system, and superadmin can review.
    * Requests must be in 'submitted' or 'under_review' status to be reviewable.
    *
    * @param id - Pruning request ID
@@ -280,16 +284,16 @@ export class PruningRequestsController {
    */
   @Post(':id/review')
   @Roles(
-    UserRole.ADMIN_DATA,
+    UserRole.ADMIN_RAYON,
     UserRole.KEPALA_RAYON,
-    UserRole.TOP_MANAGEMENT,
+    UserRole.MANAGEMENT,
     UserRole.ADMIN_SYSTEM,
     UserRole.SUPERADMIN,
   )
   @ApiOperation({
     summary: 'Review a pruning request',
     description:
-      'Approve or reject a pruning request. Only admin_data (rayon-scoped), kepala_rayon, top_management, admin_system, and superadmin can perform this action.',
+      'Approve or reject a pruning request. Only admin_rayon (district-scoped), kepala_rayon, management, admin_system, and superadmin can perform this action.',
   })
   @ApiParam({
     name: 'id',
@@ -323,7 +327,7 @@ export class PruningRequestsController {
     description: 'Conflict - Request is not reviewable (wrong status)',
   })
   async review(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: ReviewPruningRequestDto,
     @GetUser() user: User,
   ): Promise<PruningRequest> {
@@ -333,7 +337,7 @@ export class PruningRequestsController {
   /**
    * Convert an approved pruning request to a task.
    *
-   * Only admin_data (rayon-scoped), kepala_rayon, top_management, admin_system, and superadmin can convert.
+   * Only admin_rayon (district-scoped), kepala_rayon, management, admin_system, and superadmin can convert.
    * Request must be 'approved' to be converted. Idempotent: returns existing task if already converted.
    *
    * @param id - Pruning request ID
@@ -343,9 +347,9 @@ export class PruningRequestsController {
    */
   @Post(':id/assign-to-task')
   @Roles(
-    UserRole.ADMIN_DATA,
+    UserRole.ADMIN_RAYON,
     UserRole.KEPALA_RAYON,
-    UserRole.TOP_MANAGEMENT,
+    UserRole.MANAGEMENT,
     UserRole.ADMIN_SYSTEM,
     UserRole.SUPERADMIN,
   )
@@ -392,7 +396,7 @@ export class PruningRequestsController {
     description: 'Conflict - Request is not approved, or capacity booking failed',
   })
   async assignToTask(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: AssignPruningRequestDto,
     @GetUser() user: User,
   ): Promise<{ request: PruningRequest; task: any }> {
@@ -402,16 +406,16 @@ export class PruningRequestsController {
   /**
    * Reschedule the expected date of a pruning request.
    *
-   * Round 4 (Apr 28): admin_data (rayon-scoped), kepala_rayon, top_management,
+   * Round 4 (Apr 28): admin_rayon (district-scoped), kepala_rayon, management,
    * admin_system, and superadmin can adjust `expected_date` independent of the
    * assign-to-task flow. Only requests in 'submitted', 'under_review', or
    * 'approved' status can be rescheduled.
    */
   @Patch(':id/expected-date')
   @Roles(
-    UserRole.ADMIN_DATA,
+    UserRole.ADMIN_RAYON,
     UserRole.KEPALA_RAYON,
-    UserRole.TOP_MANAGEMENT,
+    UserRole.MANAGEMENT,
     UserRole.ADMIN_SYSTEM,
     UserRole.SUPERADMIN,
   )
@@ -426,7 +430,7 @@ export class PruningRequestsController {
   @ApiResponse({ status: 404 })
   @ApiResponse({ status: 409 })
   async reschedule(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: ReschedulePruningRequestDto,
     @GetUser() user: User,
   ): Promise<PruningRequest> {
@@ -452,7 +456,7 @@ export class PruningRequestsController {
   @ApiResponse({ status: 404 })
   @ApiResponse({ status: 409 })
   async cancel(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @GetUser() user: User,
     @Body('reason') reason?: string,
   ): Promise<PruningRequest> {
@@ -462,7 +466,7 @@ export class PruningRequestsController {
   /**
    * Update editable fields on a pruning request.
    *
-   * Only admin_data (rayon-scoped), kepala_rayon, top_management, admin_system,
+   * Only admin_rayon (district-scoped), kepala_rayon, management, admin_system,
    * and superadmin can update. Editable fields are address, notes, tree details
    * (count, height, diameter), and contact information (requester, RT leader).
    *
@@ -476,9 +480,9 @@ export class PruningRequestsController {
    */
   @Patch(':id')
   @Roles(
-    UserRole.ADMIN_DATA,
+    UserRole.ADMIN_RAYON,
     UserRole.KEPALA_RAYON,
-    UserRole.TOP_MANAGEMENT,
+    UserRole.MANAGEMENT,
     UserRole.ADMIN_SYSTEM,
     UserRole.SUPERADMIN,
   )
@@ -515,7 +519,7 @@ export class PruningRequestsController {
     description: 'Pruning request not found',
   })
   async update(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdatePruningRequestDto,
     @GetUser() user: User,
   ): Promise<PruningRequest> {

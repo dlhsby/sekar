@@ -1,12 +1,13 @@
 /**
  * Comprehensive ClockInOutScreen Tests
- * Phase 2C: Soft geofencing (warnings only, never blocks clock-in), area_id optional
+ * Phase 2C: Soft geofencing (warnings only, never blocks clock-in), location_id optional
  */
 
 // Alert mocked globally in jest.setup.js
 
 import React from 'react';
 import { render, waitFor, fireEvent, act } from '@testing-library/react-native';
+import { Alert } from 'react-native';
 import { Provider } from 'react-redux';
 import { NavigationContainer } from '@react-navigation/native';
 import { ClockInOutScreen } from '../ClockInOutScreen';
@@ -60,8 +61,19 @@ const mockAssignedArea = {
   name: 'Taman Bungkul',
   gps_lat: -7.250445,
   gps_lng: 112.768845,
-  radius_meters: 100,
-  areaType: { name: 'Park' },
+            boundary_polygon: {
+              type: 'Polygon',
+              coordinates: [
+                [
+                  [112.7678, -7.2494],
+                  [112.7698, -7.2494],
+                  [112.7698, -7.2514],
+                  [112.7678, -7.2514],
+                  [112.7678, -7.2494],
+                ],
+              ],
+            },
+  locationType: { name: 'Park' },
 };
 
 const mockUser = {
@@ -76,7 +88,7 @@ const mockShift = {
   clock_in_time: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
   clock_out_time: null,
   user_id: 1,
-  area_id: 'area-123',
+  location_id: 'area-123',
 };
 
 const createMockStore = (preloadedState: any = {}) => {
@@ -136,7 +148,73 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
     jest.clearAllTimers();
   });
 
+  // The "Ubah Shift" pencil is an affordance to CHOOSE. Offering it when the
+  // attribution window produced a single candidate promises a choice that does
+  // not exist, so it appears only from two options up.
+  describe('Shift picker affordance', () => {
+    // Mirrors the real `GET /shifts/current-state` option shape: the times are
+    // FLAT on the option, not nested under a shift_definition.
+    const option = (id: string) => ({
+      shift_definition_id: id,
+      shift_name: `Shift ${id}`,
+      service_day: '2026-07-31',
+      start_time: '06:00:00',
+      end_time: '15:00:00',
+      crosses_midnight: false,
+      phase: 'covering',
+      minutes_to_start: -30,
+      is_default: id === 'sd-1',
+    });
+
+    const renderWithOptions = async (options: unknown[]) => {
+      (shiftsApi.getCurrentState as jest.Mock).mockResolvedValue({
+        data: { options, open_session: null },
+      });
+      const screen = renderScreen(createMockStore());
+      await waitFor(() => {
+        expect(Geolocation.getCurrentPosition).toHaveBeenCalled();
+      });
+      return screen;
+    };
+
+    it('hides the picker when a single shift is the only candidate', async () => {
+      const { queryByTestId } = await renderWithOptions([option('sd-1')]);
+      await waitFor(() => {
+        expect(queryByTestId('clockinout-pick-shift')).toBeNull();
+      });
+    });
+
+    it('hides the picker when no shift is available at all', async () => {
+      const { queryByTestId } = await renderWithOptions([]);
+      await waitFor(() => {
+        expect(queryByTestId('clockinout-pick-shift')).toBeNull();
+      });
+    });
+
+    it('offers the picker once two shifts compete for the punch', async () => {
+      const { queryByTestId } = await renderWithOptions([option('sd-1'), option('sd-2')]);
+      await waitFor(() => {
+        expect(queryByTestId('clockinout-pick-shift')).toBeTruthy();
+      });
+    });
+  });
+
   beforeEach(() => {
+    // A punch now raises a pre-punch confirm when something is off — and these
+    // fixtures have no roster row, so every clock-in is "tanpa jadwal". The
+    // global Alert mock presses button[0], which on a confirm is *Batal*; press
+    // the affirmative instead so these tests keep exercising the submit path.
+    // (Single-button alerts are unaffected: last === first.)
+    (Alert.alert as jest.Mock).mockImplementation((_title, _message, buttons) => {
+      const affirmative = buttons?.[buttons.length - 1];
+      affirmative?.onPress?.();
+    });
+    // Deterministic attribution state for every test. Without an explicit
+    // default, a `mockResolvedValue` set by one describe block leaks into the
+    // rest of the file and resolves into already-unmounted trees.
+    (shiftsApi.getCurrentState as jest.Mock).mockResolvedValue({
+      data: { options: [], open_session: null },
+    });
     // Clear specific mocks
     mockNavigation.goBack.mockClear();
     mockNavigation.navigate.mockClear();
@@ -255,11 +333,11 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
         },
       });
 
-      const { getByText } = renderScreen(store);
+      const { getByText , getByTestId } = renderScreen(store);
 
       // Not blocked — the clock-in form (and its submit button) renders.
       await waitFor(() => {
-        expect(getByText('Clock In')).toBeTruthy();
+        expect(getByTestId('clockinout-submit')).toBeTruthy();
       });
     });
   });
@@ -385,12 +463,12 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       await waitFor(() => {
         expect(Geolocation.getCurrentPosition).toHaveBeenCalled();
       });
-      // GPS card is collapsed by default — expand to see the soft warning.
-      fireEvent.press(getByText('Lokasi GPS'));
+      // The Informasi Kehadiran card is expanded by default, so the soft warning
+      // is visible without a tap.
 
       // Phase 2C: Should show soft warning (yellow banner) but NOT block clock-in
       await waitFor(() => {
-        expect(getByText(/Anda berada di luar area kerja/i)).toBeTruthy();
+        expect(getByText('Di luar area')).toBeTruthy();
       }, { timeout: 5000 });
     });
 
@@ -419,27 +497,27 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       await waitFor(() => { expect(getByText('Informasi Kehadiran')).toBeTruthy(); });
     });
 
-    it('shows the Informasi Kehadiran card collapsed by default', async () => {
+    it('shows the Informasi Kehadiran card expanded by default', async () => {
       const store = createMockStore();
-      const { getByText, queryByText } = renderScreen(store);
+      const { getByText } = renderScreen(store);
 
-      // Title is visible…
+      // Title is visible AND the area details are shown without a tap — the card
+      // opens expanded so the attendance-type row + shift/area read at a glance.
       await waitFor(() => { expect(getByText('Informasi Kehadiran')).toBeTruthy(); });
-      // …but the date/time + area details are hidden until expanded.
-      expect(queryByText('Tipe Area')).toBeNull();
+      expect(getByText('Status Area')).toBeTruthy();
     });
 
-    it('expands the Informasi Kehadiran card on press', async () => {
+    it('collapses the Informasi Kehadiran card on press', async () => {
       const store = createMockStore();
-      const { getByText, getByLabelText } = renderScreen(store);
+      const { getByText, getByLabelText, queryByText } = renderScreen(store);
 
-      await waitFor(() => { expect(getByText('Informasi Kehadiran')).toBeTruthy(); });
+      await waitFor(() => { expect(getByText('Status Area')).toBeTruthy(); });
 
-      // Tap the card header to expand it → area details become visible.
+      // Tap the card header to collapse it → area details are hidden.
       fireEvent.press(getByLabelText('Informasi Kehadiran'));
 
       await waitFor(() => {
-        expect(getByText('Tipe Area')).toBeTruthy();
+        expect(queryByText('Status Area')).toBeNull();
       });
     });
 
@@ -452,24 +530,23 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
         expect(Geolocation.getCurrentPosition).toHaveBeenCalled();
       });
 
-      // GPS card is collapsed by default — expand to see the in-area banner.
-      fireEvent.press(getByText('Lokasi GPS'));
+      // The card is expanded by default, so the in-area banner is visible.
 
       await waitFor(() => {
-        expect(getByText(/Anda berada di dalam area kerja/i)).toBeTruthy();
+        expect(getByText('Di area')).toBeTruthy();
       }, { timeout: 5000 });
     });
 
     it('should show Clock In as the action button title', async () => {
       const store = createMockStore();
-      const { getByText } = renderScreen(store);
+      const { getByText , getByTestId } = renderScreen(store);
 
       await waitFor(() => {
         expect(Geolocation.getCurrentPosition).toHaveBeenCalled();
       });
 
       await waitFor(() => {
-        expect(getByText('Clock In')).toBeTruthy();
+        expect(getByTestId('clockinout-submit')).toBeTruthy();
       });
     });
 
@@ -481,10 +558,10 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
           error: null,
         },
       });
-      const { getByText } = renderScreen(store);
+      const { getByText , getByTestId } = renderScreen(store);
 
       await waitFor(() => {
-        expect(getByText('Clock Out')).toBeTruthy();
+        expect(getByTestId('clockinout-submit')).toBeTruthy();
       });
     });
   });
@@ -560,7 +637,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
   });
 
   describe('Clock-In Flow', () => {
-    it('should successfully clock in with valid data (Phase 2C: no area_id)', async () => {
+    it('should successfully clock in with valid data (Phase 2C: no location_id)', async () => {
       (shiftsApi.clockIn as jest.Mock).mockResolvedValue({
         data: { id: 'shift-123' },
       });
@@ -569,7 +646,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       });
 
       const store = createMockStore();
-      const { getByText, getAllByText } = renderScreen(store);
+      const { getByText, getAllByText , getByTestId } = renderScreen(store);
 
       // Wait for location
       await waitFor(() => {
@@ -585,16 +662,19 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
 
       // Press Clock In button
       await act(async () => {
-        fireEvent.press(getByText('Clock In'));
+        fireEvent.press(getByTestId('clockinout-submit'));
         await new Promise(resolve => setTimeout(resolve, 100));
       });
 
-      // Phase 2C: clockIn called WITHOUT area_id (auto-detected from schedule)
+      // Phase 2C: clockIn called WITHOUT location_id (auto-detected from schedule).
+      // ADR-055: also carries an idempotency client uuid in the opts object.
       await waitFor(() => {
         expect(shiftsApi.clockIn).toHaveBeenCalledWith(
           -7.250445,
           112.768845,
-          'data:image/jpeg;base64,base64data'
+          'data:image/jpeg;base64,base64data',
+          undefined,
+          expect.objectContaining({ clientUuid: expect.any(String) })
         );
       });
 
@@ -636,12 +716,11 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       await waitFor(() => {
         expect(Geolocation.getCurrentPosition).toHaveBeenCalled();
       });
-      // GPS card is collapsed by default — expand to see the soft warning.
-      fireEvent.press(getByText('Lokasi GPS'));
+      // The card is expanded by default, so the soft warning is visible.
 
       await waitFor(() => {
         // Phase 2C: Soft warning shown but clock-in NOT blocked
-        expect(getByText(/Anda berada di luar area kerja/i)).toBeTruthy();
+        expect(getByText('Di luar area')).toBeTruthy();
       }, { timeout: 5000 });
 
       // Phase 2C: Clock-in button should still be enabled (only disabled if no GPS or no selfie)
@@ -649,14 +728,14 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
 
     it('should allow clock in without selfie (Phase 2E: optional selfie)', async () => {
       const store = createMockStore();
-      const { getByText } = renderScreen(store);
+      const { getByText , getByTestId } = renderScreen(store);
 
       await waitFor(() => {
         expect(Geolocation.getCurrentPosition).toHaveBeenCalled();
       });
 
       // Phase 2E-7: Selfie is optional, Clock In button should be enabled even without selfie
-      const submitButton = getByText('Clock In');
+      const submitButton = getByTestId('clockinout-submit');
       expect(submitButton).toBeTruthy();
     });
 
@@ -666,7 +745,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       });
 
       const store = createMockStore();
-      const { getByText, getAllByText } = renderScreen(store);
+      const { getByText, getAllByText , getByTestId } = renderScreen(store);
 
       await waitFor(() => {
         expect(Geolocation.getCurrentPosition).toHaveBeenCalled();
@@ -679,7 +758,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       });
 
       await act(async () => {
-        fireEvent.press(getByText('Clock In'));
+        fireEvent.press(getByTestId('clockinout-submit'));
         await new Promise(resolve => setTimeout(resolve, 100));
       });
 
@@ -706,7 +785,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       const { getByText } = renderScreen(store);
 
       await waitFor(() => {
-        expect(getByText(/Mode Offline/)).toBeTruthy();
+        expect(getByText(/Mode offline/i)).toBeTruthy();
       });
     });
   });
@@ -725,18 +804,18 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
         },
       });
 
-      const { getByText, getAllByText } = renderScreen(store);
+      const { getByText, getAllByText , getByTestId } = renderScreen(store);
 
       // Clock Out button should be present
       await waitFor(() => {
-        expect(getByText('Clock Out')).toBeTruthy();
+        expect(getByTestId('clockinout-submit')).toBeTruthy();
       });
 
-      fireEvent.press(getByText('Clock Out'));
+      fireEvent.press(getByTestId('clockinout-submit'));
 
       // Confirmation dialog should appear (Alert.alert is mocked globally)
       await waitFor(() => {
-        expect(getByText('Clock Out')).toBeTruthy();
+        expect(getByTestId('clockinout-submit')).toBeTruthy();
       });
     });
 
@@ -805,14 +884,18 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
         },
       });
 
-      const { getByText } = renderScreen(store);
+      const { getAllByText, getByText } = renderScreen(store);
 
-      // The elapsed HH:MM:SS timer lives in the (collapsed-by-default) GPS card.
-      fireEvent.press(getByText('Lokasi GPS'));
+      // The record page no longer repeats Jam Masuk/Keluar or the elapsed clock
+      // (the entry card owns those); elapsed time lives in the Detail Shift
+      // modal, so open it and assert the duration there.
+      await waitFor(() => {
+        expect(getByText('Detail Shift')).toBeTruthy();
+      });
+      fireEvent.press(getByText('Detail Shift'));
 
       await waitFor(() => {
-        // Timer should show elapsed time
-        expect(getByText(/\d{2}:\d{2}:\d{2}/)).toBeTruthy();
+        expect(getAllByText(/\d{2}:\d{2}/).length).toBeGreaterThan(0);
       });
 
       jest.useRealTimers();
@@ -890,7 +973,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       (mediaService.convertToBase64 as jest.Mock).mockRejectedValueOnce(new Error('File read error'));
 
       const store = createMockStore();
-      const { getByText } = renderScreen(store);
+      const { getByText , getByTestId } = renderScreen(store);
 
       await waitFor(() => {
         expect(Geolocation.getCurrentPosition).toHaveBeenCalled();
@@ -903,7 +986,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       });
 
       await act(async () => {
-        fireEvent.press(getByText('Clock In'));
+        fireEvent.press(getByTestId('clockinout-submit'));
         await new Promise(resolve => setTimeout(resolve, 100));
       });
 
@@ -924,7 +1007,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       );
 
       const store = createMockStore();
-      const { getByText, getAllByText } = renderScreen(store);
+      const { getByText, getAllByText , getByTestId } = renderScreen(store);
 
       await waitFor(() => {
         expect(Geolocation.getCurrentPosition).toHaveBeenCalled();
@@ -937,7 +1020,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       });
 
       await act(async () => {
-        fireEvent.press(getByText('Clock In'));
+        fireEvent.press(getByTestId('clockinout-submit'));
         await new Promise(resolve => setTimeout(resolve, 100));
       });
 

@@ -18,16 +18,19 @@
     "overdueButtonLabel": "Tanaman",
     "filterPanelTitle": "Filter Petugas",
     "closePanelLabel": "Tutup filter",
-    "listLabel": "Daftar Petugas",
+    "listLabel": "Daftar Area dan Petugas",
     "closeListLabel": "Tutup daftar",
-    "backLabel": "Kembali"
+    "backLabel": "Kembali",
+    "resizeLabel": "Ubah lebar panel"
   },
   "aggregate": {
     "understaffed": "Kekurangan personel",
     "scheduledLabel": "Terjadwal",
     "clockedInLabel": "Hadir",
-    "notClockedInLabel": "Belum Hadir",
-    "activeInsideLabel": "Aktif di area"
+    "belumHadirLabel": "Belum Hadir",
+    "tidakHadirLabel": "Tidak Hadir",
+    "activeInsideLabel": "Aktif di area",
+    "detailLabel": "Detail {{name}}"
   },
   "surabaya": {
     "title": "Surabaya",
@@ -36,28 +39,38 @@
   "layers": {
     "title": "Pengaturan",
     "overlays": "Lapisan Peta",
-    "areaPins": "Titik Area",
-    "petugas": "Petugas",
-    "overdue": "Tanaman Terlambat",
-    "rayon": "Batas Rayon",
-    "area": "Batas Area"
+    "district": "Rayon",
+    "kawasan": "Kawasan",
+    "lokasi": "Lokasi",
+    "personnel": "Petugas & Tim",
+    "option": {
+      "all": "Semua",
+      "none": "Sembunyikan"
+    },
+    "facet": {
+      "boundary": "Batas",
+      "fill": "Isian",
+      "marker": "Marker",
+      "label": "Nama",
+      "petugas": "Petugas",
+      "tim": "Tim"
+    },
+    "plants": "Tanaman"
   },
   "search": {
     "personnelLabel": "Petugas",
     "areaLabel": "Area",
-    "rayonLabel": "Rayon",
+    "districtLabel": "Rayon",
     "recentTitle": "Pencarian Terakhir",
     "clearRecent": "Hapus",
     "recentEmpty": "Belum ada pencarian terakhir",
-    "noResults": "Tidak ada hasil"
+    "noResults": "Tidak ada hasil",
+    "regionLabel": "Kawasan"
   },
   "status": {
     "active": "Aktif",
-    "inactive": "Tidak aktif",
-    "outside_area": "Luar",
-    "missing": "Hilang",
     "offline": "Offline",
-    "notDetected": "Tidak terdeteksi",
+    "inactive": "Tidak Aktif",
     "absent": "Tidak hadir",
     "adhoc": "Luar jadwal"
   },
@@ -65,18 +78,33 @@
     "label": "Cari Petugas",
     "placeholder": "Nama petugas…",
     "statusLabel": "Status",
-    "rayonLabel": "Rayon",
-    "rayonAllOption": "Semua Rayon",
+    "districtLabel": "Rayon",
+    "districtAllOption": "Semua Rayon",
+    "kawasanLabel": "Kawasan",
+    "kawasanAllOption": "Semua Kawasan",
+    "pickDistrictFirst": "Pilih rayon dulu",
+    "noKawasan": "Rayon ini tanpa kawasan",
+    "lokasiLabel": "Lokasi",
+    "lokasiAllOption": "Semua Lokasi",
     "roleLabel": "Peran",
     "roleAllOption": "Semua Peran",
+    "timLabel": "Tim",
+    "timAllOption": "Semua Tim",
+    "workerLabel": "Petugas",
+    "workerAllOption": "Semua Petugas",
     "matchSummary": "{{matched}} / {{total}} petugas",
     "reset": "Reset",
-    "ariaLabel": "Filter monitoring"
+    "ariaLabel": "Filter monitoring",
+    "jenisLabel": "Jenis",
+    "jenis": {
+      "individu": "Individu",
+      "team": "Tim"
+    }
   },
   "sidebar": {
     "backToList": "Kembali ke daftar",
     "location": "Lokasi",
-    "rayonLabel": "Rayon:",
+    "districtLabel": "Rayon:",
     "areaLabel": "Area:",
     "withinArea": "Dalam area",
     "outsideArea": "Di luar area",
@@ -85,12 +113,14 @@
     "staffingShortage": "Kurang {{shortage}}",
     "bulkReassignLabel": "Pindah massal petugas ke {{area}}",
     "bulkReassignButton": "Pindah Massal",
+    "tabWilayah": "Wilayah",
     "tabWorkers": "Petugas",
     "tabAreas": "Area",
     "noWorkers": "Tidak ada petugas",
     "noWorkersMatch": "Tidak ada petugas yang cocok dengan filter.",
     "clickToFocus": "Klik petugas untuk fokus di peta",
-    "batteryLabel": "Baterai {{level}} persen"
+    "batteryLabel": "Baterai {{level}} persen",
+    "noWorkersHere": "Belum ada petugas di wilayah ini."
   },
   "reassign": {
     "successMessage": "Petugas berhasil dipindahkan",
@@ -116,7 +146,8 @@
     "reassignButtonDefault": "Pindahkan",
     "successMessage": "{{count}} petugas berhasil dipindahkan",
     "partialErrorMessage": "{{successCount}} petugas berhasil dipindahkan, {{failCount}} gagal",
-    "errorMessage": "Gagal memindahkan petugas"
+    "errorMessage": "Gagal memindahkan petugas",
+    "openLabel": "Pindahkan Petugas"
   },
   "reassignModal": {
     "title": "Pindah Petugas ke {{area}}",
@@ -136,9 +167,11 @@
   "hierarchy": {
     "scopeLabel": "Cakupan filter",
     "city": "Kota",
-    "rayon": "Rayon",
+    "district": "Rayon",
+    "region": "Kawasan",
     "area": "Area",
-    "rayonLabel": "Pilih Rayon",
+    "districtLabel": "Pilih Rayon",
+    "regionLabel": "Pilih Kawasan",
     "areaLabel": "Pilih Area",
     "areaDisabled": "Pilih rayon dulu",
     "activeCount": "{{count}} aktif",
@@ -150,7 +183,7 @@
     "workers": "Petugas",
     "plants": "Tanaman",
     "overdue": "Jatuh Tempo",
-    "rayons": "Batas Rayon",
+    "districts": "Batas Rayon",
     "areas": "Batas Area",
     "showLayer": "Tampilkan {{label}}"
   },
@@ -184,40 +217,15 @@
     "end": "Akhir",
     "pointsListLabel": "Riwayat titik lokasi",
     "inArea": "Dalam Area",
-    "outArea": "Di Luar Area"
+    "outArea": "Di Luar Area",
+    "previousDay": "Hari sebelumnya",
+    "nextDay": "Hari berikutnya"
   },
   "areaDetail": {
-    "closeLabel": "Tutup drawer detail area",
-    "staffingLabel": "Ketersediaan Staf",
-    "staffingShortage": "Kekurangan staf",
-    "staffingFull": "Staf terpenuhi",
-    "activeOf": "aktif dari",
-    "required": "yang diperlukan",
-    "plantStatusLabel": "Status Tanaman",
-    "loadingPlants": "Memuat data tanaman…",
-    "errorPlants": "Gagal memuat data tanaman.",
-    "noPlants": "Belum ada data tanaman terdaftar untuk area ini.",
-    "ok": "OK",
-    "almostDue": "Hampir",
-    "overdue": "Lewat",
-    "speciesCount": "{{species}} jenis",
-    "totalCount": "{{total}} pohon terdata",
-    "plantsList": "Daftar jenis tanaman",
-    "heritage": "Pohon Heritage ({{count}})",
-    "heritageNoLabel": "Tanpa label",
-    "workersLabel": "Petugas di Area Ini",
-    "workersList": "Daftar petugas di area ini",
-    "pruningTitle": "Permohonan Pangkas di Rayon {{rayon}}",
-    "loadingPruning": "Memuat permohonan…",
-    "noPruning": "Tidak ada permohonan pangkas aktif pada rayon ini.",
-    "unknownSpecies": "Jenis tidak diketahui",
-    "treeUnit": "pohon",
-    "overduePlantStatus": "Lewat tempo",
-    "almostDuePlantStatus": "Hampir tempo",
-    "okPlantStatus": "OK",
-    "lastPrunedLabel": "Pangkas",
-    "neverPruned": "Belum pernah dipangkas",
-    "unknownRequester": "Pemohon tidak diketahui"
+    "district": "Rayon",
+    "region": "Kawasan",
+    "location": "Lokasi",
+    "surabaya": "Kota"
   },
   "pruningStatus": {
     "submitted": "Diajukan",
@@ -251,8 +259,12 @@
     "tasksTitle": "Tugas Hari Ini",
     "contactTitle": "Hubungi",
     "phoneLabel": "Telepon",
-    "rayonLabel": "Rayon:",
-    "areaLabel": "Area:"
+    "districtLabel": "Rayon:",
+    "areaLabel": "Area:",
+    "reassignmentHistory": "Riwayat Pemindahan",
+    "loadingHistory": "Memuat riwayat…",
+    "noHistory": "Belum ada riwayat pemindahan",
+    "viewPhoto": "Lihat foto"
   },
   "sidePanel": {
     "title": "Petugas",
@@ -264,16 +276,6 @@
     "resetFilter": "Reset filter",
     "count": "{{count}} petugas ditampilkan"
   },
-  "statusBar": {
-    "ariaLabel": "Status petugas",
-    "todaysSchedule": "Jadwal hari ini",
-    "scheduled": "dijadwalkan",
-    "present": "Hadir",
-    "absent": "Tidak hadir",
-    "leave": "Cuti",
-    "notScheduled": "Belum dijadwalkan",
-    "outsideAreaLabel": "Di luar area"
-  },
   "staffing": {
     "staffingLabel": "Ketersediaan Petugas",
     "cityViewLabel": "Seluruh Kota",
@@ -281,12 +283,12 @@
     "shortageLabel": "Kurang",
     "reassignButton": "Pindah Petugas",
     "dataUnavailable": "Data tidak tersedia.",
-    "rayonDataUnavailable": "Data rayon tidak tersedia.",
+    "districtDataUnavailable": "Data rayon tidak tersedia.",
     "cityDataUnavailable": "Data wilayah tidak tersedia.",
     "activeStatus": "Aktif",
-    "idleStatus": "Idle",
-    "outsideStatus": "Di Luar",
-    "missingStatus": "Tidak Terdeteksi"
+    "offlineStatus": "Offline",
+    "absentStatus": "Tidak Hadir",
+    "outsideStatus": "Di Luar"
   },
   "config": {
     "pageTitle": "Konfigurasi Monitoring",
@@ -345,6 +347,92 @@
     }
   },
   "areaDrawer": {
-    "rayonFallback": "Rayon —"
+    "districtFallback": "Rayon —"
+  },
+  "breadcrumb": {
+    "label": "Navigasi lokasi",
+    "city": "Surabaya",
+    "statsLegend": "Ringkasan kehadiran"
+  },
+  "teamDetail": {
+    "title": "Anggota Tim"
+  },
+  "onLeave": {
+    "title": "Berhalangan",
+    "reasons": {
+      "cuti": "Cuti",
+      "sakit": "Sakit",
+      "izin": "Izin",
+      "libur": "Libur"
+    }
+  },
+  "mode": {
+    "title": "Mode Monitoring",
+    "drill": "Ketuk & Telusuri",
+    "zoom": "Zoom (semua)",
+    "drillHint": "Ketuk wilayah untuk masuk satu tingkat. Petugas tampil di tingkat jadwalnya.",
+    "zoomHint": "Tampilkan semua rayon, kawasan, lokasi, dan petugas sekaligus. Ketuk wilayah untuk membatasi ke wilayah itu.",
+    "viewport": "Zoom (layar)",
+    "viewportHint": "Sama seperti Zoom, tetapi hanya memuat area yang terlihat di layar dan menampilkan penanda paling penting lebih dulu. Perbesar untuk memunculkan sisanya.",
+    "zoomInFor": {
+      "region": "Perbesar untuk melihat kawasan",
+      "location": "Perbesar untuk melihat lokasi & petugas"
+    },
+    "revealHint": "Titik kecil = penanda lain. Ketuk, atau perbesar untuk melihat detailnya."
+  },
+  "lifecycle": {
+    "late": "Terlambat",
+    "luarJadwal": "Luar Jadwal",
+    "lembur": "Lembur",
+    "lupaClockOut": "Lupa Clock-out",
+    "state": {
+      "tidak_bertugas": "Tidak Bertugas",
+      "belum_hadir": "Belum Hadir",
+      "terlambat": "Terlambat",
+      "bertugas": "Bertugas",
+      "pulang": "Pulang",
+      "tidak_hadir": "Tidak Hadir"
+    },
+    "leave": {
+      "cuti": "Cuti",
+      "sakit": "Sakit",
+      "izin": "Izin",
+      "libur": "Libur"
+    }
+  },
+  "boundaryDetail": {
+    "understaffed": "Kekurangan personel",
+    "sufficient": "Cukup",
+    "areaLabel": "Area",
+    "understaffedLabel": "Kurang Staf",
+    "activeLabel": "Aktif",
+    "assignedLabel": "Petugas",
+    "staffingTitle": "Kebutuhan per Jabatan",
+    "plantsLabel": "Tanaman",
+    "plantsCount": "{{count}} jenis · {{notable}} heritage"
+  },
+  "hidden": {
+    "count": "{{count}} disembunyikan",
+    "showAll": "Tampilkan semua",
+    "hideLabel": "Sembunyikan {{name}}"
+  },
+  "trail": {
+    "start": "Mulai",
+    "end": "Terakhir"
+  },
+  "attendance": {
+    "title": "Kehadiran",
+    "clockedIn": "Sudah Clock In",
+    "notClockedIn": "Belum Hadir",
+    "emptySide": "Tidak ada petugas di daftar ini.",
+    "noSessions": "Tidak ada sesi pada tanggal ini.",
+    "stillOpen": "Masih berjalan",
+    "outsideBoundary": "Di luar batas area",
+    "minutes_one": "{{count}} menit",
+    "minutes_other": "{{count}} menit",
+    "openLabel": "Lihat detail kehadiran"
+  },
+  "hoverPreview": {
+    "hint": "Klik untuk telusuri"
   }
 }

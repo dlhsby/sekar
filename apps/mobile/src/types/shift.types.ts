@@ -10,7 +10,7 @@ export type DayType = 'WEEKDAY' | 'WEEKEND' | 'HOLIDAY';
 export interface Shift {
   id: string;
   user_id: string;
-  area_id: string | null; // Phase 2C: nullable, auto-detected
+  location_id: string | null; // Phase 2C: nullable, auto-detected
   area?: Area;
   user?: User;
   clock_in_time: string;
@@ -33,7 +33,6 @@ export interface Shift {
 export interface ShiftDefinition {
   id: string;
   name: string;
-  code: string;
   start_time: string; // HH:mm
   end_time: string; // HH:mm
   crosses_midnight: boolean;
@@ -44,7 +43,7 @@ export interface ShiftDefinition {
 // Area Staff Requirements
 export interface AreaStaffRequirement {
   id: string;
-  area_id: string;
+  location_id: string;
   area?: Area;
   shift_definition_id: string;
   shift_definition?: ShiftDefinition;
@@ -56,7 +55,7 @@ export interface AreaStaffRequirement {
 }
 
 // Schedule — the daily roster (the single schedule concept, ADR-013). A standing
-// shift+rayon+area assignment lives on the user; the roster is one row per WIB day.
+// shift+district+area assignment lives on the user; the roster is one row per WIB day.
 export type ScheduleStatus =
   | 'planned' // scheduled to work
   | 'present' // clocked in
@@ -66,26 +65,78 @@ export type ScheduleStatus =
   | 'replaced' // replaced by another worker
   | 'off'; // active worker but no shift today
 
-export interface ScheduleArea {
-  id: string;
-  area_id: string;
-  area: {
-    id: string;
-    name: string;
-  };
-}
-
 export interface Schedule {
   id: string;
   user_id: string;
   schedule_date: string; // YYYY-MM-DD
   status: ScheduleStatus;
+  /**
+   * Presence axes (ADR-050), attached by the backend for rows dated today or
+   * earlier. `status` alone can only say planned / present / absent / leave;
+   * these carry the rest of the model — on duty but OUTSIDE the area, terlambat,
+   * pulang, ad-hoc — so mobile reads the same worker the same way the web board
+   * and the monitoring map do.
+   *
+   * `lifecycle_state: null` on a future row means NOT APPLICABLE, not "off duty".
+   */
+  lifecycle_state?: string | null;
+  lifecycle_flags?: string[];
+  leave_reason?: 'cuti' | 'sakit' | 'izin' | 'libur' | null;
+  /** Live inside/outside axis; only set while on duty with a fresh GPS fix. */
+  is_within_area?: boolean | null;
+  /** False when the worker punched in with no roster row (ad-hoc). */
+  is_scheduled?: boolean;
   // Full definition (the API returns the whole relation) so crosses_midnight is
   // available for the lateness check instead of being defaulted.
   shift_definition: ShiftDefinition | null;
-  rayon: {
+  district_id?: string | null;
+  // Geometry included so a rayon-scope assignment can be geofenced against the
+  // rayon's own boundary (ADR-045/046) — not just named.
+  district: {
+    id: string;
+    name: string;
+    center_lat?: number | null;
+    center_lng?: number | null;
+    boundary_polygon?:
+      | { type: 'Polygon'; coordinates: [number, number][][] }
+      | { type: 'MultiPolygon'; coordinates: [number, number][][][] }
+      | null;
+  } | null;
+  // Kawasan scope (ADR-046) — set when the assignment covers a whole region
+  // rather than a single lokasi. Geometry included for the same reason.
+  region_id?: string | null;
+  region?: {
+    id: string;
+    name: string;
+    center_lat?: number | null;
+    center_lng?: number | null;
+    boundary_polygon?:
+      | { type: 'Polygon'; coordinates: [number, number][][] }
+      | { type: 'MultiPolygon'; coordinates: [number, number][][][] }
+      | null;
+  } | null;
+  /**
+   * Lokasi this occurrence is scoped to — ADR-053: exactly ONE place per row.
+   * Geometry is included so the client can geofence against today's assignment.
+   */
+  location_id?: string | null;
+  location?: {
+    id: string;
+    name: string;
+    address?: string | null;
+    gps_lat?: number | null;
+    gps_lng?: number | null;
+    boundary_polygon?:
+      | { type: 'Polygon'; coordinates: [number, number][][] }
+      | { type: 'MultiPolygon'; coordinates: [number, number][][][] }
+      | null;
+  } | null;
+  // Team (regu) context when the assignment belongs to a crew (ADR-047/048).
+  team_category?: {
     id: string;
     name: string;
   } | null;
-  schedule_areas: ScheduleArea[];
+  // Virtual future occurrence expanded from an active event beyond the
+  // materialization horizon (not yet a persisted roster row).
+  is_projected?: boolean;
 }

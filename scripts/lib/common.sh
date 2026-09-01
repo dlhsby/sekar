@@ -196,6 +196,186 @@ start_bg() {
   print_success "$name started (PID $(cat "$pid_file"), log: logs/$name.log)"
 }
 
+# ── LAN exposure helpers (phone / other devices on the Wi-Fi) ────────────────
+# The web is served on the LAN via a same-origin proxy: the browser talks to
+# whatever origin served the page, and the web dev server proxies /api +
+# /socket.io to the backend (next.config rewrites, gated by SEKAR_LAN_PROXY).
+# One build works on localhost AND any LAN host — no baked IP, no CORS. The
+# backend itself never needs LAN exposure; only the web port is reachable.
+
+is_wsl() { grep -qiE "microsoft|wsl" /proc/version 2>/dev/null; }
+
+# resolve_adb — best-effort add the Android platform-tools dir to PATH so `adb`
+# is callable from non-interactive scripts (which don't source ~/.bashrc). Returns
+# 0 if adb is available afterwards, 1 otherwise.
+resolve_adb() {
+  command_exists adb && return 0
+  local candidate
+  for candidate in "${ANDROID_HOME:-}/platform-tools" "${ANDROID_SDK_ROOT:-}/platform-tools" "$HOME/Android/Sdk/platform-tools"; do
+    if [ -n "$candidate" ] && [ -x "$candidate/adb" ]; then
+      export PATH="$candidate:$PATH"; break
+    fi
+  done
+  command_exists adb
+}
+
+# detect_lan_ip — the address a phone connects to. Under WSL that's the Windows
+# host's LAN IP; natively it's this machine's. Skips loopback + the WSL/Docker
+# virtual 172.x ranges so we advertise the real home-network address.
+detect_lan_ip() {
+  local ip=""
+  if is_wsl; then
+    local ipconfig="/mnt/c/Windows/System32/ipconfig.exe"
+    command -v ipconfig.exe >/dev/null 2>&1 && ipconfig="ipconfig.exe"
+    ip="$("$ipconfig" 2>/dev/null | grep -aiE "IPv4" \
+      | grep -oE "[0-9]+(\.[0-9]+){3}" | grep -vE "^(127\.|172\.)" | head -1 || true)"
+  fi
+  [ -z "$ip" ] && ip="$(hostname -I 2>/dev/null | tr ' ' '\n' | grep -vE "^(127\.|172\.)" | head -1 || true)"
+  echo "$ip"
+}
+
+# setup_web_lan_env [IP] — export the env the web child needs for LAN access and
+# set the LAN_IP global. Requires load_ports first (uses BE_PORT). These override
+# apps/web/.env.local for the child only (Next + dotenvx leave already-set env
+# vars untouched); .env.local is unchanged. `next dev` already binds 0.0.0.0 by
+# default, so no -H flag is needed.
+setup_web_lan_env() {
+  LAN_IP="${1:-$(detect_lan_ip)}"
+  # Empty API/WS URL = same origin (browser → whichever origin served the page).
+  export NEXT_PUBLIC_API_URL=""
+  export NEXT_PUBLIC_WS_URL=""
+  # Proxy /api + /socket.io to the backend (next.config rewrites, gated here).
+  export SEKAR_LAN_PROXY=1
+  export SEKAR_API_PORT="$BE_PORT"
+  # Next 16 blocks cross-origin dev resources (/_next/*); allow the LAN host so a
+  # phone can load the JS bundle. Harmless on localhost (always allowed).
+  [ -n "$LAN_IP" ] && export SEKAR_ALLOWED_DEV_ORIGINS="$LAN_IP"
+}
+
+# wsl_portproxy_hint PORT LABEL — print + record the one-time Windows
+# port-forward/firewall needed to reach a WSL2 dev PORT from the LAN (a phone
+# can't reach the WSL IP directly). No-op off WSL. Idempotent: appends each
+# distinct port to logs/windows-lan-setup.ps1 at most once.
+wsl_portproxy_hint() {
+  local port="$1" label="${2:-service}" wsl_ip f="$LOG_DIR/windows-lan-setup.ps1"
+  is_wsl || return 0
+  wsl_ip="$(ip -4 addr show eth0 2>/dev/null | grep -oP 'inet \K[0-9.]+' | head -1 || true)"
+  [ -n "$wsl_ip" ] || return 0
+  if [ ! -f "$f" ]; then
+    cat >"$f" <<'PS'
+# SEKAR — expose WSL2 dev port(s) on the Windows LAN so your phone can reach them.
+# Run ONCE in an ELEVATED PowerShell (right-click > Run as administrator).
+# Re-run only if the WSL IP changes (after a full WSL/PC restart).
+# To UNDO a port: netsh interface portproxy delete v4tov4 listenport=<PORT> listenaddress=0.0.0.0 ; Remove-NetFirewallRule -DisplayName "SEKAR LAN (<PORT>)"
+PS
+  fi
+  if ! grep -q "listenport=$port " "$f" 2>/dev/null; then
+    cat >>"$f" <<PS
+# $label (:$port) → WSL $wsl_ip
+netsh interface portproxy add v4tov4 listenport=$port listenaddress=0.0.0.0 connectport=$port connectaddress=$wsl_ip
+New-NetFirewallRule -DisplayName "SEKAR LAN ($port)" -Direction Inbound -Action Allow -Protocol TCP -LocalPort $port -ErrorAction SilentlyContinue
+PS
+  fi
+  print_warning "WSL2 — the phone can't reach WSL ($wsl_ip) directly. If it can't connect to :$port ($label), run ONCE in an elevated PowerShell (saved to logs/windows-lan-setup.ps1):"
+  echo -e "    ${GREEN}netsh interface portproxy add v4tov4 listenport=$port listenaddress=0.0.0.0 connectport=$port connectaddress=$wsl_ip${NC}"
+  echo -e "    ${GREEN}New-NetFirewallRule -DisplayName \"SEKAR LAN ($port)\" -Direction Inbound -Action Allow -Protocol TCP -LocalPort $port${NC}"
+}
+
+# adb_server_is_windows — true when `adb` is (or wraps) a Windows adb.exe. This
+# matters a lot on WSL2: `adb reverse` tunnels the device port to the machine
+# running the ADB SERVER. With a Windows adb.exe that machine is WINDOWS, not
+# WSL, so `adb reverse tcp:8081 tcp:$METRO_PORT` lands on Windows' localhost —
+# where our dev servers are NOT listening. Each WSL port then needs a Windows
+# portproxy (see wsl_portproxy_ensure).
+adb_server_is_windows() {
+  is_wsl || return 1
+  local p
+  p="$(command -v adb 2>/dev/null)" || return 1
+  # Direct .exe on PATH, a /mnt/c path, or a shell wrapper that execs adb.exe.
+  case "$p" in *.exe|/mnt/[a-z]/*) return 0 ;; esac
+  head -c 400 "$p" 2>/dev/null | grep -qiE "adb\.exe|/mnt/[a-z]/" && return 0
+  return 1
+}
+
+# wsl_portproxy_ensure PORT... — make sure Windows forwards each PORT to the
+# CURRENT WSL IP, so `adb reverse` (which resolves on Windows) reaches our WSL
+# dev servers. Fully env-driven: callers pass $METRO_PORT/$BE_PORT, nothing is
+# hardcoded. Idempotent — only touches ports that are missing or STALE (pointing
+# at an old WSL IP, which happens on every WSL/PC restart). Batches all fixes
+# into ONE elevated PowerShell call (a single UAC prompt). No-op unless the ADB
+# server is on Windows.
+wsl_portproxy_ensure() {
+  adb_server_is_windows || return 0
+  local wsl_ip table cmds="" need=() port existing
+  wsl_ip="$(ip -4 addr show eth0 2>/dev/null | grep -oP 'inet \K[0-9.]+' | head -1 || true)"
+  [ -n "$wsl_ip" ] || { print_warning "WSL IP not detected — skipping Windows port-forward check."; return 0; }
+
+  table="$(powershell.exe -NoProfile -Command "netsh interface portproxy show v4tov4" 2>/dev/null | tr -d '\r' || true)"
+
+  for port in "$@"; do
+    [ -n "$port" ] || continue
+    # Correct iff some entry for this listenport already points at the current WSL IP.
+    existing="$(awk -v p="$port" '$2==p {print $3}' <<<"$table" | grep -Fx "$wsl_ip" | head -1 || true)"
+    [ -n "$existing" ] && continue
+    need+=("$port")
+    # Drop any stale entry for this port on either common listen address first.
+    cmds+="netsh interface portproxy delete v4tov4 listenport=$port listenaddress=127.0.0.1 2>\$null; "
+    cmds+="netsh interface portproxy delete v4tov4 listenport=$port listenaddress=0.0.0.0 2>\$null; "
+    cmds+="netsh interface portproxy add v4tov4 listenport=$port listenaddress=127.0.0.1 connectport=$port connectaddress=$wsl_ip; "
+  done
+
+  if [ ${#need[@]} -eq 0 ]; then
+    print_success "Windows port-forwards OK for: $* → WSL $wsl_ip"
+    return 0
+  fi
+
+  print_warning "WSL2 + Windows adb: ports ${need[*]} are not forwarded to this WSL IP ($wsl_ip) — the app can't reach them. Requesting elevation to fix (accept the UAC prompt)..."
+  powershell.exe -NoProfile -Command \
+    "Start-Process powershell -Verb RunAs -Wait -ArgumentList '-NoProfile','-Command','$cmds'" >/dev/null 2>&1 || true
+
+  # Re-read and report honestly rather than assuming the elevation succeeded.
+  table="$(powershell.exe -NoProfile -Command "netsh interface portproxy show v4tov4" 2>/dev/null | tr -d '\r' || true)"
+  local still=()
+  for port in "${need[@]}"; do
+    awk -v p="$port" '$2==p {print $3}' <<<"$table" | grep -qFx "$wsl_ip" || still+=("$port")
+  done
+  if [ ${#still[@]} -eq 0 ]; then
+    print_success "Windows port-forwards added: ${need[*]} → WSL $wsl_ip"
+  else
+    print_error "Still not forwarded: ${still[*]}. Run ONCE in an ELEVATED PowerShell:"
+    for port in "${still[@]}"; do
+      echo -e "    ${GREEN}netsh interface portproxy add v4tov4 listenport=$port listenaddress=127.0.0.1 connectport=$port connectaddress=$wsl_ip${NC}"
+    done
+  fi
+}
+
+# print_web_lan_help — phone URL + WSL2 port-forward help for the WEB port.
+# Uses the LAN_IP + WEB_PORT globals.
+print_web_lan_help() {
+  if [ -z "${LAN_IP:-}" ]; then
+    print_info "LAN: web bound to 0.0.0.0 (no LAN IP auto-detected; pass one to advertise it, or --local to disable)"
+    return 0
+  fi
+  print_info "LAN: also reachable at http://$LAN_IP:$WEB_PORT (same-origin proxy; localhost unaffected)"
+  echo -e "${BLUE}On your phone (same Wi-Fi), open:${NC}  ${GREEN}http://$LAN_IP:$WEB_PORT${NC}"
+  wsl_portproxy_hint "$WEB_PORT" "web"
+}
+
+# print_be_lan_help [IP] — advertise the backend API directly on the LAN for the
+# NATIVE mobile app (which calls the API directly, NOT via the web proxy). Sets
+# LAN_IP. The NestJS server already binds 0.0.0.0; on WSL2 a port-forward is needed.
+print_be_lan_help() {
+  LAN_IP="${1:-$(detect_lan_ip)}"
+  if [ -z "$LAN_IP" ]; then
+    print_info "LAN: backend on 0.0.0.0 (no LAN IP auto-detected; pass one to advertise it)"
+    return 0
+  fi
+  print_info "LAN: backend API reachable at http://$LAN_IP:$BE_PORT (for the native mobile app)"
+  echo -e "${BLUE}On your phone's SEKAR app, set the API base URL to:${NC}  ${GREEN}http://$LAN_IP:$BE_PORT${NC}"
+  echo -e "  (Android emulator uses ${GREEN}http://10.0.2.2:$BE_PORT${NC}; a real device uses the LAN IP above.)"
+  wsl_portproxy_hint "$BE_PORT" "backend API"
+}
+
 # stop_pid NAME [FALLBACK_PKILL_PATTERN] — kill the PID-file process GROUP;
 # fall back to pkill when the PID file is stale or missing.
 stop_pid() {

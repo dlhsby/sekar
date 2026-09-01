@@ -21,6 +21,14 @@ export const MAX_IMAGE_WIDTH = '800';
 export const MAX_VIDEO_SIZE_MB = '50';
 export const MAX_VIDEO_DURATION_SECONDS = '30';
 
+// Anti-spoofing dev overrides — default OFF so tests exercise the enforced path.
+// Note: `react-native-dotenv` inlines `import … from '@env'` at bundle time via
+// babel, so these values only reach code that does a runtime `require('@env')`.
+// Modules using import syntax get the literals from `.env.local` instead — which
+// is why src/config/integrity.ts exposes `isOverrideEnabled` for testing.
+export const ALLOW_MOCK_LOCATION = 'false';
+export const ALLOW_GALLERY_UPLOAD = 'false';
+
 // Crash reporting (Phase 4-1 B4) — empty disables Sentry by default
 export const SENTRY_DSN_MOBILE = '';
 export const SENTRY_RELEASE = '';

@@ -84,16 +84,16 @@ describe('filterHelpers', () => {
       expect(toTitleCase('kepala_rayon')).toBe('Kepala Rayon');
     });
 
-    it('replaces underscores with spaces and capitalises each word for admin_data', () => {
-      expect(toTitleCase('admin_data')).toBe('Admin Data');
+    it('replaces underscores with spaces and capitalises each word for admin_rayon', () => {
+      expect(toTitleCase('admin_rayon')).toBe('Admin Rayon');
     });
 
     it('replaces underscores with spaces and capitalises each word for admin_system', () => {
       expect(toTitleCase('admin_system')).toBe('Admin System');
     });
 
-    it('replaces underscores with spaces and capitalises each word for top_management', () => {
-      expect(toTitleCase('top_management')).toBe('Top Management');
+    it('replaces underscores with spaces and capitalises each word for management', () => {
+      expect(toTitleCase('management')).toBe('Management');
     });
 
     it('handles strings with no underscores', () => {

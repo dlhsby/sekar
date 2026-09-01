@@ -69,7 +69,7 @@ export function UserListCard({ user, onPress }: UserListCardProps): React.JSX.El
       style={styles.card}
       onPress={() => onPress(user)}
       activeOpacity={0.75}
-      accessibilityLabel={`${user.full_name}, ${roleLabel}, ${user.area_name}`}
+      accessibilityLabel={`${user.full_name}, ${roleLabel}, ${user.location_name}`}
       accessibilityRole="button"
     >
       {/* Header row: status dot + name + time */}
@@ -97,7 +97,7 @@ export function UserListCard({ user, onPress }: UserListCardProps): React.JSX.El
 
       {/* Area */}
       <NBText variant="caption" color="gray500" numberOfLines={1}>
-        {user.area_name}
+        {user.location_name}
       </NBText>
     </TouchableOpacity>
   );

@@ -310,13 +310,28 @@ class FCMService {
    * @param _token - FCM token to unregister
    */
   async unregisterToken(_token?: string): Promise<boolean> {
+    // Nothing to unregister — skip the backend round-trip (and the 400 it would
+    // return) when there is no known token, e.g. logging out on a device that
+    // never obtained an FCM token or already cleared it.
+    const target = _token ?? this.fcmToken;
+    if (!target) {
+      console.debug('[FCM] No token to unregister; skipping backend call');
+      return true;
+    }
+
     try {
       console.debug('[FCM] Unregistering token from backend');
 
       const response = await unregisterDevice();
 
       if (response.error) {
-        console.error('[FCM] Token unregistration failed:', response.error);
+        // Logout must never fail because of a stale/absent server-side token —
+        // log at debug and treat as a no-op success so the session still clears.
+        console.debug('[FCM] Token unregistration skipped/failed:', response.error);
+        this.fcmToken = null;
+        if (this.reduxStore) {
+          this.reduxStore.dispatch(setFcmToken(null));
+        }
         return false;
       }
 

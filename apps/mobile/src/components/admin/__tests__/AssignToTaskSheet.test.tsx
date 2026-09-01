@@ -68,8 +68,8 @@ const mockRequest = {
   status: 'approved' as const,
   submittedBy: 'user-kec-1',
   kecamatanName: 'Kecamatan Test',
-  rayonId: 'r1',
-  rayon: { id: 'r1', name: 'Rayon 1' },
+  districtId: 'r1',
+  district: { id: 'r1', name: 'Rayon 1' },
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
   photoUrls: ['url1'],
@@ -89,18 +89,18 @@ const mockRequest = {
 } as any;
 
 const mockAreas = [
-  { id: 'area1', name: 'Area 1', rayon_id: 'r1' },
-  { id: 'area2', name: 'Area 2', rayon_id: 'r1' },
+  { id: 'area1', name: 'Area 1', district_id: 'r1' },
+  { id: 'area2', name: 'Area 2', district_id: 'r1' },
 ];
 
 const mockUsers = [
-  { id: 'user1', full_name: 'Korlap 1', role: 'korlap', rayon_id: 'r1' },
-  { id: 'user2', full_name: 'Kepala Rayon 1', role: 'kepala_rayon', rayon_id: 'r1' },
+  { id: 'user1', full_name: 'Korlap 1', role: 'korlap', district_id: 'r1' },
+  { id: 'user2', full_name: 'Kepala Rayon 1', role: 'kepala_rayon', district_id: 'r1' },
 ];
 
 const mockCapacityRow = {
   id: 'cap-1',
-  rayon_id: 'r1',
+  district_id: 'r1',
   year: 2026,
   week: 18,
   service_type: 'pruning' as const,
@@ -148,7 +148,7 @@ describe('AssignToTaskSheet', () => {
           reschedulingId: null,
         },
         serviceCapacity: {
-          calendarByRayon: {},
+          calendarByDistrict: {},
           loading: false,
           error: null,
         },
@@ -302,11 +302,11 @@ describe('AssignToTaskSheet', () => {
             convertingId: null,
           },
           serviceCapacity: {
-            calendarByRayon: {
+            calendarByDistrict: {
               r1: [
                 {
                   id: 'cap-2',
-                  rayon_id: 'r1',
+                  district_id: 'r1',
                   year: 2026,
                   week: 18,
                   service_type: 'pruning' as const,
@@ -366,11 +366,11 @@ describe('AssignToTaskSheet', () => {
             convertingId: null,
           },
           serviceCapacity: {
-            calendarByRayon: {
+            calendarByDistrict: {
               r1: [
                 {
                   id: 'cap-3',
-                  rayon_id: 'r1',
+                  district_id: 'r1',
                   year: 2026,
                   week: 18,
                   service_type: 'pruning' as const,
@@ -432,7 +432,7 @@ describe('AssignToTaskSheet', () => {
             convertingId: null,
           },
           serviceCapacity: {
-            calendarByRayon: {},
+            calendarByDistrict: {},
             loading: false,
             error: null,
           },
@@ -503,7 +503,7 @@ describe('AssignToTaskSheet', () => {
             convertingId: 'req-1',
           },
           serviceCapacity: {
-            calendarByRayon: {},
+            calendarByDistrict: {},
             loading: false,
             error: null,
           },

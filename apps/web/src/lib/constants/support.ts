@@ -1,9 +1,9 @@
 /**
  * Static support contacts for the pre-login "forgot password" flow.
  *
- * Mirrors the mobile AS-4 reconciliation: `/rayons` is auth-protected and the
- * caller's rayon can't be inferred pre-login, so a single static hotline is
- * shown instead of per-rayon contacts.
+ * Mirrors the mobile AS-4 reconciliation: `/districts` is auth-protected and the
+ * caller's district can't be inferred pre-login, so a single static hotline is
+ * shown instead of per-district contacts.
  *
  * TODO: source these from public runtime config / env once exposed.
  */

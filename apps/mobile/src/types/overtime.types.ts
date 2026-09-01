@@ -13,7 +13,7 @@ export interface Overtime {
   id: string;
   user_id: string;
   user?: User;
-  area_id?: string;
+  location_id?: string;
   area?: Area;
   shift_id?: string | null; // Phase 2E: linked shift when using clock-in/out flow
   shift?: {

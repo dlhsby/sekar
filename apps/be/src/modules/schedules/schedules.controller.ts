@@ -10,6 +10,8 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -19,7 +21,15 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
-import { SchedulesService } from './schedules.service';
+import {
+  SchedulesService,
+  SCHEDULABLE_WORKER_ROLES,
+  type RangeFilters,
+  type DaySummary,
+  type RangeSummary,
+} from './schedules.service';
+import { RosterPresenceService } from './services/roster-presence.service';
+import { ScheduleIdPipe } from './pipes/schedule-id.pipe';
 import { Schedule } from './entities/schedule.entity';
 import {
   AddScheduleDto,
@@ -37,9 +47,28 @@ import { User, UserRole } from '../users/entities/user.entity';
 import { ROSTER_EDITORS, ROSTER_VIEWERS, USER_MANAGERS } from '../users/constants/role-groups';
 import { TimezoneUtil } from '../../common/utils/timezone.util';
 
+// Phase 4: widen roster range access to include satgas, linmas (in addition to ROSTER_VIEWERS)
+const RANGE_VIEWERS = Array.from(new Set([...ROSTER_VIEWERS, UserRole.SATGAS, UserRole.LINMAS]));
+
+/**
+ * Row ceiling for one `/schedules/range` response.
+ *
+ * The cap used to have to allow a full month across every rayon, because the
+ * month grid fetched exactly that — 60k rows, ~57 MB, right at the edge of the
+ * 384 MB heap. Since ADR-057 nothing asks for a wide unfiltered range: the day
+ * board fetches ONE container at a time, week and month read aggregates unless
+ * narrowed to a worker or a lokasi, and mobile's calendar is self-scoped.
+ *
+ * The largest legitimate request is now a rayon-scoped container on a peak day —
+ * measured at ~1.2k rows — so 20k leaves better than an order of magnitude of
+ * headroom while making the guard actually protective again. A request above it
+ * is a client that has regressed to fetching a range wholesale.
+ */
+const MAX_RANGE_ROWS = 20_000;
+
 /**
  * Daily roster operations. Reads/edits are gated to ROSTER_MANAGERS; kepala_rayon
- * and admin_data are confined to their own rayon (forced on list, checked on
+ * and admin_rayon are confined to their own district (forced on list, checked on
  * edit). Workers read their own day via `GET /schedules/my`.
  */
 @ApiTags('schedules')
@@ -47,44 +76,456 @@ import { TimezoneUtil } from '../../common/utils/timezone.util';
 @Controller('schedules')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class SchedulesController {
-  constructor(private readonly service: SchedulesService) {}
+  constructor(
+    private readonly service: SchedulesService,
+    private readonly presence: RosterPresenceService,
+  ) {}
 
-  /** Whether the caller is rayon-scoped (kepala_rayon / admin_data). */
-  private isRayonScoped(user: User): boolean {
-    return user.role === UserRole.KEPALA_RAYON || user.role === UserRole.ADMIN_DATA;
+  /** Whether the caller is district-scoped (kepala_rayon / admin_rayon). */
+  private isDistrictScoped(user: User): boolean {
+    return user.role === UserRole.KEPALA_RAYON || user.role === UserRole.ADMIN_RAYON;
+  }
+
+  /**
+   * Every roster row for a day, not just the most relevant one.
+   *
+   * Under ADR-053 a worker can hold several rows in one shift (lokasi A, then
+   * lokasi B, then a kawasan). `GET /schedules/my` still answers "what am I on
+   * right now" with a single row — the clock-in screen needs exactly one — but
+   * anything that LISTS the day (the mobile Jadwal Saya card, the day view) has
+   * to see all of them or it silently hides assignments.
+   */
+  @Get('my/day')
+  @ApiOperation({ summary: "All of the caller's roster rows for a day (defaults to today, WIB)" })
+  @ApiQuery({ name: 'date', required: false, description: 'WIB day (YYYY-MM-DD)' })
+  @ApiResponse({ status: 200, type: [Schedule] })
+  async getMyDay(@GetUser() user: User, @Query('date') date?: string): Promise<Schedule[]> {
+    const rows = await this.service.findAllByUserAndDate(
+      user.id,
+      date ?? TimezoneUtil.jakartaDateString(),
+    );
+    return this.presence.attach(rows);
   }
 
   @Get('my')
-  @ApiOperation({ summary: "Get the caller's roster for a day (defaults to today, WIB)" })
+  @ApiOperation({
+    summary:
+      "Get the caller's most relevant roster row for a day (defaults to today, WIB; with multiple shifts, the one covering/nearest to now)",
+  })
   @ApiQuery({
     name: 'date',
     required: false,
     description: 'WIB day (YYYY-MM-DD); defaults to today',
   })
   @ApiResponse({ status: 200, type: Schedule })
-  getMy(@GetUser() user: User, @Query('date') date?: string): Promise<Schedule | null> {
-    const day = date ?? TimezoneUtil.jakartaDateString();
-    return this.service.findByUserAndDate(user.id, day);
+  async getMy(@GetUser() user: User, @Query('date') date?: string): Promise<Schedule | null> {
+    // No date → "what am I on right now", which at 03:00 is still yesterday's
+    // cross-midnight shift. An explicit date stays a plain calendar-day lookup.
+    const row = date
+      ? await this.service.findByUserAndDate(user.id, date)
+      : await this.service.findCurrentForUser(user.id);
+    if (!row) return null;
+    // Enriched like every other roster read: `/my` and `/my/day` are fetched by
+    // the same mobile screen, so returning the axes on one and not the other made
+    // the contract depend on which call you happened to use.
+    const [enriched] = await this.presence.attach([row]);
+    return enriched;
   }
 
   @Get('date/:date')
   @Roles(...ROSTER_VIEWERS)
   @ApiOperation({ summary: 'List the roster for a WIB day' })
   @ApiParam({ name: 'date', example: '2026-06-30' })
-  @ApiQuery({ name: 'rayonId', required: false })
+  @ApiQuery({ name: 'districtId', required: false })
   @ApiResponse({ status: 200, type: [Schedule] })
-  getByDate(
+  async getByDate(
     @Param('date') date: string,
     @GetUser() user: User,
-    @Query('rayonId') rayonId?: string,
+    @Query('districtId') districtId?: string,
   ): Promise<Schedule[]> {
-    // Rayon-scoped roles always see only their own rayon, regardless of the
-    // query. A scoped user with no rayon_id (misconfiguration) sees nothing —
-    // never fall through to the unfiltered (all-rayon) query.
-    if (this.isRayonScoped(user)) {
-      return user.rayon_id ? this.service.findByDate(date, user.rayon_id) : Promise.resolve([]);
+    // Rayon-scoped roles always see only their own district, regardless of the
+    // query. A scoped user with no district_id (misconfiguration) sees nothing —
+    // never fall through to the unfiltered (all-district) query.
+    if (this.isDistrictScoped(user)) {
+      if (!user.district_id) return [];
+      return this.presence.attach(await this.service.findByDate(date, user.district_id));
     }
-    return this.service.findByDate(date, rayonId);
+    return this.presence.attach(await this.service.findByDate(date, districtId));
+  }
+
+  /**
+   * The complement of the board: who is NOT on `date`'s roster (ADR-054).
+   *
+   * Read-only. Placing someone still goes through the normal create flow, so
+   * this adds no write path and no new permission — the same roles that may
+   * build a roster may ask what it is missing.
+   */
+  @Get('unscheduled')
+  @Roles(...ROSTER_EDITORS)
+  @ApiOperation({
+    summary:
+      'Workers with no occurrence on a date (ADR-054). Projected occurrences count as scheduled; ' +
+      'excused rows (off/leave) are reported separately as unavailable. satgas/linmas/korlap only.',
+  })
+  @ApiQuery({ name: 'date', example: '2026-07-23' })
+  @ApiQuery({ name: 'shiftDefinitionId', required: false, description: 'Narrow to one shift' })
+  @ApiQuery({ name: 'districtId', required: false })
+  @ApiQuery({ name: 'role', required: false, description: 'Repeatable: satgas|linmas|korlap' })
+  @ApiQuery({
+    name: 'q',
+    required: false,
+    description: 'Match on full name, username, or a team the worker is scheduled on that day',
+  })
+  getUnscheduled(
+    @GetUser() user: User,
+    @Query('date') date: string,
+    @Query('shiftDefinitionId') shiftDefinitionId?: string,
+    @Query('districtId') districtId?: string,
+    @Query('regionId') regionId?: string,
+    @Query('locationId') locationId?: string,
+    @Query('role') role?: string | string[],
+    @Query('q') q?: string,
+  ) {
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      throw new BadRequestException('date must be YYYY-MM-DD');
+    }
+    // An unknown role in the query is DROPPED, not honoured: the filter can only
+    // ever narrow within the three schedulable roles (ADR-054 §4).
+    const roles = (Array.isArray(role) ? role : role ? [role] : [])
+      .map((r) => r as UserRole)
+      .filter((r) => SCHEDULABLE_WORKER_ROLES.includes(r));
+    // Rayon-scoped callers see their own district's WORKERS only, whatever they
+    // ask for — same rule as `getByDate`. This goes in as `visibleDistrictId`,
+    // NOT as `districtId`: the latter describes the slot being filled and no
+    // longer narrows the workforce, so reusing it here silently stopped scoping
+    // anything. A scoped user with no district sees nothing rather than falling
+    // through to every rayon.
+    const scoped = this.isDistrictScoped(user);
+    if (scoped && !user.district_id) {
+      return Promise.resolve({
+        date,
+        shift_definition_id: shiftDefinitionId ?? null,
+        unscheduled: [],
+        unavailable: [],
+        totals: { unscheduled: 0, unavailable: 0, scheduled: 0, workforce: 0, matched: 0 },
+      });
+    }
+    return this.service.findUnscheduled(date, {
+      shiftDefinitionId: shiftDefinitionId ?? null,
+      districtId: districtId ?? null,
+      visibleDistrictId: scoped ? (user.district_id as string) : null,
+      regionId: regionId ?? null,
+      locationId: locationId ?? null,
+      roles: roles.length ? roles : null,
+      q: q ?? null,
+    });
+  }
+
+  @Get('range')
+  @Roles(...RANGE_VIEWERS)
+  @ApiOperation({
+    summary:
+      'List roster rows for a date range [from, to]. Phase 4: includes projected events beyond materialization horizon. Workers (satgas/linmas/korlap) see only their own schedule.',
+  })
+  @ApiQuery({ name: 'from', example: '2026-06-30' })
+  @ApiQuery({ name: 'to', example: '2026-07-31' })
+  @ApiQuery({ name: 'districtId', required: false })
+  @ApiQuery({ name: 'regionId', required: false })
+  @ApiQuery({ name: 'locationId', required: false })
+  @ApiQuery({ name: 'userId', required: false })
+  @ApiQuery({ name: 'shiftDefinitionId', required: false })
+  @ApiQuery({ name: 'teamCategoryId', required: false })
+  @ApiQuery({
+    name: 'cityScopeOnly',
+    required: false,
+    description:
+      'Only rows bound to no lokasi, kawasan or rayon — the board\'s "Seluruh Surabaya" ' +
+      'container, which cannot be named by an id filter.',
+  })
+  @ApiResponse({ status: 200, type: [Schedule] })
+  async getByRange(
+    @Query('from') from: string,
+    @Query('to') to: string,
+    @GetUser() user: User,
+    @Query('districtId') districtId?: string,
+    @Query('regionId') regionId?: string,
+    @Query('locationId') locationId?: string,
+    @Query('userId') userId?: string,
+    @Query('shiftDefinitionId') shiftDefinitionId?: string,
+    @Query('teamCategoryId') teamCategoryId?: string,
+    @Query('cityScopeOnly') cityScopeOnly?: string,
+  ): Promise<Schedule[]> {
+    // Validate from <= to
+    if (from > to) {
+      throw new BadRequestException('from date must be <= to date');
+    }
+
+    // Validate date span (cap at 62 days)
+    const fromDate = new Date(from + 'T00:00:00Z');
+    const toDate = new Date(to + 'T00:00:00Z');
+    const days = Math.floor((toDate.getTime() - fromDate.getTime()) / (24 * 60 * 60 * 1000)) + 1;
+    if (days > 62) {
+      throw new BadRequestException(
+        `Date range exceeds 62 days (${days} requested). Reduce the span.`,
+      );
+    }
+
+    const filters: RangeFilters = {
+      regionId,
+      locationId,
+      userId,
+      shiftDefinitionId,
+      teamCategoryId,
+      cityScopeOnly: cityScopeOnly === 'true',
+    };
+
+    /**
+     * Refuse a request that is too large to serialize, instead of dying halfway.
+     *
+     * The 62-day cap above bounds the DATE span but not the row count, and rows
+     * scale with the workforce: a 31-day all-district range on staging is ~31k
+     * rows / 38 MB today. The API runs at `--max-old-space-size=384`, so a big
+     * enough unfiltered range is an OOM — and an OOM takes the whole container
+     * down for every other user, which a 400 does not.
+     *
+     * The limit is generous (a month across every rayon still passes) and the
+     * message says exactly how to get under it, because "narrow your filter" is
+     * actionable where a dead container is not.
+     */
+    const estimated = await this.service.countByDateRange(from, to, { ...filters, districtId });
+    if (estimated > MAX_RANGE_ROWS) {
+      throw new BadRequestException(
+        `This range would return ${estimated.toLocaleString()} rows (limit ${MAX_RANGE_ROWS.toLocaleString()}). ` +
+          'Narrow it with a shorter date span, or a district / kawasan / lokasi / shift filter.',
+      );
+    }
+
+    // Phase 4: workers (satgas/linmas/korlap) not in ROSTER_VIEWERS are self-scoped
+    if (!ROSTER_VIEWERS.includes(user.role)) {
+      return this.presence.attach(await this.service.findByDateRangeForUser(from, to, user.id));
+    }
+
+    // Rayon-scoped roles (kepala_rayon / admin_rayon) are pinned to their own
+    // district; the requested districtId is ignored, other filters still apply.
+    if (this.isDistrictScoped(user)) {
+      if (!user.district_id) return [];
+      return this.presence.attach(
+        await this.service.findByDateRange(from, to, { ...filters, districtId: user.district_id }),
+      );
+    }
+
+    return this.presence.attach(
+      await this.service.findByDateRange(from, to, { ...filters, districtId }),
+    );
+  }
+
+  /**
+   * The day board's collapsed view as counts, not rows.
+   *
+   * Same scoping and the same filter set as `GET /schedules/range` — the two
+   * must agree, or a card's headcount would contradict the rows it opens to.
+   */
+  @Get('day-summary')
+  @Roles(...RANGE_VIEWERS)
+  @ApiOperation({
+    summary:
+      'Aggregate headcounts for one WIB day, per container per shift per role, plus distinct ' +
+      'people per container subtree. What the collapsed day board renders; the rows for a ' +
+      'container are fetched from /schedules/range when it is expanded.',
+  })
+  @ApiQuery({ name: 'date', example: '2026-07-08' })
+  @ApiQuery({ name: 'districtId', required: false })
+  @ApiQuery({ name: 'regionId', required: false })
+  @ApiQuery({ name: 'locationId', required: false })
+  @ApiQuery({ name: 'userId', required: false })
+  @ApiQuery({ name: 'shiftDefinitionId', required: false })
+  @ApiQuery({ name: 'teamCategoryId', required: false })
+  @ApiResponse({ status: 200, description: '{ date, groups[], workers{} }' })
+  getDaySummary(
+    @Query('date') date: string,
+    @GetUser() user: User,
+    @Query('districtId') districtId?: string,
+    @Query('regionId') regionId?: string,
+    @Query('locationId') locationId?: string,
+    @Query('userId') userId?: string,
+    @Query('shiftDefinitionId') shiftDefinitionId?: string,
+    @Query('teamCategoryId') teamCategoryId?: string,
+  ): Promise<DaySummary> {
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      throw new BadRequestException('date must be in YYYY-MM-DD format');
+    }
+    const filters: RangeFilters = {
+      regionId,
+      locationId,
+      userId,
+      shiftDefinitionId,
+      teamCategoryId,
+    };
+
+    // Workers see only themselves; district-scoped roles are pinned to their own
+    // rayon and the requested districtId is ignored. Mirrors `getByRange`.
+    if (!ROSTER_VIEWERS.includes(user.role)) {
+      return this.service.getDaySummary(date, { userId: user.id });
+    }
+    if (this.isDistrictScoped(user)) {
+      return user.district_id
+        ? this.service.getDaySummary(date, { ...filters, districtId: user.district_id })
+        : Promise.resolve({
+            date,
+            groups: [],
+            workers: { districts: [], regions: [], locations: [], city: 0 },
+          });
+    }
+    return this.service.getDaySummary(date, { ...filters, districtId });
+  }
+
+  /**
+   * The week and month grids, as counts.
+   *
+   * Same scoping and filter set as `/schedules/range`, so a cell's headcount
+   * agrees with the day it opens into.
+   */
+  @Get('range-summary')
+  @Roles(...RANGE_VIEWERS)
+  @ApiOperation({
+    summary:
+      'Aggregate headcounts for a date range: distinct people per day, per (day, rayon), and a ' +
+      'per-(day, rayon, shift) role breakdown. What the week and month grids render when no ' +
+      'subject filter is set — they show only counts, and used to fetch every row to derive them.',
+  })
+  @ApiQuery({ name: 'from', example: '2026-08-01' })
+  @ApiQuery({ name: 'to', example: '2026-08-31' })
+  @ApiQuery({ name: 'districtId', required: false })
+  @ApiQuery({ name: 'regionId', required: false })
+  @ApiQuery({ name: 'locationId', required: false })
+  @ApiQuery({ name: 'userId', required: false })
+  @ApiQuery({ name: 'shiftDefinitionId', required: false })
+  @ApiQuery({ name: 'teamCategoryId', required: false })
+  @ApiResponse({ status: 200, description: '{ from, to, days[], dayDistricts[], cells[] }' })
+  getRangeSummary(
+    @Query('from') from: string,
+    @Query('to') to: string,
+    @GetUser() user: User,
+    @Query('districtId') districtId?: string,
+    @Query('regionId') regionId?: string,
+    @Query('locationId') locationId?: string,
+    @Query('userId') userId?: string,
+    @Query('shiftDefinitionId') shiftDefinitionId?: string,
+    @Query('teamCategoryId') teamCategoryId?: string,
+  ): Promise<RangeSummary> {
+    if (!from || !to || !/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
+      throw new BadRequestException('from and to must be in YYYY-MM-DD format');
+    }
+    if (from > to) throw new BadRequestException('from date must be <= to date');
+    const days =
+      Math.floor(
+        (new Date(to + 'T00:00:00Z').getTime() - new Date(from + 'T00:00:00Z').getTime()) /
+          86_400_000,
+      ) + 1;
+    // Same 62-day span cap as `/schedules/range`; this is cheap per day but the
+    // projection expansion still scales with the window.
+    if (days > 62) {
+      throw new BadRequestException(`Date range exceeds 62 days (${days} requested).`);
+    }
+
+    const filters: RangeFilters = {
+      regionId,
+      locationId,
+      userId,
+      shiftDefinitionId,
+      teamCategoryId,
+    };
+
+    if (!ROSTER_VIEWERS.includes(user.role)) {
+      return this.service.getRangeSummary(from, to, { userId: user.id });
+    }
+    if (this.isDistrictScoped(user)) {
+      return user.district_id
+        ? this.service.getRangeSummary(from, to, { ...filters, districtId: user.district_id })
+        : Promise.resolve({ from, to, days: [], dayDistricts: [], cells: [] });
+    }
+    return this.service.getRangeSummary(from, to, { ...filters, districtId });
+  }
+
+  @Get('year-summary')
+  @Roles(...RANGE_VIEWERS)
+  @ApiOperation({
+    summary:
+      'Per-day occupancy counts for a date range (year heatmap). Lightweight aggregate — no row hydration. Workers are self-scoped; district-scoped roles pinned to their district.',
+  })
+  @ApiQuery({ name: 'from', example: '2026-01-01' })
+  @ApiQuery({ name: 'to', example: '2026-12-31' })
+  @ApiQuery({ name: 'districtId', required: false })
+  @ApiQuery({ name: 'regionId', required: false })
+  @ApiQuery({ name: 'locationId', required: false })
+  @ApiQuery({ name: 'userId', required: false })
+  @ApiQuery({ name: 'shiftDefinitionId', required: false })
+  @ApiQuery({ name: 'teamCategoryId', required: false })
+  @ApiResponse({ status: 200, description: '[{ date, count }]' })
+  getYearSummary(
+    @Query('from') from: string,
+    @Query('to') to: string,
+    @GetUser() user: User,
+    @Query('districtId') districtId?: string,
+    @Query('regionId') regionId?: string,
+    @Query('locationId') locationId?: string,
+    @Query('userId') userId?: string,
+    @Query('shiftDefinitionId') shiftDefinitionId?: string,
+    @Query('teamCategoryId') teamCategoryId?: string,
+  ): Promise<Array<{ date: string; count: number }>> {
+    if (!from || !to) throw new BadRequestException('from and to are required');
+    if (from > to) throw new BadRequestException('from date must be <= to date');
+    const fromDate = new Date(from + 'T00:00:00Z');
+    const toDate = new Date(to + 'T00:00:00Z');
+    const days = Math.floor((toDate.getTime() - fromDate.getTime()) / (24 * 60 * 60 * 1000)) + 1;
+    if (days > 366) {
+      throw new BadRequestException(`Date range exceeds 366 days (${days} requested).`);
+    }
+
+    const filters: RangeFilters = {
+      regionId,
+      locationId,
+      userId,
+      shiftDefinitionId,
+      teamCategoryId,
+    };
+
+    if (!ROSTER_VIEWERS.includes(user.role)) {
+      return this.service.getDailyCounts(from, to, { userId: user.id });
+    }
+    if (this.isDistrictScoped(user)) {
+      return user.district_id
+        ? this.service.getDailyCounts(from, to, { ...filters, districtId: user.district_id })
+        : Promise.resolve([]);
+    }
+    return this.service.getDailyCounts(from, to, { ...filters, districtId });
+  }
+
+  /**
+   * One roster row by id.
+   *
+   * Declared after every literal-path GET above so it cannot shadow them.
+   *
+   * The web edit modal used to reach a single row by fetching the WHOLE day
+   * unscoped and running `.find()` on the client — 190 MB and 5.4 s on the
+   * staging clone to read one record. A projected row (`projected:<event>:…`)
+   * has no id in the table, so those still come from the range payload the
+   * board already holds; only materialized rows resolve here.
+   */
+  @Get(':id')
+  @Roles(...ROSTER_VIEWERS)
+  @ApiOperation({ summary: 'Get a single roster row by id' })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  @ApiResponse({ status: 200, type: Schedule })
+  async getOne(@Param('id', ScheduleIdPipe) id: string, @GetUser() user: User): Promise<Schedule> {
+    const row = await this.service.findOne(id);
+    // District-scoped roles may only read their own rayon's rows; workers may
+    // only read their own. Mirrors the scoping the list endpoints apply in SQL.
+    if (this.isDistrictScoped(user) && row.district_id !== user.district_id) {
+      throw new ForbiddenException('This schedule belongs to another rayon');
+    }
+    const [enriched] = await this.presence.attach([row]);
+    return enriched;
   }
 
   @Post('generate')
@@ -104,11 +545,11 @@ export class SchedulesController {
   @ApiOperation({
     summary: 'Add a single worker to a day (mid-day joiner / missed by generate)',
     description:
-      'Creates one roster row for the worker. Rejects (400) if the worker already has a schedule that day — one schedule per worker per day.',
+      'Creates one roster row for the worker. Multiple non-overlapping shifts per day are allowed (ADR-047); rejects (400) only when the shift time-window overlaps an existing schedule.',
   })
   @ApiResponse({ status: 201, type: Schedule })
   async addSchedule(@Body() dto: AddScheduleDto, @GetUser() user: User): Promise<Schedule> {
-    // Role hierarchy + rayon/area scope is enforced in the service.
+    // Role hierarchy + district/area scope is enforced in the service.
     return this.service.addForDay(dto, user);
   }
 
@@ -117,11 +558,11 @@ export class SchedulesController {
   @ApiOperation({ summary: 'Mark a roster row as sick / annual leave' })
   @ApiResponse({ status: 200, type: Schedule })
   async setLeave(
-    @Param('id') id: string,
+    @Param('id', ScheduleIdPipe) id: string,
     @Body() dto: SetLeaveDto,
     @GetUser() user: User,
   ): Promise<Schedule> {
-    // Fine-grained edit permission (role hierarchy + rayon/area scope) is
+    // Fine-grained edit permission (role hierarchy + district/area scope) is
     // enforced in the service via assertCanEdit.
     return this.service.setLeave(id, dto.leave_type, dto.notes, user);
   }
@@ -131,7 +572,7 @@ export class SchedulesController {
   @ApiOperation({ summary: 'Replace the rostered worker for the day' })
   @ApiResponse({ status: 200, type: Schedule })
   async replace(
-    @Param('id') id: string,
+    @Param('id', ScheduleIdPipe) id: string,
     @Body() dto: ReplaceWorkerDto,
     @GetUser() user: User,
   ): Promise<Schedule> {
@@ -140,14 +581,17 @@ export class SchedulesController {
 
   @Patch(':id/areas')
   @Roles(...ROSTER_EDITORS)
-  @ApiOperation({ summary: 'Set the areas for the day (0..N)' })
+  @ApiOperation({
+    summary:
+      'Set the place for the day — at most one lokasi, or one kawasan, plus the parent rayon (ADR-053)',
+  })
   @ApiResponse({ status: 200, type: Schedule })
   async updateAreas(
-    @Param('id') id: string,
+    @Param('id', ScheduleIdPipe) id: string,
     @Body() dto: UpdateRosterAreasDto,
     @GetUser() user: User,
   ): Promise<Schedule> {
-    return this.service.updateAreas(id, dto.area_ids, user);
+    return this.service.updateAreas(id, dto.area_ids, user, dto.district_id, dto.region_id);
   }
 
   @Patch(':id/shift')
@@ -155,7 +599,7 @@ export class SchedulesController {
   @ApiOperation({ summary: 'Set (or clear) the shift for the day' })
   @ApiResponse({ status: 200, type: Schedule })
   async updateShift(
-    @Param('id') id: string,
+    @Param('id', ScheduleIdPipe) id: string,
     @Body() dto: UpdateRosterShiftDto,
     @GetUser() user: User,
   ): Promise<Schedule> {
@@ -166,7 +610,7 @@ export class SchedulesController {
   @Roles(...USER_MANAGERS)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Soft-delete a roster row' })
-  async remove(@Param('id') id: string, @GetUser() user: User): Promise<void> {
+  async remove(@Param('id', ScheduleIdPipe) id: string, @GetUser() user: User): Promise<void> {
     await this.service.remove(id, user.id);
   }
 }

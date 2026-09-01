@@ -40,10 +40,10 @@ function buildLiveUser(overrides?: Partial<LiveUser>): LiveUser {
     role: 'satgas',
     phone: null,
     status: 'active',
-    area_id: 'area-source',
-    area_name: 'Area Selatan',
-    rayon_id: 'rayon-1',
-    rayon_name: 'Rayon 1',
+    location_id: 'area-source',
+    location_name: 'Area Selatan',
+    district_id: 'district-1',
+    district_name: 'Rayon 1',
     latitude: -7.25,
     longitude: 112.75,
     accuracy: 10,
@@ -61,10 +61,10 @@ function buildLiveUser(overrides?: Partial<LiveUser>): LiveUser {
   } as any;
 }
 
-const workerA = buildLiveUser({ id: 'user-1', full_name: 'Ahmad Satgas', area_id: 'area-source' });
-const workerB = buildLiveUser({ id: 'user-2', full_name: 'Budi Linmas', role: 'linmas', area_id: 'area-source' });
+const workerA = buildLiveUser({ id: 'user-1', full_name: 'Ahmad Satgas', location_id: 'area-source' });
+const workerB = buildLiveUser({ id: 'user-2', full_name: 'Budi Linmas', role: 'linmas', location_id: 'area-source' });
 // workerC is already assigned to the target area
-const workerC = buildLiveUser({ id: 'user-3', full_name: 'Candra Korlap', role: 'korlap', area_id: 'area-target' });
+const workerC = buildLiveUser({ id: 'user-3', full_name: 'Candra Korlap', role: 'korlap', location_id: 'area-target' });
 
 const targetArea: AreaBoundary = {
   id: 'area-target',
@@ -72,9 +72,8 @@ const targetArea: AreaBoundary = {
   center_lat: -7.2,
   center_lng: 112.7,
   boundary_polygon: null,
-  radius_meters: 200,
-  rayon_id: 'rayon-1',
-  rayon_name: 'Rayon 1',
+  district_id: 'district-1',
+  district_name: 'Rayon 1',
   assigned_count: 3,
   staffing: [],
   is_understaffed: true,
@@ -86,14 +85,14 @@ function buildDefaultProps(overrides?: {
   visible?: boolean;
   onClose?: jest.Mock;
   targetArea?: AreaBoundary | null;
-  sourceRayonId?: string;
+  sourceDistrictId?: string;
   onSuccess?: jest.Mock;
 }) {
   return {
     visible: overrides?.visible ?? true,
     onClose: overrides?.onClose ?? jest.fn(),
     targetArea: overrides?.targetArea !== undefined ? overrides.targetArea : targetArea,
-    sourceRayonId: overrides?.sourceRayonId !== undefined ? overrides.sourceRayonId : 'rayon-1',
+    sourceDistrictId: overrides?.sourceDistrictId !== undefined ? overrides.sourceDistrictId : 'district-1',
     onSuccess: overrides?.onSuccess ?? jest.fn(),
   };
 }
@@ -106,7 +105,7 @@ describe('ReassignWorkerModal', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
-    // Default: two workers in source rayon (one already in target area)
+    // Default: two workers in source district (one already in target area)
     mockGetLiveUsers.mockResolvedValue({
       data: { users: [workerA, workerB, workerC] },
     });
@@ -120,13 +119,13 @@ describe('ReassignWorkerModal', () => {
   // ── Fetching candidates ──────────────────────────────────────────────────────
 
   describe('fetching candidates', () => {
-    it('calls getLiveUsers with rayon_id and active status when visible and sourceRayonId set', async () => {
+    it('calls getLiveUsers with district_id and active status when visible and sourceDistrictId set', async () => {
       render(<ReassignWorkerModal {...buildDefaultProps()} />);
 
       await waitFor(() => {
         expect(mockGetLiveUsers).toHaveBeenCalledTimes(1);
         expect(mockGetLiveUsers).toHaveBeenCalledWith({
-          rayon_id: 'rayon-1',
+          district_id: 'district-1',
           status: ['active'],
         });
       });
@@ -140,25 +139,25 @@ describe('ReassignWorkerModal', () => {
       });
     });
 
-    it('does not call getLiveUsers when sourceRayonId is missing', () => {
+    it('does not call getLiveUsers when sourceDistrictId is missing', () => {
       render(
         <ReassignWorkerModal
           visible={true}
           onClose={jest.fn()}
           targetArea={targetArea}
-          // sourceRayonId intentionally omitted
+          // sourceDistrictId intentionally omitted
           onSuccess={jest.fn()}
         />
       );
 
-      // Synchronous assertion: effect guard fires immediately when sourceRayonId is absent
+      // Synchronous assertion: effect guard fires immediately when sourceDistrictId is absent
       expect(mockGetLiveUsers).not.toHaveBeenCalled();
     });
 
-    it('does not call getLiveUsers when both visible is false and sourceRayonId missing', async () => {
+    it('does not call getLiveUsers when both visible is false and sourceDistrictId missing', async () => {
       render(
         <ReassignWorkerModal
-          {...buildDefaultProps({ visible: false, sourceRayonId: undefined })}
+          {...buildDefaultProps({ visible: false, sourceDistrictId: undefined })}
         />
       );
 
@@ -186,7 +185,7 @@ describe('ReassignWorkerModal', () => {
   // ── Filtering out target-area workers ───────────────────────────────────────
 
   describe('filtering workers already in target area', () => {
-    it('excludes workers whose area_id matches the target area id', async () => {
+    it('excludes workers whose location_id matches the target area id', async () => {
       const { queryByText, getByText } = render(<ReassignWorkerModal {...buildDefaultProps()} />);
 
       await waitFor(() => {
@@ -197,7 +196,7 @@ describe('ReassignWorkerModal', () => {
       });
     });
 
-    it('shows all workers when none share the target area_id', async () => {
+    it('shows all workers when none share the target location_id', async () => {
       mockGetLiveUsers.mockResolvedValue({
         data: { users: [workerA, workerB] },
       });
@@ -254,7 +253,7 @@ describe('ReassignWorkerModal', () => {
     it('shows worker role label and area name as meta', async () => {
       const { getAllByText } = render(<ReassignWorkerModal {...buildDefaultProps()} />);
       await waitFor(() => {
-        // Both workerA (satgas) and workerB (linmas) share area_name "Area Selatan"
+        // Both workerA (satgas) and workerB (linmas) share location_name "Area Selatan"
         const hits = getAllByText(/Area Selatan/);
         expect(hits.length).toBeGreaterThanOrEqual(1);
       });

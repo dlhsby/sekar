@@ -61,7 +61,7 @@ export const WorkerTile = React.memo(function WorkerTile({
           {user.full_name}
         </NBText>
         <NBText variant="caption" color="gray500" numberOfLines={1}>
-          {roleLabel} · {user.area_name}
+          {roleLabel} · {user.location_name}
         </NBText>
         <View style={styles.metaRow}>
           <StatusPill dot tone={tone} label={label} />
@@ -82,7 +82,7 @@ export const WorkerTile = React.memo(function WorkerTile({
 
       <View style={styles.right}>
         {lastSeen ? (
-          <NBText variant="mono-sm" color="gray400" style={styles.lastSeen}>
+          <NBText variant="mono-sm" color="gray500" style={styles.lastSeen}>
             {lastSeen}
           </NBText>
         ) : null}

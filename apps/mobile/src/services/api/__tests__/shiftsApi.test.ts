@@ -24,7 +24,7 @@ describe('shiftsApi', () => {
     const mockAreaId = 'b2c3d4e5-f6a7-8901-bcde-f12345678901';
     const mockBase64 = 'data:image/jpeg;base64,/9j/4AAQSkZJRg...';
 
-    it('should call clock-in API with JSON payload including area_id', async () => {
+    it('should call clock-in API with JSON payload including location_id', async () => {
       const mockResponse = {
         data: {
           shift_id: 1,
@@ -46,13 +46,13 @@ describe('shiftsApi', () => {
         gps_lat: -7.250445,
         gps_lng: 112.768845,
         selfie_photo: mockBase64,
-        area_id: mockAreaId,
+        location_id: mockAreaId,
       });
 
       expect(result).toEqual(mockResponse);
     });
 
-    it('should call clock-in API without area_id when not provided', async () => {
+    it('should call clock-in API without location_id when not provided', async () => {
       const mockResponse = {
         data: {
           shift_id: 1,
@@ -89,7 +89,7 @@ describe('shiftsApi', () => {
       expect(payload.gps_lat).toBe(-7.250445);
       expect(payload.gps_lng).toBe(112.768845);
       expect(payload.selfie_photo).toBe(mockBase64);
-      expect(payload.area_id).toBe(mockAreaId);
+      expect(payload.location_id).toBe(mockAreaId);
     });
 
     it('should handle clock-in errors', async () => {
@@ -179,7 +179,7 @@ describe('shiftsApi', () => {
     it('should fetch current active shift', async () => {
       const mockShift = {
         id: 'abc-123',
-        area_id: 'b2c3d4e5-f6a7-8901-bcde-f12345678901',
+        location_id: 'b2c3d4e5-f6a7-8901-bcde-f12345678901',
         user_id: 'worker-uuid',
         clock_in_time: '2026-01-16T08:00:00Z',
         clock_in_gps_lat: -7.250445,
@@ -238,7 +238,7 @@ describe('shiftsApi', () => {
       const mockResponse = { data: { shift_id: 1 }, error: null };
       (apiClient.post as jest.Mock).mockResolvedValue(mockResponse);
 
-      // area_id is optional, GPS and photo first
+      // location_id is optional, GPS and photo first
       await clockIn(-7.250445, 112.768845, mockBase64, mockAreaId);
 
       // TypeScript would prevent these at compile time:
@@ -311,7 +311,7 @@ describe('shiftsApi', () => {
     const mockAreaId = 'b2c3d4e5-f6a7-8901-bcde-f12345678901';
     const mockBase64 = 'data:image/jpeg;base64,/9j/4AAQSkZJRg...';
 
-    it('should send JSON payload with correct fields for clock-in with area_id', async () => {
+    it('should send JSON payload with correct fields for clock-in with location_id', async () => {
       (apiClient.post as jest.Mock).mockResolvedValue({ data: {}, error: null });
 
       await clockIn(-7.123456, 112.654321, mockBase64, mockAreaId);
@@ -324,11 +324,11 @@ describe('shiftsApi', () => {
         gps_lat: -7.123456,
         gps_lng: 112.654321,
         selfie_photo: mockBase64,
-        area_id: mockAreaId,
+        location_id: mockAreaId,
       });
     });
 
-    it('should send JSON payload without area_id when not provided', async () => {
+    it('should send JSON payload without location_id when not provided', async () => {
       (apiClient.post as jest.Mock).mockResolvedValue({ data: {}, error: null });
 
       await clockIn(-7.123456, 112.654321, mockBase64);
@@ -336,13 +336,13 @@ describe('shiftsApi', () => {
       const callArgs = (apiClient.post as jest.Mock).mock.calls[0];
       const payload = callArgs[1];
 
-      // Should not have area_id field
+      // Should not have location_id field
       expect(payload).toEqual({
         gps_lat: -7.123456,
         gps_lng: 112.654321,
         selfie_photo: mockBase64,
       });
-      expect(payload).not.toHaveProperty('area_id');
+      expect(payload).not.toHaveProperty('location_id');
     });
 
     it('should send correct payload structure for clock-out', async () => {

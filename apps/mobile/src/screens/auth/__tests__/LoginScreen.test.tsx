@@ -181,7 +181,7 @@ describe('LoginScreen', () => {
     });
 
     it('does not fetch area / shift for non-clockable users', async () => {
-      const manager = { id: 1, username: 'manager1', full_name: 'Mgr', role: 'top_management' };
+      const manager = { id: 1, username: 'manager1', full_name: 'Mgr', role: 'management' };
       (authApi.login as jest.Mock).mockResolvedValue({ data: { access_token: 'tok', user: manager } });
 
       const q = renderLoginScreen();
@@ -211,7 +211,6 @@ describe('LoginScreen', () => {
         if (state.assignedArea) {
           expect(typeof state.assignedArea.gps_lat).toBe('number');
           expect(typeof state.assignedArea.gps_lng).toBe('number');
-          expect(typeof state.assignedArea.radius_meters).toBe('number');
         }
       });
     });
@@ -314,7 +313,7 @@ describe('LoginScreen', () => {
 
     it('calls login exactly once per press', async () => {
       (authApi.login as jest.Mock).mockResolvedValue({
-        data: { access_token: 'tok', user: { id: 1, username: 'm', full_name: 'M', role: 'top_management' } },
+        data: { access_token: 'tok', user: { id: 1, username: 'm', full_name: 'M', role: 'management' } },
       });
       const q = renderLoginScreen();
       fillValid(q);

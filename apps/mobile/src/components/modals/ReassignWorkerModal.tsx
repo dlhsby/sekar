@@ -1,7 +1,7 @@
 /**
  * ReassignWorkerModal Component
  * Phase 2D Gap #5: Modal for reassigning workers between areas.
- * Lists active workers from source rayon, allows selection and reassignment.
+ * Lists active workers from source district, allows selection and reassignment.
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
@@ -36,7 +36,7 @@ interface ReassignWorkerModalProps {
   visible: boolean;
   onClose: () => void;
   targetArea: AreaBoundary | null;
-  sourceRayonId?: string;
+  sourceDistrictId?: string;
   onSuccess?: () => void;
 }
 
@@ -46,7 +46,7 @@ export function ReassignWorkerModal({
   visible,
   onClose,
   targetArea,
-  sourceRayonId,
+  sourceDistrictId,
   onSuccess,
 }: ReassignWorkerModalProps): React.JSX.Element {
   const { t } = useTranslation('monitoring');
@@ -58,26 +58,26 @@ export function ReassignWorkerModal({
 
   // Fetch candidates when modal opens
   useEffect(() => {
-    if (!visible || !sourceRayonId) {
+    if (!visible || !sourceDistrictId) {
       setCandidates([]);
       setSelectedUserId(null);
       setReason('');
       return;
     }
     setIsLoading(true);
-    getLiveUsers({ rayon_id: sourceRayonId, status: ['active'] })
+    getLiveUsers({ district_id: sourceDistrictId, status: ['active'] })
       .then(res => {
         if (res.data?.users) {
           // Exclude workers already in the target area
           const filtered = res.data.users.filter(
-            u => u.area_id !== targetArea?.id,
+            u => u.location_id !== targetArea?.id,
           );
           setCandidates(filtered);
         }
       })
       .catch(() => {})
       .finally(() => setIsLoading(false));
-  }, [visible, sourceRayonId, targetArea?.id]);
+  }, [visible, sourceDistrictId, targetArea?.id]);
 
   const handleSubmit = useCallback(async () => {
     if (!selectedUserId || !targetArea) return;
@@ -166,7 +166,7 @@ export function ReassignWorkerModal({
                 <View style={styles.userInfo}>
                   <Text style={styles.userName}>{user.full_name}</Text>
                   <Text style={styles.userMeta}>
-                    {ROLE_LABELS[user.role as UserRole] ?? user.role} - {user.area_name}
+                    {ROLE_LABELS[user.role as UserRole] ?? user.role} - {user.location_name}
                   </Text>
                 </View>
                 {isSelected && (
@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
   },
   charCount: {
     fontSize: nbType.caption.fontSize,
-    color: nbColors.gray400,
+    color: nbColors.gray500,
     textAlign: 'right',
     marginTop: 4,
   },

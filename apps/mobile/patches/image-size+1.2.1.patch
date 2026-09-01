@@ -1,0 +1,21 @@
+diff --git a/node_modules/image-size/dist/types/icns.js b/node_modules/image-size/dist/types/icns.js
+index f2bfafe..94cec9a 100644
+--- a/node_modules/image-size/dist/types/icns.js
++++ b/node_modules/image-size/dist/types/icns.js
+@@ -93,6 +93,16 @@ exports.ICNS = {
+         while (imageOffset < fileLength && imageOffset < inputLength) {
+             imageHeader = readImageHeader(input, imageOffset);
+             imageSize = getImageSize(imageHeader[0]);
++            // GHSA-w3rx-r6r6-pgpr: an entry whose declared length is 0 (or is
++            // smaller than the 8-byte entry header it must include) leaves
++            // `imageOffset` unchanged, so this loop never terminates and the
++            // bundler hangs on a malformed .icns. A valid entry is always at
++            // least SIZE_HEADER bytes; anything less is corrupt, so stop
++            // reading rather than spin. `findBox` already carries the
++            // equivalent guard upstream — this branch was simply missed.
++            if (imageHeader[1] < SIZE_HEADER) {
++                break;
++            }
+             imageOffset += imageHeader[1];
+             result.images.push(imageSize);
+         }

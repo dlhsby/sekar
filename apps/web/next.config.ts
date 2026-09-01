@@ -17,6 +17,16 @@ const nextConfig: NextConfig = {
   // Standalone output for Docker deployment
   output: 'standalone',
 
+  // Allow a LAN host (e.g. a phone) to fetch Next dev resources (/_next/*, HMR)
+  // when serving via `./scripts/start.sh --lan`. Next 16 blocks cross-origin dev
+  // resources by default, which otherwise stalls client hydration (the page
+  // stays stuck on the server-rendered loading gate). Populated from an env var
+  // by the LAN script; empty (and thus a no-op) in normal dev + production.
+  allowedDevOrigins: (process.env.SEKAR_ALLOWED_DEV_ORIGINS || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean),
+
   // Pin the Turbopack workspace root to this app dir. The repo has two
   // lockfiles (root tooling + this workspace), so Turbopack would otherwise
   // infer the repo root and resolve dev chunks from the wrong directory
@@ -40,6 +50,19 @@ const nextConfig: NextConfig = {
     formats: ['image/webp', 'image/avif'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+  },
+
+  // LAN/phone testing: when started via `./scripts/start.sh --lan`, proxy the
+  // API (and monitoring socket) through the web origin so only the web port must
+  // be reachable from the phone — no separate backend-port firewall rule and no
+  // CORS. Guarded by an env flag so normal dev/build is unaffected.
+  async rewrites() {
+    if (process.env.SEKAR_LAN_PROXY !== '1') return [];
+    const be = `http://127.0.0.1:${process.env.SEKAR_API_PORT || '3000'}`;
+    return [
+      { source: '/api/:path*', destination: `${be}/api/:path*` },
+      { source: '/socket.io/:path*', destination: `${be}/socket.io/:path*` },
+    ];
   },
 
   // Security + SW headers

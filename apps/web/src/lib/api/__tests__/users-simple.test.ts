@@ -184,7 +184,7 @@ describe('Users API', () => {
     it('should create new user', async () => {
       const newUser: CreateUserDto = {
         username: 'newuser',
-        password: 'Password123!',
+        password: '12345678',
         full_name: 'New User',
         role: 'satgas',
       };
@@ -230,7 +230,7 @@ describe('Users API', () => {
     it('should handle duplicate username error', async () => {
       const newUser: CreateUserDto = {
         username: 'admin',
-        password: 'Password123!',
+        password: '12345678',
         full_name: 'Another Admin',
         role: 'admin_system',
       };
@@ -280,7 +280,7 @@ describe('Users API', () => {
 
     it('should assign multiple areas + shift on update', async () => {
       const updateData: UpdateUserDto = {
-        area_ids: ['a1', 'a2'],
+        location_ids: ['a1', 'a2'],
         shift_definition_id: 's1',
       };
       mockAxios.onPatch('/users/1', updateData).reply(200, {

@@ -144,7 +144,7 @@ export class PlantSeedsService {
         unitPrice: dto.unitPrice || null,
         supplier: dto.supplier || null,
         receiptUrl: dto.receiptUrl || null,
-        toRayonId: dto.toRayonId || null,
+        toDistrictId: dto.toDistrictId || null,
         toAreaId: dto.toAreaId || null,
         recipientName: dto.recipientName || null,
         occurredAt: dto.occurredAt,

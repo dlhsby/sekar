@@ -14,6 +14,7 @@
   "overdue": "Overdue",
   "recorded": "Recorded",
   "priority": {
+    "_label": "PRIORITY",
     "low": "Low",
     "medium": "Medium",
     "high": "High",
@@ -64,9 +65,17 @@
   },
   "tracking": {
     "active": "Active",
-    "inactive": "Idle",
+    "offline": "Inactive",
+    "absent": "Absent",
     "outside_area": "Outside Area",
-    "missing": "Not Detected",
-    "offline": "Offline"
+    "inside_area": "Inside Area",
+    "unknown_area": "Location Unknown"
+  },
+  "leave": {
+    "cuti": "Leave",
+    "sakit": "Sick",
+    "izin": "Permission",
+    "libur": "Holiday",
+    "unknown": "On Leave"
   }
 }

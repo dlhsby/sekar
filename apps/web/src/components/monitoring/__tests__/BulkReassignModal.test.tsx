@@ -41,13 +41,13 @@ const mockUseReassignWorker = useReassignWorker as jest.MockedFunction<typeof us
 
 const AREA_1_ID = 'area-1';
 const AREA_2_ID = 'area-2';
-const RAYON_1_ID = 'rayon-1';
+const DISTRICT_1_ID = 'district-1';
 
 const MOCK_BOUNDARIES: BoundariesResponse = {
   generated_at: new Date().toISOString(),
-  rayons: [
+  districts: [
     {
-      id: RAYON_1_ID,
+      id: DISTRICT_1_ID,
       name: 'Rayon Selatan',
       boundary_polygon: null,
       center_lat: -7.3,
@@ -55,6 +55,7 @@ const MOCK_BOUNDARIES: BoundariesResponse = {
       area_count: 2,
       is_understaffed: false,
       understaffed_area_count: 0,
+      regions: [],
       areas: [
         {
           id: AREA_1_ID,
@@ -62,9 +63,8 @@ const MOCK_BOUNDARIES: BoundariesResponse = {
           boundary_polygon: null,
           center_lat: -7.289659,
           center_lng: 112.739208,
-          rayon_id: RAYON_1_ID,
-          rayon_name: 'Rayon Selatan',
-          radius_meters: 100,
+          district_id: DISTRICT_1_ID,
+          district_name: 'Rayon Selatan',
           assigned_count: 3,
           is_understaffed: true,
           staffing_summary: [],
@@ -75,9 +75,8 @@ const MOCK_BOUNDARIES: BoundariesResponse = {
           boundary_polygon: null,
           center_lat: -7.299,
           center_lng: 112.749,
-          rayon_id: RAYON_1_ID,
-          rayon_name: 'Rayon Selatan',
-          radius_meters: 120,
+          district_id: DISTRICT_1_ID,
+          district_name: 'Rayon Selatan',
           assigned_count: 2,
           is_understaffed: false,
           staffing_summary: [],
@@ -93,10 +92,10 @@ const MOCK_WORKER_1: LiveUser = {
   role: 'satgas',
   phone: '+6281111111111',
   status: 'active',
-  area_id: AREA_2_ID,
-  area_name: 'Taman Flora',
-  rayon_id: RAYON_1_ID,
-  rayon_name: 'Rayon Selatan',
+  location_id: AREA_2_ID,
+  location_name: 'Taman Flora',
+  district_id: DISTRICT_1_ID,
+  district_name: 'Rayon Selatan',
   latitude: -7.299,
   longitude: 112.749,
   accuracy: 5,
@@ -116,7 +115,7 @@ const MOCK_WORKER_2: LiveUser = {
   id: 'user-2',
   full_name: 'Siti Rahayu',
   role: 'linmas',
-  status: 'inactive',
+  status: 'offline',
 };
 
 const MOCK_WORKER_3: LiveUser = {
@@ -129,10 +128,9 @@ const MOCK_WORKER_3: LiveUser = {
 
 const MOCK_LIVE_USERS_RESPONSE: LiveUsersResponse = {
   total_active: 2,
-  total_inactive: 1,
+  total_offline: 1,
+  total_absent: 0,
   total_outside_area: 0,
-  total_missing: 0,
-  total_offline: 0,
   users: [MOCK_WORKER_1, MOCK_WORKER_2, MOCK_WORKER_3],
   generated_at: new Date().toISOString(),
 };

@@ -4,8 +4,8 @@ import { StatusCalculatorService, StatusInput } from './status-calculator.servic
 import { UserTrackingStatus, TrackingStatus } from '../entities/user-tracking-status.entity';
 import { MonitoringCacheService, StatusThresholds } from './monitoring-cache.service';
 import { User } from '../../users/entities/user.entity';
-import { Area } from '../../areas/entities/area.entity';
-import { AreaStaffRequirement } from '../../area-staff-requirements/entities/area-staff-requirement.entity';
+import { Location } from '../../locations/entities/location.entity';
+import { LocationStaffRequirement } from '../../location-staff-requirements/entities/location-staff-requirement.entity';
 import { EventsGateway } from '../../../gateways/events.gateway';
 
 describe('StatusCalculatorService', () => {
@@ -19,9 +19,8 @@ describe('StatusCalculatorService', () => {
 
   const defaultThresholds: StatusThresholds = {
     active_max_age_seconds: 300,
-    inactive_threshold_seconds: 900,
-    missing_threshold_seconds: 3600,
     location_ping_interval_seconds: 60,
+    late_grace_seconds: 900,
   };
 
   beforeEach(async () => {
@@ -42,6 +41,14 @@ describe('StatusCalculatorService', () => {
         .fn()
         .mockResolvedValue({ tolerance_meters: 50, outside_area_grace_seconds: 120 }),
       getAreaBoundary: jest.fn().mockResolvedValue(null),
+      // 5.4e: geofence is scope-generic. Route 'location' to the existing
+      // getAreaBoundary mock so its per-test overrides still drive lokasi checks;
+      // region/district boundaries default to null (fail-open) unless a test sets them.
+      getBoundary: jest.fn((scope: string, id: string) =>
+        scope === 'location'
+          ? (cacheService.getAreaBoundary as jest.Mock)(id)
+          : Promise.resolve(null),
+      ),
     };
 
     eventsGateway = {
@@ -73,8 +80,11 @@ describe('StatusCalculatorService', () => {
         StatusCalculatorService,
         { provide: getRepositoryToken(UserTrackingStatus), useValue: trackingRepository },
         { provide: getRepositoryToken(User), useValue: userRepository },
-        { provide: getRepositoryToken(Area), useValue: areaRepository },
-        { provide: getRepositoryToken(AreaStaffRequirement), useValue: staffRequirementRepository },
+        { provide: getRepositoryToken(Location), useValue: areaRepository },
+        {
+          provide: getRepositoryToken(LocationStaffRequirement),
+          useValue: staffRequirementRepository,
+        },
         { provide: MonitoringCacheService, useValue: cacheService },
         { provide: EventsGateway, useValue: eventsGateway },
       ],
@@ -88,76 +98,68 @@ describe('StatusCalculatorService', () => {
 
     const testCases = [
       {
-        name: 'offline (no shift)',
+        name: 'absent (not clocked in)',
         input: { hasActiveShift: false, lastLocationAt: null, isWithinArea: true },
+        expectedActivity: 'absent',
+        expectedLocation: 'unknown',
+      },
+      {
+        name: 'offline + unknown (clocked in, no fix has ever arrived)',
+        input: { hasActiveShift: true, lastLocationAt: null, isWithinArea: true },
         expectedActivity: 'offline',
         expectedLocation: 'unknown',
       },
       {
-        name: 'missing (active shift, no fix)',
-        input: { hasActiveShift: true, lastLocationAt: null, isWithinArea: true },
-        expectedActivity: 'missing',
-        expectedLocation: 'unknown',
-      },
-      {
-        name: 'missing (age > missing_threshold)',
+        name: 'aktif + dalam_area (fresh fix, inside)',
         input: {
           hasActiveShift: true,
-          lastLocationAt: new Date('2026-03-04T08:30:00Z'), // 90 min ago
+          lastLocationAt: new Date('2026-03-04T09:57:00Z'), // 3 min ago
           isWithinArea: true,
         },
-        expectedActivity: 'missing',
-        expectedLocation: 'unknown',
+        expectedActivity: 'aktif',
+        expectedLocation: 'dalam_area',
       },
       {
-        name: 'idle (age > active_max but < missing)',
+        name: 'aktif + luar_area (fresh fix, outside)',
+        input: {
+          hasActiveShift: true,
+          lastLocationAt: new Date('2026-03-04T09:57:00Z'), // 3 min ago
+          isWithinArea: false,
+        },
+        expectedActivity: 'aktif',
+        expectedLocation: 'luar_area',
+      },
+      {
+        // The axis survives going offline: the last known position is precisely
+        // what a supervisor needs when someone stops reporting.
+        name: 'offline + dalam_area (stale fix, last seen inside)',
         input: {
           hasActiveShift: true,
           lastLocationAt: new Date('2026-03-04T09:48:00Z'), // 12 min ago
           isWithinArea: true,
         },
-        expectedActivity: 'idle',
+        expectedActivity: 'offline',
         expectedLocation: 'dalam_area',
       },
       {
-        name: 'aktif + dalam_area (age < active_max, within)',
-        input: {
-          hasActiveShift: true,
-          lastLocationAt: new Date('2026-03-04T09:57:00Z'), // 3 min ago
-          isWithinArea: true,
-        },
-        expectedActivity: 'aktif',
-        expectedLocation: 'dalam_area',
-      },
-      {
-        name: 'aktif + luar_area (age < active_max, outside)',
-        input: {
-          hasActiveShift: true,
-          lastLocationAt: new Date('2026-03-04T09:57:00Z'), // 3 min ago
-          isWithinArea: false,
-        },
-        expectedActivity: 'aktif',
-        expectedLocation: 'luar_area',
-      },
-      {
-        name: 'idle + dalam_area (age between thresholds, within)',
-        input: {
-          hasActiveShift: true,
-          lastLocationAt: new Date('2026-03-04T09:40:00Z'), // 20 min ago
-          isWithinArea: true,
-        },
-        expectedActivity: 'idle',
-        expectedLocation: 'dalam_area',
-      },
-      {
-        name: 'idle + luar_area (age between thresholds, outside)',
+        name: 'offline + luar_area (stale fix, last seen outside)',
         input: {
           hasActiveShift: true,
           lastLocationAt: new Date('2026-03-04T09:40:00Z'), // 20 min ago
           isWithinArea: false,
         },
-        expectedActivity: 'idle',
+        expectedActivity: 'offline',
         expectedLocation: 'luar_area',
+      },
+      {
+        name: 'offline + dalam_area (very stale — there is no separate "missing" any more)',
+        input: {
+          hasActiveShift: true,
+          lastLocationAt: new Date('2026-03-04T08:30:00Z'), // 90 min ago
+          isWithinArea: true,
+        },
+        expectedActivity: 'offline',
+        expectedLocation: 'dalam_area',
       },
     ];
 
@@ -173,21 +175,23 @@ describe('StatusCalculatorService', () => {
   describe('calculateStatus (pure function)', () => {
     const now = new Date('2026-03-04T10:00:00Z');
 
-    it('should return OFFLINE when no active shift', () => {
+    it('returns ABSENT when not clocked in', () => {
       const input: StatusInput = {
         hasActiveShift: false,
         lastLocationAt: null,
         isWithinArea: true,
       };
+      // Not clocked in is ABSENT now. This is the inversion: it used to be OFFLINE,
+      // and OFFLINE now means the opposite (clocked in, but unreachable).
+      expect(service.calculateStatus(input, defaultThresholds, now)).toBe(TrackingStatus.ABSENT);
+    });
+
+    it('returns OFFLINE when clocked in but no location has ever arrived', () => {
+      const input: StatusInput = { hasActiveShift: true, lastLocationAt: null, isWithinArea: true };
       expect(service.calculateStatus(input, defaultThresholds, now)).toBe(TrackingStatus.OFFLINE);
     });
 
-    it('should return MISSING when active shift but no location (SVC-3 fix)', () => {
-      const input: StatusInput = { hasActiveShift: true, lastLocationAt: null, isWithinArea: true };
-      expect(service.calculateStatus(input, defaultThresholds, now)).toBe(TrackingStatus.MISSING);
-    });
-
-    it('should return ACTIVE when location is fresh and within area', () => {
+    it('returns ACTIVE when the location is fresh', () => {
       const input: StatusInput = {
         hasActiveShift: true,
         lastLocationAt: new Date('2026-03-04T09:57:00Z'), // 3 min ago
@@ -196,57 +200,54 @@ describe('StatusCalculatorService', () => {
       expect(service.calculateStatus(input, defaultThresholds, now)).toBe(TrackingStatus.ACTIVE);
     });
 
-    it('should return OUTSIDE_AREA when location is fresh but outside area', () => {
+    it('returns ACTIVE for a fresh location OUTSIDE the area — outside is an axis, not a status', () => {
       const input: StatusInput = {
         hasActiveShift: true,
         lastLocationAt: new Date('2026-03-04T09:57:00Z'), // 3 min ago
         isWithinArea: false,
       };
-      expect(service.calculateStatus(input, defaultThresholds, now)).toBe(
-        TrackingStatus.OUTSIDE_AREA,
-      );
+      expect(service.calculateStatus(input, defaultThresholds, now)).toBe(TrackingStatus.ACTIVE);
     });
 
-    it('should return INACTIVE when location age exceeds active threshold but below inactive', () => {
+    it('returns OFFLINE once the location ages past active_max_age_sec', () => {
       const input: StatusInput = {
         hasActiveShift: true,
         lastLocationAt: new Date('2026-03-04T09:48:00Z'), // 12 min ago
         isWithinArea: true,
       };
-      expect(service.calculateStatus(input, defaultThresholds, now)).toBe(TrackingStatus.INACTIVE);
+      expect(service.calculateStatus(input, defaultThresholds, now)).toBe(TrackingStatus.OFFLINE);
     });
 
-    it('should return MISSING when location age exceeds missing threshold', () => {
+    it('still returns OFFLINE far past the retired missing threshold — there is no MISSING', () => {
       const input: StatusInput = {
         hasActiveShift: true,
         lastLocationAt: new Date('2026-03-04T08:30:00Z'), // 90 min ago
         isWithinArea: true,
       };
-      expect(service.calculateStatus(input, defaultThresholds, now)).toBe(TrackingStatus.MISSING);
+      expect(service.calculateStatus(input, defaultThresholds, now)).toBe(TrackingStatus.OFFLINE);
     });
 
-    it('should return INACTIVE when between inactive and missing thresholds', () => {
+    it('treats the threshold as inclusive — exactly active_max_age_sec is still ACTIVE', () => {
       const input: StatusInput = {
         hasActiveShift: true,
-        lastLocationAt: new Date('2026-03-04T09:40:00Z'), // 20 min ago
+        lastLocationAt: new Date('2026-03-04T09:55:00Z'), // exactly 300 s ago
         isWithinArea: true,
       };
-      expect(service.calculateStatus(input, defaultThresholds, now)).toBe(TrackingStatus.INACTIVE);
+      expect(service.calculateStatus(input, defaultThresholds, now)).toBe(TrackingStatus.ACTIVE);
     });
 
-    it('should respect custom thresholds', () => {
+    it('respects a custom active_max_age_seconds', () => {
       const customThresholds: StatusThresholds = {
         active_max_age_seconds: 60,
-        inactive_threshold_seconds: 120,
-        missing_threshold_seconds: 300,
         location_ping_interval_seconds: 60,
+        late_grace_seconds: 900,
       };
       const input: StatusInput = {
         hasActiveShift: true,
         lastLocationAt: new Date('2026-03-04T09:58:00Z'), // 2 min ago
         isWithinArea: true,
       };
-      expect(service.calculateStatus(input, customThresholds, now)).toBe(TrackingStatus.INACTIVE);
+      expect(service.calculateStatus(input, customThresholds, now)).toBe(TrackingStatus.OFFLINE);
     });
   });
 
@@ -258,7 +259,7 @@ describe('StatusCalculatorService', () => {
         expect.objectContaining({
           user_id: 'user-1',
           shift_id: 'shift-1',
-          area_id: 'area-1',
+          location_id: 'area-1',
           shift_definition_id: 'sd-1',
           status: TrackingStatus.ACTIVE,
           is_within_area: true,
@@ -324,11 +325,14 @@ describe('StatusCalculatorService', () => {
   });
 
   describe('onClockOut', () => {
-    it('should set status to OFFLINE', async () => {
+    it('should set status to ABSENT (not clocked in), not OFFLINE', async () => {
+      // Guards the 5→3 inversion: OFFLINE now means "clocked in but unreachable",
+      // so a clocked-out worker must be ABSENT — the same value calculateStatus
+      // returns for !hasActiveShift. Writing OFFLINE here read as "unreachable".
       trackingRepository.findOne.mockResolvedValue({
         user_id: 'user-1',
         status: TrackingStatus.ACTIVE,
-        area_id: 'area-1',
+        location_id: 'area-1',
       });
 
       await service.onClockOut('user-1');
@@ -337,7 +341,7 @@ describe('StatusCalculatorService', () => {
         expect.objectContaining({
           user_id: 'user-1',
           shift_id: null,
-          status: TrackingStatus.OFFLINE,
+          status: TrackingStatus.ABSENT,
         }),
         ['user_id'],
       );
@@ -349,8 +353,8 @@ describe('StatusCalculatorService', () => {
       trackingRepository.findOne.mockResolvedValue({
         user_id: 'user-1',
         shift_id: 'shift-1',
-        area_id: null,
-        status: TrackingStatus.INACTIVE,
+        location_id: null,
+        status: TrackingStatus.OFFLINE,
         is_within_area: true,
         last_latitude: null,
         last_longitude: null,
@@ -385,12 +389,12 @@ describe('StatusCalculatorService', () => {
 
     it('should broadcast user-left-area via WebSocket when transitioning outside', async () => {
       const mockUser = { id: 'user-1', full_name: 'Test User', role: 'satgas' };
-      const mockArea = { id: 'area-1', name: 'Test Area', rayon_id: 'rayon-1' };
+      const mockArea = { id: 'area-1', name: 'Test Location', district_id: 'district-1' };
 
       trackingRepository.findOne.mockResolvedValue({
         user_id: 'user-1',
         shift_id: 'shift-1',
-        area_id: 'area-1',
+        location_id: 'area-1',
         status: TrackingStatus.ACTIVE,
         is_within_area: true,
         last_latitude: -7.29,
@@ -418,20 +422,20 @@ describe('StatusCalculatorService', () => {
       await service.onLocationPing('user-1', -7.5, 112.9, 10, 80, new Date());
 
       expect(eventsGateway.emitUserLeftArea).toHaveBeenCalledWith(
-        expect.objectContaining({ user_id: 'user-1', area_id: 'area-1' }),
+        expect.objectContaining({ user_id: 'user-1', location_id: 'area-1' }),
       );
     });
 
     it('stays within-area when outside primary but inside a task-based area (ADR-013 §5)', async () => {
       // Worker assigned to area-1 (primary) + area-2 (task_based).
       (service as unknown as { userAreasService: unknown }).userAreasService = {
-        getEffectiveAreas: jest.fn().mockResolvedValue([{ id: 'area-1' }, { id: 'area-2' }]),
+        getEffectiveLocations: jest.fn().mockResolvedValue([{ id: 'area-1' }, { id: 'area-2' }]),
       };
 
       trackingRepository.findOne.mockResolvedValue({
         user_id: 'user-1',
         shift_id: 'shift-1',
-        area_id: 'area-1',
+        location_id: 'area-1',
         status: TrackingStatus.ACTIVE,
         is_within_area: true,
         last_latitude: -7.29,
@@ -443,9 +447,9 @@ describe('StatusCalculatorService', () => {
       });
 
       // area-1 excludes the ping; area-2 (the task area) contains it.
-      cacheService.getAreaBoundary.mockImplementation((areaId: string) =>
+      cacheService.getAreaBoundary.mockImplementation((locationId: string) =>
         Promise.resolve(
-          areaId === 'area-2'
+          locationId === 'area-2'
             ? [
                 [
                   [112.89, -7.49],
@@ -467,7 +471,63 @@ describe('StatusCalculatorService', () => {
         ),
       );
       userRepository.findOne.mockResolvedValue({ id: 'user-1', full_name: 'T', role: 'satgas' });
-      areaRepository.findOne.mockResolvedValue({ id: 'area-1', name: 'A', rayon_id: 'r1' });
+      areaRepository.findOne.mockResolvedValue({ id: 'area-1', name: 'A', district_id: 'r1' });
+
+      await service.onLocationPing('user-1', -7.5, 112.9, 10, 80, new Date());
+
+      expect(trackingRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ is_within_area: true }),
+      );
+      expect(eventsGateway.emitUserLeftArea).not.toHaveBeenCalled();
+    });
+
+    it('a MOBILE crew outside its clock-in lokasi but inside its kawasan stays within-area (5.4e)', async () => {
+      // No lokasi assignment (empty roster + no user_areas); the occurrence is
+      // region-scoped, so the geofence is the KAWASAN polygon, not the lokasi.
+      (service as unknown as { userAreasService: unknown }).userAreasService = undefined;
+      (service as unknown as { dailySchedulesService: unknown }).dailySchedulesService = {
+        getActiveAreasForDay: jest.fn().mockResolvedValue([]),
+        findByUserAndDate: jest.fn().mockResolvedValue({ region_id: 'region-1' }),
+      };
+      trackingRepository.findOne.mockResolvedValue({
+        user_id: 'user-1',
+        shift_id: 'shift-1',
+        location_id: 'area-1',
+        status: TrackingStatus.ACTIVE,
+        is_within_area: true,
+        last_latitude: -7.29,
+        last_longitude: 112.74,
+        last_accuracy_meters: 10,
+        last_battery_level: 85,
+        last_location_at: new Date(),
+        updated_at: new Date(),
+      });
+      // area-1 (clock-in lokasi) excludes the ping; region-1 (kawasan) contains it.
+      cacheService.getBoundary.mockImplementation((scope: string, id: string) =>
+        Promise.resolve(
+          scope === 'region' && id === 'region-1'
+            ? [
+                [
+                  [112.8, -7.4],
+                  [113.0, -7.4],
+                  [113.0, -7.6],
+                  [112.8, -7.6],
+                  [112.8, -7.4],
+                ],
+              ]
+            : [
+                [
+                  [112.73, -7.28],
+                  [112.735, -7.28],
+                  [112.735, -7.285],
+                  [112.73, -7.285],
+                  [112.73, -7.28],
+                ],
+              ],
+        ),
+      );
+      userRepository.findOne.mockResolvedValue({ id: 'user-1', full_name: 'M', role: 'satgas' });
+      areaRepository.findOne.mockResolvedValue({ id: 'area-1', name: 'A', district_id: 'r1' });
 
       await service.onLocationPing('user-1', -7.5, 112.9, 10, 80, new Date());
 
@@ -492,7 +552,7 @@ describe('StatusCalculatorService', () => {
       trackingRepository.findOne.mockResolvedValue({
         user_id: 'user-1',
         shift_id: 'shift-1',
-        area_id: 'area-1',
+        location_id: 'area-1',
         status: TrackingStatus.ACTIVE,
         is_within_area: true,
         last_location_at: new Date(Date.now() - 20 * 60 * 1000), // 20 min ago
@@ -507,12 +567,12 @@ describe('StatusCalculatorService', () => {
 
       const result = await service.recalculate('user-1');
 
-      expect(result?.status).toBe(TrackingStatus.INACTIVE);
+      expect(result?.status).toBe(TrackingStatus.OFFLINE);
       expect(eventsGateway.emitUserStatusChanged).toHaveBeenCalledWith(
         expect.objectContaining({
           user_id: 'user-1',
           previous_status: TrackingStatus.ACTIVE,
-          new_status: TrackingStatus.INACTIVE,
+          new_status: TrackingStatus.OFFLINE,
         }),
       );
     });
@@ -521,7 +581,7 @@ describe('StatusCalculatorService', () => {
       trackingRepository.findOne.mockResolvedValue({
         user_id: 'user-1',
         shift_id: 'shift-1',
-        area_id: 'area-1',
+        location_id: 'area-1',
         status: TrackingStatus.ACTIVE,
         is_within_area: true,
         last_location_at: new Date(), // just now
@@ -542,9 +602,9 @@ describe('StatusCalculatorService', () => {
           StatusCalculatorService,
           { provide: getRepositoryToken(UserTrackingStatus), useValue: trackingRepository },
           { provide: getRepositoryToken(User), useValue: userRepository },
-          { provide: getRepositoryToken(Area), useValue: areaRepository },
+          { provide: getRepositoryToken(Location), useValue: areaRepository },
           {
-            provide: getRepositoryToken(AreaStaffRequirement),
+            provide: getRepositoryToken(LocationStaffRequirement),
             useValue: staffRequirementRepository,
           },
           { provide: MonitoringCacheService, useValue: cacheService },
@@ -562,7 +622,7 @@ describe('StatusCalculatorService', () => {
       trackingRepository.findOne.mockResolvedValue({
         user_id: 'user-1',
         shift_id: 'shift-1',
-        area_id: 'area-1',
+        location_id: 'area-1',
         status: TrackingStatus.ACTIVE,
         is_within_area: true,
         last_location_at: new Date(Date.now() - 2 * 3600 * 1000), // 2h ago → MISSING
@@ -574,7 +634,7 @@ describe('StatusCalculatorService', () => {
       userRepository.find = jest.fn().mockResolvedValue([{ id: 'korlap-1' }, { id: 'korlap-2' }]);
 
       const result = await svc.recalculate('user-1');
-      expect(result?.status).toBe(TrackingStatus.MISSING);
+      expect(result?.status).toBe(TrackingStatus.OFFLINE);
 
       // Flush the void-promise notify call.
       await Promise.resolve();
@@ -585,20 +645,20 @@ describe('StatusCalculatorService', () => {
         expect.objectContaining({
           user_id: 'korlap-1',
           type: 'missing_worker_alert',
-          data: { worker_user_id: 'user-1', area_id: 'area-1' },
+          data: { worker_user_id: 'user-1', location_id: 'area-1' },
         }),
       );
     });
 
-    it('does NOT notify when status was already MISSING', async () => {
+    it('does NOT notify when the worker was already OFFLINE', async () => {
       const sendToUser = jest.fn().mockResolvedValue({});
       const svc = await buildWithNotifications(sendToUser);
 
       trackingRepository.findOne.mockResolvedValue({
         user_id: 'user-1',
         shift_id: 'shift-1',
-        area_id: 'area-1',
-        status: TrackingStatus.MISSING, // already MISSING
+        location_id: 'area-1',
+        status: TrackingStatus.OFFLINE, // already unreachable
         is_within_area: true,
         last_location_at: new Date(Date.now() - 2 * 3600 * 1000),
         updated_at: new Date(),
@@ -613,14 +673,14 @@ describe('StatusCalculatorService', () => {
       expect(userRepository.find).not.toHaveBeenCalled();
     });
 
-    it('is a no-op when areaId is null', async () => {
+    it('is a no-op when locationId is null', async () => {
       const sendToUser = jest.fn();
       const svc = await buildWithNotifications(sendToUser);
 
       trackingRepository.findOne.mockResolvedValue({
         user_id: 'user-1',
         shift_id: 'shift-1',
-        area_id: null,
+        location_id: null,
         status: TrackingStatus.ACTIVE,
         is_within_area: true,
         last_location_at: new Date(Date.now() - 2 * 3600 * 1000),
@@ -649,9 +709,9 @@ describe('StatusCalculatorService', () => {
           StatusCalculatorService,
           { provide: getRepositoryToken(UserTrackingStatus), useValue: trackingRepository },
           { provide: getRepositoryToken(User), useValue: userRepository },
-          { provide: getRepositoryToken(Area), useValue: areaRepository },
+          { provide: getRepositoryToken(Location), useValue: areaRepository },
           {
-            provide: getRepositoryToken(AreaStaffRequirement),
+            provide: getRepositoryToken(LocationStaffRequirement),
             useValue: staffRequirementRepository,
           },
           { provide: MonitoringCacheService, useValue: cacheService },
@@ -666,7 +726,7 @@ describe('StatusCalculatorService', () => {
       return mod.get(StatusCalculatorService);
     };
 
-    it('notifies kepala_rayon of the rayon in addition to korlap', async () => {
+    it('notifies kepala_rayon of the district in addition to korlap', async () => {
       const sendToUser = jest.fn().mockResolvedValue({});
       const svc = await buildWithNotificationsAndRedis(sendToUser, 'OK');
 
@@ -674,9 +734,9 @@ describe('StatusCalculatorService', () => {
       userRepository.find = jest
         .fn()
         .mockResolvedValueOnce([{ id: 'korlap-1' }]) // korlap (area)
-        .mockResolvedValueOnce([{ id: 'kepala-1' }]); // kepala_rayon (rayon)
+        .mockResolvedValueOnce([{ id: 'kepala-1' }]); // kepala_rayon (district)
 
-      await svc.notifyMissingWorker('user-1', 'area-1', 'rayon-1');
+      await svc.notifyMissingWorker('user-1', 'area-1', 'district-1');
 
       const recipients = sendToUser.mock.calls.map((c) => c[0].user_id).sort();
       expect(recipients).toEqual(['kepala-1', 'korlap-1']);
@@ -689,7 +749,7 @@ describe('StatusCalculatorService', () => {
       userRepository.findOne.mockResolvedValue({ id: 'user-1', full_name: 'Bob' });
       userRepository.find = jest.fn().mockResolvedValue([{ id: 'korlap-1' }]);
 
-      await svc.notifyMissingWorker('user-1', 'area-1', 'rayon-1');
+      await svc.notifyMissingWorker('user-1', 'area-1', 'district-1');
 
       expect(sendToUser).not.toHaveBeenCalled();
     });

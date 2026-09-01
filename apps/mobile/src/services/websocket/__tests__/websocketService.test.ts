@@ -107,7 +107,7 @@ describe('websocketService', () => {
 
       expect(mockSocket.emit).toHaveBeenCalledWith(
         'subscribe:area',
-        { area_id: 'area-123' },
+        { location_id: 'area-123' },
         expect.any(Function)
       );
       expect(websocketService.getSubscribedRooms()).toContain('area:area-123');
@@ -121,34 +121,59 @@ describe('websocketService', () => {
 
       expect(mockSocket.emit).toHaveBeenCalledWith(
         'unsubscribe:area',
-        { area_id: 'area-123' },
+        { location_id: 'area-123' },
         expect.any(Function)
       );
       expect(websocketService.getSubscribedRooms()).not.toContain('area:area-123');
     });
 
-    it('subscribes to rayon', () => {
-      websocketService.subscribeToRayon('rayon-456');
+    it('subscribes to district', () => {
+      websocketService.subscribeToDistrict('district-456');
 
       expect(mockSocket.emit).toHaveBeenCalledWith(
-        'subscribe:rayon',
-        { rayon_id: 'rayon-456' },
+        'subscribe:district',
+        { district_id: 'district-456' },
         expect.any(Function)
       );
-      expect(websocketService.getSubscribedRooms()).toContain('rayon:rayon-456');
+      expect(websocketService.getSubscribedRooms()).toContain('district:district-456');
     });
 
-    it('unsubscribes from rayon', () => {
-      websocketService.subscribeToRayon('rayon-456');
+    it('unsubscribes from district', () => {
+      websocketService.subscribeToDistrict('district-456');
       mockSocket.emit.mockClear();
 
-      websocketService.unsubscribeFromRayon('rayon-456');
+      websocketService.unsubscribeFromDistrict('district-456');
 
       expect(mockSocket.emit).toHaveBeenCalledWith(
-        'unsubscribe:rayon',
-        { rayon_id: 'rayon-456' },
+        'unsubscribe:district',
+        { district_id: 'district-456' },
         expect.any(Function)
       );
+    });
+
+    it('subscribes to region (kawasan)', () => {
+      websocketService.subscribeToRegion('region-789');
+
+      expect(mockSocket.emit).toHaveBeenCalledWith(
+        'subscribe:region',
+        { region_id: 'region-789' },
+        expect.any(Function)
+      );
+      expect(websocketService.getSubscribedRooms()).toContain('region:region-789');
+    });
+
+    it('unsubscribes from region (kawasan)', () => {
+      websocketService.subscribeToRegion('region-789');
+      mockSocket.emit.mockClear();
+
+      websocketService.unsubscribeFromRegion('region-789');
+
+      expect(mockSocket.emit).toHaveBeenCalledWith(
+        'unsubscribe:region',
+        { region_id: 'region-789' },
+        expect.any(Function)
+      );
+      expect(websocketService.getSubscribedRooms()).not.toContain('region:region-789');
     });
 
     it('adds event listeners', () => {
@@ -283,11 +308,11 @@ describe('websocketService', () => {
       expect(mockSocket.emit).not.toHaveBeenCalled();
     });
 
-    it('should not subscribe if already subscribed to rayon', () => {
-      (websocketService as any).subscribedRooms.add('rayon:rayon-456');
+    it('should not subscribe if already subscribed to district', () => {
+      (websocketService as any).subscribedRooms.add('district:district-456');
       mockSocket.emit.mockClear();
 
-      websocketService.subscribeToRayon('rayon-456');
+      websocketService.subscribeToDistrict('district-456');
 
       expect(mockSocket.emit).not.toHaveBeenCalled();
     });
@@ -300,10 +325,10 @@ describe('websocketService', () => {
       expect(mockSocket.emit).not.toHaveBeenCalled();
     });
 
-    it('should not unsubscribe if not subscribed to rayon', () => {
+    it('should not unsubscribe if not subscribed to district', () => {
       mockSocket.emit.mockClear();
 
-      websocketService.unsubscribeFromRayon('rayon-999');
+      websocketService.unsubscribeFromDistrict('district-999');
 
       expect(mockSocket.emit).not.toHaveBeenCalled();
     });
@@ -431,7 +456,7 @@ describe('websocketService', () => {
     it('should clear subscribed rooms on disconnect', () => {
       (websocketService as any).socket = mockSocket;
       (websocketService as any).subscribedRooms.add('area:area-123');
-      (websocketService as any).subscribedRooms.add('rayon:rayon-456');
+      (websocketService as any).subscribedRooms.add('district:district-456');
 
       websocketService.disconnect();
 

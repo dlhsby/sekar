@@ -99,13 +99,13 @@ describe('HomeScreen dispatcher', () => {
     }
   );
 
-  it('renders the admin-data dashboard (HOME-3) for admin_data', () => {
-    const { getByTestId, queryByTestId } = renderForRole('admin_data');
+  it('renders the admin-data dashboard (HOME-3) for admin_rayon', () => {
+    const { getByTestId, queryByTestId } = renderForRole('admin_rayon');
     expect(getByTestId('admin-home')).toBeTruthy();
     expect(queryByTestId('field-home')).toBeNull();
   });
 
-  it.each<UserRole>(['top_management', 'admin_system', 'superadmin'])(
+  it.each<UserRole>(['management', 'admin_system', 'superadmin'])(
     'renders the exec city-overview dashboard for %s',
     (role) => {
       const { getByTestId, queryByTestId } = renderForRole(role);

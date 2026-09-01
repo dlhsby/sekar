@@ -47,8 +47,8 @@ function makeWorkers(count: number): WorkerListItem[] {
     full_name: `Petugas ${i}`,
     role: 'satgas',
     status: 'active' as const,
-    area_id: `area-${i % 3}`,
-    area_name: `Area ${i % 3}`,
+    location_id: `area-${i % 3}`,
+    location_name: `Area ${i % 3}`,
     last_update: new Date(Date.now() - i * 60_000).toISOString(),
   }));
 }
@@ -171,9 +171,9 @@ describe('WorkerListVirtual', () => {
         user_id: 'w1',
         full_name: 'Caca',
         role: 'satgas',
-        status: 'missing',
-        area_id: 'area-1',
-        area_name: 'Taman A',
+        status: 'absent',
+        location_id: 'area-1',
+        location_name: 'Taman A',
         last_update: new Date().toISOString(),
       },
     ];
@@ -183,7 +183,8 @@ describe('WorkerListVirtual', () => {
         onSelect={jest.fn()}
       />
     );
-    // STATUS_LABELS['missing'] = 'Tidak Terdeteksi'
-    expect(screen.getByText('Tidak Terdeteksi')).toBeInTheDocument();
+    // 'Tidak Terdeteksi' was the label for the retired `missing` status. `absent`
+    // means "never clocked in" — tidak hadir — which is a different claim.
+    expect(screen.getByText('Tidak Hadir')).toBeInTheDocument();
   });
 });

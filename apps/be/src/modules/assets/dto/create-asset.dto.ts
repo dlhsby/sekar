@@ -14,15 +14,15 @@ export class CreateAssetDto {
   @IsUUID()
   category_id: string;
 
-  @ApiPropertyOptional({ description: 'Area id (area-level assets)' })
+  @ApiPropertyOptional({ description: 'Location id (area-level assets)' })
   @IsOptional()
   @IsUUID()
-  area_id?: string;
+  location_id?: string;
 
-  @ApiPropertyOptional({ description: 'Rayon id (rayon-level assets, e.g. vehicles)' })
+  @ApiPropertyOptional({ description: 'District id (district-level assets, e.g. vehicles)' })
   @IsOptional()
   @IsUUID()
-  rayon_id?: string;
+  district_id?: string;
 
   @ApiProperty({ example: 'Sapu Lidi #1' })
   @IsString()

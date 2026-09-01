@@ -10,7 +10,7 @@ import { intlLocale } from '@/lib/i18n/date-locale';
 import { useAuth } from '@/lib/auth/hooks';
 import { useActivities, useApproveActivity, useRejectActivity } from '@/lib/api/activities';
 import { useActivityTypes } from '@/lib/api/activity-types';
-import { useAreas } from '@/lib/api/areas';
+import { useLocationLookup } from '@/lib/api/locations';
 import { useTranslation } from 'react-i18next';
 import {
   Card,
@@ -31,11 +31,12 @@ import { ActivityFormModal } from '@/components/activities/ActivityFormModal';
 import { DeleteActivityModal } from '@/components/activities/DeleteActivityModal';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, Check, X, Eye, Pencil, Trash2, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, X, Eye, Pencil, Trash2 } from 'lucide-react';
 import type { Activity, ActivityFilters, ActivityStatus } from '@/types/models';
 import { MONITORING_ROLES, ACTIVITY_APPROVER_ROLES, hasRole } from '@/lib/constants/roles';
 import { getActivityStatusLabels, ACTIVITY_STATUS_BADGES } from '@/lib/constants/activities';
 import { useViewModal } from '@/lib/hooks/use-view-modal';
+import { runAction } from '@/lib/hooks/use-action';
 
 const isValidActivityStatus = (value: string): value is ActivityStatus | 'all' => {
   return ['all', 'pending', 'approved', 'rejected'].includes(value);
@@ -72,7 +73,7 @@ export default function ActivitiesPage() {
   });
   const limit = 20;
   const isAdmin =
-    user?.role === 'admin_system' || user?.role === 'superadmin' || user?.role === 'top_management';
+    user?.role === 'admin_system' || user?.role === 'superadmin' || user?.role === 'management';
 
   const approveMutation = useApproveActivity();
   const rejectMutation = useRejectActivity();
@@ -85,19 +86,20 @@ export default function ActivitiesPage() {
 
   // Auto-scope korlap to their area
   useEffect(() => {
-    if (user && user.role === 'korlap' && user.area_id && filters.areaId === 'all') {
+    if (user && user.role === 'korlap' && user.location_id && filters.areaId === 'all') {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setFilters((prev) => ({ ...prev, areaId: user.area_id as string }));
+      setFilters((prev) => ({ ...prev, areaId: user.location_id as string }));
     }
   }, [user, filters.areaId]);
 
   const { data: activityTypes } = useActivityTypes();
-  const { data: areasData } = useAreas();
+  // Lookup: this fills a filter dropdown with names.
+  const { data: allAreas = [] } = useLocationLookup();
 
   const apiFilters: ActivityFilters = {
     activity_type_id: filters.activityTypeId !== 'all' ? filters.activityTypeId : undefined,
     status: filters.statusFilter !== 'all' ? filters.statusFilter : undefined,
-    area_id: filters.areaId !== 'all' ? filters.areaId : undefined,
+    location_id: filters.areaId !== 'all' ? filters.areaId : undefined,
     from_date: filters.fromDate || undefined,
     to_date: filters.toDate || undefined,
     page: filters.page,
@@ -111,19 +113,25 @@ export default function ActivitiesPage() {
 
   const handleApprove = useCallback(
     async (id: string) => {
-      await approveMutation.mutateAsync(id);
+      await runAction(() => approveMutation.mutateAsync(id), {
+        success: t('common:messages.approved'),
+      });
     },
-    [approveMutation]
+    [approveMutation, t]
   );
 
   const handleReject = useCallback(
     async (id: string) => {
       if (!rejectReason.trim()) return;
-      await rejectMutation.mutateAsync({ id, reason: rejectReason });
-      setRejectingId(null);
-      setRejectReason('');
+      await runAction(() => rejectMutation.mutateAsync({ id, reason: rejectReason }), {
+        success: t('common:messages.rejected'),
+        onSuccess: () => {
+          setRejectingId(null);
+          setRejectReason('');
+        },
+      });
     },
-    [rejectReason, rejectMutation]
+    [rejectReason, rejectMutation, t]
   );
 
   const rowActions = useCallback(
@@ -204,7 +212,7 @@ export default function ActivitiesPage() {
 
   const areaOptions = [
     { value: 'all', label: t('activities:list.filters.allAreas') },
-    ...(areasData?.data || []).map((a) => ({ value: a.id, label: a.name })),
+    ...allAreas.map((a) => ({ value: a.id, label: a.name })),
   ];
 
   const columns: ColumnDef<Activity>[] = [
@@ -281,7 +289,8 @@ export default function ActivitiesPage() {
       meta: { label: t('activities:list.table.columns.photos') },
       cell: ({ row }) => (
         <Badge variant="secondary" size="sm">
-          {row.original.photo_urls?.length || 0} {t('activities:list.table.columns.photos').toLowerCase()}
+          {(row.original.photo_count ?? row.original.photo_urls?.length ?? 0)}{' '}
+          {t('activities:list.table.columns.photos').toLowerCase()}
         </Badge>
       ),
     },
@@ -421,19 +430,14 @@ export default function ActivitiesPage() {
             enablePagination={false}
             getRowId={(r) => r.id}
             rowActions={rowActions}
-            actions={
-              isAdmin ? (
-                <Button
-                  onClick={() => {
-                    setEditingActivity(null);
-                    setFormOpen(true);
-                  }}
-                  leftIcon={<Plus className="h-5 w-5" />}
-                >
-                  {t('activities:createButton')}
-                </Button>
-              ) : undefined
-            }
+            createAction={{
+              label: t('activities:createButton'),
+              hidden: !isAdmin,
+              onClick: () => {
+                setEditingActivity(null);
+                setFormOpen(true);
+              },
+            }}
             emptyTitle={t('activities:list.empty.noActivities')}
           />
 
@@ -495,7 +499,7 @@ export default function ActivitiesPage() {
                 </Badge>
               ),
             },
-            { label: t('activities:detail.fields.photos'), value: `${view.item.photo_urls?.length || 0} ${t('activities:detail.fields.photos').toLowerCase()}` },
+            { label: t('activities:detail.fields.photos'), value: `${view.item.photo_count ?? view.item.photo_urls?.length ?? 0} ${t('activities:detail.fields.photos').toLowerCase()}` },
             { label: t('activities:detail.fields.notes'), value: view.item.notes },
           ] as DetailModalRow[]}
         />

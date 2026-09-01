@@ -9,7 +9,7 @@
  */
 
 import React from 'react';
-import { renderHook, waitFor } from '@testing-library/react-native';
+import { renderHook, waitFor, act } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from '../../store/slices/authSlice';
@@ -17,18 +17,40 @@ import shiftReducer from '../../store/slices/shiftSlice';
 import offlineReducer from '../../store/slices/offlineSlice';
 import { useClockInOut } from '../useClockInOut';
 import { getMyRoster } from '../../services/api/schedulesApi';
+import { getDistricts } from '../../services/api/districtsApi';
+import { __resetDistrictAreasCache } from '../useAllDistrictAreas';
+import Geolocation from 'react-native-geolocation-service';
+import i18n from '../../i18n/config';
+import { Alert } from 'react-native';
+import { clockIn as mockClockIn, getCurrentShift } from '../../services/api/shiftsApi';
+import { requestClockInPermissions } from '../../services/permissions';
 
 jest.mock('react-native-geolocation-service', () => ({
   getCurrentPosition: jest.fn(),
   watchPosition: jest.fn(() => 1),
   clearWatch: jest.fn(),
 }));
+// Local .env.local sets ALLOW_MOCK_LOCATION=true for emulator work, and __DEV__
+// is true under jest — so without this the whole suite would run with the dev
+// override ACTIVE and never exercise the enforced path.
+jest.mock('../../config/integrity', () => ({
+  mockLocationAllowed: jest.fn(() => false),
+  galleryUploadAllowed: jest.fn(() => false),
+  isOverrideEnabled: jest.fn(() => false),
+}));
 jest.mock('../../services/api/shiftsApi', () => ({
   clockIn: jest.fn(),
   clockOut: jest.fn(),
   getCurrentShift: jest.fn(),
 }));
-jest.mock('../../services/api/schedulesApi', () => ({ getMyRoster: jest.fn() }));
+jest.mock('../../services/api/schedulesApi', () => ({
+  getMyRoster: jest.fn(),
+  // `useTodayRoster` also fetches the full day (ADR-053: several rows per shift).
+  getMyDay: jest.fn().mockResolvedValue({ data: [] }),
+}));
+jest.mock('../../services/api/districtsApi', () => ({
+  getDistricts: jest.fn().mockResolvedValue({ data: [] }),
+}));
 jest.mock('../../services/permissions', () => ({
   requestClockInPermissions: jest.fn().mockResolvedValue({ success: false }),
   requestCameraPermission: jest.fn(),
@@ -134,6 +156,119 @@ describe('useClockInOut — roster-gated lateness', () => {
     expect(result.current.isLate).toBe(false);
   });
 
+  // A ~2°×2° square around (0,0), GeoJSON [lng,lat] order.
+  const SQUARE_POLYGON = {
+    type: 'Polygon' as const,
+    coordinates: [[[-1, -1], [-1, 1], [1, 1], [1, -1], [-1, -1]]],
+  };
+  const withGpsFix = (lat: number, lng: number) => {
+    (requestClockInPermissions as jest.Mock).mockResolvedValue({ success: true });
+    // Both getCurrentPosition and watchPosition drive isWithinBoundary; fire the
+    // success callback synchronously with a fixed coordinate.
+    (Geolocation.getCurrentPosition as jest.Mock).mockImplementation((success) =>
+      success({ coords: { latitude: lat, longitude: lng, accuracy: 5 } }),
+    );
+    (Geolocation.watchPosition as jest.Mock).mockImplementation((success) => {
+      success({ coords: { latitude: lat, longitude: lng, accuracy: 5 } });
+      return 1;
+    });
+  };
+
+  it('geofences a rayon-scope assignment against the RAYON boundary (inside → within)', async () => {
+    withGpsFix(0, 0); // inside the square
+    mockGetMyRoster.mockResolvedValue({
+      data: {
+        shift_definition: ROSTER_SHIFT_DEF,
+        district_id: 'd-1',
+        district: { id: 'd-1', name: 'Rayon Barat 1', boundary_polygon: SQUARE_POLYGON },
+      },
+    } as never);
+
+    const { result } = renderHook(() => useClockInOut(), { wrapper: wrapperFor(null) });
+
+    await waitFor(() => expect(result.current.areaState).toBe('within'));
+    expect(result.current.scheduleScope.scope).toBe('district');
+  });
+
+  it('reads outside the rayon boundary as LUAR AREA (outside)', async () => {
+    withGpsFix(5, 5); // outside the square
+    mockGetMyRoster.mockResolvedValue({
+      data: {
+        shift_definition: ROSTER_SHIFT_DEF,
+        district_id: 'd-1',
+        district: { id: 'd-1', name: 'Rayon Barat 1', boundary_polygon: SQUARE_POLYGON },
+      },
+    } as never);
+
+    const { result } = renderHook(() => useClockInOut(), { wrapper: wrapperFor(null) });
+
+    await waitFor(() => expect(result.current.areaState).toBe('outside'));
+  });
+
+  it("falls back to neutral 'scope' when the rayon has no boundary polygon", async () => {
+    withGpsFix(0, 0);
+    mockGetMyRoster.mockResolvedValue({
+      data: {
+        shift_definition: ROSTER_SHIFT_DEF,
+        district_id: 'd-1',
+        district: { id: 'd-1', name: 'Rayon Barat 1' }, // no boundary_polygon
+      },
+    } as never);
+
+    const { result } = renderHook(() => useClockInOut(), { wrapper: wrapperFor(null) });
+
+    await waitFor(() => expect(result.current.scheduleScope.scope).toBe('district'));
+    expect(result.current.areaState).toBe('scope');
+  });
+
+  // ── City scope: geofence against ALL rayons (inside any = inside the city) ──
+  const CITY_ROSTER = { shift_definition: ROSTER_SHIFT_DEF }; // no location/region/district → city
+  const RAYON_POLY = {
+    type: 'Polygon' as const,
+    coordinates: [[[-1, -1], [-1, 1], [1, 1], [1, -1], [-1, -1]]],
+  };
+  const mockGetDistricts = getDistricts as jest.MockedFunction<typeof getDistricts>;
+
+  it('city scope: WITHIN when inside any rayon polygon', async () => {
+    __resetDistrictAreasCache();
+    withGpsFix(0, 0); // inside RAYON_POLY
+    mockGetMyRoster.mockResolvedValue({ data: CITY_ROSTER } as never);
+    mockGetDistricts.mockResolvedValue({
+      data: [{ id: 'r1', name: 'Rayon Barat 1', boundary_polygon: RAYON_POLY }],
+    } as never);
+
+    const { result } = renderHook(() => useClockInOut(), { wrapper: wrapperFor(null) });
+
+    await waitFor(() => expect(result.current.scheduleScope.scope).toBe('city'));
+    await waitFor(() => expect(result.current.areaState).toBe('within'));
+  });
+
+  it('city scope: OUTSIDE when inside no rayon polygon', async () => {
+    __resetDistrictAreasCache();
+    withGpsFix(5, 5); // outside RAYON_POLY
+    mockGetMyRoster.mockResolvedValue({ data: CITY_ROSTER } as never);
+    mockGetDistricts.mockResolvedValue({
+      data: [{ id: 'r1', name: 'Rayon Barat 1', boundary_polygon: RAYON_POLY }],
+    } as never);
+
+    const { result } = renderHook(() => useClockInOut(), { wrapper: wrapperFor(null) });
+
+    await waitFor(() => expect(result.current.scheduleScope.scope).toBe('city'));
+    await waitFor(() => expect(result.current.areaState).toBe('outside'));
+  });
+
+  it("city scope: falls back to neutral 'scope' when no rayons load (fail-open)", async () => {
+    __resetDistrictAreasCache();
+    withGpsFix(0, 0);
+    mockGetMyRoster.mockResolvedValue({ data: CITY_ROSTER } as never);
+    mockGetDistricts.mockResolvedValue({ data: [] } as never);
+
+    const { result } = renderHook(() => useClockInOut(), { wrapper: wrapperFor(null) });
+
+    await waitFor(() => expect(result.current.scheduleScope.scope).toBe('city'));
+    expect(result.current.areaState).toBe('scope');
+  });
+
   it('is never late and reports no schedule when unscheduled (patrol/ad-hoc)', async () => {
     // No roster row today → an early-morning clock-in for a time-of-day night
     // shift must NOT read as late.
@@ -149,5 +284,148 @@ describe('useClockInOut — roster-gated lateness', () => {
     expect(result.current.hasScheduleToday).toBe(false);
     expect(result.current.scheduledShift).toBeNull();
     expect(result.current.isLate).toBe(false);
+  });
+
+  // The pre-punch confirm: SEKAR never blocks a punch, so the dialog exists to
+  // inform. What matters is that dismissing it abandons the punch entirely —
+  // an advisory that submits anyway would be worse than no advisory at all.
+  describe('pre-punch confirmation', () => {
+    const ROSTER_OUTSIDE = {
+      shift_definition: ROSTER_SHIFT_DEF,
+      district_id: 'd-1',
+      district: { id: 'd-1', name: 'Rayon Barat 1', boundary_polygon: SQUARE_POLYGON },
+    };
+
+    /** Press a button on the most recent Alert by its index. */
+    const pressAlertButton = (index: number) => {
+      const buttons = (Alert.alert as jest.Mock).mock.calls.at(-1)?.[2];
+      buttons?.[index]?.onPress?.();
+    };
+
+    beforeEach(() => {
+      jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+      (mockClockIn as jest.Mock).mockResolvedValue({ data: { id: 'punch-1' } });
+      (getCurrentShift as jest.Mock).mockResolvedValue({ data: null });
+    });
+
+    it('does not submit the clock-in when the worker cancels', async () => {
+      withGpsFix(5, 5); // outside the assigned rayon
+      mockGetMyRoster.mockResolvedValue({ data: ROSTER_OUTSIDE } as never);
+      const { result } = renderHook(() => useClockInOut(), { wrapper: wrapperFor(null) });
+      await waitFor(() => expect(result.current.areaState).toBe('outside'));
+
+      const onSuccess = jest.fn();
+      const pending = result.current.handleClockIn(onSuccess);
+      await waitFor(() => expect(Alert.alert).toHaveBeenCalled());
+      pressAlertButton(0); // Batal
+      await pending;
+
+      expect(mockClockIn).not.toHaveBeenCalled();
+      expect(onSuccess).not.toHaveBeenCalled();
+    });
+
+    it('submits the clock-in once the worker confirms', async () => {
+      withGpsFix(5, 5);
+      mockGetMyRoster.mockResolvedValue({ data: ROSTER_OUTSIDE } as never);
+      const { result } = renderHook(() => useClockInOut(), { wrapper: wrapperFor(null) });
+      await waitFor(() => expect(result.current.areaState).toBe('outside'));
+
+      const pending = result.current.handleClockIn(jest.fn());
+      await waitFor(() => expect(Alert.alert).toHaveBeenCalled());
+      pressAlertButton(1); // Tetap Clock In
+      await pending;
+
+      expect(mockClockIn).toHaveBeenCalled();
+    });
+
+    it('lists the reason, so the dialog says WHY rather than just "are you sure"', async () => {
+      withGpsFix(5, 5);
+      mockGetMyRoster.mockResolvedValue({ data: ROSTER_OUTSIDE } as never);
+      const { result } = renderHook(() => useClockInOut(), { wrapper: wrapperFor(null) });
+      await waitFor(() => expect(result.current.areaState).toBe('outside'));
+
+      const pending = result.current.handleClockIn(jest.fn());
+      await waitFor(() => expect(Alert.alert).toHaveBeenCalled());
+      const [, message] = (Alert.alert as jest.Mock).mock.calls.at(-1)!;
+      expect(message).toContain('Rayon Barat 1');
+      pressAlertButton(0);
+      await pending;
+    });
+
+    it('submits without any dialog when the punch is nominal', async () => {
+      // Pin the clock: the fixture's roster shift is Shift 3 (21:00–05:00), so
+      // running this in the evening makes the punch LATE, raises a confirm, and
+      // hangs the await forever. 13:11 is nominal under the crosses-midnight
+      // rule — the same instant the file's other fixtures assume.
+      jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
+      jest.setSystemTime(new Date(2026, 5, 23, 13, 11, 0));
+
+      withGpsFix(0, 0); // inside the assigned rayon
+      mockGetMyRoster.mockResolvedValue({ data: ROSTER_OUTSIDE } as never);
+      const { result } = renderHook(() => useClockInOut(), { wrapper: wrapperFor(null) });
+      await waitFor(() => expect(result.current.areaState).toBe('within'));
+
+      await result.current.handleClockIn(jest.fn());
+
+      expect(mockClockIn).toHaveBeenCalled();
+      // The only Alert raised is the success one, never a confirm.
+      const titles = (Alert.alert as jest.Mock).mock.calls.map((c) => c[0]);
+      expect(titles).not.toContain('Konfirmasi Clock In');
+      jest.useRealTimers();
+    });
+  });
+
+  describe('mock-GPS enforcement', () => {
+    // Local copy: the identical fixture in `pre-punch confirmation` is scoped to
+    // that block. Any roster with a boundary works here — these tests assert on
+    // the location state, not on the geofence verdict.
+    const ROSTER_OUTSIDE = {
+      shift_definition: ROSTER_SHIFT_DEF,
+      district_id: 'd-1',
+      district: { id: 'd-1', name: 'Rayon Barat 1', boundary_polygon: SQUARE_POLYGON },
+    };
+
+    /** Same as withGpsFix, but the OS reports the fix as mock-provided. */
+    const withMockedGpsFix = (lat: number, lng: number) => {
+      (requestClockInPermissions as jest.Mock).mockResolvedValue({ success: true });
+      const fix = { coords: { latitude: lat, longitude: lng, accuracy: 5 }, mocked: true };
+      (Geolocation.getCurrentPosition as jest.Mock).mockImplementation((success) => success(fix));
+      (Geolocation.watchPosition as jest.Mock).mockImplementation((success) => {
+        success(fix);
+        return 1;
+      });
+    };
+
+    it('refuses a mocked fix and surfaces a localized reason', async () => {
+      // A punch is evidence, so unlike the tracker this refuses outright: there
+      // must be no coordinates available to submit.
+      withMockedGpsFix(0, 0);
+      mockGetMyRoster.mockResolvedValue({ data: ROSTER_OUTSIDE } as never);
+
+      const { result } = renderHook(() => useClockInOut(), { wrapper: wrapperFor(null) });
+
+      await waitFor(() => expect(result.current.location.error).toBeTruthy());
+      expect(result.current.location.error).toBe(i18n.t('location:errors.mockedLocation'));
+      expect(result.current.location.latitude).toBeNull();
+      expect(result.current.location.longitude).toBeNull();
+    });
+
+    it('does not leave a stale good fix on screen when the watch turns mocked', async () => {
+      // Otherwise a worker could take a genuine reading, switch on a fake GPS,
+      // and punch against the coordinates still held in state.
+      withGpsFix(0, 0);
+      mockGetMyRoster.mockResolvedValue({ data: ROSTER_OUTSIDE } as never);
+      const { result } = renderHook(() => useClockInOut(), { wrapper: wrapperFor(null) });
+      await waitFor(() => expect(result.current.location.latitude).toBe(0));
+
+      // The watch now reports a mocked fix.
+      const watchSuccess = (Geolocation.watchPosition as jest.Mock).mock.calls[0][0];
+      await act(async () => {
+        watchSuccess({ coords: { latitude: 0, longitude: 0, accuracy: 5 }, mocked: true });
+      });
+
+      expect(result.current.location.latitude).toBeNull();
+      expect(result.current.location.error).toBe(i18n.t('location:errors.mockedLocation'));
+    });
   });
 });

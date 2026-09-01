@@ -50,7 +50,7 @@ jest.mock('@react-navigation/native', () => ({
 const mockOvertimeData = {
   id: 'ot-001',
   user_id: 'user-1',
-  area_id: 'area-1',
+  location_id: 'area-1',
   start_datetime: '2026-02-14T17:00:00+07:00',
   end_datetime: '2026-02-14T20:00:00+07:00',
   activity_type_id: 'type-1',
@@ -65,12 +65,12 @@ const mockOvertimeData = {
     full_name: 'Ahmad Satgas',
     username: 'ahmad',
     role: 'satgas',
-    rayon_id: 'rayon-1',
+    district_id: 'district-1',
   },
   area: {
     id: 'area-1',
     name: 'Taman Bungkul',
-    rayon_id: 'rayon-1',
+    district_id: 'district-1',
   },
   activityType: {
     id: 'type-1',
@@ -94,8 +94,8 @@ const createTestStore = (userOverrides = {}) => {
           username: 'korlap1',
           full_name: 'Korlap Test',
           role: 'korlap',
-          area_id: 'area-1', // Same area → canApprove=true for satgas
-          rayon_id: 'rayon-1',
+          location_id: 'area-1', // Same area → canApprove=true for satgas
+          district_id: 'district-1',
           ...userOverrides,
         },
         token: 'test-token',
@@ -675,7 +675,7 @@ describe('OvertimeDetailScreen', () => {
         username: 'satgas1',
         full_name: 'Test Satgas',
         role: 'satgas',
-        area_id: 'area-1',
+        location_id: 'area-1',
       });
 
       const { queryByText } = render(
@@ -711,8 +711,8 @@ describe('OvertimeDetailScreen', () => {
     it('should hide buttons when korlap is in different area', async () => {
       const differentAreaStore = createTestStore({
         role: 'korlap',
-        area_id: 'area-other',
-        rayon_id: 'rayon-1',
+        location_id: 'area-other',
+        district_id: 'district-1',
       });
 
       const { queryByText } = render(
@@ -729,11 +729,11 @@ describe('OvertimeDetailScreen', () => {
       });
     });
 
-    it('should show buttons when kepala_rayon approves korlap in same rayon', async () => {
+    it('should show buttons when kepala_rayon approves korlap in same district', async () => {
       // kepala_rayon approving korlap
       const korlapOvertime = {
         ...mockOvertimeData,
-        user: { ...mockOvertimeData.user, role: 'korlap', rayon_id: 'rayon-1' },
+        user: { ...mockOvertimeData.user, role: 'korlap', district_id: 'district-1' },
       };
       (overtimeApi.getOvertimeById as jest.Mock).mockResolvedValue({
         data: korlapOvertime,
@@ -741,8 +741,8 @@ describe('OvertimeDetailScreen', () => {
 
       const kepalaStore = createTestStore({
         role: 'kepala_rayon',
-        rayon_id: 'rayon-1',
-        area_id: null,
+        district_id: 'district-1',
+        location_id: null,
       });
 
       const { getByText } = render(

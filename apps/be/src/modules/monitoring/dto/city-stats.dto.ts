@@ -1,10 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 /**
- * Rayon summary for city-wide stats
+ * District summary for city-wide stats
  */
-export class RayonSummaryDto {
-  @ApiProperty({ example: 'rayon-uuid' })
+export class DistrictSummaryDto {
+  @ApiProperty({ example: 'district-uuid' })
   id: string;
 
   @ApiProperty({ example: 'Rayon Selatan' })
@@ -34,7 +34,7 @@ export class RayonSummaryDto {
  */
 export class CityStatsDto {
   @ApiProperty({ example: 7 })
-  total_rayons: number;
+  total_districts: number;
 
   @ApiProperty({ example: 105 })
   total_areas: number;
@@ -63,8 +63,8 @@ export class CityStatsDto {
   @ApiProperty({ example: 45 })
   activities_submitted_today: number;
 
-  @ApiProperty({ type: [RayonSummaryDto] })
-  rayons: RayonSummaryDto[];
+  @ApiProperty({ type: [DistrictSummaryDto] })
+  districts: DistrictSummaryDto[];
 
   @ApiProperty({ example: '2024-01-24T10:30:00Z' })
   generated_at: Date;

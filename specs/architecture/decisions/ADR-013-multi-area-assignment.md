@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted — amended by [ADR-045](./ADR-045-four-level-location-hierarchy.md) (Region tier; Area→Location) and [ADR-047](./ADR-047-schedule-redesign.md) (rule-based recurrence replaces the template-derived roster)
 
 ## Context
 

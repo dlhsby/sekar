@@ -8,7 +8,32 @@
     "loadFailed": "Gagal memuat jadwal",
     "retryLabel": "Coba Lagi",
     "emptyTitle": "Belum ada jadwal hari ini",
-    "emptyDescription": "Anda belum memiliki jadwal untuk hari ini (mungkin bekerja ad-hoc sesuai penugasan). Anda tetap bisa melakukan clock-in."
+    "emptyDescription": "Anda belum memiliki jadwal untuk hari ini (mungkin bekerja ad-hoc sesuai penugasan). Anda tetap bisa melakukan clock-in.",
+    "prevDay": "Hari sebelumnya",
+    "nextDay": "Hari berikutnya",
+    "team": "Tim: {{name}}",
+    "projected": "Rencana",
+    "statusHint": {
+      "planned": "Dijadwalkan bertugas — belum clock in.",
+      "present": "Sudah clock in hari ini.",
+      "absent": "Tidak hadir — jam shift berakhir tanpa clock in.",
+      "leave_sick": "Izin sakit disetujui — tidak dihitung tidak hadir.",
+      "leave_annual": "Cuti disetujui — tidak dihitung tidak hadir.",
+      "leave_permit": "Izin disetujui — tidak dihitung tidak hadir.",
+      "replaced": "Digantikan petugas lain untuk hari ini.",
+      "off": "Libur — tidak ada shift hari ini."
+    }
+  },
+  "scheduleDetail": {
+    "title": "Detail Jadwal",
+    "date": "Tanggal",
+    "shift": "Shift",
+    "area": "Area",
+    "district": "Rayon",
+    "region": "Kawasan",
+    "team": "Tim",
+    "status": "Status",
+    "openHint": "Ketuk untuk melihat detail jadwal"
   },
   "status": {
     "present": "Hadir",

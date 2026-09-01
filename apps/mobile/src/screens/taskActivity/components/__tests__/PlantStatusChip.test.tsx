@@ -20,7 +20,7 @@ describe('PlantStatusChip', () => {
     jest.clearAllMocks();
   });
 
-  it('should not render if area_id is missing', () => {
+  it('should not render if location_id is missing', () => {
     const { getByTestId } = render(
       <PlantStatusChip areaId="" taskTitle="Pruning Task" />
     );

@@ -2,7 +2,7 @@
  * useMonitoringSocket — subscribes to the backend Socket.IO `/events` namespace
  * and applies incremental patches to the cached monitoring snapshot, replacing
  * the old full-refresh poll. The server assigns each client to its role room
- * (monitoring:city | rayon:{id} | area:{id}) on connect, so no explicit
+ * (monitoring:city | district:{id} | area:{id}) on connect, so no explicit
  * subscription is needed here.
  *
  * Patches are applied to every cached snapshot query in place via
@@ -20,15 +20,19 @@ import type {
   UserAreaEvent,
 } from '../api/monitoring-types';
 
-const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+// Empty NEXT_PUBLIC_API_URL = same origin (works on localhost + any LAN host via
+// the dev proxy); server-side has no origin, so fall back to the local backend.
+const API_ORIGIN =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
 
 interface UserLocationWsEvent {
   user_id: string;
   user_name: string;
   role: string;
-  area_id: string;
-  area_name: string;
-  rayon_id: string | null;
+  location_id: string;
+  location_name: string;
+  district_id: string | null;
   latitude: number;
   longitude: number;
   battery_level: number | null;
@@ -39,9 +43,9 @@ interface UserLocationWsEvent {
 
 interface UserReassignedWsEvent {
   user_id: string;
-  area_id: string;
-  area_name: string;
-  rayon_id: string | null;
+  location_id: string;
+  location_name: string;
+  district_id: string | null;
   timestamp: string;
 }
 
@@ -64,7 +68,7 @@ export function useMonitoringSocket(enabled: boolean): { connected: boolean } {
     const token = getCookie('access_token');
     if (!token) return;
 
-    // Patch every cached snapshot query (city/rayon/area) with the given worker patch.
+    // Patch every cached snapshot query (city/district/area) with the given worker patch.
     const patchWorker = (patch: WorkerPatch) => {
       queryClient.setQueriesData<MonitoringSnapshotResponse>(
         { queryKey: snapshotKeys.all },
@@ -107,9 +111,9 @@ export function useMonitoringSocket(enabled: boolean): { connected: boolean } {
         status: e.status as WorkerPatch['status'],
         lat: e.latitude,
         lng: e.longitude,
-        area_id: e.area_id,
-        area_name: e.area_name,
-        rayon_id: e.rayon_id,
+        location_id: e.location_id,
+        location_name: e.location_name,
+        district_id: e.district_id,
         is_within_area: e.is_within_area,
         battery_level: e.battery_level,
         last_update: e.timestamp,
@@ -120,9 +124,9 @@ export function useMonitoringSocket(enabled: boolean): { connected: boolean } {
       patchWorker({
         user_id: e.user_id,
         status: e.new_status,
-        area_id: e.area_id,
-        area_name: e.area_name,
-        rayon_id: e.rayon_id,
+        location_id: e.location_id,
+        location_name: e.location_name,
+        district_id: e.district_id,
         lat: e.latitude ?? undefined,
         lng: e.longitude ?? undefined,
         last_update: e.timestamp,
@@ -144,9 +148,9 @@ export function useMonitoringSocket(enabled: boolean): { connected: boolean } {
     socket.on('user:reassigned', (e: UserReassignedWsEvent) => {
       patchWorker({
         user_id: e.user_id,
-        area_id: e.area_id,
-        area_name: e.area_name,
-        rayon_id: e.rayon_id,
+        location_id: e.location_id,
+        location_name: e.location_name,
+        district_id: e.district_id,
         last_update: e.timestamp,
       });
     });
@@ -155,6 +159,8 @@ export function useMonitoringSocket(enabled: boolean): { connected: boolean } {
 
     socket.on('area:staffing-changed', () => {
       // Bubble counts are derived server-side; refetch the light aggregate.
+      // TODO(5.6b): emit subscribe:region on region drill for direct room patches
+      // (currently region aggregates refresh via the invalidation above).
       queryClient.invalidateQueries({ queryKey: aggregateKeys.all });
     });
 

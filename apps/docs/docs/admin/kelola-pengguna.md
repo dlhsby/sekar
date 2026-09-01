@@ -85,8 +85,8 @@ Superadmin         | 081234567896| Superadmin     | ✓ Active  | Edit
 │ [ahmad@example.com          ]    │
 │                                 │
 │ PASSWORD *                      │
-│ [Password123!                ]    │
-│ [Rekomendasikan: Password123! ]   │
+│ [12345678                ]    │
+│ [Rekomendasikan: 12345678 ]   │
 │                                 │
 │ [LANJUT KE PERAN]               │
 └──────────────────────────────────┘
@@ -96,7 +96,7 @@ Superadmin         | 081234567896| Superadmin     | ✓ Active  | Edit
 
 - **Nama Lengkap** — Nama sesuai KTP/identitas resmi
 - **Nomor Telepon** — Format: 081234567890
-- **Password** — Sementara bisa gunakan Password123!, nanti user bisa ganti
+- **Password** — Sementara bisa gunakan 12345678, nanti user bisa ganti
 
 ### Langkah 3: Pilih Peran
 
@@ -157,7 +157,7 @@ Pilih rayon tempat pengguna akan bekerja.
    No. Telepon: 081234567890
    Peran: Satgas
    Rayon: Rayon Pusat
-   Password: Password123!
+   Password: 12345678
    
    Bagikan kredensial ini kepada pengguna.
    ```
@@ -202,15 +202,15 @@ Jika pengguna lupa password:
 2. Tap **"Reset Password"** atau **"Change Password"**
 3. Masukkan password baru:
    ```
-   Password Baru: Password123!
-   Konfirmasi: Password123!
+   Password Baru: 12345678
+   Konfirmasi: 12345678
    ```
 4. Tap **"Simpan"**
 5. Password akan di-reset
 6. Beritahu pengguna password barunya
 
 :::note
-Disarankan password reset sementara gunakan "Password123!" atau format standar. Pengguna bisa ganti lagi di profile mereka sendiri.
+Disarankan password reset sementara gunakan "12345678" atau format standar. Pengguna bisa ganti lagi di profile mereka sendiri.
 :::
 
 ---
@@ -337,7 +337,7 @@ Untuk security & compliance:
 
 :::tip
 **1. Password Standar**
-- Untuk batch create, gunakan password standar (Password123!)
+- Untuk batch create, gunakan password standar (12345678)
 - Pengguna bisa ganti sendiri di profile
 - Jangan share password plaintext via chat
 

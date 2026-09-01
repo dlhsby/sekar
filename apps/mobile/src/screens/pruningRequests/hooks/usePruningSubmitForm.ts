@@ -21,7 +21,7 @@ function isValidIndoPhone(s: string): boolean {
 // ─── Hook ──────────────────────────────────────────────────────────
 
 export interface FormState {
-  rayonId: string;
+  districtId: string;
   kecamatanName: string;
   address: string;
   treeCount: string;
@@ -36,7 +36,7 @@ export interface FormState {
 }
 
 interface FormSetters {
-  setRayonId: (v: string) => void;
+  setDistrictId: (v: string) => void;
   setKecamatanName: (v: string) => void;
   setAddress: (v: string) => void;
   setTreeCount: (v: string) => void;
@@ -51,10 +51,10 @@ interface FormSetters {
 }
 
 export function usePruningSubmitForm(
-  initialRayonId: string,
+  initialDistrictId: string,
   initialKecamatanName: string,
 ) {
-  const [rayonId, setRayonId] = useState<string>(initialRayonId);
+  const [districtId, setDistrictId] = useState<string>(initialDistrictId);
   const [kecamatanName, setKecamatanName] = useState<string>(initialKecamatanName);
   const [address, setAddress] = useState('');
   const [treeCount, setTreeCount] = useState('');
@@ -68,7 +68,7 @@ export function usePruningSubmitForm(
   const [expectedWeek, setExpectedWeek] = useState<PickedWeek | null>(null);
 
   const formState: FormState = {
-    rayonId,
+    districtId,
     kecamatanName,
     address,
     treeCount,
@@ -83,7 +83,7 @@ export function usePruningSubmitForm(
   };
 
   const formSetters: FormSetters = {
-    setRayonId,
+    setDistrictId,
     setKecamatanName,
     setAddress,
     setTreeCount,

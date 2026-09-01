@@ -24,10 +24,10 @@ const createMockUser = (overrides?: Partial<LiveUser>): LiveUser => ({
   role: 'satgas',
   phone: '08123456789',
   status: 'active',
-  area_id: 'area-123',
-  area_name: 'Taman A',
-  rayon_id: 'rayon-1',
-  rayon_name: 'Rayon 1',
+  location_id: 'area-123',
+  location_name: 'Taman A',
+  district_id: 'district-1',
+  district_name: 'Rayon 1',
   latitude: -7.250445,
   longitude: 112.768845,
   accuracy: 10,
@@ -114,7 +114,7 @@ describe('UserListCard', () => {
 
     it('should render a status dot with the correct color for missing status', () => {
       // Arrange — missing status color is '#DC2626'
-      const user = createMockUser({ status: 'missing' });
+      const user = createMockUser({ status: 'absent' });
 
       // Act
       const { getByTestId } = render(
@@ -132,7 +132,7 @@ describe('UserListCard', () => {
       // CP6: the dot now reflects the activity axis. outside_area = fresh fix
       // outside the area → activity 'aktif' → statusActive green (#15803D).
       // (The "outside" location is shown via the marker ring, not this dot.)
-      const user = createMockUser({ status: 'outside_area' });
+      const user = createMockUser({ status: 'absent' });
 
       const { getByTestId } = render(
         <UserListCard user={user} onPress={mockOnPress} />
@@ -201,9 +201,9 @@ describe('UserListCard', () => {
   });
 
   describe('area name', () => {
-    it('should render the area_name', () => {
+    it('should render the location_name', () => {
       // Arrange
-      const user = createMockUser({ area_name: 'Taman Bungkul' });
+      const user = createMockUser({ location_name: 'Taman Bungkul' });
 
       // Act
       const { getByText } = render(
@@ -214,9 +214,9 @@ describe('UserListCard', () => {
       expect(getByText('Taman Bungkul')).toBeTruthy();
     });
 
-    it('should render a different area_name when provided', () => {
+    it('should render a different location_name when provided', () => {
       // Arrange
-      const user = createMockUser({ area_name: 'Alun-Alun Utara' });
+      const user = createMockUser({ location_name: 'Alun-Alun Utara' });
 
       // Act
       const { getByText } = render(
@@ -359,12 +359,12 @@ describe('UserListCard', () => {
   });
 
   describe('accessibility', () => {
-    it('should have an accessibilityLabel containing full_name, role label, and area_name', () => {
+    it('should have an accessibilityLabel containing full_name, role label, and location_name', () => {
       // Arrange
       const user = createMockUser({
         full_name: 'Ahmad Satgas',
         role: 'satgas',
-        area_name: 'Taman A',
+        location_name: 'Taman A',
       });
 
       // Act
@@ -372,7 +372,7 @@ describe('UserListCard', () => {
         <UserListCard user={user} onPress={mockOnPress} />
       );
 
-      // Assert — format: "<full_name>, <roleLabel>, <area_name>"
+      // Assert — format: "<full_name>, <roleLabel>, <location_name>"
       const card = getByRole('button');
       expect(card.props.accessibilityLabel).toBe('Ahmad Satgas, Satgas, Taman A');
     });

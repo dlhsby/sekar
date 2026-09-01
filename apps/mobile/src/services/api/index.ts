@@ -17,8 +17,8 @@ export * from './notificationsApi';
 export * from './shiftDefinitionsApi';
 // Phase 2C APIs
 export * from './overtimeApi';
-export * from './rayonsApi';
-export * from './areasApi';
+export * from './districtsApi';
+export * from './locationsApi';
 // Phase 5-2 APIs
 export * from './analyticsApi';
 export { default as apiClient } from './apiClient';
@@ -35,8 +35,8 @@ import * as monitoringApiModule from './monitoringApi';
 import * as notificationsApiModule from './notificationsApi';
 import * as shiftDefinitionsApiModule from './shiftDefinitionsApi';
 import * as overtimeApiModule from './overtimeApi';
-import * as rayonsApiModule from './rayonsApi';
-import * as areasApiModule from './areasApi';
+import * as rayonsApiModule from './districtsApi';
+import * as locationsApiModule from './locationsApi';
 import * as analyticsApiModule from './analyticsApi';
 
 export const shiftsApi = shiftsApiModule;
@@ -50,6 +50,6 @@ export const monitoringApi = monitoringApiModule;
 export const notificationsApi = notificationsApiModule;
 export const shiftDefinitionsApi = shiftDefinitionsApiModule;
 export const overtimeApi = overtimeApiModule;
-export const rayonsApi = rayonsApiModule;
-export const areasApi = areasApiModule;
+export const districtsApi = rayonsApiModule;
+export const locationsApi = locationsApiModule;
 export const analyticsApi = analyticsApiModule;

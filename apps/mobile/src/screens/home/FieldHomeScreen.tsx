@@ -5,21 +5,21 @@ import {
   RefreshControl,
   StyleSheet,
   AccessibilityInfo,
-  TouchableOpacity,
-  ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTranslation } from 'react-i18next';
 import { CLOCKABLE_ROLES, TASK_RECEIVERS } from '../../constants/roles';
-import { LoadingSpinner, AppUpdateBanner, InfoTableRow, DateTimeValue } from '../../components/common';
-import { NBAlert, NBBackgroundPattern, NBBadge, NBButton, NBText } from '../../components/nb';
+import { LoadingSpinner, AppUpdateBanner } from '../../components/common';
+import { NBAlert, NBBackgroundPattern } from '../../components/nb';
 import { ShiftDetailModal, TodayActivitiesModal, TodayWorkHoursModal, TodayTasksModal, LocationMapModal } from '../../components/modals';
-import { StatusPill, type StatusTone } from '../../components/home/StatusPill';
+import { AttendanceStatusSheet, type AttendanceStatusKind } from '../../components/modals/AttendanceStatusSheet';
+import type { StatusTone } from '../../components/home/StatusPill';
+import { AttendanceInfoRows } from '../../components/attendance/AttendanceInfoRows';
+import { AttendanceEntryCard } from '../../components/attendance/AttendanceEntryCard';
 import { HomeSectionDivider } from '../../components/home/HomeSectionDivider';
 import { HomeStatTile } from '../../components/home/HomeStatTile';
-import { AttendanceSummaryRow } from '../../components/home/AttendanceSummaryRow';
-import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows, withAlpha } from '../../constants/nbTokens';
+import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows } from '../../constants/nbTokens';
+import { workerMapMarker, scopeAreaMarker } from '../../utils/mapUtils';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { shiftsApi, activitiesApi, tasksApi } from '../../services/api';
 import { setCurrentShift, setShiftHistory, setError } from '../../store/slices/shiftSlice';
@@ -28,14 +28,25 @@ import { setTasks } from '../../store/slices/tasksSlice';
 import { calculateDuration, isToday } from '../../utils/dateUtils';
 import { deriveAttendanceStatus } from '../../utils/attendance';
 import { isTaskScopedToday } from '../../utils/taskStatus';
-import { useLocationPermission, useCollapsible } from '../../hooks';
+import { useLocationPermission } from '../../hooks';
 import { useHomeLocation } from '../../hooks/useHomeLocation';
 import { useTodayRoster } from '../../hooks/useTodayRoster';
+import { useCurrentShiftState } from '../../hooks/useCurrentShiftState';
+import { screenContentGrow } from '../../constants/layout';
+import { resolveScheduleScope } from '../../utils/scheduleScope';
+import {
+  formatShiftLabel,
+  pickOperativeShift,
+  formatShiftOptionLabel,
+  resolveActiveShift,
+} from '../../utils/shiftDisplay';
 import type { Activity, Task, Shift } from '../../types/models.types';
+import type { ShiftOption } from '../../types/api.types';
+import { ShiftPickerSheet } from '../../components/modals/ShiftPickerSheet';
 
 /**
  * Field Home Screen (hi-fi HOME-1) — dashboard for clockable field roles
- * (satgas, linmas, and — until HOME-2/HOME-3 land — korlap/kepala_rayon/admin_data).
+ * (satgas, linmas, and — until HOME-2/HOME-3 land — korlap/kepala_rayon/admin_rayon).
  * Selected by the role-aware `HomeScreen` dispatcher.
  *
  * Layout (hi-fi HOME-1): absensi hero (live clock + in-area pill + clock-out) →
@@ -49,7 +60,7 @@ export function FieldHomeScreen(): React.JSX.Element {
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
 
-  const { user, assignedArea } = useAppSelector((state) => state.auth);
+  const { user } = useAppSelector((state) => state.auth);
   const { currentShift, shiftHistory } = useAppSelector((state) => state.shift);
   const { activitiesList } = useAppSelector((state) => state.activities);
   const { tasks } = useAppSelector((state) => state.tasks);
@@ -63,13 +74,15 @@ export function FieldHomeScreen(): React.JSX.Element {
 
   // Live shift timer
   const [timer, setTimer] = useState('00:00:00');
-
-  // Active-shift hero collapse (default closed). Toggled by tapping the whole card;
-  // resets to closed when the screen blurs (useCollapsible).
-  const { expanded: shiftExpanded, toggle: toggleShiftCard } = useCollapsible(false);
+  // Live wall clock for the shared "Waktu Sekarang" row.
+  const [now, setNow] = useState(() => new Date());
+  // Minute-granular view of the same clock: time-dependent derivations below
+  // must age, but recomputing them every second would be pure waste.
+  const nowMinute = Math.floor(now.getTime() / 60_000) * 60_000;
 
   // Modal states
   const [detailShift, setDetailShift] = useState<Shift | null>(null);
+  const [statusSheetVisible, setStatusSheetVisible] = useState(false);
   const [activitiesModalVisible, setActivitiesModalVisible] = useState(false);
   const [workHoursModalVisible, setWorkHoursModalVisible] = useState(false);
   const [tasksModalVisible, setTasksModalVisible] = useState(false);
@@ -94,11 +107,26 @@ export function FieldHomeScreen(): React.JSX.Element {
   });
 
   // Home-screen location (drives the in-area pill + the map modal).
-  const { location: homeLocation, refresh: refreshLocation, hasActiveShift } = useHomeLocation();
+  const {
+    location: homeLocation,
+    refresh: refreshLocation,
+    hasActiveShift,
+    hasBoundary,
+    mapArea: homeMapArea,
+  } = useHomeLocation();
 
   // Today's roster — the "am I scheduled?" signal (shared with the clock-in
   // screen so both agree on lateness / area semantics).
-  const { rosterShift, hasScheduleToday } = useTodayRoster();
+  const { roster, rosterShift, hasScheduleToday, allToday, refetch: refetchRoster } = useTodayRoster();
+  // Same live-attendance source the clock-in screen uses, so the Kehadiran card
+  // shows the identical shift (attribution-first, roster fallback) — and stays
+  // fresh across a day boundary instead of showing yesterday's resolved shift.
+  const { options: shiftOptions, displayShift, refetch: refetchShiftState } = useCurrentShiftState();
+  const [shiftPickerVisible, setShiftPickerVisible] = useState(false);
+  const [selectedShiftKey, setSelectedShiftKey] = useState<string | null>(null);
+  // A city/rayon/kawasan-scope roster row assigns the worker without naming a
+  // lokasi — it must NOT read as "not assigned to any area".
+  const scheduleScope = useMemo(() => resolveScheduleScope(roster), [roster]);
 
   // Defensive Array.isArray guards: stale HMR/hydration snapshots have crashed
   // this tree before when a list briefly hydrated as a non-array.
@@ -112,12 +140,45 @@ export function FieldHomeScreen(): React.JSX.Element {
     return list.filter((shift) => isToday(shift.clock_in_time));
   }, [shiftHistory]);
 
-  // Today's attendance status for the hero (roster-gated — see utils/attendance).
-  // Lateness is judged only against today's roster shift; an unscheduled worker
-  // (patrol / ad-hoc) reads as "no schedule", never late.
+  // Multi-shift day: `/schedules/my` returns ONE row that may not be the one
+  // operative now (Shift 2 + Shift 3 at 19:00 could hand back Shift 3), so pick
+  // by the clock.
+  const operativeShift = useMemo(
+    () => pickOperativeShift([...allToday.map((r) => r.shift_definition), rosterShift]),
+    [allToday, rosterShift],
+  );
+
+  const optionLabel = (o: ShiftOption): string =>
+    formatShiftLabel({ name: o.shift_name ?? '', start_time: o.start_time, end_time: o.end_time }, '');
+  const selectedOption =
+    shiftOptions.find((o) => `${o.service_day}:${o.shift_definition_id}` === selectedShiftKey) ??
+    shiftOptions.find((o) => o.is_default) ??
+    shiftOptions[0] ??
+    null;
+  const otherShiftLabels = shiftOptions
+    .filter((o) => o !== selectedOption && !!o.start_time && !!o.end_time)
+    .map((o) => formatShiftOptionLabel(o, selectedOption?.service_day ?? todayStr));
+  const canSwitchShift = shiftOptions.length > 1;
+  const entryShiftLabel = selectedOption
+    ? optionLabel(selectedOption)
+    : formatShiftLabel(displayShift(operativeShift), t('attendance:hub.noShift'));
+
+  // Status is judged against the shift the card NAMES — the picked option when
+  // there is one, else attribution's default, else the roster row covering now.
+  // Judging against a different shift is what let a worker four hours late read
+  // TEPAT WAKTU. Ages with `nowMinute` so an open screen does not go stale.
+  const activeShift = useMemo(
+    () =>
+      resolveActiveShift(
+        selectedOption ? [selectedOption] : shiftOptions,
+        [...allToday.map((r) => r.shift_definition), rosterShift],
+        new Date(nowMinute),
+      ),
+    [selectedOption, shiftOptions, allToday, rosterShift, nowMinute],
+  );
   const attendance = useMemo(
-    () => deriveAttendanceStatus(todayShifts, currentShift, rosterShift),
-    [todayShifts, currentShift, rosterShift],
+    () => deriveAttendanceStatus(todayShifts, currentShift, activeShift, new Date(nowMinute)),
+    [todayShifts, currentShift, activeShift, nowMinute],
   );
 
   // "Tugas hari ini" — all statuses, scoped to today (deadline, created_at,
@@ -131,6 +192,12 @@ export function FieldHomeScreen(): React.JSX.Element {
   useEffect(() => {
     loadInitialData();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- loader is a stable callback defined below; effect runs on mount by design
+  }, []);
+
+  // Live wall clock (every second) for the "Waktu Sekarang" row.
+  useEffect(() => {
+    const tick = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(tick);
   }, []);
 
   // Live timer (every second) for the active shift.
@@ -172,8 +239,13 @@ export function FieldHomeScreen(): React.JSX.Element {
       loadShiftHistory();
       loadTodayActivities();
       loadTasks();
+      // Roster + live shift state are fetch-once-on-mount hooks; refresh them on
+      // focus so the Kehadiran card never shows a stale shift after the app has
+      // been left open (e.g. across a day boundary).
+      void refetchRoster();
+      void refetchShiftState();
       // eslint-disable-next-line react-hooks/exhaustive-deps -- loaders are stable callbacks defined below; effect runs on focus by design
-    }, [])
+    }, [refetchRoster, refetchShiftState])
   );
 
   const loadInitialData = async () => {
@@ -240,18 +312,17 @@ export function FieldHomeScreen(): React.JSX.Element {
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([loadCurrentShift(), loadShiftHistory(), loadTodayActivities(), loadTasks()]);
+    await Promise.all([
+      loadCurrentShift(),
+      loadShiftHistory(),
+      loadTodayActivities(),
+      loadTasks(),
+      refetchRoster(),
+      refetchShiftState(),
+    ]);
     setRefreshing(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- loaders are stable callbacks defined below; isTaskReceiver only affects loadTasks internals
-  }, [isTaskReceiver]);
-
-  const handleClockInOut = () => {
-    if (currentShift?.is_overtime) {
-      navigation.navigate('OvertimeSubmit' as never);
-    } else {
-      navigation.navigate('Absensi' as never);
-    }
-  };
+  }, [isTaskReceiver, refetchRoster, refetchShiftState]);
 
   const handleViewActivities = useCallback((activity: Activity) => {
     setActivitiesModalVisible(false);
@@ -286,17 +357,55 @@ export function FieldHomeScreen(): React.JSX.Element {
 
   // In-area pill tone/label for the active-shift hero. A worker with no assigned
   // area has no boundary to be inside/outside of — show a neutral "no area".
-  const hasArea = !!(currentShift?.area || assignedArea);
+  // Scope label is now just the area name (e.g. "Rayon Barat 1"), not the long
+  // "Lingkup Rayon Rayon Barat 1" — the scope i18n keys dropped the prefix.
+  const scopeLabelText =
+    scheduleScope.scope !== 'none' && scheduleScope.scope !== 'location'
+      ? t(`attendance:clockInOut.scope.${scheduleScope.scope}`, { name: scheduleScope.name ?? '' })
+      : null;
   const locUnknown = homeLocation.loading || homeLocation.latitude === null;
-  const areaTone: StatusTone = !hasArea ? 'neutral' : locUnknown ? 'neutral' : homeLocation.isWithinArea ? 'ok' : 'bad';
-  const areaLabel = !hasArea
-    ? t('home:field.hero.location.noArea')
-    : locUnknown
+  // With a real boundary (lokasi OR the assigned rayon/kawasan polygon) the pill
+  // reports inside/outside; otherwise it names the scope (or "no area").
+  const areaTone: StatusTone = hasBoundary
+    ? locUnknown
+      ? 'neutral'
+      : homeLocation.isWithinArea
+        ? 'ok'
+        : 'bad'
+    : scopeLabelText
+      ? 'info'
+      : 'neutral';
+  const areaLabel = hasBoundary
+    ? locUnknown
       ? t('home:field.hero.location.loading')
       : homeLocation.isWithinArea
         ? t('home:field.hero.location.inArea')
-        : t('home:field.hero.location.outArea');
-  const heroAreaName = currentShift?.area?.name ?? assignedArea?.name ?? t('home:field.hero.location.noArea');
+        : t('home:field.hero.location.outArea')
+    : (scopeLabelText ?? t('home:field.hero.location.noArea'));
+  // Shift window for the Detail Shift modal (e.g. "Shift 3 · 21:00–05:00").
+  const heroShiftDef = currentShift?.shift_definition ?? rosterShift;
+  const heroShiftText = heroShiftDef
+    ? `${heroShiftDef.name} · ${heroShiftDef.start_time.slice(0, 5)}–${heroShiftDef.end_time.slice(0, 5)}`
+    : null;
+  // "Shift 2 · 14:00–22:00 · Rayon Barat 1" for a roster row — used to name the
+  // next shift on the hero so a multi-shift worker sees what's coming.
+  // Both states are now one AttendanceEntryCard: it carries the shift label from
+  // the unified attribution source and lists any other shift today, so the old
+  // bespoke "Berikutnya" line and clock handler are gone with the hero.
+  // Which explanation the Status Kehadiran pill opens.
+  const statusKind: AttendanceStatusKind = !hasScheduleToday
+    ? 'noSchedule'
+    : attendance.isLate
+      ? 'late'
+      : 'onTime';
+
+  // Idle-state entry card (shared with the Pencatatan Waktu hub). Reuses the same
+  // shift label + Jam Masuk/Keluar shape so home and the hub read identically.
+  const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  // Attribution-first (same mechanism as the clock-in screen), roster fallback.
+  // Which shift the idle card names, and the others the worker also holds today
+  // (ADR-053). The picker only appears when there is a real choice; the pick is
+  // carried into the punch through the Absensi route params.
 
   return (
     <NBBackgroundPattern
@@ -339,144 +448,75 @@ export function FieldHomeScreen(): React.JSX.Element {
             />
           )}
 
-          {/* Kehadiran saya — clock-in hero first */}
-          <HomeSectionDivider label={t('home:field.sections.attendance')} />
+          {/* Kehadiran — clock-in hero + today's schedule, one section (the
+              schedule used to be its own divider; merged in per UX review). */}
+          <HomeSectionDivider label={t('home:field.sections.attendance')} first />
 
-          {/* Kehadiran hero — collapsible; the whole card toggles open/closed. */}
-          {currentShift ? (
-            <TouchableOpacity
-              style={[styles.hero, currentShift.is_overtime ? styles.heroLembur : styles.heroActive]}
+          {/* Kehadiran — ONE card for both states (ADR-053 consistency): the
+              same shape the Kehadiran hub renders, plus Status Kehadiran /
+              Status Area / Detail Shift while a shift is open. The bespoke
+              "SEDANG BERTUGAS" hero it replaces stated the same facts in a
+              different shape, so the two surfaces read as different features. */}
+          {isClockable ? (
+            <AttendanceEntryCard
+              date={todayStr}
+              shiftLabel={entryShiftLabel}
+              jamMasuk={attendance.firstClockIn}
+              jamKeluar={attendance.lastClockOut}
+              hasRecordToday={todayShifts.length > 0}
+              hasScheduleToday={!!rosterShift}
+              otherShiftLabels={otherShiftLabels}
+              onChangeShift={canSwitchShift ? () => setShiftPickerVisible(true) : undefined}
+              /**
+               * ADR-050: both of these rows belong to a worker who is ON DUTY.
+               * Status Area is Axis 2 (live presence), which the model scopes to
+               * `bertugas` outright — a worker who has not clocked in has no
+               * in/out-of-area state to report. Status Kehadiran is Axis 1, and
+               * before a punch the banner above already states it ("Anda belum
+               * clockin pada shift ini"); rendering a TERLAMBAT chip beside it
+               * said the same thing twice and, worse, was judged against a shift
+               * the worker had not started.
+               *
+               * So the whole block is withheld until a session is open, and the
+               * card falls back to the banner + Jam Masuk/Keluar placeholders.
+               */
+              infoRows={
+                hasActiveShift ? (
+                  <AttendanceInfoRows
+                    status={{
+                      tone: !hasScheduleToday ? 'neutral' : attendance.isLate ? 'bad' : 'ok',
+                      label: !hasScheduleToday
+                        ? t('home:field.hero.status.noSchedule')
+                        : attendance.isLate
+                          ? t('home:field.hero.status.late')
+                          : t('home:field.hero.status.onTime'),
+                      onPress: () => setStatusSheetVisible(true),
+                      a11yLabel: t('attendance:infoCard.whyStatus'),
+                    }}
+                    areaStatus={{
+                      tone: areaTone,
+                      label: areaLabel,
+                      onPress: () => setLocationMapVisible(true),
+                      a11yLabel: t('home:field.hero.a11y.locationStatus', { status: areaLabel }),
+                    }}
+                    onRefreshLocation={refreshLocation}
+                    refreshingLocation={homeLocation.loading}
+                  />
+                ) : undefined
+              }
+              onClockIn={() =>
+                navigation.navigate('Absensi', {
+                  action: 'clock_in',
+                  shiftDefinitionId: selectedOption?.shift_definition_id,
+                  serviceDay: selectedOption?.service_day,
+                })
+              }
+              onClockOut={() => navigation.navigate('Absensi', { action: 'clock_out' })}
+              onViewSchedule={() => navigation.navigate('MySchedule')}
+              onViewLog={() => navigation.navigate('Attendance')}
               testID="absensi-hero"
-              activeOpacity={0.9}
-              onPress={toggleShiftCard}
-              accessibilityRole="button"
-              accessibilityState={{ expanded: shiftExpanded }}
-              accessibilityLabel={currentShift.is_overtime ? t('home:field.hero.a11y.overtimeActive') : t('home:field.hero.a11y.onDuty')}
-              accessibilityHint={shiftExpanded ? t('home:field.hero.a11y.tapToClose') : t('home:field.hero.a11y.tapToOpen')}
-            >
-              <View style={styles.heroTopRow}>
-                <NBText variant="mono-sm" color="gray700" uppercase style={styles.heroLabel}>
-                  {currentShift.is_overtime ? t('home:field.hero.overtimeActive') : t('home:field.hero.onDuty')}
-                </NBText>
-                <View style={styles.heroStatusRow}>
-                  <TouchableOpacity
-                    onPress={() => setLocationMapVisible(true)}
-                    disabled={!hasActiveShift}
-                    activeOpacity={0.7}
-                    accessibilityRole="button"
-                    accessibilityLabel={t('home:field.hero.a11y.locationStatus', { status: areaLabel })}
-                  >
-                    <StatusPill tone={areaTone} label={areaLabel} />
-                  </TouchableOpacity>
-                  <MaterialCommunityIcons
-                    name={shiftExpanded ? 'chevron-up' : 'chevron-down'}
-                    size={24}
-                    color={nbColors.gray700}
-                    style={styles.heroChevron}
-                  />
-                </View>
-              </View>
-              <AttendanceSummaryRow
-                firstClockIn={attendance.firstClockIn}
-                lastClockOut={attendance.lastClockOut}
-                isLate={attendance.isLate}
-                isEarlyLeave={attendance.isEarlyLeave}
-                neutral={!hasScheduleToday}
-              />
-              {shiftExpanded && (
-                <View style={styles.heroDetails}>
-                  <InfoTableRow label={t('home:field.hero.labels.clockInStart')} value={<DateTimeValue source={currentShift.clock_in_time} />} />
-                  <InfoTableRow
-                    label={t('home:field.hero.labels.status')}
-                    value={
-                      hasScheduleToday ? (
-                        <NBBadge
-                          text={attendance.isLate ? t('home:field.hero.status.late') : t('home:field.hero.status.onTime')}
-                          color={attendance.isLate ? 'danger' : 'success'}
-                          size="sm"
-                        />
-                      ) : (
-                        <NBBadge text={t('home:field.hero.status.noSchedule')} color="gray" size="sm" />
-                      )
-                    }
-                  />
-                  <InfoTableRow label={t('home:field.hero.labels.assignedArea')} value={heroAreaName} numberOfLines={1} />
-                  <InfoTableRow label={t('home:field.hero.labels.duration')} value={timer.slice(0, 5)} />
-                  <InfoTableRow
-                    label={t('home:field.hero.labels.currentLocation')}
-                    value={
-                      <>
-                        <NBText variant="mono-sm" color="black" numberOfLines={1} style={styles.heroLocText}>
-                          {homeLocation.latitude !== null && homeLocation.longitude !== null
-                            ? `${homeLocation.latitude.toFixed(5)}, ${homeLocation.longitude.toFixed(5)}${
-                                homeLocation.accuracy !== null ? ` ±${Math.round(homeLocation.accuracy)}m` : ''
-                              }`
-                            : homeLocation.loading
-                            ? t('home:field.hero.location.searching')
-                            : t('home:field.hero.location.unavailable')}
-                        </NBText>
-                        <TouchableOpacity
-                          onPress={refreshLocation}
-                          disabled={homeLocation.loading}
-                          style={styles.heroGpsRefresh}
-                          accessibilityRole="button"
-                          accessibilityLabel={t('home:field.hero.a11y.refreshLocation')}
-                          testID="hero-refresh-location"
-                        >
-                          {homeLocation.loading ? (
-                            <ActivityIndicator size="small" color={nbColors.black} />
-                          ) : (
-                            <MaterialCommunityIcons name="refresh" size={18} color={nbColors.black} />
-                          )}
-                        </TouchableOpacity>
-                      </>
-                    }
-                  />
-                  <TouchableOpacity
-                    onPress={() => setDetailShift(currentShift)}
-                    activeOpacity={0.7}
-                    accessibilityRole="button"
-                    style={styles.heroDetailLink}
-                    testID="shift-detail-link"
-                  >
-                    <NBText variant="mono-sm" color="gray700" uppercase style={styles.heroDetailText}>
-                      {t('home:field.hero.link.shiftDetail')}
-                    </NBText>
-                  </TouchableOpacity>
-                  {isClockable && (
-                    <View style={styles.heroButton}>
-                      <NBButton
-                        title={currentShift.is_overtime ? t('home:field.hero.button.clockOutOvertime') : t('home:field.hero.button.clockOut')}
-                        onPress={handleClockInOut}
-                        variant="danger"
-                        size="md"
-                        testID="clock-button"
-                      />
-                    </View>
-                  )}
-                </View>
-              )}
-            </TouchableOpacity>
-          ) : (
-            <View style={[styles.hero, styles.heroIdle]} testID="absensi-hero">
-              <NBText variant="mono-sm" color="gray600" uppercase style={styles.heroLabel}>
-                {t('home:field.hero.idle.label')}
-              </NBText>
-              <NBText variant="h2" color="black" style={styles.heroIdleTitle}>
-                {t('home:field.hero.idle.title')}
-              </NBText>
-              {assignedArea && (
-                <NBText variant="body-sm" color="gray700" style={styles.heroMeta}>
-                  {t('home:field.hero.idle.assignedArea', { area: assignedArea.name })}
-                </NBText>
-              )}
-              {isClockable && (
-                <View style={styles.heroButton}>
-                  <NBButton title={t('home:field.hero.button.clockIn')} onPress={handleClockInOut} variant="primary" size="md" testID="clock-button" />
-                </View>
-              )}
-            </View>
-          )}
+            />
+          ) : null}
 
           {/* Ringkasan hari ini — at-a-glance counters; each tile opens its detail sheet */}
           <HomeSectionDivider label={t('home:field.sections.summary')} />
@@ -506,20 +546,34 @@ export function FieldHomeScreen(): React.JSX.Element {
             />
           </View>
 
-          {/* Not-assigned hint (field roles only — rayon-scoped roles excluded) */}
-          {!assignedArea && !currentShift &&
-            user?.role !== 'admin_data' && user?.role !== 'kepala_rayon' && (
-              <View style={styles.warningCard}>
-                <NBText variant="body-sm" color="statusIdle" align="center">
-                  {t('home:field.warning.noAssignedArea')}
-                </NBText>
-              </View>
-            )}
+          {/* The "not assigned to any area" state is surfaced by the attendance +
+              clock-in screens (Status Area + the "Tidak ada area penugasan" note),
+              so home no longer repeats it as a bottom banner. */}
         </ScrollView>
       </View>
 
       {/* Modals */}
-      <ShiftDetailModal visible={detailShift !== null} onClose={() => setDetailShift(null)} shift={detailShift} />
+      <ShiftDetailModal
+        visible={detailShift !== null}
+        onClose={() => setDetailShift(null)}
+        shift={detailShift}
+        scopeLabel={scopeLabelText}
+        shiftText={heroShiftText}
+        durationText={currentShift ? timer.slice(0, 5) : null}
+        currentTime={now}
+        currentLocation={{
+          latitude: homeLocation.latitude,
+          longitude: homeLocation.longitude,
+          accuracy: homeLocation.accuracy,
+        }}
+      />
+      <AttendanceStatusSheet
+        visible={statusSheetVisible}
+        onClose={() => setStatusSheetVisible(false)}
+        status={statusKind}
+        clockInTime={currentShift?.clock_in_time ?? null}
+        shiftStart={rosterShift?.start_time ?? null}
+      />
       <TodayActivitiesModal
         visible={activitiesModalVisible}
         onClose={() => setActivitiesModalVisible(false)}
@@ -541,8 +595,25 @@ export function FieldHomeScreen(): React.JSX.Element {
       <LocationMapModal
         visible={locationMapVisible}
         onClose={() => setLocationMapVisible(false)}
+        title={t('attendance:clockInOut.mapTitle')}
         location={homeLocation}
-        area={currentShift?.area ?? assignedArea ?? undefined}
+        // `homeMapArea` is resolved by useHomeLocation with the SAME shared
+        // builder the clock-in/out screen uses (active clock-in lokasi → today's
+        // roster lokasi → assigned rayon/kawasan boundary → standing assignment),
+        // so this map draws exactly the same area + markers as that one.
+        area={homeMapArea}
+        hideAreaStatus={!hasBoundary}
+        workerMarker={workerMapMarker(user?.role, hasBoundary && !homeLocation.isWithinArea)}
+        areaMarker={homeMapArea ? scopeAreaMarker(scheduleScope.scope) : undefined}
+        onRefresh={refreshLocation}
+        refreshing={homeLocation.loading}
+      />
+      <ShiftPickerSheet
+        visible={shiftPickerVisible}
+        options={shiftOptions}
+        value={selectedOption}
+        onSelect={(o) => setSelectedShiftKey(`${o.service_day}:${o.shift_definition_id}`)}
+        onClose={() => setShiftPickerVisible(false)}
       />
     </NBBackgroundPattern>
   );
@@ -551,7 +622,7 @@ export function FieldHomeScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'transparent' },
   scrollView: { flex: 1 },
-  content: { paddingHorizontal: nbSpacing.md, paddingTop: nbSpacing.sm, paddingBottom: nbSpacing.md, flexGrow: 1 },
+  content: screenContentGrow,
   updateBanner: { marginBottom: nbSpacing.sm },
   banner: { marginBottom: nbSpacing.md },
 
@@ -561,53 +632,42 @@ const styles = StyleSheet.create({
     borderColor: nbColors.black,
     borderRadius: nbRadius.md,
     padding: nbSpacing.md,
-    marginBottom: nbSpacing.md,
     ...nbShadows.md,
   },
   heroActive: { backgroundColor: nbColors.statusActiveBg },
   heroLembur: { backgroundColor: nbColors.statusIdleBg },
-  heroIdle: { backgroundColor: nbColors.white },
   heroTopRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    // Center so the status pill + chevron line up with the "SEDANG BERTUGAS"
+    // label (the pill is taller than the text — top-align read as misaligned).
+    alignItems: 'center',
     justifyContent: 'space-between',
     gap: nbSpacing.sm,
   },
   heroStatusRow: { flexDirection: 'row', alignItems: 'center', gap: nbSpacing.xs },
   heroChevron: { marginTop: 1 },
   heroLabel: { letterSpacing: 0.6, marginBottom: 2 },
-  heroMeta: { marginTop: nbSpacing.sm },
-  // Expanded hero: label:value table rows.
-  heroDetails: { marginTop: nbSpacing.md, gap: nbSpacing.xs },
-  heroLocText: { flexShrink: 1 },
-  heroIdleTitle: { marginTop: 2 },
-  // Compact white refresh button beside the inline coords.
-  heroGpsRefresh: {
-    width: 30,
-    height: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    // Extra breathing room from the coords (on top of the row gap).
-    marginLeft: nbSpacing.sm,
-    backgroundColor: nbColors.white,
-    borderWidth: nbBorders.widthBase,
-    borderColor: nbColors.black,
-    borderRadius: nbRadius.sm,
-  },
+  heroNextShift: { marginTop: nbSpacing.xs },
+  // Expanded hero: label:value table rows — sm gap so the rows breathe.
+  heroDetails: { marginTop: nbSpacing.md, gap: nbSpacing.sm },
+  // Status Area value: the in/out pill + the GPS refresh button, right-aligned.
   heroButton: { marginTop: nbSpacing.md },
-  heroDetailLink: { marginTop: nbSpacing.sm, alignSelf: 'flex-start' },
-  heroDetailText: { letterSpacing: 0.6 },
 
   /* Tiles */
-  tiles: { flexDirection: 'row', gap: nbSpacing.sm, marginBottom: nbSpacing.md },
+  tiles: { flexDirection: 'row', gap: nbSpacing.sm },
 
-  warningCard: {
-    backgroundColor: withAlpha(nbColors.warningLight, 0.125),
-    borderColor: nbColors.warning,
+  scheduleCard: {
+    backgroundColor: nbColors.bgSurface,
+    borderColor: nbColors.black,
     borderWidth: nbBorders.widthBase,
     borderRadius: nbRadius.base,
     padding: nbSpacing.md,
-    marginTop: nbSpacing.md,
+    gap: nbSpacing.xs,
+    // Intra-section gap from the clock-in hero above (same Kehadiran section).
+    marginTop: nbSpacing.sm,
+  },
+  scheduleLink: {
+    marginTop: nbSpacing.xs,
   },
 });
 

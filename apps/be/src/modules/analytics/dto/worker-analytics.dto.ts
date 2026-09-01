@@ -59,7 +59,7 @@ export class WorkerAnalyticsDto {
   @Expose()
   total_pings: number;
 
-  @ApiProperty({ description: 'Area compliance rate (%)', example: 93.75 })
+  @ApiProperty({ description: 'Location compliance rate (%)', example: 93.75 })
   @Expose()
   area_compliance: number;
 

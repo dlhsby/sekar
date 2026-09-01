@@ -12,8 +12,8 @@ export interface User {
   role: UserRole;
   phone_number?: string;
   profile_picture_url?: string;
-  rayon_id?: string;
-  area_id?: string;
+  district_id?: string;
+  location_id?: string;
   /**
    * Set true when an admin reset this user's password (ADR-041, Phase 4-7).
    * Forces the user through `/change-password` before reaching the dashboard;
@@ -26,13 +26,17 @@ export interface User {
    * Absent → default to Indonesian.
    */
   preferred_language?: 'id' | 'en';
+  /**
+   * Granted permission keys for the user's role (ADR-044), possibly with
+   * wildcards (`*:*`, `user:*`). Returned by /auth/me; powers `usePermissions()`.
+   */
+  permissions?: string[];
   assigned_area?: {
     id: string;
     name: string;
-    area_type_id: string;
+    location_type_id: string;
     gps_lat: number;
     gps_lng: number;
-    radius_meters: number;
     address?: string;
   };
 }

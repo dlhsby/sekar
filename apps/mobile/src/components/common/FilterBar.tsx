@@ -71,7 +71,7 @@ export function FilterBar({
             ))}
           </ScrollView>
         ) : (
-          <NBText variant="body-sm" color="gray400" style={styles.placeholder}>{t('components:ui.all')} {label}</NBText>
+          <NBText variant="body-sm" color="gray500" style={styles.placeholder}>{t('components:ui.all')} {label}</NBText>
         )}
         {filterCount > 0 && (
           <TouchableOpacity

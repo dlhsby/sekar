@@ -6,24 +6,27 @@ import { MonitoringUserService } from './monitoring-user.service';
 import { StatusCalculatorService } from './status-calculator.service';
 import { MonitoringCacheService } from './monitoring-cache.service';
 import { User } from '../../users/entities/user.entity';
-import { Area } from '../../areas/entities/area.entity';
+import { Location } from '../../locations/entities/location.entity';
 import { Shift } from '../../shifts/entities/shift.entity';
 import { Task, TaskStatus } from '../../tasks/entities/task.entity';
 import { Activity } from '../../activities/entities/activity.entity';
 import { LocationLog } from '../../location/entities/location-log.entity';
-import { Rayon } from '../../rayons/entities/rayon.entity';
+import { District, StaffingLevel } from '../../districts/entities/district.entity';
+import { Region } from '../../regions/entities/region.entity';
+import { Role } from '../../rbac/entities/role.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
 import { UserTrackingStatus, TrackingStatus } from '../entities/user-tracking-status.entity';
 
 describe('MonitoringUserService', () => {
   let service: MonitoringUserService;
   let userRepository: jest.Mocked<Repository<User>>;
-  let areaRepository: jest.Mocked<Repository<Area>>;
+  let areaRepository: jest.Mocked<Repository<Location>>;
   let shiftRepository: jest.Mocked<Repository<Shift>>;
   let taskRepository: jest.Mocked<Repository<Task>>;
   let activityRepository: jest.Mocked<Repository<Activity>>;
   let locationRepository: jest.Mocked<Repository<LocationLog>>;
-  let rayonRepository: jest.Mocked<Repository<Rayon>>;
+  let districtRepository: jest.Mocked<Repository<District>>;
+  let regionRepository: jest.Mocked<Repository<Region>>;
   let shiftDefinitionRepository: jest.Mocked<Repository<ShiftDefinition>>;
   let trackingRepository: jest.Mocked<Repository<UserTrackingStatus>>;
 
@@ -33,28 +36,36 @@ describe('MonitoringUserService', () => {
     full_name: 'Satgas One',
     phone_number: '081234567890',
     role: 'satgas',
-    area_id: 'area-1',
-    rayon_id: 'rayon-1',
+    location_id: 'area-1',
+    district_id: 'district-1',
   } as User;
 
-  const mockArea: Area = {
+  const mockArea: Location = {
     id: 'area-1',
-    name: 'Area 1',
-    rayon_id: 'rayon-1',
+    name: 'Location 1',
+    district_id: 'district-1',
+    region_id: 'region-1',
     gps_lat: -7.25,
     gps_lng: 112.75,
-  } as Area;
+  } as Location;
 
-  const mockRayon: Rayon = {
-    id: 'rayon-1',
-    name: 'Rayon 1',
-  } as Rayon;
+  const mockDistrict: District = {
+    id: 'district-1',
+    name: 'District 1',
+  } as District;
+
+  // Presence is derived against the wall clock, so an open session's lifecycle
+  // depends on WHEN the suite runs: with a 06:00-14:00 shift and `new Date()`,
+  // this read `bertugas` in the morning and `pulang` after 15:00. Pin the
+  // clock-in inside the shift window and freeze `now` alongside it (see the
+  // `beforeEach` below) so the expectation means the same thing at any hour.
+  const NOW_IN_SHIFT = new Date('2026-07-16T10:00:00+07:00');
 
   const mockShift: Shift = {
     id: 'shift-1',
     user_id: 'user-1',
-    area_id: 'area-1',
-    clock_in_time: new Date(),
+    location_id: 'area-1',
+    clock_in_time: new Date('2026-07-16T07:00:00+07:00'),
     clock_out_time: null,
     clock_in_outside_boundary: false,
   } as unknown as Shift;
@@ -67,6 +78,8 @@ describe('MonitoringUserService', () => {
   } as ShiftDefinition;
 
   beforeEach(async () => {
+    jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
+    jest.setSystemTime(NOW_IN_SHIFT);
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MonitoringUserService,
@@ -77,7 +90,7 @@ describe('MonitoringUserService', () => {
           },
         },
         {
-          provide: getRepositoryToken(Area),
+          provide: getRepositoryToken(Location),
           useValue: {
             findOne: jest.fn(),
             createQueryBuilder: jest.fn(),
@@ -111,10 +124,22 @@ describe('MonitoringUserService', () => {
           },
         },
         {
-          provide: getRepositoryToken(Rayon),
+          provide: getRepositoryToken(District),
           useValue: {
             find: jest.fn(),
             findOne: jest.fn(),
+          },
+        },
+        {
+          provide: getRepositoryToken(Region),
+          useValue: {
+            find: jest.fn().mockResolvedValue([]),
+          },
+        },
+        {
+          provide: getRepositoryToken(Role),
+          useValue: {
+            find: jest.fn().mockResolvedValue([]),
           },
         },
         {
@@ -144,6 +169,7 @@ describe('MonitoringUserService', () => {
               inactive_threshold_seconds: 900,
               missing_threshold_seconds: 3600,
               location_ping_interval_seconds: 60,
+              late_grace_seconds: 900,
             }),
           },
         },
@@ -152,7 +178,7 @@ describe('MonitoringUserService', () => {
 
     service = module.get<MonitoringUserService>(MonitoringUserService);
     userRepository = module.get<jest.Mocked<Repository<User>>>(getRepositoryToken(User));
-    areaRepository = module.get<jest.Mocked<Repository<Area>>>(getRepositoryToken(Area));
+    areaRepository = module.get<jest.Mocked<Repository<Location>>>(getRepositoryToken(Location));
     shiftRepository = module.get<jest.Mocked<Repository<Shift>>>(getRepositoryToken(Shift));
     taskRepository = module.get<jest.Mocked<Repository<Task>>>(getRepositoryToken(Task));
     activityRepository = module.get<jest.Mocked<Repository<Activity>>>(
@@ -161,7 +187,10 @@ describe('MonitoringUserService', () => {
     locationRepository = module.get<jest.Mocked<Repository<LocationLog>>>(
       getRepositoryToken(LocationLog),
     );
-    rayonRepository = module.get<jest.Mocked<Repository<Rayon>>>(getRepositoryToken(Rayon));
+    districtRepository = module.get<jest.Mocked<Repository<District>>>(
+      getRepositoryToken(District),
+    );
+    regionRepository = module.get<jest.Mocked<Repository<Region>>>(getRepositoryToken(Region));
     shiftDefinitionRepository = module.get<jest.Mocked<Repository<ShiftDefinition>>>(
       getRepositoryToken(ShiftDefinition),
     );
@@ -170,13 +199,17 @@ describe('MonitoringUserService', () => {
     );
   });
 
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   describe('getLiveUsers', () => {
     it('should return live user positions without filters', async () => {
       const mockTracking: UserTrackingStatus = {
         id: 'tracking-1',
         user_id: 'user-1',
         user: mockUser,
-        area_id: 'area-1',
+        location_id: 'area-1',
         area: mockArea,
         shift_id: 'shift-1',
         shift: mockShift,
@@ -195,6 +228,9 @@ describe('MonitoringUserService', () => {
         innerJoinAndSelect: jest.fn().mockReturnThis(),
         leftJoinAndSelect: jest.fn().mockReturnThis(),
         leftJoin: jest.fn().mockReturnThis(),
+        innerJoin: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([]),
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
         getMany: jest.fn().mockResolvedValue([mockTracking]),
@@ -215,13 +251,115 @@ describe('MonitoringUserService', () => {
         getMany: jest.fn().mockResolvedValue([mockArea]),
       };
       areaRepository.createQueryBuilder.mockReturnValue(areaQb as any);
-      rayonRepository.find.mockResolvedValue([mockRayon]);
+      districtRepository.find.mockResolvedValue([mockDistrict]);
 
       const result = await service.getLiveUsers();
 
       expect(result).toBeDefined();
       expect(result.users).toHaveLength(1);
       expect(result.users[0].id).toBe('user-1');
+      // Wiring (5.4c): a live worker is always bertugas and carries the flags array.
+      expect(result.users[0].lifecycle_state).toBe('bertugas');
+      expect(Array.isArray(result.users[0].lifecycle_flags)).toBe(true);
+    });
+
+    it('applies a name/lokasi ILIKE + 24h freshness filter when a search term is given (5.7a)', async () => {
+      const qb = {
+        innerJoinAndSelect: jest.fn().mockReturnThis(),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        leftJoin: jest.fn().mockReturnThis(),
+        innerJoin: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([]),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+      };
+      trackingRepository.createQueryBuilder.mockReturnValue(qb as any);
+      taskRepository.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+      } as any);
+      areaRepository.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+      } as any);
+      districtRepository.find.mockResolvedValue([]);
+
+      await service.getLiveUsers({ q: 'John' } as any);
+
+      // The ILIKE match escapes the term and is paired with the 24h freshness bound.
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        expect.stringContaining('ILIKE'),
+        expect.objectContaining({ q: '%John%' }),
+      );
+      expect(qb.andWhere).toHaveBeenCalledWith(expect.stringContaining('24 hours'));
+      // The search also matches a TEAM name via an EXISTS subquery on today's
+      // roster, keyed by teamDate (so a worker found only by team surfaces too).
+      const matchCall = qb.andWhere.mock.calls.find(
+        (c: unknown[]) => typeof c[0] === 'string' && (c[0] as string).includes('team_categories'),
+      );
+      expect(matchCall).toBeDefined();
+      expect(matchCall?.[1]).toEqual(expect.objectContaining({ teamDate: expect.any(String) }));
+    });
+
+    it('flags is_late for a late clock-in, and lupa_clock_out only past the shift end', async () => {
+      // Freeze "now" so the derivation is deterministic. Noon WIB, inside the
+      // 06:00–14:00 window → is_late (clocked in 07:00 > 06:15) but not past end.
+      jest.useFakeTimers().setSystemTime(new Date('2026-07-16T12:00:00+07:00'));
+      try {
+        const lateTracking = {
+          ...({
+            id: 'tracking-2',
+            user_id: 'user-1',
+            user: mockUser,
+            location_id: 'area-1',
+            area: mockArea,
+            shift_id: 'shift-1',
+            shift: { ...mockShift, clock_in_time: new Date('2026-07-16T07:00:00+07:00') },
+            shift_definition_id: 'shift-def-1',
+            shift_definition: { ...mockShiftDef, crosses_midnight: false },
+            status: TrackingStatus.ACTIVE,
+            last_latitude: -7.25,
+            last_longitude: 112.75,
+            last_accuracy_meters: 10,
+            last_battery_level: 85,
+            last_location_at: new Date('2026-07-16T11:59:00+07:00'),
+            is_within_area: true,
+          } as unknown as UserTrackingStatus),
+        };
+        const qb = {
+          innerJoinAndSelect: jest.fn().mockReturnThis(),
+          leftJoinAndSelect: jest.fn().mockReturnThis(),
+          leftJoin: jest.fn().mockReturnThis(),
+          where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockReturnThis(),
+          getMany: jest.fn().mockResolvedValue([lateTracking]),
+        };
+        trackingRepository.createQueryBuilder.mockReturnValue(qb as any);
+        taskRepository.createQueryBuilder.mockReturnValue({
+          where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockReturnThis(),
+          getMany: jest.fn().mockResolvedValue([]),
+        } as any);
+        areaRepository.createQueryBuilder.mockReturnValue({
+          where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockReturnThis(),
+          getMany: jest.fn().mockResolvedValue([mockArea]),
+        } as any);
+        districtRepository.find.mockResolvedValue([mockDistrict]);
+
+        const result = await service.getLiveUsers();
+
+        expect(result.users[0].is_late).toBe(true);
+        expect(result.users[0].lifecycle_flags).toContain('is_late');
+        // Noon is before the 14:00 end → not a forgotten clock-out.
+        expect(result.users[0].lifecycle_flags).not.toContain('lupa_clock_out');
+      } finally {
+        jest.useRealTimers();
+      }
     });
 
     it("derives expected/present/absent/on-leave from today's roster (ADR-013)", async () => {
@@ -229,6 +367,9 @@ describe('MonitoringUserService', () => {
         innerJoinAndSelect: jest.fn().mockReturnThis(),
         leftJoinAndSelect: jest.fn().mockReturnThis(),
         leftJoin: jest.fn().mockReturnThis(),
+        innerJoin: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([]),
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
         getMany: jest.fn().mockResolvedValue([]), // live list not relevant here
@@ -240,7 +381,7 @@ describe('MonitoringUserService', () => {
           {
             user_id: 'u1',
             status: 'planned',
-            rayon_id: 'r1',
+            district_id: 'r1',
             shift_definition_id: 's1',
             user: { full_name: 'One', role: 'satgas' },
             shift_definition: { name: 'Shift 1' },
@@ -248,7 +389,7 @@ describe('MonitoringUserService', () => {
           {
             user_id: 'u2',
             status: 'planned',
-            rayon_id: 'r1',
+            district_id: 'r1',
             shift_definition_id: 's1',
             user: { full_name: 'Two', role: 'satgas' },
             shift_definition: { name: 'Shift 1' },
@@ -256,7 +397,7 @@ describe('MonitoringUserService', () => {
           {
             user_id: 'u3',
             status: 'leave_sick',
-            rayon_id: 'r1',
+            district_id: 'r1',
             shift_definition_id: 's1',
             user: { full_name: 'Three', role: 'linmas' },
             shift_definition: { name: 'Shift 1' },
@@ -264,14 +405,31 @@ describe('MonitoringUserService', () => {
           {
             user_id: 'u4',
             status: 'off',
-            rayon_id: 'r1',
+            district_id: 'r1',
             shift_definition_id: null,
             user: { full_name: 'Four', role: 'kepala_rayon' },
             shift_definition: null,
           },
         ]),
+        getTeamMembership: jest.fn().mockResolvedValue(new Map()), // Empty team map for this test
       };
-      trackingRepository.find = jest.fn().mockResolvedValue([{ user_id: 'u1' }]); // only u1 clocked in
+      // "Clocked in" is now a join against shifts (a tracking row pointing at a
+      // CLOSED session is not a worker on duty), so the arrangement moves from
+      // `find` to the query builder's raw rows.
+      const clockedQb = {
+        innerJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([{ user_id: 'u1' }]), // only u1 clocked in
+      };
+      // The live-user query runs first and the roster summary second; both use
+      // alias 'uts', so hand the summary its own builder on the second call.
+      const liveUsersQbFactory = trackingRepository.createQueryBuilder;
+      trackingRepository.createQueryBuilder = jest
+        .fn()
+        .mockImplementationOnce((alias?: string) => liveUsersQbFactory(alias))
+        .mockImplementation(() => clockedQb) as any;
 
       const result = await service.getLiveUsers();
 
@@ -281,6 +439,84 @@ describe('MonitoringUserService', () => {
       expect(result.on_leave_count).toBe(1);
       expect(result.off_schedule_count).toBe(1);
       expect(result.absent_users.map((a) => a.user_id)).toEqual(['u2']);
+      // ADR-050 excused: the on-leave worker is now surfaced per-worker with a
+      // leave reason + lifecycle (not just a count), separate from plain absences.
+      expect(result.on_leave_users.map((a) => a.user_id)).toEqual(['u3']);
+      expect(result.on_leave_users[0].leave_reason).toBe('sakit');
+      expect(result.on_leave_users[0].lifecycle_state).toBe('tidak_hadir');
+      expect(result.absent_users[0].leave_reason).toBeNull();
+      expect(result.absent_users[0].lifecycle_state).toBeDefined();
+    });
+
+    it('narrows the roster lists by search term but leaves the counts alone', async () => {
+      // A worker on today's roster who has NOT clocked in can never appear in the
+      // live query (it is rooted in `user_tracking_status`), so search has to
+      // reach them through these lists or a known name returns nothing at all.
+      const qb = {
+        innerJoinAndSelect: jest.fn().mockReturnThis(),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        leftJoin: jest.fn().mockReturnThis(),
+        innerJoin: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([]),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+      };
+      trackingRepository.createQueryBuilder.mockReturnValue(qb as any);
+      (service as any).dailySchedulesService = {
+        getRosterForMonitoring: jest.fn().mockResolvedValue([
+          {
+            user_id: 'u2',
+            status: 'planned',
+            district_id: 'r1',
+            shift_definition_id: 's1',
+            user: { full_name: 'Budi Santoso', role: 'satgas' },
+            shift_definition: { name: 'Shift 1' },
+          },
+          {
+            user_id: 'u5',
+            status: 'planned',
+            district_id: 'r1',
+            shift_definition_id: 's1',
+            user: { full_name: 'Siti Aminah', role: 'satgas' },
+            shift_definition: { name: 'Shift 1' },
+          },
+          {
+            user_id: 'u3',
+            status: 'leave_sick',
+            district_id: 'r1',
+            shift_definition_id: 's1',
+            user: { full_name: 'Budi Hartono', role: 'linmas' },
+            shift_definition: { name: 'Shift 1' },
+          },
+        ]),
+        getTeamMembership: jest.fn().mockResolvedValue(new Map()),
+      };
+      const clockedQb = {
+        innerJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([]),
+      };
+      const liveUsersQbFactory = trackingRepository.createQueryBuilder;
+      trackingRepository.createQueryBuilder = jest
+        .fn()
+        .mockImplementationOnce((alias?: string) => liveUsersQbFactory(alias))
+        .mockImplementation(() => clockedQb) as any;
+
+      const result = await service.getLiveUsers({ q: 'budi' } as any);
+
+      // Case-insensitive, matches across both lists…
+      expect(result.absent_users.map((a) => a.user_id)).toEqual(['u2']);
+      expect(result.on_leave_users.map((a) => a.user_id)).toEqual(['u3']);
+      // …while the counts still describe the ROSTER, not the query. The module
+      // already learned that a list disagreeing with its own count is a bug, so
+      // the narrowing is deliberately one-directional.
+      expect(result.expected_count).toBe(2);
+      expect(result.absent_count).toBe(2);
+      expect(result.on_leave_count).toBe(1);
     });
 
     it('should filter users by area ID', async () => {
@@ -288,6 +524,9 @@ describe('MonitoringUserService', () => {
         innerJoinAndSelect: jest.fn().mockReturnThis(),
         leftJoinAndSelect: jest.fn().mockReturnThis(),
         leftJoin: jest.fn().mockReturnThis(),
+        innerJoin: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([]),
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
         getMany: jest.fn().mockResolvedValue([]),
@@ -295,16 +534,19 @@ describe('MonitoringUserService', () => {
 
       trackingRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
 
-      await service.getLiveUsers({ area_id: 'area-1' });
+      await service.getLiveUsers({ location_id: 'area-1' });
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalled();
     });
 
-    it('should filter users by rayon ID', async () => {
+    it('should filter users by district ID', async () => {
       const mockQueryBuilder = {
         innerJoinAndSelect: jest.fn().mockReturnThis(),
         leftJoinAndSelect: jest.fn().mockReturnThis(),
         leftJoin: jest.fn().mockReturnThis(),
+        innerJoin: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([]),
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
         getMany: jest.fn().mockResolvedValue([]),
@@ -312,7 +554,7 @@ describe('MonitoringUserService', () => {
 
       trackingRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
 
-      await service.getLiveUsers({ rayon_id: 'rayon-1' });
+      await service.getLiveUsers({ district_id: 'district-1' });
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalled();
     });
@@ -322,6 +564,9 @@ describe('MonitoringUserService', () => {
         innerJoinAndSelect: jest.fn().mockReturnThis(),
         leftJoinAndSelect: jest.fn().mockReturnThis(),
         leftJoin: jest.fn().mockReturnThis(),
+        innerJoin: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([]),
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
         getMany: jest.fn().mockResolvedValue([]),
@@ -339,6 +584,9 @@ describe('MonitoringUserService', () => {
         innerJoinAndSelect: jest.fn().mockReturnThis(),
         leftJoinAndSelect: jest.fn().mockReturnThis(),
         leftJoin: jest.fn().mockReturnThis(),
+        innerJoin: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([]),
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
         getMany: jest.fn().mockResolvedValue([]),
@@ -349,6 +597,130 @@ describe('MonitoringUserService', () => {
       await service.getLiveUsers({ status: TrackingStatus.ACTIVE });
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalled();
+    });
+
+    it('attaches team_id, team_name, team_color when getTeamMembership returns a mapping (Phase 5.7)', async () => {
+      const mockTracking: UserTrackingStatus = {
+        id: 'tracking-1',
+        user_id: 'user-1',
+        user: mockUser,
+        location_id: 'area-1',
+        area: mockArea,
+        shift_id: 'shift-1',
+        shift: mockShift,
+        shift_definition_id: 'shift-def-1',
+        shift_definition: mockShiftDef,
+        status: TrackingStatus.ACTIVE,
+        last_latitude: -7.25,
+        last_longitude: 112.75,
+        last_accuracy_meters: 10,
+        last_battery_level: 85,
+        last_location_at: new Date(),
+        is_within_area: true,
+      } as unknown as UserTrackingStatus;
+
+      const mockQueryBuilder = {
+        innerJoinAndSelect: jest.fn().mockReturnThis(),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        leftJoin: jest.fn().mockReturnThis(),
+        innerJoin: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([]),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([mockTracking]),
+      };
+
+      trackingRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
+      taskRepository.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+      } as any);
+      areaRepository.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([mockArea]),
+      } as any);
+      districtRepository.find.mockResolvedValue([mockDistrict]);
+
+      // Mock dailySchedulesService with team membership
+      const mockTeamMap = new Map([
+        [
+          'user-1',
+          {
+            team_id: 'event-123',
+            team_name: 'Penyiraman',
+            team_color: '#22C55E',
+          },
+        ],
+      ]);
+      (service as any).dailySchedulesService = {
+        getTeamMembership: jest.fn().mockResolvedValue(mockTeamMap),
+        getRosterForMonitoring: jest.fn().mockResolvedValue([]),
+      };
+
+      const result = await service.getLiveUsers();
+
+      expect(result.users[0].team_id).toBe('event-123');
+      expect(result.users[0].team_name).toBe('Penyiraman');
+      expect(result.users[0].team_color).toBe('#22C55E');
+      expect((service as any).dailySchedulesService.getTeamMembership).toHaveBeenCalled();
+    });
+
+    it('sets team fields to null when dailySchedulesService is not wired (optional dependency)', async () => {
+      const mockTracking: UserTrackingStatus = {
+        id: 'tracking-1',
+        user_id: 'user-1',
+        user: mockUser,
+        location_id: 'area-1',
+        area: mockArea,
+        shift_id: 'shift-1',
+        shift: mockShift,
+        shift_definition_id: 'shift-def-1',
+        shift_definition: mockShiftDef,
+        status: TrackingStatus.ACTIVE,
+        last_latitude: -7.25,
+        last_longitude: 112.75,
+        last_accuracy_meters: 10,
+        last_battery_level: 85,
+        last_location_at: new Date(),
+        is_within_area: true,
+      } as unknown as UserTrackingStatus;
+
+      const mockQueryBuilder = {
+        innerJoinAndSelect: jest.fn().mockReturnThis(),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        leftJoin: jest.fn().mockReturnThis(),
+        innerJoin: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([]),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([mockTracking]),
+      };
+
+      trackingRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
+      taskRepository.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+      } as any);
+      areaRepository.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([mockArea]),
+      } as any);
+      districtRepository.find.mockResolvedValue([mockDistrict]);
+
+      // Don't mock dailySchedulesService — leave it undefined
+      (service as any).dailySchedulesService = undefined;
+
+      const result = await service.getLiveUsers();
+
+      expect(result.users[0].team_id).toBeNull();
+      expect(result.users[0].team_name).toBeNull();
+      expect(result.users[0].team_color).toBeNull();
     });
   });
 
@@ -421,7 +793,7 @@ describe('MonitoringUserService', () => {
       const mockTracking: UserTrackingStatus = {
         id: 'tracking-1',
         user_id: 'user-1',
-        area_id: 'area-1',
+        location_id: 'area-1',
         area: mockArea,
         shift_id: 'shift-1',
         shift: mockShift,
@@ -437,7 +809,7 @@ describe('MonitoringUserService', () => {
 
       trackingRepository.findOne.mockResolvedValue(mockTracking);
       areaRepository.findOne.mockResolvedValue(mockArea);
-      rayonRepository.findOne.mockResolvedValue(mockRayon);
+      districtRepository.findOne.mockResolvedValue(mockDistrict);
       shiftDefinitionRepository.findOne.mockResolvedValue(mockShiftDef);
 
       const activityQb = {
@@ -467,7 +839,7 @@ describe('MonitoringUserService', () => {
       userRepository.findOne.mockResolvedValue(mockUser);
       trackingRepository.findOne.mockResolvedValue(null);
       areaRepository.findOne.mockResolvedValue(mockArea);
-      rayonRepository.findOne.mockResolvedValue(mockRayon);
+      districtRepository.findOne.mockResolvedValue(mockDistrict);
       activityRepository.find.mockResolvedValue([]);
 
       const taskQb = {
@@ -507,7 +879,7 @@ describe('MonitoringUserService', () => {
       userRepository.findOne.mockResolvedValue(userWithPhone);
       trackingRepository.findOne.mockResolvedValue(null);
       areaRepository.findOne.mockResolvedValue(mockArea);
-      rayonRepository.findOne.mockResolvedValue(mockRayon);
+      districtRepository.findOne.mockResolvedValue(mockDistrict);
       activityRepository.find.mockResolvedValue([]);
 
       const taskQb = {
@@ -526,7 +898,7 @@ describe('MonitoringUserService', () => {
       userRepository.findOne.mockResolvedValue(userNoPhone);
       trackingRepository.findOne.mockResolvedValue(null);
       areaRepository.findOne.mockResolvedValue(mockArea);
-      rayonRepository.findOne.mockResolvedValue(mockRayon);
+      districtRepository.findOne.mockResolvedValue(mockDistrict);
       activityRepository.find.mockResolvedValue([]);
 
       const taskQb = {

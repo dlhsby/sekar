@@ -36,7 +36,7 @@ const renderMenu = (role: string, navigate = jest.fn()) => {
 
 describe('MenuScreen', () => {
   it('renders the section titles for the role', () => {
-    const { getByText } = renderMenu('admin_data');
+    const { getByText } = renderMenu('admin_rayon');
     // section.title holds i18n keys; expect resolved text
     expect(getByText('Operasional')).toBeTruthy(); // menu:sections.operations
     expect(getByText('Perawatan Pohon')).toBeTruthy(); // menu:sections.treeCare
@@ -46,7 +46,7 @@ describe('MenuScreen', () => {
   it('renders a tile for every menu item of a field role', () => {
     const { getByText } = renderMenu('satgas');
     // Labels are i18n keys; expect resolved text
-    expect(getByText('Kehadiran')).toBeTruthy(); // menu:tiles.attendance
+    expect(getByText('Kehadiran')).toBeTruthy(); // menu:tiles.timeRecord (one attendance hub, ADR-055)
     expect(getByText('Lembur')).toBeTruthy(); // menu:tiles.overtime
     expect(getByText('Tugas')).toBeTruthy(); // menu:tiles.tasks
     expect(getByText('Aktivitas')).toBeTruthy(); // menu:tiles.activities

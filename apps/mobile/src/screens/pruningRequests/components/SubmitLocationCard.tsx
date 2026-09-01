@@ -1,5 +1,5 @@
 /**
- * SubmitLocationCard — Location input: GPS, rayon, kecamatan, address, map picker.
+ * SubmitLocationCard — Location input: GPS, district, kecamatan, address, map picker.
  */
 
 import React, { useCallback } from 'react';
@@ -38,9 +38,9 @@ interface SubmitLocationCardProps {
   captureLocation: () => Promise<void>;
   address: string;
   setAddress: (v: string) => void;
-  rayons: Array<{ id: string; name: string }>;
-  rayonId: string;
-  setRayonId: (v: string) => void;
+  districts: Array<{ id: string; name: string }>;
+  districtId: string;
+  setDistrictId: (v: string) => void;
   kecamatanName: string;
   setKecamatanName: (v: string) => void;
   pickerOpen: boolean;
@@ -99,9 +99,9 @@ export function SubmitLocationCard(props: SubmitLocationCardProps) {
     captureLocation,
     address,
     setAddress,
-    rayons,
-    rayonId,
-    setRayonId,
+    districts,
+    districtId,
+    setDistrictId,
     kecamatanName,
     setKecamatanName,
     pickerOpen,
@@ -135,14 +135,14 @@ export function SubmitLocationCard(props: SubmitLocationCardProps) {
               as disabled NBSelects for staff_kecamatan. */}
           {isStaffKecamatan ? (
             <>
-              <View style={styles.fieldGroup} testID="perantingan-rayon-readonly">
+              <View style={styles.fieldGroup} testID="perantingan-district-readonly">
                 <NBSelect
-                  label={t('submit.rayonLabel')}
-                  value={rayonId || 'unset'}
+                  label={t('submit.districtLabel')}
+                  value={districtId || 'unset'}
                   onValueChange={() => {}}
                   options={[{
-                    label: rayons.find((r) => r.id === rayonId)?.name ?? t('submit.notSetLabel'),
-                    value: rayonId || 'unset',
+                    label: districts.find((r) => r.id === districtId)?.name ?? t('submit.notSetLabel'),
+                    value: districtId || 'unset',
                   }]}
                   disabled
                 />
@@ -164,12 +164,12 @@ export function SubmitLocationCard(props: SubmitLocationCardProps) {
             <>
               <View style={styles.fieldGroup}>
                 <NBSelect
-                  label={t('submit.rayonLabel')}
-                  value={rayonId || (rayons[0]?.id ?? '')}
-                  onValueChange={(v) => setRayonId(String(v))}
-                  options={rayons.map((r) => ({ label: r.name, value: r.id }))}
+                  label={t('submit.districtLabel')}
+                  value={districtId || (districts[0]?.id ?? '')}
+                  onValueChange={(v) => setDistrictId(String(v))}
+                  options={districts.map((r) => ({ label: r.name, value: r.id }))}
                   searchable
-                  disabled={rayons.length === 0}
+                  disabled={districts.length === 0}
                 />
               </View>
               <View style={styles.fieldGroup}>

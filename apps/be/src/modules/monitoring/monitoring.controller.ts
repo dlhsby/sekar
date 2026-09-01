@@ -22,10 +22,16 @@ import { MonitoringService } from './monitoring.service';
 import { MonitoringConfigService } from './services/monitoring-config.service';
 import { MonitoringStatsService } from './services/monitoring-stats.service';
 import { MonitoringReassignService } from './services/monitoring-reassign.service';
-import { UserAreasService } from '../user-areas/user-areas.service';
+import { MonitoringAttendanceService } from './services/monitoring-attendance.service';
+import {
+  AttendanceQueryDto,
+  MonitoringAttendanceDto,
+  UserAttendanceDetailDto,
+} from './dto/attendance.dto';
+import { UserLocationsService } from '../../modules/user-locations/user-locations.service';
 import { AuditLogService } from '../audit/audit.service';
 import { CityStatsDto } from './dto/city-stats.dto';
-import { RayonStatsDto } from './dto/rayon-stats.dto';
+import { DistrictStatsDto } from './dto/district-stats.dto';
 import { AreaStatsDto } from './dto/area-stats.dto';
 import { LiveUsersResponseDto, LiveUsersFilterDto } from './dto/live-users.dto';
 import { LocationHistoryQueryDto, LocationHistoryResponseDto } from './dto/location-history.dto';
@@ -37,7 +43,8 @@ import {
 } from './dto/monitoring-config.dto';
 import { StaffingSummaryQueryDto, StaffingSummaryResponseDto } from './dto/staffing-summary.dto';
 import { BoundariesResponseDto } from './dto/boundaries.dto';
-import { AggregateResponseDto } from './dto/aggregate.dto';
+import { parseBBox, type BBox } from '../../common/utils/geo-bbox.util';
+import { AggregateResponseDto, type AggregateScope } from './dto/aggregate.dto';
 import { ReassignWorkerDto, ReassignWorkerResponseDto } from './dto/reassign-worker.dto';
 import { AreaPlantStatusDto } from './dto/area-plant-status.dto';
 import { AreaPlantStatusService } from './services/area-plant-status.service';
@@ -48,7 +55,7 @@ import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User, UserRole } from '../users/entities/user.entity';
 import {
   MONITORING_CITY,
-  MONITORING_RAYON,
+  MONITORING_DISTRICT,
   MONITORING_AREA,
   USER_MANAGERS,
 } from '../users/constants/role-groups';
@@ -63,7 +70,8 @@ export class MonitoringController {
     private readonly configService: MonitoringConfigService,
     private readonly statsService: MonitoringStatsService,
     private readonly reassignService: MonitoringReassignService,
-    private readonly userAreasService: UserAreasService,
+    private readonly attendanceService: MonitoringAttendanceService,
+    private readonly userAreasService: UserLocationsService,
     private readonly areaPlantStatusService: AreaPlantStatusService,
     private readonly auditLogService: AuditLogService,
   ) {}
@@ -76,26 +84,26 @@ export class MonitoringController {
     return this.monitoringService.getCityStats();
   }
 
-  @Get('rayon/:id')
-  @Roles(...MONITORING_RAYON)
-  @ApiOperation({ summary: 'Get rayon-level monitoring statistics' })
-  @ApiParam({ name: 'id', description: 'Rayon ID (UUID)' })
-  @ApiResponse({ status: 200, type: RayonStatsDto })
-  @ApiResponse({ status: 404, description: 'Rayon not found' })
-  async getRayonStats(
+  @Get('district/:id')
+  @Roles(...MONITORING_DISTRICT)
+  @ApiOperation({ summary: 'Get district-level monitoring statistics' })
+  @ApiParam({ name: 'id', description: 'District ID (UUID)' })
+  @ApiResponse({ status: 200, type: DistrictStatsDto })
+  @ApiResponse({ status: 404, description: 'District not found' })
+  async getDistrictStats(
     @Param('id', ParseUUIDPipe) id: string,
     @GetUser() user: User,
-  ): Promise<RayonStatsDto> {
-    this.enforceScopeRayon(user, id);
-    return this.monitoringService.getRayonStats(id);
+  ): Promise<DistrictStatsDto> {
+    this.enforceScopeDistrict(user, id);
+    return this.monitoringService.getDistrictStats(id);
   }
 
   @Get('area/:id')
   @Roles(...MONITORING_AREA)
   @ApiOperation({ summary: 'Get area-level monitoring statistics' })
-  @ApiParam({ name: 'id', description: 'Area ID (UUID)' })
+  @ApiParam({ name: 'id', description: 'Location ID (UUID)' })
   @ApiResponse({ status: 200, type: AreaStatsDto })
-  @ApiResponse({ status: 404, description: 'Area not found' })
+  @ApiResponse({ status: 404, description: 'Location not found' })
   async getAreaStats(
     @Param('id', ParseUUIDPipe) id: string,
     @GetUser() user: User,
@@ -112,6 +120,42 @@ export class MonitoringController {
     @Query() filters: LiveUsersFilterDto,
     @GetUser() user: User,
   ): Promise<LiveUsersResponseDto> {
+    await this.applyScopeFilters(user, filters);
+    return this.monitoringService.getLiveUsers(filters);
+  }
+
+  @Get('search')
+  @Roles(...MONITORING_AREA)
+  @ApiOperation({
+    summary:
+      'Server-side monitoring search — workers clocked in with a fix in the last 24h whose name ' +
+      'or lokasi matches, scope-filtered. Surfaces monitorable-but-unscheduled clock-ins too.',
+  })
+  @ApiQuery({ name: 'q', description: 'Search term (worker or lokasi name)' })
+  @ApiResponse({ status: 200, type: LiveUsersResponseDto })
+  async searchMonitoring(
+    @Query() filters: LiveUsersFilterDto,
+    @GetUser() user: User,
+  ): Promise<LiveUsersResponseDto> {
+    // Empty query returns nothing rather than the whole scoped fleet.
+    if (!filters.q || !filters.q.trim()) {
+      return {
+        total_active: 0,
+        total_offline: 0,
+        total_absent: 0,
+        total_outside_area: 0,
+        total_online: 0,
+        users: [],
+        expected_count: 0,
+        present_count: 0,
+        absent_count: 0,
+        on_leave_count: 0,
+        off_schedule_count: 0,
+        absent_users: [],
+        on_leave_users: [],
+        generated_at: new Date(),
+      };
+    }
     await this.applyScopeFilters(user, filters);
     return this.monitoringService.getLiveUsers(filters);
   }
@@ -163,10 +207,10 @@ export class MonitoringController {
       user_id: userId,
       history: reassignmentLogs.map((log) => ({
         id: log.id,
-        previous_area_id: log.old_value?.area_id ?? null,
-        previous_area_name: log.old_value?.area_name ?? null,
-        new_area_id: log.new_value?.area_id ?? null,
-        new_area_name: log.new_value?.area_name ?? null,
+        previous_area_id: log.old_value?.location_id ?? null,
+        previous_area_name: log.old_value?.location_name ?? null,
+        new_area_id: log.new_value?.location_id ?? null,
+        new_area_name: log.new_value?.location_name ?? null,
         reason: log.metadata?.reason ?? null,
         effective_date: log.metadata?.effective_date ?? null,
         actor_id: log.actor_id,
@@ -178,42 +222,54 @@ export class MonitoringController {
 
   @Get('boundaries')
   @Roles(...MONITORING_AREA)
-  @ApiOperation({ summary: 'Get rayon and area boundary polygons' })
+  @ApiOperation({ summary: 'Get district and area boundary polygons' })
   @ApiQuery({
     name: 'level',
-    enum: ['rayon', 'area'],
+    enum: ['district', 'area'],
     required: false,
-    description: 'rayon → outlines only (lightest); area (default) → full area geometry',
+    description: 'district → outlines only (lightest); area (default) → full area geometry',
+  })
+  @ApiQuery({
+    name: 'bbox',
+    required: false,
+    description:
+      'Viewport filter `minLng,minLat,maxLng,maxLat` (ADR-060 viewport mode). Returns only ' +
+      'geometry intersecting the box. Malformed values are IGNORED, not rejected: a bad ' +
+      'bbox degrades to the full payload rather than blanking the map.',
   })
   @ApiResponse({ status: 200, type: BoundariesResponseDto })
   async getBoundaries(
-    @Query('rayon_id') rayonId: string | undefined,
+    @Query('district_id') districtId: string | undefined,
     @GetUser() user: User,
-    @Query('level') level?: 'rayon' | 'area',
+    @Query('level') level?: 'district' | 'area',
+    @Query('bbox') bbox?: string,
   ): Promise<BoundariesResponseDto> {
     const filters: {
-      rayon_id?: string;
+      district_id?: string;
       area_ids?: string[];
-      area_id?: string;
-      level?: 'rayon' | 'area';
+      location_id?: string;
+      level?: 'district' | 'area';
+      bbox?: BBox;
     } = {};
-    if (rayonId) filters.rayon_id = rayonId;
-    if (level === 'rayon' || level === 'area') filters.level = level;
+    if (districtId) filters.district_id = districtId;
+    if (level === 'district' || level === 'area') filters.level = level;
+    const box = parseBBox(bbox);
+    if (box) filters.bbox = box;
     await this.applyScopeFilters(user, filters);
-    // Korlap scope: collapse area_id / area_ids into a single area_ids list so
-    // the service only returns assigned areas, not the entire rayon.
+    // Korlap scope: collapse location_id / area_ids into a single area_ids list so
+    // the service only returns assigned areas, not the entire district.
     if (user.role === UserRole.KORLAP) {
       const ids: string[] = [];
       if (filters.area_ids) ids.push(...filters.area_ids);
-      if (filters.area_id) ids.push(filters.area_id);
+      if (filters.location_id) ids.push(filters.location_id);
       if (ids.length > 0) {
         filters.area_ids = ids;
-        delete filters.area_id;
-        // Korlap can be assigned to areas in different rayons (e.g. Taman
-        // Bungkul lives in 'Rayon Taman Aktif' while the korlap's home rayon
-        // is Pusat). Drop the rayon anchor so the cross-rayon assignments
+        delete filters.location_id;
+        // Korlap can be assigned to areas in different districts (e.g. Taman
+        // Bungkul lives in 'Rayon Taman Aktif' while the korlap's home district
+        // is Pusat). Drop the district anchor so the cross-district assignments
         // remain visible — the area_ids filter is sufficient.
-        delete filters.rayon_id;
+        delete filters.district_id;
       }
     }
     return this.statsService.getBoundaries(filters);
@@ -227,9 +283,9 @@ export class MonitoringController {
       'Returns plant status aggregates (ok/due_soon/overdue/unknown) and per-species breakdown for an area. ' +
       'Status is computed using PlantDueDateService with deterministic species-default pruning cycles.',
   })
-  @ApiParam({ name: 'id', description: 'Area ID (UUID)' })
+  @ApiParam({ name: 'id', description: 'Location ID (UUID)' })
   @ApiResponse({ status: 200, type: AreaPlantStatusDto })
-  @ApiResponse({ status: 404, description: 'Area not found' })
+  @ApiResponse({ status: 404, description: 'Location not found' })
   async getAreaPlantStatus(
     @Param('id', ParseUUIDPipe) id: string,
     @GetUser() user: User,
@@ -239,24 +295,24 @@ export class MonitoringController {
   }
 
   @Get('plant-status/summary')
-  @Roles(...MONITORING_RAYON)
+  @Roles(...MONITORING_DISTRICT)
   @ApiOperation({
-    summary: 'Per-rayon plant status rollup (Phase 3-8 close-out)',
+    summary: 'Per-district plant status rollup (Phase 3-8 close-out)',
     description:
-      'Aggregated ok/due_soon/overdue/unknown counts grouped by rayon, with the areas that ' +
-      'currently have overdue species. City roles see all rayons; rayon-scoped roles are ' +
-      'forced to their own rayon.',
+      'Aggregated ok/due_soon/overdue/unknown counts grouped by district, with the areas that ' +
+      'currently have overdue species. City roles see all districts; district-scoped roles are ' +
+      'forced to their own district.',
   })
-  @ApiQuery({ name: 'rayon_id', required: false, description: 'Limit to one rayon (UUID)' })
+  @ApiQuery({ name: 'district_id', required: false, description: 'Limit to one district (UUID)' })
   @ApiResponse({ status: 200, description: 'Summary returned' })
-  async getPlantStatusSummary(@GetUser() user: User, @Query('rayon_id') rayonId?: string) {
+  async getPlantStatusSummary(@GetUser() user: User, @Query('district_id') districtId?: string) {
     const isCityRole = MONITORING_CITY.includes(user.role as UserRole);
-    // Rayon-scoped roles always get their own rayon, whatever they ask for
-    const effectiveRayonId = isCityRole ? rayonId : (user.rayon_id ?? undefined);
-    if (!isCityRole && !effectiveRayonId) {
-      return { generated_at: new Date(), rayons: [] };
+    // Rayon-scoped roles always get their own district, whatever they ask for
+    const effectiveDistrictId = isCityRole ? districtId : (user.district_id ?? undefined);
+    if (!isCityRole && !effectiveDistrictId) {
+      return { generated_at: new Date(), districts: [] };
     }
-    return this.areaPlantStatusService.getSummary(effectiveRayonId);
+    return this.areaPlantStatusService.getSummary(effectiveDistrictId);
   }
 
   @Get('config')
@@ -302,61 +358,95 @@ export class MonitoringController {
   }
 
   @Get('aggregate')
-  @Roles(...MONITORING_CITY, ...MONITORING_RAYON)
+  @Roles(...MONITORING_CITY, ...MONITORING_DISTRICT)
   @ApiOperation({
-    summary: 'Aggregate map summary (Ringkasan mode) — rayon or area rollups, no worker coords',
+    summary:
+      'Aggregate map summary (Ringkasan mode) — district/region/area rollups, no worker coords',
     description:
-      'scope=city → one node per rayon; scope=rayon → one node per area in the rayon. Returns ' +
-      'grouped status/role counts + centers only, for lightweight drill-down bubbles.',
+      'scope=city → one node per district; scope=district → one node per area in the district; ' +
+      'scope=region → one node per kawasan in the district; scope=all → every tier at once ' +
+      '(districts + kawasan + lokasi), which is what the map’s zoom mode draws. Returns grouped ' +
+      'status/role counts + centers only, for lightweight drill-down bubbles.',
   })
-  @ApiQuery({ name: 'scope', enum: ['city', 'rayon'], required: false })
-  @ApiQuery({ name: 'id', required: false, description: 'Rayon UUID (required for rayon scope)' })
-  @ApiResponse({ status: 200, type: AggregateResponseDto })
-  async getAggregate(
-    @GetUser() user: User,
-    @Query('scope') scope: 'city' | 'rayon' = 'city',
-    @Query('id') id?: string,
-  ): Promise<AggregateResponseDto> {
-    // City-scope aggregate is city-role only; rayon-scoped roles are forced to
-    // their own rayon and cannot request the city rollup.
-    if (scope === 'city' && !MONITORING_CITY.includes(user.role as UserRole)) {
-      throw new ForbiddenException('City-scope aggregate requires city-level role');
-    }
-    let rayonId = id;
-    if (scope === 'rayon') {
-      // Rayon-scoped roles always resolve to their own rayon regardless of query.
-      const isCityRole = MONITORING_CITY.includes(user.role as UserRole);
-      rayonId = isCityRole ? id : (user.rayon_id ?? undefined);
-      if (rayonId) this.enforceScopeRayon(user, rayonId);
-    }
-    return this.statsService.getAggregate(scope, rayonId);
-  }
-
-  @Get('snapshot')
-  @Roles(...MONITORING_CITY, ...MONITORING_RAYON, ...MONITORING_AREA)
-  @ApiOperation({ summary: 'Unified monitoring snapshot — workers + scope metadata' })
-  @ApiQuery({ name: 'scope', enum: ['city', 'rayon', 'area'], required: false })
+  @ApiQuery({ name: 'scope', enum: ['city', 'district', 'region', 'all'], required: false })
   @ApiQuery({
     name: 'id',
     required: false,
-    description: 'Rayon or Area UUID (required for rayon/area scope)',
+    description:
+      'District UUID — required for district + region scope; optional for scope=all, where it ' +
+      'narrows the payload to that district’s subtree.',
+  })
+  @ApiQuery({
+    name: 'bbox',
+    required: false,
+    description:
+      'Viewport filter `minLng,minLat,maxLng,maxLat` — `scope=all` only (ADR-060 viewport ' +
+      'mode). Narrows which NODES are built and returned; `totals` / `roster_totals` stay ' +
+      'scope-wide, so the header reports the city rather than the camera.',
+  })
+  @ApiResponse({ status: 200, type: AggregateResponseDto })
+  async getAggregate(
+    @GetUser() user: User,
+    @Query('scope') scope: AggregateScope = 'city',
+    @Query('id') id?: string,
+    @Query('bbox') bbox?: string,
+  ): Promise<AggregateResponseDto> {
+    // City-scope aggregate is city-role only; district-scoped roles are forced to
+    // their own district and cannot request the city rollup.
+    if (scope === 'city' && !MONITORING_CITY.includes(user.role as UserRole)) {
+      throw new ForbiddenException('City-scope aggregate requires city-level role');
+    }
+    let districtId = id;
+    // `all` spans every tier, so an unrestricted call is a city-wide read: city
+    // roles may ask for the whole hierarchy, district roles are pinned to their
+    // own district's subtree exactly as they are on the drill scopes. Without
+    // this, zoom mode would be a way around the scope enforcement.
+    if (scope === 'all') {
+      const isCityRole = MONITORING_CITY.includes(user.role as UserRole);
+      districtId = isCityRole ? id : (user.district_id ?? undefined);
+      if (!isCityRole && !districtId) {
+        throw new ForbiddenException('District-scoped role has no district to aggregate');
+      }
+      if (districtId) this.enforceScopeDistrict(user, districtId);
+    }
+    // `region` scope is district-parametrised (kawasan of a district), so it enforces
+    // identically to `district`: a district role only ever sees its own district.
+    if (scope === 'district' || scope === 'region') {
+      const isCityRole = MONITORING_CITY.includes(user.role as UserRole);
+      districtId = isCityRole ? id : (user.district_id ?? undefined);
+      if (districtId) this.enforceScopeDistrict(user, districtId);
+    }
+    // Only `scope=all` draws a whole subtree at once, so it is the only scope a
+    // viewport can narrow; the drill scopes already return one level.
+    const box = scope === 'all' ? parseBBox(bbox) : null;
+    return this.statsService.getAggregate(scope, districtId, box ?? undefined);
+  }
+
+  @Get('snapshot')
+  @Roles(...MONITORING_CITY, ...MONITORING_DISTRICT, ...MONITORING_AREA)
+  @ApiOperation({ summary: 'Unified monitoring snapshot — workers + scope metadata' })
+  @ApiQuery({ name: 'scope', enum: ['city', 'district', 'location'], required: false })
+  @ApiQuery({
+    name: 'id',
+    required: false,
+    description: 'District or Location UUID (required for district/location scope)',
   })
   @ApiResponse({ status: 200, description: 'Snapshot returned successfully' })
   async getSnapshot(
     @GetUser() user: User,
-    @Query('scope') scope: 'city' | 'rayon' | 'area' = 'city',
+    @Query('scope') scope: 'city' | 'district' | 'location' = 'city',
     @Query('id') id?: string,
   ) {
     const cityOnlyRoles: UserRole[] = [
       UserRole.SUPERADMIN,
       UserRole.ADMIN_SYSTEM,
-      UserRole.TOP_MANAGEMENT,
+      UserRole.MANAGEMENT,
     ];
     if (scope === 'city' && !cityOnlyRoles.includes(user.role as UserRole)) {
       throw new ForbiddenException('City-scope snapshot requires city-level role');
     }
-    if (scope === 'rayon' && id) this.enforceScopeRayon(user, id);
-    if (scope === 'area' && id) await this.enforceScopeArea(user, id);
+    if (scope === 'district' && id) this.enforceScopeDistrict(user, id);
+    if (scope === 'location' && id) await this.enforceScopeArea(user, id);
     return this.monitoringService.getSnapshot(scope, id);
   }
 
@@ -364,7 +454,7 @@ export class MonitoringController {
   @Roles(UserRole.SUPERADMIN, UserRole.ADMIN_SYSTEM, UserRole.KEPALA_RAYON)
   @ApiOperation({ summary: 'Reassign a worker to a different area' })
   @ApiResponse({ status: 201, type: ReassignWorkerResponseDto })
-  @ApiResponse({ status: 403, description: 'Forbidden - wrong rayon' })
+  @ApiResponse({ status: 403, description: 'Forbidden - wrong district' })
   @ApiResponse({ status: 404, description: 'User or area not found' })
   async reassignWorker(
     @Body() dto: ReassignWorkerDto,
@@ -375,31 +465,55 @@ export class MonitoringController {
 
   // ---- Scope enforcement helpers ----
 
-  private enforceScopeRayon(user: User, rayonId: string): void {
-    const scopedRoles = [UserRole.KEPALA_RAYON, UserRole.ADMIN_DATA];
-    if (scopedRoles.includes(user.role as UserRole) && user.rayon_id !== rayonId) {
-      throw new ForbiddenException('You can only view monitoring for your own rayon');
+  private enforceScopeDistrict(user: User, districtId: string): void {
+    const scopedRoles = [UserRole.KEPALA_RAYON, UserRole.ADMIN_RAYON];
+    if (scopedRoles.includes(user.role as UserRole) && user.district_id !== districtId) {
+      throw new ForbiddenException('You can only view monitoring for your own district');
     }
   }
 
-  private async enforceScopeArea(user: User, areaId: string): Promise<void> {
+  /**
+   * A korlap's monitoring coverage (ADR-046, PR0b) = the union of location ids they
+   * may view: their STATIC assignment (permanent lokasi ∪ member lokasi of their
+   * `region_id` ∪ their `location_id`) PLUS today's SCHEDULE occurrences (individual
+   * or team) expanded to concrete lokasi — occurrence lokasi, member lokasi of any
+   * kawasan-scoped occurrence, and member lokasi of any rayon-scoped occurrence.
+   * Static assignment is the fallback when there is no occurrence that day.
+   */
+  private async resolveKorlapCoverage(user: User): Promise<string[]> {
+    const shift = await this.statsService.getCurrentShiftDefinition();
+    const [permanent, occ] = await Promise.all([
+      this.userAreasService.getPermanentLocationIds(user.id),
+      this.statsService.occurrenceCoverageForCurrentShift(user.id, shift?.id),
+    ]);
+    const regionIds = [...(user.region_id ? [user.region_id] : []), ...occ.regionIds];
+    const [regionLocs, districtLocs] = await Promise.all([
+      this.statsService.locationIdsForRegions(regionIds),
+      this.statsService.locationIdsForDistricts(occ.districtIds),
+    ]);
+    // Permanent (multi-location) assignment supersedes the legacy single
+    // `location_id`; the latter is only a fallback when no permanent rows exist.
+    const staticLocations =
+      permanent.length > 0 ? permanent : user.location_id ? [user.location_id] : [];
+    return [
+      ...new Set<string>([...staticLocations, ...occ.locationIds, ...regionLocs, ...districtLocs]),
+    ];
+  }
+
+  private async enforceScopeArea(user: User, locationId: string): Promise<void> {
     if (user.role === UserRole.KORLAP) {
-      // Multi-area: check if korlap is assigned to this area
-      const assignedAreaIds = await this.userAreasService.getPermanentAreaIds(user.id);
-      if (assignedAreaIds.length > 0) {
-        if (!assignedAreaIds.includes(areaId)) {
-          throw new ForbiddenException('You can only view monitoring for your assigned areas');
-        }
-      } else if (user.area_id !== areaId) {
-        // Fallback to legacy single area
-        throw new ForbiddenException('You can only view monitoring for your own area');
+      const coverage = await this.resolveKorlapCoverage(user);
+      if (!coverage.includes(locationId)) {
+        throw new ForbiddenException(
+          'You can only view monitoring for your assigned or scheduled areas',
+        );
       }
     }
   }
 
   private async applyScopeFilters(
     user: User,
-    filters: { area_id?: string; area_ids?: string[]; rayon_id?: string },
+    filters: { location_id?: string; area_ids?: string[]; district_id?: string },
   ): Promise<void> {
     // City-level roles see everything — no scope filter applied.
     if (MONITORING_CITY.includes(user.role as UserRole)) {
@@ -407,51 +521,86 @@ export class MonitoringController {
     }
 
     if (user.role === UserRole.KORLAP) {
-      // Multi-area: get all assigned area IDs
-      const assignedAreaIds = await this.userAreasService.getPermanentAreaIds(user.id);
-      if (assignedAreaIds.length > 0) {
-        filters.area_ids = assignedAreaIds;
-      } else if (user.area_id) {
-        filters.area_id = user.area_id;
+      // Coverage = static assignment ∪ today's schedule occurrences (see above).
+      const coverage = await this.resolveKorlapCoverage(user);
+      if (coverage.length > 0) {
+        filters.area_ids = coverage;
+      } else if (user.location_id) {
+        filters.location_id = user.location_id;
       }
-      // Always anchor to the korlap's rayon as well so endpoints that only
-      // honor `rayon_id` (e.g. boundaries) never leak other-rayon data.
-      if (user.rayon_id) {
-        filters.rayon_id = user.rayon_id;
+      // Anchor to the korlap's district so endpoints that honor only `district_id`
+      // (e.g. boundaries) never leak other-district data. (Cross-district coverage
+      // via an occurrence in another rayon is out of scope; the common case is
+      // kawasan/lokasi within the korlap's own district.)
+      if (user.district_id) {
+        filters.district_id = user.district_id;
       }
     } else if (
-      (user.role === UserRole.ADMIN_DATA || user.role === UserRole.KEPALA_RAYON) &&
-      user.rayon_id
+      (user.role === UserRole.ADMIN_RAYON || user.role === UserRole.KEPALA_RAYON) &&
+      user.district_id
     ) {
-      filters.rayon_id = user.rayon_id;
+      filters.district_id = user.district_id;
     }
   }
 
   private async enforceScopeUser(viewer: User, targetUserId: string): Promise<void> {
-    const cityRoles = [UserRole.SUPERADMIN, UserRole.ADMIN_SYSTEM, UserRole.TOP_MANAGEMENT];
+    const cityRoles = [UserRole.SUPERADMIN, UserRole.ADMIN_SYSTEM, UserRole.MANAGEMENT];
     if (cityRoles.includes(viewer.role as UserRole)) return;
 
     const target = await this.monitoringService.getUserDaySummary(targetUserId);
 
     if (viewer.role === UserRole.KORLAP) {
-      // Allow if target area is unknown (not yet clocked in or rayon-scoped)
-      if (!target.area_id) return;
-      const assignedAreaIds = await this.userAreasService.getPermanentAreaIds(viewer.id);
-      if (assignedAreaIds.length > 0) {
-        if (!assignedAreaIds.includes(target.area_id)) {
-          throw new ForbiddenException('You can only view users in your assigned areas');
-        }
-      } else if (target.area_id !== viewer.area_id) {
-        throw new ForbiddenException('You can only view users in your own area');
+      // Allow if target area is unknown (not yet clocked in or district-scoped)
+      if (!target.location_id) return;
+      // Use the SAME coverage the list/aggregate paths use (PR0b) so a korlap can
+      // open the detail of any worker they can already see in the roster — including
+      // workers in a kawasan/lokasi the korlap is only *scheduled* to today.
+      const coverage = await this.resolveKorlapCoverage(viewer);
+      if (!coverage.includes(target.location_id)) {
+        throw new ForbiddenException('You can only view users in your assigned or scheduled areas');
       }
       return;
     }
-    if (viewer.role === UserRole.KEPALA_RAYON || viewer.role === UserRole.ADMIN_DATA) {
-      // Allow if target rayon is unknown (not yet tracked)
-      if (!target.rayon_id) return;
-      if (target.rayon_id !== viewer.rayon_id) {
-        throw new ForbiddenException('You can only view users in your own rayon');
+    if (viewer.role === UserRole.KEPALA_RAYON || viewer.role === UserRole.ADMIN_RAYON) {
+      // Allow if target district is unknown (not yet tracked)
+      if (!target.district_id) return;
+      if (target.district_id !== viewer.district_id) {
+        throw new ForbiddenException('You can only view users in your own district');
       }
     }
+  }
+
+  /**
+   * Attendance for a WIB service-day, split into who clocked in and who did not.
+   *
+   * Supersedes `GET /supervisor/attendance`. Same response SHAPE, but the roster
+   * is the counted one (satgas + linmas, not satgas alone), the day is bounded
+   * in WIB rather than server-local time, sessions are matched on `service_day`
+   * so night shifts land on the right day, and a worker with two sessions counts
+   * once.
+   */
+  @Get('attendance')
+  @Roles(...MONITORING_CITY, ...MONITORING_DISTRICT, ...MONITORING_AREA)
+  @ApiOperation({ summary: 'Attendance report for a service-day (clocked-in / not clocked-in)' })
+  @ApiResponse({ status: 200, type: MonitoringAttendanceDto })
+  async getAttendance(@Query() query: AttendanceQueryDto): Promise<MonitoringAttendanceDto> {
+    return this.attendanceService.getAttendance(query);
+  }
+
+  /**
+   * One worker's sessions on a service-day. Returns every session, not just the
+   * first — a worker can clock in more than once in a day.
+   */
+  @Get('attendance/:userId')
+  @Roles(...MONITORING_CITY, ...MONITORING_DISTRICT, ...MONITORING_AREA)
+  @ApiOperation({ summary: 'Per-user attendance detail for a service-day' })
+  @ApiParam({ name: 'userId', description: 'User UUID' })
+  @ApiQuery({ name: 'date', required: false, description: 'YYYY-MM-DD (WIB); defaults to today' })
+  @ApiResponse({ status: 200, type: UserAttendanceDetailDto })
+  async getUserAttendance(
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Query('date') date?: string,
+  ): Promise<UserAttendanceDetailDto> {
+    return this.attendanceService.getUserAttendanceDetail(userId, date);
   }
 }

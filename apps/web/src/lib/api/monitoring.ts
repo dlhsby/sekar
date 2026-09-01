@@ -10,7 +10,7 @@ import { apiClient } from './client';
 export type {
   TrackingStatus,
   CityStats,
-  RayonMonitoringStats,
+  DistrictMonitoringStats,
   AreaMonitoringStats,
   LiveUser,
   LiveUsersResponse,
@@ -28,7 +28,7 @@ export type {
   UserAreaEvent,
   RoleStaffingItem,
   AreaBoundary,
-  RayonBoundary,
+  DistrictBoundary,
   BoundariesResponse,
   ReassignWorkerPayload,
   ReassignWorkerResponse,
@@ -37,7 +37,7 @@ export type {
 
 import type {
   CityStats,
-  RayonMonitoringStats,
+  DistrictMonitoringStats,
   AreaMonitoringStats,
   LiveUser,
   LiveUsersResponse,
@@ -60,22 +60,28 @@ import type {
 export const monitoringKeys = {
   all: ['monitoring'] as const,
   city: () => [...monitoringKeys.all, 'city'] as const,
-  rayon: (id: string) => [...monitoringKeys.all, 'rayon', id] as const,
+  district: (id: string) => [...monitoringKeys.all, 'district', id] as const,
   area: (id: string) => [...monitoringKeys.all, 'area', id] as const,
   liveUsers: (filters?: LiveUsersFilters) =>
     [...monitoringKeys.all, 'live-users', filters] as const,
   userDaySummary: (userId: string) => [...monitoringKeys.all, 'user-day-summary', userId] as const,
+  reassignmentHistory: (userId: string) =>
+    [...monitoringKeys.all, 'reassignment-history', userId] as const,
   locationHistory: (userId: string, date: string) =>
     [...monitoringKeys.all, 'location-history', userId, date] as const,
   staffingSummary: (filters?: StaffingFilters) =>
     [...monitoringKeys.all, 'staffing-summary', filters] as const,
   config: () => [...monitoringKeys.all, 'config'] as const,
-  boundaries: (level?: 'rayon' | 'area', rayonId?: string) =>
-    [...monitoringKeys.all, 'boundaries', level ?? 'area', rayonId ?? null] as const,
+  attendance: (date: string, page: number) =>
+    [...monitoringKeys.all, 'attendance', date, page] as const,
+  userAttendance: (userId: string, date: string) =>
+    [...monitoringKeys.all, 'user-attendance', userId, date] as const,
+  boundaries: (level?: 'district' | 'area', districtId?: string, bbox?: string | null) =>
+    [...monitoringKeys.all, 'boundaries', level ?? 'area', districtId ?? null, bbox ?? null] as const,
 };
 
 // ---------------------------------------------------------------------------
-// City / Rayon / Area Hooks (Phase 2C - unchanged)
+// City / District / Area Hooks (Phase 2C - unchanged)
 // ---------------------------------------------------------------------------
 
 export function useCityStats(enabled = true) {
@@ -91,16 +97,16 @@ export function useCityStats(enabled = true) {
   });
 }
 
-export function useRayonMonitoring(rayonId: string, enabled = true) {
+export function useDistrictMonitoring(districtId: string, enabled = true) {
   return useQuery({
-    queryKey: monitoringKeys.rayon(rayonId),
+    queryKey: monitoringKeys.district(districtId),
     queryFn: async () => {
-      const response = await apiClient.get<RayonMonitoringStats>(`/monitoring/rayon/${rayonId}`);
+      const response = await apiClient.get<DistrictMonitoringStats>(`/monitoring/district/${districtId}`);
       return response.data;
     },
     staleTime: 30 * 1000,
     refetchInterval: 30 * 1000,
-    enabled: enabled && !!rayonId,
+    enabled: enabled && !!districtId,
   });
 }
 
@@ -151,6 +157,45 @@ export function useUserDaySummary(userId: string | null) {
     enabled: !!userId,
     staleTime: 30 * 1000,
     refetchInterval: 30 * 1000,
+  });
+}
+
+/**
+ * A worker's reassignment audit trail — the "Riwayat Pemindahan" section mobile's
+ * worker sheet has always shown and web never did. Read-only, so it can be lazy:
+ * only fetched while a worker's detail is open.
+ */
+export interface ReassignmentHistoryEntry {
+  id: string;
+  previous_area_id: string | null;
+  previous_area_name: string | null;
+  new_area_id: string | null;
+  new_area_name: string | null;
+  reason: string | null;
+  effective_date: string | null;
+  actor_id: string;
+  actor_name: string;
+  created_at: string;
+}
+
+export interface ReassignmentHistory {
+  user_id: string;
+  history: ReassignmentHistoryEntry[];
+}
+
+export function useReassignmentHistory(userId: string | null) {
+  return useQuery({
+    queryKey: monitoringKeys.reassignmentHistory(userId ?? ''),
+    queryFn: async () => {
+      const response = await apiClient.get<ReassignmentHistory>(
+        `/monitoring/users/${userId}/reassignment-history`
+      );
+      return response.data;
+    },
+    enabled: !!userId,
+    // An audit trail changes only when a supervisor acts, so it does not need the
+    // day summary's 30 s poll.
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -228,24 +273,34 @@ export function useUpdateMonitoringConfig() {
 // ---------------------------------------------------------------------------
 
 /**
- * useBoundaries — rayon/area polygons for the map.
+ * useBoundaries — district/area polygons for the map.
  *
- * `level='rayon'` returns outlines only (no per-area geometry) — the light
- * payload for the city view. Drilling into a rayon requests `level='area'`
- * with `rayonId` so only that rayon's areas load. Geometry is server-simplified
+ * `level='district'` returns outlines only (no per-area geometry) — the light
+ * payload for the city view. Drilling into a district requests `level='area'`
+ * with `districtId` so only that district's areas load. Geometry is server-simplified
  * (Douglas–Peucker) and changes rarely, so it caches for 5 minutes.
+ *
+ * Viewport mode passes a `bbox`; because the box is part of the query key, each
+ * fetched region stays cached and panning back is instant.
  */
 export function useBoundaries(
   enabled = true,
-  level?: 'rayon' | 'area',
-  rayonId?: string
+  level?: 'district' | 'area',
+  districtId?: string,
+  /**
+   * Viewport mode (ADR-060): `minLng,minLat,maxLng,maxLat`. The server returns
+   * only geometry intersecting the box, which is what keeps the city-wide
+   * `level='area'` payload from being paid for in full.
+   */
+  bbox?: string | null
 ) {
   return useQuery({
-    queryKey: monitoringKeys.boundaries(level, rayonId),
+    queryKey: monitoringKeys.boundaries(level, districtId, bbox),
     queryFn: async () => {
       const params: Record<string, string> = {};
       if (level) params.level = level;
-      if (rayonId) params.rayon_id = rayonId;
+      if (districtId) params.district_id = districtId;
+      if (bbox) params.bbox = bbox;
       const response = await apiClient.get<BoundariesResponse>('/monitoring/boundaries', {
         params,
       });
@@ -271,5 +326,104 @@ export function useReassignWorker() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: monitoringKeys.all });
     },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Attendance by service-day (parity W3)
+// ---------------------------------------------------------------------------
+
+export interface AttendanceLocation {
+  id: string;
+  name: string;
+}
+
+export interface ClockedInWorker {
+  id: string;
+  username: string;
+  full_name: string;
+  role: string;
+  area: AttendanceLocation | null;
+  clock_in_time: string;
+  clock_out_time: string | null;
+}
+
+export interface NotClockedInWorker {
+  id: string;
+  username: string;
+  full_name: string;
+  role: string;
+  area: AttendanceLocation | null;
+}
+
+interface Paged<T> {
+  data: T[];
+  meta: { total: number; page: number; limit: number; totalPages: number };
+}
+
+export interface MonitoringAttendance {
+  date: string;
+  total_workers: number;
+  clocked_in_count: number;
+  clocked_in: Paged<ClockedInWorker>;
+  not_clocked_in: Paged<NotClockedInWorker>;
+}
+
+export interface UserShiftDetail {
+  id: string;
+  clock_in_time: string;
+  clock_out_time: string | null;
+  duration_minutes: number | null;
+  clock_in_outside_boundary: boolean;
+  clock_out_outside_boundary: boolean;
+}
+
+export interface UserAttendanceDetail {
+  date: string;
+  user: {
+    id: string;
+    username: string;
+    full_name: string;
+    role: string;
+    area: AttendanceLocation | null;
+  };
+  clocked_in: boolean;
+  shifts: UserShiftDetail[];
+}
+
+/**
+ * Attendance for one WIB service-day.
+ *
+ * Points at `/monitoring/attendance`, NOT the superseded `/supervisor` one:
+ * that roster is satgas-only, its day bounds are server-local, and it matches
+ * sessions on clock-in rather than service_day.
+ */
+export function useMonitoringAttendance(date: string, page = 1, enabled = true) {
+  return useQuery({
+    queryKey: monitoringKeys.attendance(date, page),
+    queryFn: async () => {
+      const response = await apiClient.get<MonitoringAttendance>('/monitoring/attendance', {
+        params: { date, page, limit: 50 },
+      });
+      return response.data;
+    },
+    enabled: enabled && !!date,
+    staleTime: 60 * 1000,
+  });
+}
+
+/** One worker's sessions on a service-day. Fetched only when a row is opened. */
+export function useUserAttendance(userId: string | null, date: string) {
+  return useQuery({
+    queryKey: monitoringKeys.userAttendance(userId ?? '', date),
+    queryFn: async () => {
+      const response = await apiClient.get<UserAttendanceDetail>(
+        `/monitoring/attendance/${userId}`,
+        { params: { date } },
+      );
+      return response.data;
+    },
+    enabled: !!userId && !!date,
+    staleTime: 60 * 1000,
   });
 }

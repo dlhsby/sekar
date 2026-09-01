@@ -1,52 +1,131 @@
 import {
+  BadRequestException,
+  ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
-  BadRequestException,
-  ForbiddenException,
+  Optional,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, IsNull, Repository } from 'typeorm';
+import {
+  Between,
+  In,
+  IsNull,
+  LessThanOrEqual,
+  MoreThanOrEqual,
+  Not,
+  Repository,
+  type FindOptionsWhere,
+  type SelectQueryBuilder,
+} from 'typeorm';
 import { Schedule, ScheduleStatus } from './entities/schedule.entity';
-import { ScheduleArea } from './entities/schedule-area.entity';
-import { User } from '../users/entities/user.entity';
-import { Area } from '../areas/entities/area.entity';
-import { UserAreasService } from '../user-areas/user-areas.service';
+import type { AttributionCandidate } from '../shifts/services/shift-attribution.service';
+import { ScheduleEvent } from './entities/schedule-event.entity';
+import { User, UserRole } from '../users/entities/user.entity';
+import { Location } from '../locations/entities/location.entity';
+import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
+import { Shift } from '../shifts/entities/shift.entity';
+import { UserLocationsService } from '../../modules/user-locations/user-locations.service';
 import { AuditLogService } from '../audit/audit.service';
+import { ScheduleMaterializerService } from './services/schedule-materializer.service';
+import { ScheduleOverlapService } from './services/schedule-overlap.service';
+import { SystemConfigService } from '../settings/services/system-config.service';
+import { resolveShiftWindow } from '../monitoring/lib/presence-lifecycle';
+import { ScheduleRecurrenceUtil } from './utils/schedule-recurrence.util';
+import { TimezoneUtil } from '../../common/utils/timezone.util';
 import {
   canEditTargetRole,
   isGlobalRosterEditor,
-  isRayonManagerRole,
+  isDistrictManagerRole,
   isNonRosteredRole,
 } from './schedule-edit.policy';
+// The module's declarations and pure helpers. Re-exported so every existing
+// `from './schedules.service'` import keeps resolving.
+import {
+  BUSY_STATUSES,
+  DAY_MS,
+  DEFAULT_SWEEP_LOOKBACK_DAYS,
+  EVENT_PROJECTION_SELECT,
+  EXCUSED_STATUSES,
+  FREED_STATUSES,
+  LEAVE_STATUS_BY_TYPE,
+  NIL_PLACE_ID,
+  SCHEDULABLE_WORKER_ROLES,
+  eventPlace,
+  isShiftWindowClosed,
+  schedulePlaceKey,
+  slimProjectedRelations,
+  toDayString,
+  type DaySummary,
+  type DaySummaryGroup,
+  type DaySummaryWorkers,
+  type RangeFilters,
+  type RangeSummary,
+  type RangeSummaryCell,
+  type SummaryTuple,
+  type UnavailableWorkerDto,
+  type UnscheduledResult,
+  type UnscheduledWorkerDto,
+} from './schedules.support';
 
-/**
- * Absence (Ketidakhadiran) type → roster status. `izin` (permit) is an excused
- * absence like sick/annual; `libur` reuses OFF (a deliberate day off, not counted
- * as expected/absent). Keep in sync with the monitoring on-leave filter.
- */
-const LEAVE_STATUS_BY_TYPE: Record<'sick' | 'annual' | 'permit' | 'off', ScheduleStatus> = {
-  sick: ScheduleStatus.LEAVE_SICK,
-  annual: ScheduleStatus.LEAVE_ANNUAL,
-  permit: ScheduleStatus.LEAVE_PERMIT,
-  off: ScheduleStatus.OFF,
-};
+export * from './schedules.support';
+import {
+  computeDailyCounts,
+  computeDaySummary,
+  computeRangeSummary,
+  type SummaryDeps,
+} from './schedules.summaries';
+import {
+  activeEventsOverlapping,
+  applyRangeFilters,
+  eventOccurrenceKeys,
+  occupiedShiftKeys,
+  findByDateRangeForUser,
+  projectOccurrences,
+  projectionGuardScope,
+  type ProjectionDeps,
+} from './schedules.projection';
+import {
+  addDaysToDate,
+  findAllByUserAndDate,
+  findByDate,
+  findByUserAndDate,
+  findCurrentForUser,
+  markPresentForClockIn,
+  type ReadDeps,
+} from './schedules.reads';
 
-/** Statuses that mean a worker is committed for the day and can't cover another shift. */
-const BUSY_STATUSES = [
-  ScheduleStatus.PLANNED,
-  ScheduleStatus.PRESENT,
-  ScheduleStatus.LEAVE_SICK,
-  ScheduleStatus.LEAVE_ANNUAL,
-  ScheduleStatus.LEAVE_PERMIT,
-];
+/** The arguments of a `schedules.reads.ts` function minus its leading deps. */
+type ReadTail<F> = F extends (deps: ReadDeps, ...rest: infer R) => unknown ? R : never;
+import {
+  findUnscheduled,
+  sweepAbsences,
+  type AvailabilityDeps,
+  type UnscheduledFilters,
+} from './schedules.availability';
+import {
+  getActiveAreasForDay,
+  getActiveAreasNow,
+  getAttributionCandidates,
+  getExpectedForDate,
+  getRosterForMonitoring,
+  getShiftForDay,
+  getTeamMembership,
+  type LookupDeps,
+} from './schedules.lookups';
+import {
+  overrideForDay,
+  remove,
+  replaceWorker,
+  setLeave,
+  updateAreas,
+  updateShift,
+  type MutationDeps,
+} from './schedules.mutations';
 
-/**
- * Daily roster service — materializes each worker's standing template into one
- * editable row per WIB day and exposes the per-day edits ops needs (leave,
- * replacement, extra area, shift) plus read helpers for clock-in and monitoring.
- * See ADR-013 (materialized daily-roster model).
- */
+/** The arguments of a `schedules.mutations.ts` function minus its leading deps. */
+type TailArgs<F> = F extends (deps: MutationDeps, ...rest: infer R) => unknown ? R : never;
+
 @Injectable()
 export class SchedulesService {
   private readonly logger = new Logger(SchedulesService.name);
@@ -54,14 +133,28 @@ export class SchedulesService {
   constructor(
     @InjectRepository(Schedule)
     private readonly rosterRepo: Repository<Schedule>,
-    @InjectRepository(ScheduleArea)
-    private readonly rosterAreaRepo: Repository<ScheduleArea>,
+    @InjectRepository(ScheduleEvent)
+    private readonly eventRepo: Repository<ScheduleEvent>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
-    @InjectRepository(Area)
-    private readonly areaRepo: Repository<Area>,
-    private readonly userAreasService: UserAreasService,
+    @InjectRepository(Location)
+    private readonly locationRepo: Repository<Location>,
+    @InjectRepository(ShiftDefinition)
+    private readonly shiftDefinitionRepo: Repository<ShiftDefinition>,
+    // Read-only: resolve the roster row a still-open shift was started from, so a
+    // dangling/overrun cross-midnight shift keeps its schedule + area. Registered
+    // via TypeOrmModule.forFeature in schedules.module — no ShiftsModule import,
+    // so no circular dependency (shifts already depends on schedules).
+    @InjectRepository(Shift)
+    private readonly shiftRepo: Repository<Shift>,
+    private readonly userAreasService: UserLocationsService,
     private readonly auditLogService: AuditLogService,
+    private readonly materializer: ScheduleMaterializerService,
+    private readonly overlapService: ScheduleOverlapService,
+    // Optional so the many existing unit specs that construct this service by
+    // hand keep working; absent, the sweep falls back to its documented default.
+    @Optional()
+    private readonly configService?: SystemConfigService,
   ) {}
 
   // ---- Edit-permission hierarchy (ADR-013 addendum) ----
@@ -69,8 +162,8 @@ export class SchedulesService {
   /**
    * Enforce the roster edit hierarchy: the `editor` may only edit a row whose
    * worker role is below theirs (see schedule-edit.policy) AND within their
-   * scope — rayon for kepala_rayon/admin_data, assigned areas for korlap.
-   * admin_system/superadmin/top_management act globally. Throws otherwise.
+   * scope — district for kepala_rayon/admin_rayon, assigned areas for korlap.
+   * admin_system/superadmin/management act globally. Throws otherwise.
    */
   private async assertCanEdit(editor: User, row: Schedule): Promise<void> {
     const target = row.user ?? (await this.userRepo.findOne({ where: { id: row.user_id } }));
@@ -81,46 +174,44 @@ export class SchedulesService {
     }
     if (isGlobalRosterEditor(editor.role)) return;
 
-    const rowAreas = row.schedule_areas ?? [];
-    if (isRayonManagerRole(editor.role)) {
-      if (!editor.rayon_id) {
-        throw new ForbiddenException('Your account is missing a rayon assignment');
+    if (isDistrictManagerRole(editor.role)) {
+      if (!editor.district_id) {
+        throw new ForbiddenException('Your account is missing a district assignment');
       }
-      const inRayon =
-        row.rayon_id === editor.rayon_id ||
-        rowAreas.some((a) => a.area?.rayon_id === editor.rayon_id);
-      if (!inRayon) throw new ForbiddenException('This worker is outside your rayon');
+      const inDistrict =
+        row.district_id === editor.district_id || row.location?.district_id === editor.district_id;
+      if (!inDistrict) throw new ForbiddenException('This worker is outside your district');
       return;
     }
     // korlap: the row's areas must overlap the coordinator's own assigned areas.
-    const editorAreaIds = await this.userAreasService.getPermanentAreaIds(editor.id);
-    const overlap = rowAreas.some((a) => editorAreaIds.includes(a.area_id));
+    const editorAreaIds = await this.userAreasService.getPermanentLocationIds(editor.id);
+    const overlap = !!row.location_id && editorAreaIds.includes(row.location_id);
     if (!overlap) throw new ForbiddenException('This worker is outside your assigned areas');
   }
 
   /**
    * Authorize scheduling a NEW row for `target` (no existing row to gate on).
    * Mirrors assertCanEdit's hierarchy + scope, but keyed off the target user's
-   * own rayon / permanent areas rather than a row's.
+   * own district / permanent areas rather than a row's.
    */
   private async assertCanScheduleUser(editor: User, target: User): Promise<void> {
     if (!canEditTargetRole(editor.role, target.role)) {
       throw new ForbiddenException('You cannot schedule this worker');
     }
     if (isGlobalRosterEditor(editor.role)) return;
-    if (isRayonManagerRole(editor.role)) {
-      if (!editor.rayon_id) {
-        throw new ForbiddenException('Your account is missing a rayon assignment');
+    if (isDistrictManagerRole(editor.role)) {
+      if (!editor.district_id) {
+        throw new ForbiddenException('Your account is missing a district assignment');
       }
-      if (target.rayon_id !== editor.rayon_id) {
-        throw new ForbiddenException('This worker is outside your rayon');
+      if (target.district_id !== editor.district_id) {
+        throw new ForbiddenException('This worker is outside your district');
       }
       return;
     }
     // korlap: the worker's permanent areas must overlap the coordinator's.
     const [editorAreaIds, targetAreaIds] = await Promise.all([
-      this.userAreasService.getPermanentAreaIds(editor.id),
-      this.userAreasService.getPermanentAreaIds(target.id),
+      this.userAreasService.getPermanentLocationIds(editor.id),
+      this.userAreasService.getPermanentLocationIds(target.id),
     ]);
     if (!targetAreaIds.some((a) => editorAreaIds.includes(a))) {
       throw new ForbiddenException('This worker is outside your assigned areas');
@@ -149,447 +240,508 @@ export class SchedulesService {
     }
     await this.assertCanScheduleUser(actor, target);
 
-    // One row per worker per day (also guarded by a partial unique index).
-    const existing = await this.findByUserAndDate(dto.user_id, dto.date);
-    if (existing) {
-      throw new BadRequestException('Worker already has a schedule for this day');
-    }
-
     const shiftId =
       dto.shift_definition_id !== undefined
         ? dto.shift_definition_id
         : (target.shift_definition_id ?? null);
+
+    // ADR-053: one row covers exactly one place, so a request naming several is
+    // a contradiction. Checked BEFORE anything is written — it used to be
+    // validated after `save`, which answered 400 while leaving the row behind.
+    if (dto.area_ids && dto.area_ids.length > 1) {
+      throw new BadRequestException(
+        'A schedule row covers exactly one place (ADR-053). Create one row per lokasi instead of listing several.',
+      );
+    }
+
+    // The place this row will land on, resolved BEFORE the duplicate check —
+    // the check is about (shift, PLACE), so it cannot run after `setPlace`.
+    // The permanent-assignment FALLBACK legitimately holds several (a korlap
+    // covers many taman), so it seeds this row with the first by id and leaves
+    // the rest to further rows; sorted so the pick is deterministic.
+    const locationIds =
+      dto.area_ids ??
+      [...(await this.userAreasService.getPermanentLocationIds(dto.user_id))].sort();
+    const placeId = schedulePlaceKey({
+      location_id: locationIds[0] ?? null,
+      district_id: target.district_id ?? null,
+    });
+
+    // Phase 4: overlaps are warned, not rejected (ADR-047 amended, Google-Calendar style).
+    // A shiftless (OFF) row still enforces one-per-day.
+    if (shiftId) {
+      const shift = await this.shiftDefinitionRepo.findOne({ where: { id: shiftId } });
+      if (!shift) throw new NotFoundException('Shift definition not found');
+
+      // The uniqueness key is (user, date, shift, PLACE) — migration 17517 —
+      // and one worker covering two lokasi during the SAME shift is the normal,
+      // intended case (ADR-053), not a duplicate. Matching on the shift alone
+      // rejected exactly that: "Worker already has this exact shift that day"
+      // on a second lokasi, which is the one thing the model exists to allow.
+      const sameDay = await this.findAllByUserAndDate(dto.user_id, dto.date);
+      const exactMatch = sameDay.find(
+        (r) => r.shift_definition_id === shiftId && schedulePlaceKey(r) === placeId,
+      );
+      if (exactMatch) {
+        throw new BadRequestException('Worker already has this shift at this place that day');
+      }
+
+      // Check for overlap and log warning if found (but don't reject)
+      const conflict = await this.overlapService.findConflict(dto.user_id, dto.date, shift);
+      if (conflict) {
+        this.logger.warn(
+          `Overlap detected: user ${dto.user_id} on ${dto.date} has ${conflict.shift_name}; ` +
+            `adding ${shift.name} anyway`,
+        );
+      }
+    } else {
+      const existing = await this.findAllByUserAndDate(dto.user_id, dto.date);
+      if (existing.length > 0) {
+        throw new BadRequestException('Worker already has a schedule for this day');
+      }
+    }
     const row = await this.rosterRepo.save(
       this.rosterRepo.create({
         user_id: dto.user_id,
         schedule_date: dto.date,
-        rayon_id: target.rayon_id ?? null,
+        district_id: target.district_id ?? null,
         shift_definition_id: shiftId,
         status: shiftId ? ScheduleStatus.PLANNED : ScheduleStatus.OFF,
         source: 'manual',
         created_by: actor.id,
       }),
     );
-    const areaIds = dto.area_ids ?? (await this.userAreasService.getPermanentAreaIds(dto.user_id));
-    await this.setAreas(row.id, areaIds, actor.id);
+    await this.setPlace(row.id, locationIds[0] ?? null);
     await this.audit(
       row,
       'add_schedule',
       actor.id,
       {},
-      { user_id: dto.user_id, shift_definition_id: shiftId, area_ids: areaIds },
+      { user_id: dto.user_id, shift_definition_id: shiftId, area_ids: locationIds },
     );
     return this.findOne(row.id);
   }
 
+  private occupiedShiftKeys(from: string, to: string, filters?: RangeFilters) {
+    return occupiedShiftKeys(this.projectionDeps(), from, to, filters);
+  }
+
+  private eventOccurrenceKeys(from: string, to: string, filters?: RangeFilters) {
+    return eventOccurrenceKeys(this.projectionDeps(), from, to, filters);
+  }
+
+  private projectionGuardScope(filters?: RangeFilters) {
+    return projectionGuardScope(filters);
+  }
+
+  private activeEventsOverlapping(from: string, to: string) {
+    return activeEventsOverlapping(from, to);
+  }
+
+  private applyRangeFilters(qb: SelectQueryBuilder<Schedule>, f: RangeFilters): void {
+    applyRangeFilters(qb, f);
+  }
+
+  private projectOccurrences(
+    from: string,
+    to: string,
+    f: RangeFilters,
+    materializedKey: Set<string>,
+  ): Promise<Schedule[]> {
+    return projectOccurrences(this.projectionDeps(), from, to, f, materializedKey);
+  }
+
+  private projectionDeps(): ProjectionDeps {
+    return { rosterRepo: this.rosterRepo, eventRepo: this.eventRepo };
+  }
+
   /**
-   * Generate (materialize) the roster for a WIB day from every active user's
-   * template. Idempotent: users with an existing live row for the day are
-   * skipped, so re-running never duplicates and never overwrites manual edits.
-   * Returns the number of rows created.
+   * Generate (materialize) the roster for a WIB day from all active ScheduleEvents.
+   * Materializes occurrences for any event whose recurrence includes the given date.
+   * Idempotent: existing rows (including tombstones) are skipped, so re-running
+   * never duplicates and never overwrites manual edits or detached overrides.
+   * Returns the number of new rows created (not including skipped/conflicts).
+   *
+   * Supports manual ad-hoc scheduling and backfill. The POST /schedules/generate
+   * endpoint calls this; the daily cron uses ScheduleEventMaterializationCron instead.
    */
   async generateRoster(date: string, actorId: string | null): Promise<number> {
-    // Top-of-org / oversight roles (top_management, admin_system, superadmin,
-    // staff_kecamatan) get no roster row.
-    const users = (await this.userRepo.find({ where: { is_active: true } })).filter(
-      (u) => !isNonRosteredRole(u.role),
-    );
-    const existing = await this.rosterRepo.find({
-      where: { schedule_date: date },
-      select: ['id', 'user_id'],
+    // Fetch all active, non-deleted schedule events
+    const events = await this.eventRepo.find({
+      // Soft-deleted events are excluded by the repository's default scope; only
+      // events that can occur on this date are loaded.
+      where: this.activeEventsOverlapping(date, date),
+      relations: [
+        'shift_definition',
+        'location',
+        'region',
+        'team_category',
+        'pic_user',
+        'user',
+        'members',
+      ],
     });
-    const alreadyRostered = new Set(existing.map((r) => r.user_id));
-    const usersToCreate = users.filter((u) => !alreadyRostered.has(u.id));
 
-    // Field workers (satgas/linmas/korlap) get their permanent areas; rayon
-    // managers (kepala_rayon/admin_data) get a fixed assignment to their WHOLE
-    // rayon (all its areas) — editable only up the chain (top_management+).
-    const fieldWorkers = usersToCreate.filter((u) => !isRayonManagerRole(u.role));
-    const userAreaMap = await this.userAreasService.getPermanentAreaIdsForUsers(
-      fieldWorkers.map((u) => u.id),
-    );
-    const managerRayonIds = [
-      ...new Set(
-        usersToCreate
-          .filter((u) => isRayonManagerRole(u.role))
-          .map((u) => u.rayon_id)
-          .filter((id): id is string => !!id),
-      ),
-    ];
-    const rayonAreaMap = await this.buildRayonAreaMap(managerRayonIds);
+    let totalCreated = 0;
 
-    let created = 0;
-    for (const user of usersToCreate) {
-      const areaIds = isRayonManagerRole(user.role)
-        ? user.rayon_id
-          ? (rayonAreaMap.get(user.rayon_id) ?? [])
-          : []
-        : (userAreaMap.get(user.id) ?? []);
-      const hasShift = !!user.shift_definition_id;
-      const row = this.rosterRepo.create({
-        user_id: user.id,
-        schedule_date: date,
-        rayon_id: user.rayon_id ?? null,
-        shift_definition_id: user.shift_definition_id ?? null,
-        status: hasShift ? ScheduleStatus.PLANNED : ScheduleStatus.OFF,
-        source: 'template',
-        created_by: actorId,
-      });
-      const saved = await this.rosterRepo.save(row);
-      await this.setAreas(saved.id, areaIds, actorId);
-      created += 1;
+    // Materialize each event for the given date
+    for (const event of events) {
+      try {
+        const result = await this.materializer.materializeEvent(event, date, date);
+        totalCreated += result.created;
+
+        if (result.skipped.length > 0) {
+          this.logger.debug(
+            `Event ${event.id} for ${date}: created ${result.created}, skipped ${result.skipped.length}`,
+          );
+        }
+      } catch (err) {
+        this.logger.warn(
+          `Failed to materialize event ${event.id} for ${date}: ${(err as Error).message}`,
+        );
+      }
     }
 
     this.logger.log(
-      `Generated ${created} roster rows for ${date} (skipped ${alreadyRostered.size})`,
+      `Generated ${totalCreated} roster rows for ${date} from active schedule events`,
     );
-    return created;
+    return totalCreated;
   }
 
-  /** Map each rayon id → the ids of all areas in it (for whole-rayon assignment). */
-  private async buildRayonAreaMap(rayonIds: string[]): Promise<Map<string, string[]>> {
+  /** Map each district id → the ids of all areas in it (for whole-district assignment). */
+  private async buildDistrictAreaMap(districtIds: string[]): Promise<Map<string, string[]>> {
     const map = new Map<string, string[]>();
-    if (rayonIds.length === 0) return map;
-    const areas = await this.areaRepo.find({
-      where: { rayon_id: In(rayonIds) },
-      select: ['id', 'rayon_id'],
+    if (districtIds.length === 0) return map;
+    const areas = await this.locationRepo.find({
+      where: { district_id: In(districtIds) },
+      select: ['id', 'district_id'],
     });
     for (const a of areas) {
-      if (!a.rayon_id) continue;
-      const list = map.get(a.rayon_id) ?? [];
+      if (!a.district_id) continue;
+      const list = map.get(a.district_id) ?? [];
       list.push(a.id);
-      map.set(a.rayon_id, list);
+      map.set(a.district_id, list);
     }
     return map;
   }
 
-  /** All roster rows for a WIB day, optionally scoped to one rayon. */
-  async findByDate(date: string, rayonId?: string | null): Promise<Schedule[]> {
-    const qb = this.rosterRepo
-      .createQueryBuilder('ds')
-      // `user` is eager on the entity, but createQueryBuilder ignores eager
-      // relations — join it explicitly or every row comes back with no user
-      // (the web table reads row.user.full_name and crashes).
-      .leftJoinAndSelect('ds.user', 'u')
-      .leftJoinAndSelect('ds.shift_definition', 'sd')
-      .leftJoinAndSelect('ds.schedule_areas', 'dsa')
-      .leftJoinAndSelect('dsa.area', 'area')
-      .leftJoinAndSelect('ds.replacement_user', 'ru')
-      .where('ds.schedule_date = :date', { date })
-      .andWhere('ds.deleted_at IS NULL');
-    if (rayonId) {
-      qb.andWhere('ds.rayon_id = :rayonId', { rayonId });
-    }
-    return qb.orderBy('ds.status', 'ASC').addOrderBy('ds.created_at', 'ASC').getMany();
+  /** Roster reads — see `schedules.reads.ts`. */
+  findByDate(date: string, districtId?: string | null): Promise<Schedule[]> {
+    return findByDate(this.readDeps(), date, districtId);
   }
 
-  /** A single worker's live roster row for a day (with areas/shift), or null. */
-  async findByUserAndDate(userId: string, date: string): Promise<Schedule | null> {
-    return this.rosterRepo.findOne({
-      where: { user_id: userId, schedule_date: date, deleted_at: IsNull() },
-      relations: ['shift_definition', 'schedule_areas', 'schedule_areas.area', 'rayon'],
+  findAllByUserAndDate(userId: string, date: string): Promise<Schedule[]> {
+    return findAllByUserAndDate(this.readDeps(), userId, date);
+  }
+
+  markPresentForClockIn(...args: ReadTail<typeof markPresentForClockIn>) {
+    return markPresentForClockIn(this.readDeps(), ...args);
+  }
+
+  findCurrentForUser(userId: string): Promise<Schedule | null> {
+    return findCurrentForUser(this.readDeps(), userId);
+  }
+
+  findByUserAndDate(userId: string, date: string): Promise<Schedule | null> {
+    return findByUserAndDate(this.readDeps(), userId, date);
+  }
+
+  private addDaysToDate(dateStr: string, days: number): string {
+    return addDaysToDate(dateStr, days);
+  }
+
+  private readDeps(): ReadDeps {
+    return { rosterRepo: this.rosterRepo, shiftRepo: this.shiftRepo };
+  }
+
+  /** ADR-056 absence sweep — see `schedules.availability.ts`. */
+  async sweepAbsences(
+    now: Date = new Date(),
+    lookbackDays?: number,
+  ): Promise<{ absent: number; present: number }> {
+    return sweepAbsences(this.availabilityDeps(), now, lookbackDays);
+  }
+
+  /** The gap panel: clockable workers the day does not cover. */
+  async findUnscheduled(
+    date: string,
+    filters: UnscheduledFilters = {},
+  ): Promise<UnscheduledResult> {
+    return findUnscheduled(this.availabilityDeps(), date, filters);
+  }
+
+  private availabilityDeps(): AvailabilityDeps {
+    return {
+      rosterRepo: this.rosterRepo,
+      userRepo: this.userRepo,
+      shiftRepo: this.shiftRepo,
+      logger: this.logger,
+      configService: this.configService,
+      findByDateRange: (from, to, filters) => this.findByDateRange(from, to, filters),
+    };
+  }
+
+  /** A worker's own range, materialized + projected — see `schedules.projection.ts`. */
+  findByDateRangeForUser(from: string, to: string, userId: string): Promise<Schedule[]> {
+    return findByDateRangeForUser(this.projectionDeps(), from, to, userId);
+  }
+
+  /**
+   * How many MATERIALIZED rows a range would return, without hydrating any.
+   *
+   * The controller uses this to refuse a response too large to serialize rather
+   * than OOMing mid-flight. It deliberately counts only materialized rows:
+   * projected ones require expanding every recurrence, which is most of the cost
+   * the guard exists to avoid. A range dominated by projections is beyond the
+   * horizon and small in practice.
+   */
+  async countByDateRange(
+    from: string,
+    to: string,
+    filters?: RangeFilters | string | null,
+  ): Promise<number> {
+    const f: RangeFilters = typeof filters === 'string' ? { districtId: filters } : (filters ?? {});
+    const { districtId, regionId, locationId, userId, shiftDefinitionId, teamCategoryId } = f;
+    const qb = this.rosterRepo
+      .createQueryBuilder('ds')
+      .innerJoin('ds.user', 'u')
+      .where('ds.schedule_date >= :from', { from })
+      .andWhere('ds.schedule_date <= :to', { to })
+      .andWhere('ds.deleted_at IS NULL')
+      .andWhere('u.is_active = TRUE');
+    if (f.cityScopeOnly) {
+      qb.andWhere('ds.location_id IS NULL')
+        .andWhere('ds.region_id IS NULL')
+        .andWhere('ds.district_id IS NULL');
+    }
+    if (districtId) qb.andWhere('ds.district_id = :districtId', { districtId });
+    if (regionId) qb.andWhere('ds.region_id = :regionId', { regionId });
+    if (userId) qb.andWhere('ds.user_id = :userId', { userId });
+    if (shiftDefinitionId)
+      qb.andWhere('ds.shift_definition_id = :shiftDefinitionId', { shiftDefinitionId });
+    if (teamCategoryId) qb.andWhere('ds.team_category_id = :teamCategoryId', { teamCategoryId });
+    if (locationId) qb.andWhere('ds.location_id = :locationId', { locationId });
+    return qb.getCount();
+  }
+
+  async findByDateRange(
+    from: string,
+    to: string,
+    filters?: RangeFilters | string | null,
+  ): Promise<Schedule[]> {
+    // Back-compat: a bare districtId string is still accepted.
+    const f: RangeFilters = typeof filters === 'string' ? { districtId: filters } : (filters ?? {});
+    const { districtId, regionId, locationId, userId, shiftDefinitionId, teamCategoryId } = f;
+
+    // Fetch materialized rows for the range
+    // Explicit column lists, NOT leftJoinAndSelect.
+    //
+    // `location` and `region` carry `boundary_polygon` (~2 KB of GeoJSON each),
+    // and joining them wholesale stamps that polygon onto every single roster
+    // row. Measured on the staging clone: a 31-day, all-district range returned
+    // **293 MB in 29 s** for 31k rows — and staging runs the API with
+    // `--max-old-space-size=384`, so serializing that response is an OOM, not a
+    // slow page. The web board and mobile's personal calendar only ever render
+    // these as NAMES; boundaries are fetched per-subject by the map modal.
+    const qb = this.rosterRepo
+      .createQueryBuilder('ds')
+      .leftJoin('ds.user', 'u')
+      .addSelect(['u.id', 'u.full_name', 'u.username', 'u.role', 'u.is_active'])
+      .leftJoin('ds.shift_definition', 'sd')
+      .addSelect([
+        'sd.id',
+        'sd.name',
+        'sd.start_time',
+        'sd.end_time',
+        'sd.crosses_midnight',
+        // Drives the lazy no-show flip on both frontends (ADR-056).
+        'sd.cutoff_grace_min',
+      ])
+      .leftJoin('ds.location', 'location')
+      .addSelect(['location.id', 'location.name'])
+      .leftJoin('ds.region', 'r')
+      .addSelect(['r.id', 'r.name'])
+      .leftJoin('ds.team_category', 'tt')
+      .addSelect(['tt.id', 'tt.name', 'tt.marker_color'])
+      .where('ds.schedule_date >= :from', { from })
+      .andWhere('ds.schedule_date <= :to', { to })
+      .andWhere('ds.deleted_at IS NULL')
+      // Deactivated workers drop off the board: their rows stay in the DB for
+      // history, but the roster only shows people who can actually work.
+      .andWhere('u.is_active = TRUE');
+    if (f.cityScopeOnly) {
+      qb.andWhere('ds.location_id IS NULL')
+        .andWhere('ds.region_id IS NULL')
+        .andWhere('ds.district_id IS NULL');
+    }
+    if (districtId) qb.andWhere('ds.district_id = :districtId', { districtId });
+    if (regionId) qb.andWhere('ds.region_id = :regionId', { regionId });
+    if (userId) qb.andWhere('ds.user_id = :userId', { userId });
+    if (shiftDefinitionId)
+      qb.andWhere('ds.shift_definition_id = :shiftDefinitionId', { shiftDefinitionId });
+    if (teamCategoryId) qb.andWhere('ds.team_category_id = :teamCategoryId', { teamCategoryId });
+    // One place per row (ADR-053), so the filter is a plain column match.
+    if (locationId) qb.andWhere('ds.location_id = :locationId', { locationId });
+    const materialized = await qb
+      .orderBy('ds.schedule_date', 'ASC')
+      .addOrderBy('ds.status', 'ASC')
+      .getMany();
+
+    // Build a set of (event_id, user_id, date) tuples already materialized
+    const materializedKey = new Set(
+      materialized
+        .filter((r) => r.schedule_event_id)
+        .map((r) => `${r.schedule_event_id}:${r.user_id}:${r.schedule_date}`),
+    );
+
+    // Projection: the occurrences active events will produce that no row holds
+    // yet. Shared with `getDaySummary` so the two can never disagree.
+    const projectedRows = await this.projectOccurrences(from, to, f, materializedKey);
+    // Merge materialized and projected rows, sorted by date + status
+    const all = [...materialized, ...projectedRows];
+    return all.sort((a, b) => {
+      const dateCompare = a.schedule_date.localeCompare(b.schedule_date);
+      if (dateCompare !== 0) return dateCompare;
+      return (a.status ?? '').localeCompare(b.status ?? '');
     });
+  }
+
+  /** ADR-057 — the collapsed day board, as counts. See `schedules.summaries.ts`. */
+  async getDaySummary(date: string, filters?: RangeFilters): Promise<DaySummary> {
+    return computeDaySummary(this.summaryDeps(), date, filters);
+  }
+
+  /** ADR-057 — the week and month grids, as counts. */
+  async getRangeSummary(from: string, to: string, filters?: RangeFilters): Promise<RangeSummary> {
+    return computeRangeSummary(this.summaryDeps(), from, to, filters);
+  }
+
+  /** Per-day occupancy for the year heatmap. */
+  async getDailyCounts(
+    from: string,
+    to: string,
+    filters?: RangeFilters,
+  ): Promise<Array<{ date: string; count: number }>> {
+    return computeDailyCounts(this.summaryDeps(), from, to, filters);
+  }
+
+  /**
+   * The aggregates read through this rather than owning repositories, so they
+   * cannot drift from the roster read they must agree with.
+   */
+  private summaryDeps(): SummaryDeps {
+    return {
+      rosterRepo: this.rosterRepo,
+      locationRepo: this.locationRepo,
+      eventRepo: this.eventRepo,
+      activeEventsOverlapping: (from, to) => this.activeEventsOverlapping(from, to),
+      applyRangeFilters: (qb, f) => this.applyRangeFilters(qb, f),
+      projectOccurrences: (from, to, f, key) => this.projectOccurrences(from, to, f, key),
+    };
   }
 
   async findOne(id: string): Promise<Schedule> {
     const row = await this.rosterRepo.findOne({
       where: { id },
       // `user` is loaded so the edit-permission hierarchy can read the target's role.
-      relations: ['user', 'shift_definition', 'schedule_areas', 'schedule_areas.area'],
+      relations: ['user', 'shift_definition', 'location'],
     });
     if (!row) throw new NotFoundException(`Daily schedule ${id} not found`);
     return row;
   }
 
-  /** Mark a row as sick / annual leave. */
-  async setLeave(
-    id: string,
-    leaveType: 'sick' | 'annual' | 'permit' | 'off',
-    notes: string | undefined,
-    actor: User,
-  ): Promise<Schedule> {
-    const actorId = actor.id;
-    const row = await this.findOne(id);
-    await this.assertCanEdit(actor, row);
-    const prevStatus = row.status;
-    row.status = LEAVE_STATUS_BY_TYPE[leaveType];
-    row.notes = notes ?? null;
-    row.source = 'manual';
-    row.updated_by = actorId;
-    const saved = await this.rosterRepo.save(row);
-    await this.audit(
-      saved,
-      'set_leave',
-      actorId,
-      { status: prevStatus },
-      { status: saved.status, notes: saved.notes },
-    );
-    return this.findOne(saved.id);
+  /** Roster writes — see `schedules.mutations.ts`. */
+  setLeave(...args: TailArgs<typeof setLeave>) {
+    return setLeave(this.mutationDeps(), ...args);
   }
 
-  /**
-   * Replace the rostered worker for the day. The original row is marked
-   * `replaced`; the covering worker's row for the same day is upserted to take
-   * over the original's rayon/shift/areas, with `original_user_id` set.
-   */
-  async replaceWorker(
-    id: string,
-    replacementUserId: string,
-    notes: string | undefined,
-    actor: User,
-  ): Promise<Schedule> {
-    const actorId = actor.id;
-    const original = await this.findOne(id);
-    await this.assertCanEdit(actor, original);
-    if (replacementUserId === original.user_id) {
-      throw new BadRequestException('Replacement must be a different worker');
-    }
-    const replacement = await this.userRepo.findOne({ where: { id: replacementUserId } });
-    if (!replacement) throw new NotFoundException('Replacement worker not found');
-    // The stand-in must also be someone the editor is allowed to schedule.
-    if (!canEditTargetRole(actor.role, replacement.role)) {
-      throw new ForbiddenException('You cannot assign this replacement worker');
-    }
-
-    const areaIds = (original.schedule_areas ?? []).map((dsa) => dsa.area_id);
-
-    // Mark the original as replaced.
-    const prevStatus = original.status;
-    original.status = ScheduleStatus.REPLACED;
-    original.replacement_user_id = replacementUserId;
-    original.notes = notes ?? original.notes;
-    original.source = 'manual';
-    original.updated_by = actorId;
-    await this.rosterRepo.save(original);
-
-    // Upsert the covering worker's row for the same day. If they already have a
-    // committed row that day (their own shift or on leave) they can't cover —
-    // reject rather than silently overwriting it. An `off`/`replaced` row is
-    // free to take over.
-    const coverRow = await this.findByUserAndDate(replacementUserId, original.schedule_date);
-    if (coverRow && BUSY_STATUSES.includes(coverRow.status)) {
-      throw new BadRequestException(
-        'Replacement worker already has a schedule or is on leave today',
-      );
-    }
-    const coverStatus = original.shift_definition_id ? ScheduleStatus.PLANNED : ScheduleStatus.OFF;
-    let coverRowId: string;
-    if (!coverRow) {
-      // Brand-new entity — no eager/cascaded relations were ever loaded onto
-      // it, so a plain save() is safe here.
-      const saved = await this.rosterRepo.save(
-        this.rosterRepo.create({
-          user_id: replacementUserId,
-          schedule_date: original.schedule_date,
-          rayon_id: original.rayon_id,
-          shift_definition_id: original.shift_definition_id,
-          original_user_id: original.user_id,
-          status: coverStatus,
-          source: 'manual',
-          created_by: actorId,
-          updated_by: actorId,
-        }),
-      );
-      coverRowId = saved.id;
-    } else {
-      // Raw column UPDATE, not `save(coverRow)` — findByUserAndDate() eager/
-      // explicitly loads `shift_definition`/`rayon`/`schedule_areas`, so
-      // `coverRow` holds stale relation objects; saving the entity would let
-      // TypeORM reconcile those FKs from the stale objects and revert them.
-      coverRowId = coverRow.id;
-      await this.rosterRepo.update(coverRowId, {
-        rayon_id: original.rayon_id,
-        shift_definition_id: original.shift_definition_id,
-        original_user_id: original.user_id,
-        status: coverStatus,
-        source: 'manual',
-        updated_by: actorId,
-      });
-    }
-    await this.setAreas(coverRowId, areaIds, actorId);
-
-    await this.audit(
-      original,
-      'replace_worker',
-      actorId,
-      { status: prevStatus },
-      { status: ScheduleStatus.REPLACED, replacement_user_id: replacementUserId },
-    );
-    return this.findOne(original.id);
+  replaceWorker(...args: TailArgs<typeof replaceWorker>) {
+    return replaceWorker(this.mutationDeps(), ...args);
   }
 
-  /** Set the day's areas (0..N). */
-  async updateAreas(id: string, areaIds: string[], actor: User): Promise<Schedule> {
-    const actorId = actor.id;
-    const row = await this.findOne(id);
-    await this.assertCanEdit(actor, row);
-    const before = (row.schedule_areas ?? []).map((dsa) => dsa.area_id);
-    await this.setAreas(row.id, areaIds, actorId);
-    // Raw column UPDATE, not `save(row)` — `schedule_areas` is a `cascade: true`
-    // relation and `row` still holds the now-stale in-memory array from
-    // `findOne()` above. Saving the full entity would cascade-reinsert those
-    // rows right after `setAreas()` just deleted them, silently reverting the
-    // change (the bug: areas appeared to save but reverted on refresh).
-    await this.rosterRepo.update(id, { source: 'manual', updated_by: actorId });
-    await this.audit(row, 'update_areas', actorId, { area_ids: before }, { area_ids: areaIds });
-    return this.findOne(id);
+  updateAreas(...args: TailArgs<typeof updateAreas>) {
+    return updateAreas(this.mutationDeps(), ...args);
   }
 
-  /** Set (or clear) the day's shift. */
-  async updateShift(id: string, shiftDefinitionId: string | null, actor: User): Promise<Schedule> {
-    const actorId = actor.id;
-    const row = await this.findOne(id);
-    await this.assertCanEdit(actor, row);
-    const before = row.shift_definition_id;
-    // Re-derive status only for the default planned/off pair; leave/replaced stay.
-    let status = row.status;
-    if (status === ScheduleStatus.PLANNED || status === ScheduleStatus.OFF) {
-      status = shiftDefinitionId ? ScheduleStatus.PLANNED : ScheduleStatus.OFF;
-    }
-    // Raw column UPDATE, not `save(row)` — `shift_definition` is an `eager: true`
-    // relation, so `row.shift_definition` is still the OLD shift object from
-    // `findOne()`. TypeORM's entity save reconciles the FK column from that
-    // stale relation object, silently reverting `shift_definition_id` back to
-    // the old value (the bug: clearing the shift never actually persisted).
-    await this.rosterRepo.update(id, {
-      shift_definition_id: shiftDefinitionId,
-      status,
-      source: 'manual',
-      updated_by: actorId,
-    });
-    await this.audit(
-      row,
-      'update_shift',
-      actorId,
-      { shift_definition_id: before },
-      { shift_definition_id: shiftDefinitionId },
-    );
-    return this.findOne(id);
+  updateShift(...args: TailArgs<typeof updateShift>) {
+    return updateShift(this.mutationDeps(), ...args);
   }
 
-  /**
-   * Override today's roster for a worker (used by monitoring reassign): ensure a
-   * row exists for the day, set its single area to `areaId`, and optionally its
-   * rayon/shift. Replaces the legacy range-based `schedules` override layer.
-   * Returns the affected roster row id.
-   */
-  async overrideForDay(
-    userId: string,
-    date: string,
-    params: { areaId: string; rayonId?: string | null; shiftDefinitionId?: string | null },
-    actorId: string,
-  ): Promise<string> {
-    // NOTE: monitoring-reassign is authorized by its own guard; this path
-    // deliberately uses the internal primitives (not the hierarchy-gated
-    // updateShift/updateAreas) so the roster edit-hierarchy isn't applied here.
-    let row = await this.findByUserAndDate(userId, date);
-    if (!row) {
-      const shiftId = params.shiftDefinitionId ?? null;
-      row = await this.rosterRepo.save(
-        this.rosterRepo.create({
-          user_id: userId,
-          schedule_date: date,
-          rayon_id: params.rayonId ?? null,
-          shift_definition_id: shiftId,
-          // Mirror generateRoster: a row with no shift is OFF, not PLANNED.
-          status: shiftId ? ScheduleStatus.PLANNED : ScheduleStatus.OFF,
-          source: 'manual',
-          created_by: actorId,
-        }),
-      );
-    } else if (params.shiftDefinitionId !== undefined) {
-      // Raw column UPDATE, not `save(row)` — same stale-eager-relation pitfall
-      // as updateShift() above (`shift_definition` would otherwise win over our
-      // manually-set FK column on save).
-      let status = row.status;
-      if (status === ScheduleStatus.PLANNED || status === ScheduleStatus.OFF) {
-        status = params.shiftDefinitionId ? ScheduleStatus.PLANNED : ScheduleStatus.OFF;
-      }
-      await this.rosterRepo.update(row.id, {
-        shift_definition_id: params.shiftDefinitionId,
-        status,
-        source: 'manual',
-        updated_by: actorId,
-      });
-    }
-    await this.setAreas(row.id, [params.areaId], actorId);
-    return row.id;
+  overrideForDay(...args: TailArgs<typeof overrideForDay>) {
+    return overrideForDay(this.mutationDeps(), ...args);
   }
 
-  /** Soft-delete a roster row (admin). */
-  async remove(id: string, actorId: string): Promise<void> {
-    const row = await this.findOne(id);
-    row.deleted_by = actorId;
-    await this.rosterRepo.save(row);
-    await this.rosterRepo.softDelete(id);
+  remove(...args: TailArgs<typeof remove>) {
+    return remove(this.mutationDeps(), ...args);
+  }
+
+  private mutationDeps(): MutationDeps {
+    return {
+      rosterRepo: this.rosterRepo,
+      eventRepo: this.eventRepo,
+      userRepo: this.userRepo,
+      assertCanEdit: (editor, row) => this.assertCanEdit(editor, row),
+      audit: (row, action, actorId, before, after) =>
+        this.audit(row, action, actorId, before, after),
+      findOne: (id) => this.findOne(id),
+      findByUserAndDate: (u, d) => this.findByUserAndDate(u, d),
+      findAllByUserAndDate: (u, d) => this.findAllByUserAndDate(u, d),
+      setPlace: (id, locationId) => this.setPlace(id, locationId),
+    };
   }
 
   // ---- Read helpers for clock-in ----
 
-  /** Today's rostered areas for a worker (empty when no roster row / no areas). */
-  async getActiveAreasForDay(userId: string, date: string): Promise<Area[]> {
-    const row = await this.findByUserAndDate(userId, date);
-    return (row?.schedule_areas ?? []).map((dsa) => dsa.area).filter(Boolean);
+  /** Per-worker reads — see `schedules.lookups.ts`. */
+  getActiveAreasForDay(userId: string, date: string): Promise<Location[]> {
+    return getActiveAreasForDay(this.lookupDeps(), userId, date);
   }
 
-  /** Today's rostered shift for a worker, or null. */
-  async getShiftForDay(userId: string, date: string) {
-    const row = await this.findByUserAndDate(userId, date);
-    return row?.shift_definition ?? null;
+  getActiveAreasNow(userId: string): Promise<Location[]> {
+    return getActiveAreasNow(this.lookupDeps(), userId);
   }
 
-  /**
-   * Rows expected to work on a day (real shift, not on leave / off / replaced).
-   * Used by monitoring to compute the present/absent denominator.
-   */
-  async getExpectedForDate(date: string): Promise<Schedule[]> {
-    return this.rosterRepo.find({
-      where: {
-        schedule_date: date,
-        deleted_at: IsNull(),
-        status: In([ScheduleStatus.PLANNED, ScheduleStatus.PRESENT]),
-      },
-      relations: ['shift_definition'],
-    });
+  getShiftForDay(userId: string, date: string) {
+    return getShiftForDay(this.lookupDeps(), userId, date);
   }
 
-  /**
-   * All live roster rows for a day (any status), optionally rayon-scoped. The
-   * monitoring service derives expected / present / absent / on-leave from this
-   * (single query) without a new tracking column. `user` is eager-loaded.
-   */
-  async getRosterForMonitoring(date: string, rayonId?: string | null): Promise<Schedule[]> {
-    return this.rosterRepo.find({
-      where: {
-        schedule_date: date,
-        deleted_at: IsNull(),
-        ...(rayonId ? { rayon_id: rayonId } : {}),
-      },
-      // `user` is eager on the entity; list it explicitly so the monitoring
-      // absent_users mapping (full_name/role) never depends on that subtlety.
-      relations: ['user', 'shift_definition'],
-    });
+  getAttributionCandidates(userId: string): Promise<AttributionCandidate[]> {
+    return getAttributionCandidates(this.lookupDeps(), userId);
+  }
+
+  getExpectedForDate(date: string): Promise<Schedule[]> {
+    return getExpectedForDate(this.lookupDeps(), date);
+  }
+
+  getRosterForMonitoring(date: string, districtId?: string | null): Promise<Schedule[]> {
+    return getRosterForMonitoring(this.lookupDeps(), date, districtId);
+  }
+
+  getTeamMembership(userIds: string[], date: string): ReturnType<typeof getTeamMembership> {
+    return getTeamMembership(this.lookupDeps(), userIds, date);
+  }
+
+  private lookupDeps(): LookupDeps {
+    return {
+      rosterRepo: this.rosterRepo,
+      locationRepo: this.locationRepo,
+      addDaysToDate: (d, n) => this.addDaysToDate(d, n),
+      findByUserAndDate: (u, d) => this.findByUserAndDate(u, d),
+      findAllByUserAndDate: (u, d) => this.findAllByUserAndDate(u, d),
+      findCurrentForUser: (u) => this.findCurrentForUser(u),
+    };
   }
 
   // ---- internals ----
 
-  /** Reconcile a row's area set to exactly `areaIds`. */
-  private async setAreas(
-    rosterId: string,
-    areaIds: string[],
-    actorId: string | null,
-  ): Promise<void> {
-    const desired = [...new Set(areaIds)];
-    await this.rosterAreaRepo.delete({ schedule_id: rosterId });
-    if (!desired.length) return;
-    const rows = desired.map((areaId) =>
-      this.rosterAreaRepo.create({
-        schedule_id: rosterId,
-        area_id: areaId,
-        assigned_by: actorId,
-      }),
-    );
-    await this.rosterAreaRepo.save(rows);
+  /** Reconcile a row's area set to exactly `locationIds`. */
+  /**
+   * Set the occurrence's lokasi. ONE place per row (ADR-053) — callers that want
+   * wider coverage create another schedule, so this takes a single id (or null)
+   * rather than an array it would have to silently truncate.
+   */
+  private async setPlace(rosterId: string, locationId: string | null): Promise<void> {
+    await this.rosterRepo.update(rosterId, { location_id: locationId });
   }
 
   private async audit(

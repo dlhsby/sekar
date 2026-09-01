@@ -178,43 +178,46 @@ export function overtimePill(status: OvertimeStatus): { tone: StatusTone; label:
   }
 }
 
-// Maps the 5 TrackingStatus values to the StatusPill tone + shortened pill
+// Maps the 3 TrackingStatus values to the StatusPill tone + shortened pill
 // vocabulary used across Monitoring (MON-1/2 pill surfaces). Labels stay aligned
-// with the canonical `getStatusLabel` vocab in utils/mapUtils.ts (which backs
-// markers + overlays); the pill versions are just trimmed to fit the chip.
+// with the canonical status vocab; the pill versions are trimmed to fit the chip.
 export function presencePill(status: TrackingStatus): { tone: StatusTone; label: string } {
   switch (status) {
-    case 'active':       return { tone: 'ok', label: i18n.t('status:presence.active') };
-    case 'inactive':     return { tone: 'warn', label: i18n.t('status:presence.inactive') };
-    case 'outside_area': return { tone: 'bad', label: i18n.t('status:presence.outside_area') };
-    case 'missing':      return { tone: 'bad', label: i18n.t('status:presence.missing') };
-    case 'offline':      return { tone: 'neutral', label: i18n.t('status:presence.offline') };
+    case 'active':   return { tone: 'ok', label: i18n.t('status:tracking.active') };
+    case 'offline':  return { tone: 'neutral', label: i18n.t('status:tracking.offline') };
+    case 'absent':   return { tone: 'bad', label: i18n.t('status:tracking.absent') };
   }
 }
 
 // ─── Two-axis presence (CP6) ────────────────────────────────────────────────
 
-// Compatibility mapper: derive the activity + location axes from the legacy
-// flattened `status` + `is_within_area`, for payloads that predate the backend
-// two-axis change. `active`/`outside_area` are both fresh GPS → `aktif`;
-// `inactive` → `idle`; `missing`/`offline` have no usable fix → `unknown` location.
+// Mapper: derive the activity + location axes from the three-state `status` +
+// `is_within_area`. Fresh GPS → `aktif`; clocked in but unreachable → `offline`;
+// not clocked in → `absent`.
+//
+// BOTH aktif and offline report inside/outside — for offline it is the LAST KNOWN
+// fix, which is exactly what a supervisor needs ("unreachable, and last we saw they
+// were outside their park"). Dropping it would make offline indistinguishable from
+// absent on the one axis still carrying information. Must mirror the backend's
+// `calculateAxes`; `unknown` is only for someone who never reported.
 export function deriveAxes(
   status: TrackingStatus,
   isWithinArea: boolean,
 ): { activity: PresenceActivity; location: PresenceLocation } {
   switch (status) {
-    // `active`/`outside_area` encode the location directly (fresh fix inside vs
-    // outside) — trust the status, not a possibly-stale is_within_area flag.
-    case 'active':       return { activity: 'aktif', location: 'dalam_area' };
-    case 'outside_area': return { activity: 'aktif', location: 'luar_area' };
-    // `inactive` (idle) keeps its last-known location from is_within_area.
-    case 'inactive':     return { activity: 'idle', location: isWithinArea ? 'dalam_area' : 'luar_area' };
-    // No usable fix → location unknown.
-    case 'missing':      return { activity: 'missing', location: 'unknown' };
-    case 'offline':      return { activity: 'offline', location: 'unknown' };
+    // Active = clocked in + fresh GPS (≤5min).
+    case 'active':
+      return { activity: 'aktif', location: isWithinArea ? 'dalam_area' : 'luar_area' };
+    // Offline = clocked in but no recent GPS (>5min) — last known position stands.
+    case 'offline':
+      return { activity: 'offline', location: isWithinArea ? 'dalam_area' : 'luar_area' };
+    // Absent = not clocked in. Location unknown.
+    case 'absent':
+      return { activity: 'absent', location: 'unknown' };
     // Defensive: runtime data can carry an unexpected/missing status; never
     // return undefined (callers destructure the result).
-    default:             return { activity: 'offline', location: 'unknown' };
+    default:
+      return { activity: 'absent', location: 'unknown' };
   }
 }
 
@@ -233,15 +236,121 @@ export function userAxes(user: {
   return deriveAxes(user.status, user.is_within_area);
 }
 
-// Activity axis → StatusPill tone + label (mirrors presencePill for the 3 shown
-// activity states + offline). Named presence* to avoid the existing activityPill
-// (activity-submission status) above.
+// Activity axis → StatusPill tone + label (maps three-state activity model).
+// Named presence* to avoid the existing activityPill (activity-submission status).
 export function presenceActivityPill(activity: PresenceActivity): { tone: StatusTone; label: string } {
   switch (activity) {
-    case 'aktif':   return { tone: 'ok', label: i18n.t('status:presence.active') };
-    case 'idle':    return { tone: 'warn', label: i18n.t('status:presence.inactive') };
-    case 'missing': return { tone: 'bad', label: i18n.t('status:presence.missing') };
-    case 'offline': return { tone: 'neutral', label: i18n.t('status:presence.offline') };
+    case 'aktif':   return { tone: 'ok', label: i18n.t('status:tracking.active') };
+    case 'offline': return { tone: 'neutral', label: i18n.t('status:tracking.offline') };
+    case 'absent':  return { tone: 'bad', label: i18n.t('status:tracking.absent') };
+  }
+}
+
+/**
+ * The lifecycle axis (ADR-050) as StatusPill descriptors — the third axis beside
+ * activity (aktif/tidak-aktif) and location (dalam/luar area) in the worker detail.
+ * Reads the explicit `lifecycle_flags` set plus the `is_late`/`is_scheduled`
+ * booleans (either source is honoured during rollout). Returns [] for a plain
+ * on-time scheduled worker (no extra pill). Order: late → luar jadwal → lembur →
+ * lupa clock-out.
+ */
+export function lifecycleFlagPills(user: {
+  is_late?: boolean;
+  is_scheduled?: boolean;
+  lifecycle_flags?: string[];
+}): { tone: StatusTone; label: string }[] {
+  const flags = new Set(user.lifecycle_flags ?? []);
+  const pills: { tone: StatusTone; label: string }[] = [];
+  if (user.is_late || flags.has('is_late')) {
+    pills.push({ tone: 'warn', label: i18n.t('monitoring:lifecycle.late') });
+  }
+  if (user.is_scheduled === false || flags.has('ad_hoc')) {
+    pills.push({ tone: 'info', label: i18n.t('monitoring:lifecycle.luarJadwal') });
+  }
+  if (flags.has('lembur')) {
+    pills.push({ tone: 'info', label: i18n.t('monitoring:lifecycle.lembur') });
+  }
+  if (flags.has('lupa_clock_out')) {
+    pills.push({ tone: 'bad', label: i18n.t('monitoring:lifecycle.lupaClockOut') });
+  }
+  return pills;
+}
+
+/**
+ * The LIFECYCLE axis itself (ADR-050) — where the worker sits in the day, as
+ * distinct from the flags that decorate it. Mobile rendered only the flags
+ * (terlambat / luar jadwal / lembur / lupa clock-out), so a roster entry could
+ * not say whether the person was `belum_hadir`, `tidak_hadir`, already `pulang`
+ * or simply `tidak_bertugas` — every non-live worker looked the same.
+ *
+ * `leave_reason` refines `tidak_bertugas`/`tidak_hadir` into cuti / sakit / izin
+ * / libur, which is the only way an operator can tell an excused absence from a
+ * no-show.
+ */
+export function lifecycleStatePill(user: {
+  lifecycle_state?: string | null;
+  leave_reason?: 'cuti' | 'sakit' | 'izin' | 'libur' | null;
+  is_within_area?: boolean | null;
+  is_scheduled?: boolean;
+}): { tone: StatusTone; label: string } | null {
+  const state = user.lifecycle_state;
+  if (!state) return null;
+  if (user.leave_reason) {
+    return {
+      tone: 'info',
+      label: i18n.t(`monitoring:lifecycle.leave.${user.leave_reason}`),
+    };
+  }
+  // Tone comes from the shared standard — not a second hand-rolled switch that
+  // could drift from the board and the schedule cards.
+  return {
+    tone: presenceTone({
+      lifecycleState: state,
+      isWithinArea: user.is_within_area,
+      isAdHoc: user.is_scheduled === false,
+    }),
+    label: i18n.t(`monitoring:lifecycle.state.${state}`, state),
+  };
+}
+
+/**
+ * THE presence colour standard (ADR-050) — the mobile twin of the web's
+ * `lib/presence/tone.ts`. Same inputs, same ordering, so the same worker never
+ * reads one colour on the map and another on a card.
+ *
+ * planned/not started → neutral · bertugas inside → ok · bertugas outside → warn
+ * · terlambat → warn · belum_hadir → warn · tidak_hadir → bad · leave → info
+ * · pulang → neutral · ad-hoc (luar jadwal) → info
+ *
+ * The mobile palette has five tones, not nine, so `amber`/`orange`/`yellow`
+ * collapse onto `warn`; the accompanying LABEL always disambiguates them.
+ */
+export function presenceTone(facts: {
+  lifecycleState?: string | null;
+  scheduleStatus?: string | null;
+  leaveReason?: 'cuti' | 'sakit' | 'izin' | 'libur' | null;
+  isWithinArea?: boolean | null;
+  isAdHoc?: boolean;
+}): StatusTone {
+  if (facts.isAdHoc) return 'info';
+  if (facts.leaveReason && facts.leaveReason !== 'libur') return 'info';
+
+  switch (facts.lifecycleState ?? facts.scheduleStatus) {
+    case 'bertugas':
+    case 'present':
+      return facts.isWithinArea === false ? 'warn' : 'ok';
+    case 'terlambat':
+    case 'belum_hadir':
+      return 'warn';
+    case 'tidak_hadir':
+    case 'absent':
+      return 'bad';
+    case 'leave_sick':
+    case 'leave_annual':
+    case 'leave_permit':
+      return 'info';
+    default:
+      return 'neutral';
   }
 }
 
@@ -332,4 +441,27 @@ export function getPriorityVariant(priority: string): 'danger' | 'warning' | 'pr
  */
 export function getPriorityLabel(priority: string): string {
   return i18n.exists(`status:priority.${priority}`) ? i18n.t(`status:priority.${priority}`) : priority;
+}
+
+// ─── Leave Reason Pill (ADR-050: on-leave workers) ──────────────────────────
+
+/**
+ * Maps leave reason to StatusPill tone + localized label.
+ * Used in the "Berhalangan" (on-leave) section of the monitoring status sheet.
+ */
+export function leaveReasonPill(
+  reason: 'cuti' | 'sakit' | 'izin' | 'libur' | null | undefined,
+): { tone: StatusTone; label: string } {
+  switch (reason) {
+    case 'sakit':
+      return { tone: 'warn', label: i18n.t('status:leave.sakit') };
+    case 'cuti':
+      return { tone: 'info', label: i18n.t('status:leave.cuti') };
+    case 'izin':
+      return { tone: 'neutral', label: i18n.t('status:leave.izin') };
+    case 'libur':
+      return { tone: 'neutral', label: i18n.t('status:leave.libur') };
+    default:
+      return { tone: 'neutral', label: i18n.t('status:leave.unknown') };
+  }
 }

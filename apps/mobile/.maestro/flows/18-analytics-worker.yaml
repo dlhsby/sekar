@@ -21,39 +21,39 @@ appId: com.wahyutrip.sekar
 
 - tapOn:
     id: password-input
-- inputText: password123
+- inputText: 12345678
 
 - tapOn:
     id: login-button
 
-- wait: 2000
-
+- waitForAnimationToEnd:
+    timeout: 2000
 # Should be at FieldHomeScreen (Beranda)
 - assertVisible:
     text: Beranda
 
-- wait: 1000
-
+- waitForAnimationToEnd:
+    timeout: 1000
 # Navigate to WorkerAnalytics tab by tapping the "Kinerja" tab label
 # scroll down to see bottom tabs if needed
 - scroll:
     direction: down
     duration: 500
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 # Tap WorkerAnalytics tab (label: "Kinerja" for satgas)
 - tryTapOn:
     text: Kinerja
 
-- wait: 1500
-
+- waitForAnimationToEnd:
+    timeout: 1500
 # Should be at WorkerAnalyticsScreen
 - assertVisible:
     text: Kinerja Saya|Kinerja|Performance
 
-- wait: 1000
-
+- waitForAnimationToEnd:
+    timeout: 1000
 # Verify key analytics elements are visible
 # Expected visible elements:
 # - Performance score card (numeric score, e.g., "85/100")
@@ -64,47 +64,47 @@ appId: com.wahyutrip.sekar
 - assertVisible:
     text: Saya|Performance|Score
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 # Scroll down to view all analytics sections
 - scroll:
     direction: down
     duration: 500
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 # Verify we see KPI pills or metric cards
 - assertVisible:
     text: KPI|Kehadiran|Tugas|Performance|Attendance
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 # Continue scrolling to see task progress section
 - scroll:
     direction: down
     duration: 500
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 # Look for task progress or trend data
 - assertVisible:
     text: Tugas|Task|Tren|Trend|7 Hari
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 # Tap refresh (pull-to-refresh or explicit refresh button) to test data reload
 - scroll:
     direction: up
     duration: 500
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 # Perform pull-to-refresh gesture (if available)
 - tryTapOn:
     text: Refresh|Segarkan
 
-- wait: 2000
-
+- waitForAnimationToEnd:
+    timeout: 2000
 # MANUAL: On-device, verify that:
 # 1. Performance score displays correctly (numeric, with visual indicator/gauge)
 # 2. KPIs show relevant metrics (attendance rate, tasks completed, etc.)

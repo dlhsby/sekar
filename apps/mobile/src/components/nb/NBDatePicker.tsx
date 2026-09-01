@@ -288,8 +288,14 @@ export function NBDatePicker({
 
   const monthItems = useMemo(
     () => {
-      const months = t('components:nbDatePicker.months');
-      return (Array.isArray(months) ? months : []).map((m, i) => ({ value: i, label: m }));
+      // `returnObjects` is REQUIRED for an array value — without it i18next
+      // returns a string, `Array.isArray` was false, and the month column
+      // rendered completely empty (the picker showed day and year only).
+      const months = t('components:nbDatePicker.months', { returnObjects: true }) as
+        | string[]
+        | string;
+      const list = Array.isArray(months) ? months : [];
+      return list.map((m, i) => ({ value: i, label: m }));
     },
     [t],
   );
@@ -474,7 +480,7 @@ const styles = StyleSheet.create({
     color: nbColors.black,
   },
   placeholder: {
-    color: nbColors.gray400,
+    color: nbColors.gray500,
     fontWeight: nbType.body.fontWeight,
   },
   valueDisabled: {
@@ -524,7 +530,7 @@ const styles = StyleSheet.create({
   },
   wheelText: {
     fontSize: nbType.body.fontSize,
-    color: nbColors.gray400,
+    color: nbColors.gray500,
   },
   wheelTextSelected: {
     color: nbColors.black,

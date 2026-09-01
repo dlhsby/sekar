@@ -470,6 +470,128 @@ body {
    ============================================ */
 
 @layer utilities {
+  /* AdvancedMarker content container: the pin SVG fills it and its bottom-center
+     (the pin tip) is what Advanced Markers anchor to the LatLng. The name label
+     is positioned BELOW, out of flow, so it never shifts that anchor. */
+  .am-marker {
+    position: relative;
+    cursor: pointer;
+  }
+  .am-marker > .am-label {
+    position: absolute;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.15;
+    pointer-events: none;
+    /* Names wrap instead of running off across the map. "Taman Harmoni Keputih
+       Sukolilo" as one unbroken line covered several neighbouring pins. */
+    white-space: normal;
+    overflow-wrap: anywhere;
+    max-width: 132px;
+    width: max-content;
+  }
+  /* One side per tier, so a lokasi inside a kawasan inside a rayon does not
+     print three names on the same strip of map. The label always grows AWAY
+     from the pin, so the anchor never moves. */
+  .am-marker > .am-label--bottom {
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 1px;
+    text-align: center;
+  }
+  .am-marker > .am-label--top {
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 2px;
+    text-align: center;
+  }
+  /* Right-aligned so the text ENDS at the pin — a left-placed label that grew
+     rightwards would run under its own marker. */
+  .am-marker > .am-label--left {
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-right: 4px;
+    text-align: right;
+  }
+  .am-marker > .am-label--right {
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-left: 4px;
+    text-align: left;
+  }
+  /* Google-style place label under a monitoring node marker: dark text with a
+     white halo so an area's name reads over any base-map color. */
+  .node-marker-label {
+    /* color comes from the marker's label (staffing-health tinted); keep only
+       the white halo + font so the name reads over any base-map color. */
+    font-family: var(--font-body), Inter, sans-serif !important;
+    text-shadow:
+      0 1px 2px var(--color-nb-white),
+      0 -1px 2px var(--color-nb-white),
+      1px 0 2px var(--color-nb-white),
+      -1px 0 2px var(--color-nb-white);
+  }
+  /* Start / end of a movement trail. Filled = start (where the day began),
+     hollow = end (where they are now, which the worker pin also marks) — the
+     same read as the mobile trail view. */
+  .trail-endpoint {
+    width: 12px;
+    height: 12px;
+    border-radius: 9999px;
+    border: 2px solid var(--color-nb-black);
+    box-shadow: 0 0 0 2px var(--color-nb-white);
+  }
+  .trail-endpoint--start {
+    background: var(--color-nb-black);
+  }
+  .trail-endpoint--end {
+    background: var(--color-nb-white);
+  }
+  /* Demoted marker (progressive reveal, ADR-060). A marker that did not win a
+     full-pin slot at this zoom draws as this dot: present, positioned and
+     clickable, but silent. Clicking promotes it — that is why it keeps a
+     pointer cursor and a hit area larger than its ink. NEVER used to hide a
+     marker; the dot IS the marker at low priority. */
+  .marker-dot {
+    width: 10px;
+    height: 10px;
+    border: 2px solid var(--color-nb-white);
+    border-radius: 9999px;
+    box-shadow: 0 0 0 1px rgb(0 0 0 / 0.35);
+    cursor: pointer;
+    pointer-events: auto;
+    transition: transform 120ms ease-out;
+  }
+  .marker-dot:hover {
+    transform: scale(1.6);
+  }
+
+  /* Worker name under a pin: neutral dark (the pin color already carries
+     status) with the same white halo so it reads over any base-map color. */
+  .worker-marker-label {
+    color: var(--color-nb-black) !important;
+    font-family: var(--font-body), Inter, sans-serif !important;
+    text-shadow:
+      0 1px 2px var(--color-nb-white),
+      0 -1px 2px var(--color-nb-white),
+      1px 0 2px var(--color-nb-white),
+      -1px 0 2px var(--color-nb-white);
+  }
+  /* On the dark map (dark theme → dark Map ID), flip the worker label to light
+     ink with a dark halo so it stays legible over the dark base tiles. Node
+     labels keep their health tint + white halo, which reads on either map. */
+  .dark .worker-marker-label {
+    color: var(--color-nb-white) !important;
+    text-shadow:
+      0 1px 2px var(--color-nb-black),
+      0 -1px 2px var(--color-nb-black),
+      1px 0 2px var(--color-nb-black),
+      -1px 0 2px var(--color-nb-black);
+  }
   .text-nb-display-xl {
     font-family: var(--type-display-xl-family);
     font-weight: var(--type-display-xl-weight);

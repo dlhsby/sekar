@@ -4,7 +4,7 @@ export type CsvImportEntity = 'users' | 'areas';
 /**
  * Column headers per importable entity.
  *
- * NOTE: the areas template extends the spec table with `area_type_id` and makes
+ * NOTE: the areas template extends the spec table with `location_type_id` and makes
  * latitude/longitude required, because the `areas` table enforces those columns
  * NOT NULL — an import omitting them could never commit.
  */
@@ -15,11 +15,11 @@ export const CSV_TEMPLATES: Record<CsvImportEntity, string[]> = {
     'phone_number',
     'role',
     'password',
-    'area_id',
-    'rayon_id',
+    'location_id',
+    'district_id',
     'employee_id',
   ],
-  areas: ['name', 'area_type_id', 'rayon_id', 'address', 'latitude', 'longitude', 'radius_meters'],
+  areas: ['name', 'location_type_id', 'district_id', 'address', 'latitude', 'longitude'],
 };
 
 export const CSV_IMPORT_ENTITIES: CsvImportEntity[] = ['users', 'areas'];

@@ -12,9 +12,9 @@ describe('KecamatansService', () => {
     id: 'kec-1',
     name: 'Wiyung',
     code: 'wiyung',
-    rayon_id: 'rayon-1',
+    district_id: 'district-1',
     region: 'selatan',
-    rayon: { id: 'rayon-1', name: 'Rayon Selatan' } as any,
+    district: { id: 'district-1', name: 'Rayon Selatan' } as any,
   } as Kecamatan;
 
   const qb = {
@@ -39,24 +39,26 @@ describe('KecamatansService', () => {
   });
 
   describe('findAll', () => {
-    it('returns all kecamatans ordered by name when no rayonId given', async () => {
+    it('returns all kecamatans ordered by name when no districtId given', async () => {
       qb.getMany.mockResolvedValue([mockKecamatan]);
 
       const result = await service.findAll();
 
       expect(repo.createQueryBuilder).toHaveBeenCalledWith('k');
-      expect(qb.leftJoinAndSelect).toHaveBeenCalledWith('k.rayon', 'rayon');
+      expect(qb.leftJoinAndSelect).toHaveBeenCalledWith('k.district', 'district');
       expect(qb.orderBy).toHaveBeenCalledWith('k.name', 'ASC');
       expect(qb.where).not.toHaveBeenCalled();
       expect(result).toEqual([mockKecamatan]);
     });
 
-    it('filters by rayon when rayonId is provided', async () => {
+    it('filters by district when districtId is provided', async () => {
       qb.getMany.mockResolvedValue([mockKecamatan]);
 
-      await service.findAll('rayon-1');
+      await service.findAll('district-1');
 
-      expect(qb.where).toHaveBeenCalledWith('k.rayon_id = :rayonId', { rayonId: 'rayon-1' });
+      expect(qb.where).toHaveBeenCalledWith('k.district_id = :districtId', {
+        districtId: 'district-1',
+      });
     });
   });
 
@@ -68,7 +70,7 @@ describe('KecamatansService', () => {
 
       expect(repo.findOne).toHaveBeenCalledWith({
         where: { id: 'kec-1' },
-        relations: ['rayon'],
+        relations: ['district'],
       });
       expect(result).toBe(mockKecamatan);
     });

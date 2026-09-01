@@ -43,7 +43,7 @@ describe('Daily Schedules API', () => {
     id: 'daily-1',
     user_id: 'user-1',
     schedule_date: '2026-02-04',
-    rayon_id: 'rayon-1',
+    district_id: 'district-1',
     shift_definition_id: 'shift-1',
     status: 'planned',
     replacement_user_id: null,
@@ -64,17 +64,9 @@ describe('Daily Schedules API', () => {
       end_time: '14:00',
     },
     replacement_user: null,
-    schedule_areas: [
-      {
-        id: 'area-1',
-        area_id: 'area-1',
-        area: {
-          id: 'area-1',
-          name: 'Taman Bungkul',
-          code: 'TB',
-        },
-      },
-    ],
+    // ADR-053: one place per row, on the row itself.
+    location_id: 'area-1',
+    location: { id: 'area-1', name: 'Taman Bungkul', code: 'TB' },
   };
 
   beforeEach(() => {
@@ -92,7 +84,7 @@ describe('Daily Schedules API', () => {
       expect(dailyScheduleKeys.byDate('2026-02-04')).toEqual([
         'schedules',
         'list',
-        { date: '2026-02-04', rayonId: undefined },
+        { date: '2026-02-04', districtId: undefined },
       ]);
       expect(dailyScheduleKeys.myRoster('2026-02-04')).toEqual([
         'schedules',
@@ -105,7 +97,7 @@ describe('Daily Schedules API', () => {
   describe('useDailyRoster', () => {
     it('should fetch daily schedules for a date', async () => {
       const date = '2026-02-04';
-      mockAxios.onGet(`/schedules/date/${date}?rayonId=`).reply(200, [mockSchedule]);
+      mockAxios.onGet(`/schedules/date/${date}?districtId=`).reply(200, [mockSchedule]);
 
       const { result } = renderHook(() => useDailyRoster(date), {
         wrapper: createWrapper(),
@@ -118,14 +110,14 @@ describe('Daily Schedules API', () => {
       expect(result.current.data).toEqual([mockSchedule]);
     });
 
-    it('should fetch daily schedules filtered by rayon', async () => {
+    it('should fetch daily schedules filtered by district', async () => {
       const date = '2026-02-04';
-      const rayonId = 'rayon-1';
+      const districtId = 'district-1';
       mockAxios
-        .onGet(`/schedules/date/${date}?rayonId=${rayonId}`)
+        .onGet(`/schedules/date/${date}?districtId=${districtId}`)
         .reply(200, [mockSchedule]);
 
-      const { result } = renderHook(() => useDailyRoster(date, rayonId), {
+      const { result } = renderHook(() => useDailyRoster(date, districtId), {
         wrapper: createWrapper(),
       });
 
@@ -138,7 +130,7 @@ describe('Daily Schedules API', () => {
 
     it('should handle empty roster', async () => {
       const date = '2026-02-04';
-      mockAxios.onGet(`/schedules/date/${date}?rayonId=`).reply(200, []);
+      mockAxios.onGet(`/schedules/date/${date}?districtId=`).reply(200, []);
 
       const { result } = renderHook(() => useDailyRoster(date), {
         wrapper: createWrapper(),
@@ -318,18 +310,11 @@ describe('Daily Schedules API', () => {
   });
 
   describe('useUpdateRosterAreas', () => {
-    it('should update areas on roster entry', async () => {
-      const area2 = {
-        id: 'area-2',
-        area_id: 'area-2',
-        area: { id: 'area-2', name: 'Taman Mundu', code: 'TM' },
-      };
+    it('should update the roster entry to a new lokasi', async () => {
       const updatedSchedule: Schedule = {
         ...mockSchedule,
-        schedule_areas: [
-          mockSchedule.schedule_areas[0],
-          area2,
-        ],
+        location_id: 'area-2',
+        location: { id: 'area-2', name: 'Taman Mundu', code: 'TM' },
       };
       mockAxios.onPatch(`/schedules/daily-1/areas`).reply(200, updatedSchedule);
 
@@ -339,14 +324,14 @@ describe('Daily Schedules API', () => {
 
       result.current.mutate({
         id: 'daily-1',
-        area_ids: ['area-1', 'area-2'],
+        location_ids: ['area-2'],
       });
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(result.current.data?.schedule_areas).toHaveLength(2);
+      expect(result.current.data?.location_id).toBe('area-2');
     });
   });
 

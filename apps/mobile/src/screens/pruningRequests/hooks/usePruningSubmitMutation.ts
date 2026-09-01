@@ -18,7 +18,7 @@ interface SubmitPayload {
   lat: number;
   lng: number;
   photo_keys: string[];
-  rayon_id?: string;
+  district_id?: string;
   kecamatan_name?: string;
   tree_count: number;
   target_count: number;
@@ -108,7 +108,7 @@ export function usePruningSubmitMutation({
         lat: gpsLat,
         lng: gpsLng,
         photo_keys: photoKeys,
-        rayon_id: formState.rayonId || undefined,
+        district_id: formState.districtId || undefined,
         kecamatan_name: formState.kecamatanName.trim() || undefined,
         tree_count: tc,
         target_count: tc,

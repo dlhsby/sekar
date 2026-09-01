@@ -7,7 +7,7 @@ import { useState, useCallback } from 'react';
 import { useAppSelector } from '../store/hooks';
 import { getMe } from '../services/api/authApi';
 import { get } from '../services/api/apiClient';
-import { getActiveUsers } from '../services/api/monitoringApi';
+import { getCityMonitoring } from '../services/api/monitoringApi';
 import { isClockableRole } from '../constants/roles';
 import type { Shift } from '../types/models.types';
 import type { UserRole } from '../types/models.types';
@@ -22,15 +22,6 @@ export interface MonitoringStats {
   totalUsersManaged: number;
   totalAreasMonitored: number;
   activitiesReviewedThisMonth: number;
-}
-
-interface AreaStatusResponse {
-  areas: Array<{
-    id: string;
-    name: string;
-    assigned_workers_count: number;
-    active_workers_count: number;
-  }>;
 }
 
 const INITIAL_FIELD_STATS: FieldStats = {
@@ -82,11 +73,21 @@ function formatDateParam(d: Date): string {
 }
 
 async function loadMonitoringStats(): Promise<MonitoringStats> {
-  const usersResponse = await getActiveUsers();
-  const usersCount = usersResponse.data?.users?.length || 0;
-
-  const areaStatusResponse = await get<AreaStatusResponse>('/supervisor/area-status');
-  const areasCount = areaStatusResponse.data?.areas?.length || 0;
+  // One aggregated read instead of two full list downloads.
+  //
+  // This used `/supervisor/active-users` and `/supervisor/area-status` purely to
+  // call `.length` on them — fetching every active user and every area to show
+  // two numbers, from a module `monitoring` supersedes. `/monitoring/city`
+  // already counts both server-side.
+  //
+  // NOTE: `totalUsersManaged` keeps its existing meaning (workers with an OPEN
+  // SHIFT, which is what `/supervisor/active-users` returned) rather than
+  // `total_workers`, so the displayed number does not silently change. The label
+  // says "managed" while the value says "clocked in" — a pre-existing mismatch,
+  // flagged rather than quietly redefined here.
+  const cityResponse = await getCityMonitoring();
+  const usersCount = cityResponse.data?.active_shifts ?? 0;
+  const areasCount = cityResponse.data?.total_areas ?? 0;
 
   const startOfMonth = new Date();
   startOfMonth.setDate(1);

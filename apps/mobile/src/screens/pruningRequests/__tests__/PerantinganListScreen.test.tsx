@@ -196,7 +196,7 @@ function createMockStore(
           full_name: 'Siti Aminah',
           username: 'staff_kec_1',
           role: 'staff_kecamatan',
-          rayon_id: null,
+          district_id: null,
         },
       } as any,
     },

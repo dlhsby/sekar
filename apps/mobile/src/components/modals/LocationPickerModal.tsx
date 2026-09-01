@@ -25,7 +25,7 @@ import MapView, {
   PROVIDER_GOOGLE,
   Region,
 } from 'react-native-maps';
-import Geolocation from 'react-native-geolocation-service';
+import { readPosition } from '../../services/location/verifiedPosition';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTranslation } from 'react-i18next';
 
@@ -133,17 +133,16 @@ export function LocationPickerModal({
         setGpsLoading(false);
         return;
       }
-      Geolocation.getCurrentPosition(
-        (pos) => {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          setCoords({ lat, lng });
-          animateTo(lat, lng, DEFAULT_ZOOM_DELTA);
+      // allowMocked: "jump to my location" is a convenience for a picker whose
+      // whole purpose is to let the operator choose an arbitrary point by hand.
+      // Refusing a mocked fix here would gain nothing the map itself prevents.
+      await readPosition({ allowMocked: true, geoOptions: { timeout: 15000 } })
+        .then((pos) => {
+          setCoords({ lat: pos.latitude, lng: pos.longitude });
+          animateTo(pos.latitude, pos.longitude, DEFAULT_ZOOM_DELTA);
           setGpsLoading(false);
-        },
-        () => { setGpsLoading(false); },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 },
-      );
+        })
+        .catch(() => { setGpsLoading(false); });
     } catch {
       setGpsLoading(false);
     }

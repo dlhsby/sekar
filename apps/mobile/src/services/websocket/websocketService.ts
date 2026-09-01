@@ -6,7 +6,7 @@
  *
  * Features:
  * - Authenticated WebSocket connections with JWT
- * - Room subscriptions (areas, rayons, city-wide)
+ * - Room subscriptions (areas, districts, city-wide)
  * - Event listeners for worker tracking and task updates
  * - Auto-reconnect with exponential backoff
  * - Connection state management
@@ -46,9 +46,9 @@ export interface UserLocationEvent {
   user_name: string;
   role: string;
   shift_id: string;
-  area_id: string;
-  area_name: string;
-  rayon_id?: string;
+  location_id: string;
+  location_name: string;
+  district_id?: string;
   latitude: number;
   longitude: number;
   accuracy?: number;
@@ -70,9 +70,9 @@ export interface UserClockInEvent {
   worker_name: string;
   role: string;
   shift_id: string;
-  area_id: string;
-  area_name: string;
-  rayon_id?: string;
+  location_id: string;
+  location_name: string;
+  district_id?: string;
   latitude: number;
   longitude: number;
   timestamp: Date | string;
@@ -82,12 +82,14 @@ export interface UserClockInEvent {
  * User clock-out event data
  */
 export interface UserClockOutEvent {
-  worker_id: string;
-  worker_name: string;
+  // Match the backend gateway DTO (gateways/dto/events.dto.ts): the payload keys
+  // are user_id/user_name, NOT worker_id/worker_name.
+  user_id: string;
+  user_name: string;
   shift_id: string;
-  area_id: string;
-  area_name: string;
-  rayon_id?: string;
+  location_id: string;
+  location_name: string;
+  district_id?: string;
   timestamp: Date | string;
   duration_minutes: number;
 }
@@ -96,9 +98,9 @@ export interface UserClockOutEvent {
  * Area staffing event data
  */
 export interface AreaStaffingEvent {
-  area_id: string;
-  area_name: string;
-  rayon_id?: string;
+  location_id: string;
+  location_name: string;
+  district_id?: string;
   workers_required: number;
   workers_online: number;
   workers_offline: number;
@@ -113,9 +115,9 @@ export interface AreaStaffingEvent {
 export interface TaskAssignedEvent {
   task_id: string;
   title: string;
-  area_id: string;
-  area_name: string;
-  rayon_id?: string;
+  location_id: string;
+  location_name: string;
+  district_id?: string;
   assigned_to: string;
   assignee_name: string;
   priority: string;
@@ -129,9 +131,9 @@ export interface TaskAssignedEvent {
 export interface TaskCompletedEvent {
   task_id: string;
   title: string;
-  area_id: string;
-  area_name: string;
-  rayon_id?: string;
+  location_id: string;
+  location_name: string;
+  district_id?: string;
   completed_by: string;
   completer_name: string;
   timestamp: Date | string;
@@ -326,7 +328,7 @@ class WebSocketService {
 
     console.debug('[WebSocket] Subscribing to area:', areaId);
 
-    this.socket.emit('subscribe:area', { area_id: areaId }, (response: any) => {
+    this.socket.emit('subscribe:area', { location_id: areaId }, (response: any) => {
       if (response?.success) {
         this.subscribedRooms.add(room);
         console.debug('[WebSocket] Subscribed to area:', areaId);
@@ -356,7 +358,7 @@ class WebSocketService {
 
     console.debug('[WebSocket] Unsubscribing from area:', areaId);
 
-    this.socket.emit('unsubscribe:area', { area_id: areaId }, (response: any) => {
+    this.socket.emit('unsubscribe:area', { location_id: areaId }, (response: any) => {
       if (response?.success) {
         this.subscribedRooms.delete(room);
         console.debug('[WebSocket] Unsubscribed from area:', areaId);
@@ -367,61 +369,121 @@ class WebSocketService {
   }
 
   /**
-   * Subscribe to rayon events
+   * Subscribe to district events
    *
-   * @param rayonId - Rayon UUID to subscribe to
+   * @param districtId - District (Kawasan parent) UUID to subscribe to
    */
-  subscribeToRayon(rayonId: string): void {
+  subscribeToDistrict(districtId: string): void {
     if (!this.socket?.connected) {
-      console.warn('[WebSocket] Not connected, cannot subscribe to rayon');
+      console.warn('[WebSocket] Not connected, cannot subscribe to district');
       return;
     }
 
-    const room = `rayon:${rayonId}`;
+    const room = `district:${districtId}`;
 
     if (this.subscribedRooms.has(room)) {
       console.debug('[WebSocket] Already subscribed to', room);
       return;
     }
 
-    console.debug('[WebSocket] Subscribing to rayon:', rayonId);
+    console.debug('[WebSocket] Subscribing to district:', districtId);
 
-    this.socket.emit('subscribe:rayon', { rayon_id: rayonId }, (response: any) => {
+    this.socket.emit('subscribe:district', { district_id: districtId }, (response: any) => {
       if (response?.success) {
         this.subscribedRooms.add(room);
-        console.debug('[WebSocket] Subscribed to rayon:', rayonId);
+        console.debug('[WebSocket] Subscribed to district:', districtId);
       } else {
-        console.error('[WebSocket] Failed to subscribe to rayon:', response);
+        console.error('[WebSocket] Failed to subscribe to district:', response);
       }
     });
   }
 
   /**
-   * Unsubscribe from rayon events
+   * Unsubscribe from district events
    *
-   * @param rayonId - Rayon UUID to unsubscribe from
+   * @param districtId - District (Kawasan parent) UUID to unsubscribe from
    */
-  unsubscribeFromRayon(rayonId: string): void {
+  unsubscribeFromDistrict(districtId: string): void {
     if (!this.socket?.connected) {
-      console.warn('[WebSocket] Not connected, cannot unsubscribe from rayon');
+      console.warn('[WebSocket] Not connected, cannot unsubscribe from district');
       return;
     }
 
-    const room = `rayon:${rayonId}`;
+    const room = `district:${districtId}`;
 
     if (!this.subscribedRooms.has(room)) {
       console.debug('[WebSocket] Not subscribed to', room);
       return;
     }
 
-    console.debug('[WebSocket] Unsubscribing from rayon:', rayonId);
+    console.debug('[WebSocket] Unsubscribing from district:', districtId);
 
-    this.socket.emit('unsubscribe:rayon', { rayon_id: rayonId }, (response: any) => {
+    this.socket.emit('unsubscribe:district', { district_id: districtId }, (response: any) => {
       if (response?.success) {
         this.subscribedRooms.delete(room);
-        console.debug('[WebSocket] Unsubscribed from rayon:', rayonId);
+        console.debug('[WebSocket] Unsubscribed from district:', districtId);
       } else {
-        console.error('[WebSocket] Failed to unsubscribe from rayon:', response);
+        console.error('[WebSocket] Failed to unsubscribe from district:', response);
+      }
+    });
+  }
+
+  /**
+   * Subscribe to region (Kawasan) events — the monitoring region drill tier (ADR-045).
+   *
+   * @param regionId - Region (Kawasan) UUID to subscribe to
+   */
+  subscribeToRegion(regionId: string): void {
+    if (!this.socket?.connected) {
+      console.warn('[WebSocket] Not connected, cannot subscribe to region');
+      return;
+    }
+
+    const room = `region:${regionId}`;
+
+    if (this.subscribedRooms.has(room)) {
+      console.debug('[WebSocket] Already subscribed to', room);
+      return;
+    }
+
+    console.debug('[WebSocket] Subscribing to region:', regionId);
+
+    this.socket.emit('subscribe:region', { region_id: regionId }, (response: any) => {
+      if (response?.success) {
+        this.subscribedRooms.add(room);
+        console.debug('[WebSocket] Subscribed to region:', regionId);
+      } else {
+        console.error('[WebSocket] Failed to subscribe to region:', response);
+      }
+    });
+  }
+
+  /**
+   * Unsubscribe from region (Kawasan) events
+   *
+   * @param regionId - Region (Kawasan) UUID to unsubscribe from
+   */
+  unsubscribeFromRegion(regionId: string): void {
+    if (!this.socket?.connected) {
+      console.warn('[WebSocket] Not connected, cannot unsubscribe from region');
+      return;
+    }
+
+    const room = `region:${regionId}`;
+
+    if (!this.subscribedRooms.has(room)) {
+      console.debug('[WebSocket] Not subscribed to', room);
+      return;
+    }
+
+    console.debug('[WebSocket] Unsubscribing from region:', regionId);
+
+    this.socket.emit('unsubscribe:region', { region_id: regionId }, (response: any) => {
+      if (response?.success) {
+        this.subscribedRooms.delete(room);
+        console.debug('[WebSocket] Unsubscribed from region:', regionId);
+      } else {
+        console.error('[WebSocket] Failed to unsubscribe from region:', response);
       }
     });
   }
@@ -627,10 +689,14 @@ class WebSocketService {
         const areaId = room.replace('area:', '');
         this.subscribedRooms.delete(room); // Remove to avoid duplicate check
         this.subscribeToArea(areaId);
-      } else if (room.startsWith('rayon:')) {
-        const rayonId = room.replace('rayon:', '');
+      } else if (room.startsWith('district:')) {
+        const districtId = room.replace('district:', '');
         this.subscribedRooms.delete(room); // Remove to avoid duplicate check
-        this.subscribeToRayon(rayonId);
+        this.subscribeToDistrict(districtId);
+      } else if (room.startsWith('region:')) {
+        const regionId = room.replace('region:', '');
+        this.subscribedRooms.delete(room); // Remove to avoid duplicate check
+        this.subscribeToRegion(regionId);
       }
     });
   }

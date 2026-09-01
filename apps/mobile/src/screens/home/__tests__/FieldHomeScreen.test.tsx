@@ -69,21 +69,32 @@ jest.mock('../../../components/modals/OvertimeTrailModal', () => ({
 }));
 
 // Mock useHomeLocation hook
+const mockHomeLocationState = {
+  location: {
+    latitude: null,
+    longitude: null,
+    accuracy: null,
+    isWithinArea: false,
+    loading: false,
+    error: null,
+    updatedAt: null,
+  },
+  refresh: jest.fn(),
+  // Overridden per-test via `onDuty()`. It gates the Status Kehadiran / Status
+  // Area rows (ADR-050 scopes those to a worker who is actually on duty), so a
+  // spec that asserts them has to say it is on duty rather than relying on the
+  // store alone — this hook is mocked, so the store never reaches it.
+  hasActiveShift: false,
+};
+
 jest.mock('../../../hooks/useHomeLocation', () => ({
-  useHomeLocation: jest.fn(() => ({
-    location: {
-      latitude: null,
-      longitude: null,
-      accuracy: null,
-      isWithinArea: false,
-      loading: false,
-      error: null,
-      updatedAt: null,
-    },
-    refresh: jest.fn(),
-    hasActiveShift: false,
-  })),
+  useHomeLocation: jest.fn(() => mockHomeLocationState),
 }));
+
+/** Put the mocked home-location hook into the on-duty state for one test. */
+const onDuty = () => {
+  mockHomeLocationState.hasActiveShift = true;
+};
 
 // Helper to create test store with optional shift
 const createTestStore = (currentShift: any = null) => {
@@ -155,7 +166,7 @@ const createTestStore = (currentShift: any = null) => {
 // Helper to create a shift with given clock-in time
 const createShift = (clockInTime: Date) => ({
   id: '1',
-  area_id: '1',
+  location_id: '1',
   user_id: '1',
   clock_in_time: clockInTime.toISOString(),
   clock_in_gps_lat: -7.250445,
@@ -438,7 +449,7 @@ describe('HomeScreen Clock In/Out FAB', () => {
     await act(async () => { jest.advanceTimersByTime(100); });
 
     await waitFor(() => {
-      expect(getByTestId('clock-button')).toBeTruthy();
+      expect(getByTestId('entry-clock-in')).toBeTruthy();
     });
   });
 
@@ -458,17 +469,13 @@ describe('HomeScreen Clock In/Out FAB', () => {
 
     await act(async () => { jest.advanceTimersByTime(100); });
 
-    // Hero starts collapsed — expand it first.
+    // One card for both states now — Clock Out is always on it, no expansion.
     await waitFor(() => { expect(getByTestId('absensi-hero')).toBeTruthy(); });
-    await act(async () => { fireEvent.press(getByTestId('absensi-hero')); });
-
-    await waitFor(() => {
-      expect(getByTestId('clock-button')).toBeTruthy();
-    });
+    expect(getByTestId('entry-clock-out')).toBeTruthy();
   });
 
-  it('should NOT render Clock In FAB for top_management role', async () => {
-    // top_management never reaches HomeScreen via navigation,
+  it('should NOT render Clock In FAB for management role', async () => {
+    // management never reaches HomeScreen via navigation,
     // but if it did, the role guard should hide the FAB
     const store = configureStore({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixture type inference mismatch
@@ -485,7 +492,7 @@ describe('HomeScreen Clock In/Out FAB', () => {
             id: '1',
             username: 'mgmt1',
             full_name: 'Top Management',
-            role: 'top_management',
+            role: 'management',
           },
           assignedArea: null,
           token: 'test-token',
@@ -658,8 +665,8 @@ describe('HomeScreen — Fix 8: FAB role guard (all clockable roles)', () => {
     jest.clearAllMocks();
   });
 
-  const clockableRoles = ['satgas', 'linmas', 'korlap', 'admin_data', 'kepala_rayon'];
-  const nonClockableRoles = ['top_management', 'admin_system', 'superadmin'];
+  const clockableRoles = ['satgas', 'linmas', 'korlap', 'admin_rayon', 'kepala_rayon'];
+  const nonClockableRoles = ['management', 'admin_system', 'superadmin'];
 
   clockableRoles.forEach((role) => {
     it(`should show FAB for clockable role: ${role}`, async () => {
@@ -676,7 +683,7 @@ describe('HomeScreen — Fix 8: FAB role guard (all clockable roles)', () => {
       await act(async () => { jest.advanceTimersByTime(200); });
 
       await waitFor(() => {
-        expect(getByTestId('clock-button')).toBeTruthy();
+        expect(getByTestId('entry-clock-in')).toBeTruthy();
       });
     });
   });
@@ -696,7 +703,7 @@ describe('HomeScreen — Fix 8: FAB role guard (all clockable roles)', () => {
       await act(async () => { jest.advanceTimersByTime(200); });
 
       await waitFor(() => {
-        expect(queryByTestId('clock-button')).toBeNull();
+        expect(queryByTestId('entry-clock-in')).toBeNull();
       });
     });
   });
@@ -892,6 +899,8 @@ describe('FieldHomeScreen HOME-1 body', () => {
     (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue({ data: null });
     (activitiesApi.getMyActivities as jest.Mock).mockResolvedValue({ data: [] });
     (tasksApi.getMyTasks as jest.Mock).mockResolvedValue({ data: { data: [] } });
+    // Off duty is the default; the on-duty spec opts in via `onDuty()`.
+    mockHomeLocationState.hasActiveShift = false;
   });
 
   afterEach(() => {
@@ -910,19 +919,22 @@ describe('FieldHomeScreen HOME-1 body', () => {
       </Provider>
     );
 
-  it('renders the idle absensi hero when no shift is active', async () => {
+  it('renders the idle attendance entry card when no shift is active', async () => {
     const store = createTestStore(null);
-    const { getByText, getByTestId } = renderHome(store);
+    const { queryByText, getByTestId } = renderHome(store);
     await act(async () => { jest.advanceTimersByTime(200); });
 
     await waitFor(() => {
       expect(getByTestId('absensi-hero')).toBeTruthy();
-      expect(getByText('Belum clock in')).toBeTruthy();
-      expect(getByText('Mulai shift hari ini')).toBeTruthy();
+      expect(getByTestId('entry-clock-in')).toBeTruthy();
     });
+    // This fixture has no roster row, so there is no shift to have missed —
+    // the "belum clock in" banner would be a false accusation.
+    expect(queryByText('Anda belum clockin pada shift ini')).toBeNull();
   });
 
   it('renders the active absensi hero ("Sedang bertugas") with a shift', async () => {
+    onDuty();
     const shift = createShift(new Date());
     (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue({ data: shift });
     (shiftsApi.getMyShifts as jest.Mock).mockResolvedValue({ data: [shift] });
@@ -930,17 +942,33 @@ describe('FieldHomeScreen HOME-1 body', () => {
     const { getByText, getByTestId } = renderHome(store);
     await act(async () => { jest.advanceTimersByTime(200); });
 
-    // Hero card is visible but starts collapsed — clock-button is hidden until expanded.
+    // On duty now renders the SAME AttendanceEntryCard as the idle state and the
+    // Kehadiran hub — the bespoke "Sedang bertugas" hero is gone, so both punch
+    // buttons and the Status rows are on screen without any expansion.
     await waitFor(() => {
       expect(getByTestId('absensi-hero')).toBeTruthy();
-      expect(getByText('Sedang bertugas')).toBeTruthy();
     });
+    expect(getByTestId('entry-clock-in')).toBeTruthy();
+    expect(getByTestId('entry-clock-out')).toBeTruthy();
+    expect(getByText('Status Kehadiran')).toBeTruthy();
+    expect(getByText('Status Area')).toBeTruthy();
+  });
 
-    // Expand the card to reveal the clock-out button.
-    await act(async () => { fireEvent.press(getByTestId('absensi-hero')); });
+  // ADR-050: Status Area is Axis 2 (live presence), scoped to `bertugas` — a
+  // worker who has not punched in has no in/out-of-area state to report. Status
+  // Kehadiran goes with it: the "belum clockin" banner already states that, and
+  // showing a TERLAMBAT chip beside it judged the worker against a shift they
+  // had not started.
+  it('hides the Status rows until the worker is actually on duty', async () => {
+    const store = createTestStore(null);
+    const { queryByText, getByTestId } = renderHome(store);
+    await act(async () => { jest.advanceTimersByTime(200); });
+
     await waitFor(() => {
-      expect(getByTestId('clock-button')).toBeTruthy();
+      expect(getByTestId('absensi-hero')).toBeTruthy();
     });
+    expect(queryByText('Status Kehadiran')).toBeNull();
+    expect(queryByText('Status Area')).toBeNull();
   });
 
   it('renders the "Ringkasan hari ini" summary tiles', async () => {
@@ -1004,7 +1032,7 @@ describe('FieldHomeScreen HOME-1 body', () => {
     });
   });
 
-  it('expands and collapses the active hero (whole card is the tap target)', async () => {
+  it('does not gate the on-duty card behind an expand/collapse', async () => {
     const shift = createShift(new Date());
     (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue({ data: shift });
     (shiftsApi.getMyShifts as jest.Mock).mockResolvedValue({ data: [shift] });
@@ -1012,20 +1040,12 @@ describe('FieldHomeScreen HOME-1 body', () => {
     const { getByTestId, queryByTestId } = renderHome(store);
     await act(async () => { jest.advanceTimersByTime(200); });
 
-    // Default collapsed: clock-out + detail link hidden, card itself visible.
+    // Everything the old hero hid behind a tap is now always visible.
     await waitFor(() => { expect(getByTestId('absensi-hero')).toBeTruthy(); });
-    expect(queryByTestId('clock-button')).toBeNull();
-    expect(queryByTestId('shift-detail-link')).toBeNull();
+    expect(getByTestId('entry-clock-out')).toBeTruthy();
 
-    // First tap expands → clock-out + detail link appear.
-    await act(async () => { fireEvent.press(getByTestId('absensi-hero')); });
-    expect(getByTestId('clock-button')).toBeTruthy();
-    expect(getByTestId('shift-detail-link')).toBeTruthy();
-
-    // Second tap collapses again.
-    await act(async () => { fireEvent.press(getByTestId('absensi-hero')); });
-    expect(queryByTestId('clock-button')).toBeNull();
+    // Detail Shift is reachable from Log Kehadiran instead — one entry point,
+    // not a duplicate link on the home card.
     expect(queryByTestId('shift-detail-link')).toBeNull();
-    expect(getByTestId('absensi-hero')).toBeTruthy();
   });
 });

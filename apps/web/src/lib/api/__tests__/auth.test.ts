@@ -190,20 +190,20 @@ describe('Auth API', () => {
       await expect(authApi.getCurrentUser()).rejects.toThrow();
     });
 
-    it('should get user with rayon assignment', async () => {
+    it('should get user with district assignment', async () => {
       const mockUser: User = {
         id: '2',
         username: 'kepala_rayon',
         full_name: 'Kepala Rayon',
         role: 'kepala_rayon',
-        rayon_id: 'rayon-1',
+        district_id: 'district-1',
       };
 
       mockAxios.onGet('/auth/me').reply(200, mockUser);
 
       const user = await authApi.getCurrentUser();
 
-      expect(user.rayon_id).toBe('rayon-1');
+      expect(user.district_id).toBe('district-1');
     });
 
     it('should get user with assigned area', async () => {
@@ -215,10 +215,9 @@ describe('Auth API', () => {
         assigned_area: {
           id: 'area-1',
           name: 'Taman Bungkul',
-          area_type_id: 'type-1',
+          location_type_id: 'type-1',
           gps_lat: -7.289659,
           gps_lng: 112.739208,
-          radius_meters: 100,
           address: 'Jl. Raya Darmo',
         },
       };
@@ -237,10 +236,10 @@ describe('Auth API', () => {
       const validRoles: Array<User['role']> = [
         'admin_system',
         'superadmin',
-        'top_management',
+        'management',
         'kepala_rayon',
         'korlap',
-        'admin_data',
+        'admin_rayon',
         'satgas',
         'linmas',
       ];

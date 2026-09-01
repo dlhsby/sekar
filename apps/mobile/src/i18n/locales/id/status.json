@@ -14,6 +14,7 @@
   "overdue": "Terlambat",
   "recorded": "Tercatat",
   "priority": {
+    "_label": "PRIORITAS",
     "low": "Rendah",
     "medium": "Biasa",
     "high": "Tinggi",
@@ -64,9 +65,17 @@
   },
   "tracking": {
     "active": "Aktif",
-    "inactive": "Idle",
+    "offline": "Tidak Aktif",
+    "absent": "Tidak Hadir",
     "outside_area": "Di Luar Area",
-    "missing": "Tidak Terdeteksi",
-    "offline": "Offline"
+    "inside_area": "Di Dalam Area",
+    "unknown_area": "Lokasi Tidak Diketahui"
+  },
+  "leave": {
+    "cuti": "Cuti",
+    "sakit": "Sakit",
+    "izin": "Izin",
+    "libur": "Libur",
+    "unknown": "Berhalangan"
   }
 }

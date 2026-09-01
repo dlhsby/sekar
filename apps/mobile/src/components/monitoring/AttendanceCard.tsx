@@ -40,7 +40,7 @@ export default function AttendanceCard({
 }: AttendanceCardProps): React.JSX.Element {
   const { t } = useTranslation('attendance');
   const isClockedIn = status === 'clocked_in';
-  const pill = presencePill(isClockedIn ? 'active' : 'inactive');
+  const pill = presencePill(isClockedIn ? 'active' : 'absent');
   const rightText = isClockedIn && clockInTime ? formatTime(clockInTime) : t('shifts.notClockedIn');
 
   return (

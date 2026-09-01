@@ -1,11 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsUUID, IsEnum } from 'class-validator';
+import { IsOptional, IsUUID, IsEnum, IsString } from 'class-validator';
 import { CLOCKABLE_ROLES } from '../../users/constants/role-groups';
 import {
   TrackingStatus,
   ActivityStatus,
   LocationStatus,
 } from '../entities/user-tracking-status.entity';
+import type { LifecycleState, LifecycleFlag, LeaveReason } from '../lib/presence-lifecycle';
 
 export class LiveUserDto {
   @ApiProperty({ example: 'user-uuid' })
@@ -20,17 +21,39 @@ export class LiveUserDto {
   @ApiProperty({ example: 'satgas' })
   role: string;
 
+  @ApiPropertyOptional({
+    description:
+      "The role's configured marker icon (null → use the client default glyph for the role)",
+    example: 'shield',
+    nullable: true,
+  })
+  role_marker_icon: string | null;
+
+  @ApiPropertyOptional({
+    description:
+      "The role's configured marker colour (role settings, ADR-044). Fills the worker pin, " +
+      'so a role is legible in a crowd without reading its glyph. Null → the client default.',
+    example: '#7FBC8C',
+  })
+  role_marker_color: string | null;
+
   @ApiProperty({ example: 'area-uuid', nullable: true })
-  area_id: string | null;
+  location_id: string | null;
 
   @ApiProperty({ example: 'Taman Bungkul' })
-  area_name: string;
+  location_name: string;
 
-  @ApiProperty({ example: 'rayon-uuid' })
-  rayon_id: string | null;
+  @ApiProperty({ example: 'district-uuid' })
+  district_id: string | null;
 
   @ApiProperty({ example: 'Rayon Selatan' })
-  rayon_name: string | null;
+  district_name: string | null;
+
+  @ApiProperty({ example: 'region-uuid', nullable: true })
+  region_id: string | null;
+
+  @ApiProperty({ example: 'Kawasan Bungkul', nullable: true })
+  region_name: string | null;
 
   @ApiProperty({ example: -7.2575 })
   latitude: number;
@@ -50,7 +73,7 @@ export class LiveUserDto {
   @ApiProperty({ enum: TrackingStatus, example: 'active' })
   status: TrackingStatus;
 
-  @ApiProperty({ example: 'aktif', description: 'Activity axis: aktif|idle|missing|offline' })
+  @ApiProperty({ example: 'aktif', description: 'Activity axis: aktif|offline|absent' })
   activity: ActivityStatus;
 
   @ApiProperty({
@@ -61,6 +84,22 @@ export class LiveUserDto {
 
   @ApiProperty({ example: true })
   is_within_area: boolean;
+
+  @ApiProperty({
+    example: 'bertugas',
+    description: 'Attendance lifecycle (ADR-050). Live workers are always bertugas.',
+  })
+  lifecycle_state: LifecycleState;
+
+  @ApiProperty({ example: false, description: 'Clocked in after the shift start + grace' })
+  is_late: boolean;
+
+  @ApiProperty({
+    example: [],
+    description: 'Lifecycle flags: is_late | ad_hoc | lupa_clock_out | lembur | early | excused',
+    type: [String],
+  })
+  lifecycle_flags: LifecycleFlag[];
 
   @ApiProperty({
     example: true,
@@ -88,18 +127,34 @@ export class LiveUserDto {
 
   @ApiProperty({ example: 'Clean fountain area' })
   current_task_title: string | null;
+
+  @ApiPropertyOptional({ example: 'team-or-event-uuid', nullable: true })
+  team_id: string | null;
+
+  @ApiPropertyOptional({ example: 'Penyiraman', nullable: true })
+  team_name: string | null;
+
+  @ApiPropertyOptional({ example: '#22C55E', nullable: true })
+  team_color: string | null;
+
+  /** Alpha for `team_color` (team_categories.marker_opacity), 0–1; null → opaque. */
+  @ApiPropertyOptional({ example: 0.8, nullable: true, minimum: 0, maximum: 1 })
+  team_opacity: number | null;
+
+  @ApiPropertyOptional({ example: 'droplets', nullable: true })
+  team_icon: string | null;
 }
 
 export class LiveUsersFilterDto {
-  @ApiPropertyOptional({ description: 'Filter by rayon ID' })
+  @ApiPropertyOptional({ description: 'Filter by district ID' })
   @IsUUID()
   @IsOptional()
-  rayon_id?: string;
+  district_id?: string;
 
   @ApiPropertyOptional({ description: 'Filter by area ID' })
   @IsUUID()
   @IsOptional()
-  area_id?: string;
+  location_id?: string;
 
   @ApiPropertyOptional({ description: 'Filter by role', enum: CLOCKABLE_ROLES })
   @IsEnum(CLOCKABLE_ROLES)
@@ -110,6 +165,15 @@ export class LiveUsersFilterDto {
   @IsEnum(TrackingStatus)
   @IsOptional()
   status?: TrackingStatus;
+
+  @ApiPropertyOptional({
+    description:
+      'Server-side search (5.7a): matches worker name or lokasi name among workers clocked in ' +
+      'with a location fix in the last 24h — including monitorable-but-unscheduled clock-ins.',
+  })
+  @IsString()
+  @IsOptional()
+  q?: string;
 }
 
 /**
@@ -127,31 +191,50 @@ export class AbsentUserDto {
   @ApiProperty({ example: 'satgas' })
   role: string;
 
-  @ApiProperty({ example: 'rayon-uuid', nullable: true })
-  rayon_id: string | null;
+  @ApiProperty({ example: 'district-uuid', nullable: true })
+  district_id: string | null;
 
   @ApiProperty({ example: 'shift-def-uuid', nullable: true })
   shift_definition_id: string | null;
 
   @ApiProperty({ example: 'Shift 1', nullable: true })
   shift_name: string | null;
+
+  @ApiProperty({
+    example: 'belum_hadir',
+    description:
+      'Roster lifecycle (ADR-050): belum_hadir · terlambat · tidak_hadir · tidak_bertugas (excused leave).',
+  })
+  lifecycle_state: LifecycleState;
+
+  @ApiProperty({
+    example: 'sakit',
+    nullable: true,
+    description:
+      'Excused-leave reason when on leave (cuti/sakit/izin/libur); null for a plain absence.',
+  })
+  leave_reason: LeaveReason | null;
 }
 
 export class LiveUsersResponseDto {
-  @ApiProperty({ example: 30 })
+  @ApiProperty({ example: 30, description: 'Clocked in, location fresher than the threshold' })
   total_active: number;
 
-  @ApiProperty({ example: 10 })
-  total_inactive: number;
-
-  @ApiProperty({ example: 3 })
-  total_outside_area: number;
-
-  @ApiProperty({ example: 2 })
-  total_missing: number;
-
-  @ApiProperty({ example: 5 })
+  @ApiProperty({ example: 10, description: 'Clocked in but unreachable past the threshold' })
   total_offline: number;
+
+  @ApiProperty({
+    example: 5,
+    description: 'Not clocked in. Reads as "tidak hadir" only where a schedule exists',
+  })
+  total_absent: number;
+
+  @ApiProperty({
+    example: 3,
+    description:
+      'Axis, NOT a status: how many of the above are outside their boundary. Overlaps active/offline, so these four do not sum to a headcount',
+  })
+  total_outside_area: number;
 
   @ApiProperty({ example: 30, description: 'Deprecated alias for total_active', deprecated: true })
   total_online: number;
@@ -161,7 +244,7 @@ export class LiveUsersResponseDto {
 
   // ── Roster-derived "expected vs actual" (ADR-013). Counts compare today's
   // materialized roster to who has actually clocked in. Rayon-scoped when a
-  // rayon_id filter is supplied; otherwise global.
+  // district_id filter is supplied; otherwise global.
   @ApiProperty({ example: 40, description: 'Workers expected on the roster today (have a shift)' })
   expected_count: number;
 
@@ -177,8 +260,17 @@ export class LiveUsersResponseDto {
   @ApiProperty({ example: 5, description: 'Active workers with no shift scheduled today' })
   off_schedule_count: number;
 
-  @ApiProperty({ type: [AbsentUserDto] })
+  @ApiProperty({
+    type: [AbsentUserDto],
+    description: 'Expected-but-not-present (belum_hadir/terlambat/tidak_hadir).',
+  })
   absent_users: AbsentUserDto[];
+
+  @ApiProperty({
+    type: [AbsentUserDto],
+    description: 'Scheduled workers on approved leave today (excused), each with its leave_reason.',
+  })
+  on_leave_users: AbsentUserDto[];
 
   @ApiProperty({ example: '2024-01-24T10:30:00Z' })
   generated_at: Date;

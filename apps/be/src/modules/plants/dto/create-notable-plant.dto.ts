@@ -8,11 +8,11 @@ import { ApiProperty } from '@nestjs/swagger';
  */
 export class CreateNotablePlantDto {
   @ApiProperty({
-    description: 'Area UUID',
+    description: 'Location UUID',
     example: '11111111-1111-1111-1111-111111111101',
   })
   @IsUUID()
-  area_id: string;
+  location_id: string;
 
   @ApiProperty({
     description: 'Plant species UUID',

@@ -1,8 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
-import { UserAreasService } from '../user-areas/user-areas.service';
+import { UserLocationsService } from '../../modules/user-locations/user-locations.service';
 import { UserValidationService } from './services/user-validation.service';
+import { PhotoStorageService } from '../../shared/services/photo-storage.service';
 import { User, UserRole } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -41,13 +42,18 @@ describe('UsersController', () => {
   };
 
   const mockUserAreasService = {
-    getEffectiveAreas: jest.fn().mockResolvedValue([]),
-    getPermanentAreas: jest.fn().mockResolvedValue([]),
+    getEffectiveLocations: jest.fn().mockResolvedValue([]),
+    getPermanentLocations: jest.fn().mockResolvedValue([]),
   };
 
   const mockUserValidationService = {
     isUsernameAvailable: jest.fn().mockResolvedValue(true),
     suggestUsername: jest.fn().mockResolvedValue('suggested_user'),
+  };
+
+  const mockPhotoStorage = {
+    upload: jest.fn().mockResolvedValue('https://cdn.test/profiles/abc.jpg'),
+    presign: jest.fn(async (v: string) => `${v}?X-Amz-Signature=sig`),
   };
 
   beforeEach(async () => {
@@ -59,12 +65,16 @@ describe('UsersController', () => {
           useValue: mockUsersService,
         },
         {
-          provide: UserAreasService,
+          provide: UserLocationsService,
           useValue: mockUserAreasService,
         },
         {
           provide: UserValidationService,
           useValue: mockUserValidationService,
+        },
+        {
+          provide: PhotoStorageService,
+          useValue: mockPhotoStorage,
         },
       ],
     }).compile();
@@ -87,7 +97,7 @@ describe('UsersController', () => {
     it('should create a new user', async () => {
       const createUserDto: CreateUserDto = {
         username: 'newuser',
-        password: 'Password123!',
+        password: '12345678',
         full_name: 'New User',
         role: UserRole.SATGAS,
       };
@@ -112,10 +122,13 @@ describe('UsersController', () => {
       const result = await controller.findAll({ page: 1, limit: 50 }, mockUser);
 
       expect(result).toEqual(paginatedResult);
-      expect(mockUsersService.findAllPaginated).toHaveBeenCalledWith(1, 50, mockUser);
+      expect(mockUsersService.findAllPaginated).toHaveBeenCalledWith(1, 50, mockUser, {
+        search: undefined,
+        roles: undefined,
+      });
     });
 
-    it('should pass admin_data user context for rayon filtering', async () => {
+    it('should pass admin_rayon user context for district filtering', async () => {
       const adminDataUser: User = {
         id: 'admin-data-uuid',
         username: 'admindata1',
@@ -123,8 +136,8 @@ describe('UsersController', () => {
         full_name: 'Admin Data One',
         phone_number: null,
         profile_picture_url: null,
-        role: UserRole.ADMIN_DATA,
-        rayon_id: 'rayon-uuid-1',
+        role: UserRole.ADMIN_RAYON,
+        district_id: 'district-uuid-1',
         is_active: true,
         password_must_change: false,
         created_at: new Date(),
@@ -140,19 +153,22 @@ describe('UsersController', () => {
       const result = await controller.findAll({ page: 1, limit: 50 }, adminDataUser);
 
       expect(result).toEqual(paginatedResult);
-      expect(mockUsersService.findAllPaginated).toHaveBeenCalledWith(1, 50, adminDataUser);
+      expect(mockUsersService.findAllPaginated).toHaveBeenCalledWith(1, 50, adminDataUser, {
+        search: undefined,
+        roles: undefined,
+      });
     });
 
-    it('should pass kepala_rayon user context for rayon filtering', async () => {
-      const kepalaRayonUser: User = {
-        id: 'kepala-rayon-uuid',
+    it('should pass kepala_rayon user context for district filtering', async () => {
+      const kepalaDistrictUser: User = {
+        id: 'kepala-district-uuid',
         username: 'kepalarayon1',
         password_hash: 'hashedpassword',
         full_name: 'Kepala Rayon One',
         phone_number: null,
         profile_picture_url: null,
         role: UserRole.KEPALA_RAYON,
-        rayon_id: 'rayon-uuid-2',
+        district_id: 'district-uuid-2',
         is_active: true,
         password_must_change: false,
         created_at: new Date(),
@@ -165,10 +181,13 @@ describe('UsersController', () => {
       };
       mockUsersService.findAllPaginated.mockResolvedValue(paginatedResult);
 
-      const result = await controller.findAll({ page: 1, limit: 50 }, kepalaRayonUser);
+      const result = await controller.findAll({ page: 1, limit: 50 }, kepalaDistrictUser);
 
       expect(result).toEqual(paginatedResult);
-      expect(mockUsersService.findAllPaginated).toHaveBeenCalledWith(1, 50, kepalaRayonUser);
+      expect(mockUsersService.findAllPaginated).toHaveBeenCalledWith(1, 50, kepalaDistrictUser, {
+        search: undefined,
+        roles: undefined,
+      });
     });
   });
 
@@ -184,8 +203,8 @@ describe('UsersController', () => {
   });
 
   describe('getUserAreas', () => {
-    it("returns the user's permanent areas, sorted by name, unwrapped from UserArea", async () => {
-      mockUserAreasService.getPermanentAreas.mockResolvedValue([
+    it("returns the user's permanent areas, sorted by name, unwrapped from UserLocation", async () => {
+      mockUserAreasService.getPermanentLocations.mockResolvedValue([
         { area: { id: 'a2', name: 'Taman Bungkul' } },
         { area: { id: 'a1', name: 'Jl. Ahmad Yani' } },
         { area: null }, // orphaned assignment → filtered out
@@ -193,12 +212,12 @@ describe('UsersController', () => {
 
       const result = await controller.getUserAreas(mockUser.id);
 
-      expect(mockUserAreasService.getPermanentAreas).toHaveBeenCalledWith(mockUser.id);
+      expect(mockUserAreasService.getPermanentLocations).toHaveBeenCalledWith(mockUser.id);
       expect(result.map((a) => a.name)).toEqual(['Jl. Ahmad Yani', 'Taman Bungkul']);
     });
 
     it('returns an empty list when the user has no permanent areas', async () => {
-      mockUserAreasService.getPermanentAreas.mockResolvedValue([]);
+      mockUserAreasService.getPermanentLocations.mockResolvedValue([]);
       expect(await controller.getUserAreas(mockUser.id)).toEqual([]);
     });
   });
@@ -288,17 +307,27 @@ describe('UsersController', () => {
       path: '',
     };
 
-    it('should upload profile picture for own user as base64', async () => {
+    // These used to assert the OPPOSITE — that the handler persists
+    // `data:image/jpeg;base64,…` — which is the bug, not the contract: it put
+    // 28 MB of images into `users.profile_picture_url` (one row 5.4 MB), and
+    // roster queries joining the user re-serialized an avatar onto every one of
+    // that worker's schedule rows.
+    it('uploads the file to object storage and persists the URL, never base64', async () => {
       mockUsersService.updateProfilePicture.mockResolvedValue(undefined);
 
       const result = await controller.uploadProfilePicture(mockUser.id, mockFile, mockUser);
-      const expectedBase64 = `data:image/jpeg;base64,${mockFile.buffer.toString('base64')}`;
 
-      expect(result).toEqual({ profile_picture_url: expectedBase64 });
-      expect(mockUsersService.updateProfilePicture).toHaveBeenCalledWith(
-        mockUser.id,
-        expectedBase64,
+      expect(mockPhotoStorage.upload).toHaveBeenCalledWith(
+        mockFile.buffer,
+        'image/jpeg',
+        'profiles',
       );
+      const calls = mockUsersService.updateProfilePicture.mock.calls as Array<[string, string]>;
+      const persisted = calls[calls.length - 1][1];
+      expect(persisted).toBe('https://cdn.test/profiles/abc.jpg');
+      expect(persisted).not.toMatch(/^data:/);
+      // The client renders it straight away, so it comes back presigned.
+      expect(result.profile_picture_url).toContain('X-Amz-Signature');
     });
 
     it('should allow admin to upload for other user', async () => {
@@ -310,9 +339,12 @@ describe('UsersController', () => {
       mockUsersService.updateProfilePicture.mockResolvedValue(undefined);
 
       const result = await controller.uploadProfilePicture('other-user-uuid', mockFile, adminUser);
-      const expectedBase64 = `data:image/jpeg;base64,${mockFile.buffer.toString('base64')}`;
 
-      expect(result).toEqual({ profile_picture_url: expectedBase64 });
+      expect(mockUsersService.updateProfilePicture).toHaveBeenCalledWith(
+        'other-user-uuid',
+        'https://cdn.test/profiles/abc.jpg',
+      );
+      expect(result.profile_picture_url).not.toMatch(/^data:/);
     });
 
     it('should throw ForbiddenException if non-admin uploads for another user', async () => {

@@ -1,6 +1,6 @@
 /**
  * Service Capacity API Tests
- * API client for rayon capacity calendars
+ * API client for district capacity calendars
  * Phase 3 sub-phase 3-10
  */
 
@@ -44,7 +44,7 @@ describe('serviceCapacityApi', () => {
       expect(result.data).toEqual([mockCapacityRow]);
     });
 
-    it('calls API with correct rayon ID', async () => {
+    it('calls API with correct district ID', async () => {
       mockGet.mockResolvedValue({
         data: [mockCapacityRow],
       });
@@ -56,7 +56,7 @@ describe('serviceCapacityApi', () => {
       });
 
       expect(mockGet).toHaveBeenCalledWith(
-        '/rayons/r1/capacity',
+        '/districts/r1/capacity',
         {
           year: 2026,
           fromWeek: 18,
@@ -78,7 +78,7 @@ describe('serviceCapacityApi', () => {
       });
 
       expect(mockGet).toHaveBeenCalledWith(
-        '/rayons/r1/capacity',
+        '/districts/r1/capacity',
         expect.objectContaining({
           year: 2026,
           fromWeek: 18,
@@ -96,7 +96,7 @@ describe('serviceCapacityApi', () => {
       await serviceCapacityApi.getCapacityCalendar('r1', {});
 
       expect(mockGet).toHaveBeenCalledWith(
-        '/rayons/r1/capacity',
+        '/districts/r1/capacity',
         expect.any(Object),
       );
     });
@@ -182,7 +182,7 @@ describe('serviceCapacityApi', () => {
       });
 
       const callArgs = mockGet.mock.calls[0];
-      expect(callArgs[0]).toBe('/rayons/r1/capacity');
+      expect(callArgs[0]).toBe('/districts/r1/capacity');
       expect(callArgs[1]).toEqual({
         year: 2026,
         fromWeek: 18,
@@ -191,7 +191,7 @@ describe('serviceCapacityApi', () => {
       });
     });
 
-    it('supports different rayons', async () => {
+    it('supports different districts', async () => {
       mockGet.mockResolvedValue({
         data: [mockCapacityRow],
       });
@@ -199,7 +199,7 @@ describe('serviceCapacityApi', () => {
       await serviceCapacityApi.getCapacityCalendar('r2', {});
 
       expect(mockGet).toHaveBeenCalledWith(
-        '/rayons/r2/capacity',
+        '/districts/r2/capacity',
         expect.any(Object),
       );
     });
@@ -246,7 +246,7 @@ describe('serviceCapacityApi', () => {
       });
 
       expect(mockGet).toHaveBeenCalledWith(
-        '/rayons/r1/capacity',
+        '/districts/r1/capacity',
         expect.objectContaining({
           serviceType: 'pruning',
         }),
@@ -263,7 +263,7 @@ describe('serviceCapacityApi', () => {
       });
 
       expect(mockGet).toHaveBeenCalledWith(
-        '/rayons/r1/capacity',
+        '/districts/r1/capacity',
         expect.objectContaining({
           serviceType: 'other',
         }),
@@ -359,7 +359,7 @@ describe('serviceCapacityApi', () => {
       });
 
       expect(mockGet).toHaveBeenCalledWith(
-        '/rayons/r1/capacity',
+        '/districts/r1/capacity',
         expect.objectContaining({ year: 2027 }),
       );
     });
@@ -375,7 +375,7 @@ describe('serviceCapacityApi', () => {
       });
 
       expect(mockGet).toHaveBeenCalledWith(
-        '/rayons/r1/capacity',
+        '/districts/r1/capacity',
         expect.objectContaining({
           fromWeek: 10,
           toWeek: 15,

@@ -13,7 +13,7 @@ Accepted
 SEKAR's web dashboard serves two audiences today and will serve a third in Phase 3:
 
 1. **Supervisors in the field** — `korlap`, `kepala_rayon`. They use their phone browser when away from a desk; the current site is desktop-only and hostile on a phone.
-2. **Desk roles** — `admin_data`, `top_management`, `admin_system`, `superadmin`. Stable desk with reliable internet.
+2. **Desk roles** — `admin_rayon`, `management`, `admin_system`, `superadmin`. Stable desk with reliable internet.
 3. **Kecamatan staff (new, Phase 3)** — `staff_kecamatan`. Submit pruning requests from a sub-district office, then monitor outcomes. Primary channel is mobile; the backup is a phone browser.
 
 Two Phase 3 realities tip the balance:
@@ -27,7 +27,7 @@ Native apps are already covered by `apps/mobile`. The web channel doesn't need t
 
 **Web becomes an installable PWA starting Phase 3 M1-R sub-phase 3-R4.**
 
-- Ship `/manifest.webmanifest` with brand colors from [tokens.json](../../ui-ux/tokens.json): `background_color: "#F5F0EB"`, `theme_color: "#1A4D2E"`.
+- Ship `/manifest.webmanifest` with brand colors from [tokens.json](../../design-system/tokens.json): `background_color: "#F5F0EB"`, `theme_color: "#1A4D2E"`.
 - Ship a service worker (`public/sw.js`) with a shell precache + route-aware caching strategies:
 
   | Pattern | Strategy | Rationale |
@@ -50,7 +50,7 @@ Native apps are already covered by `apps/mobile`. The web channel doesn't need t
 
 - **Offline banner:** persistent top strip when `navigator.onLine === false`; `role="status"`; write CTAs visually disabled with tooltip "Butuh koneksi."
 
-- **Web push notifications** (same FCM project as the native app): subscribed for `admin_data`, `kepala_rayon`, `top_management`, `admin_system`, `superadmin`. Types mirror mobile (`pruning_request_submitted`, `task_overdue`, `area_plant_overdue`, etc.); click deep-links into the PWA.
+- **Web push notifications** (same FCM project as the native app): subscribed for `admin_rayon`, `kepala_rayon`, `management`, `admin_system`, `superadmin`. Types mirror mobile (`pruning_request_submitted`, `task_overdue`, `area_plant_overdue`, etc.); click deep-links into the PWA.
 
 - **Field-role mobile-web escape hatch:** if a user with role `satgas` / `linmas` / `korlap` hits the site on a viewport < 768 px, show a banner pointing to Play Store / App Store. Don't redirect; field staff may legitimately need a browser fallback.
 
@@ -81,8 +81,8 @@ Native apps are already covered by `apps/mobile`. The web channel doesn't need t
 
 ## References
 
-- [design-tokens.md §PWA Requirements](../../ui-ux/design-tokens.md) — manifest, icons, service worker, install banner, push notifications, offline shell
+- [design-tokens.md §PWA Requirements](../../design-system/design-tokens.md) — manifest, icons, service worker, install banner, push notifications, offline shell
 - [ADR-036](./ADR-036-design-tokens-single-source.md) — tokens consumed by the manifest and install banner
 - [ADR-029](./ADR-029-monitoring-v2-event-sourced-redis.md) — monitoring snapshot endpoint that benefits most from SWR caching
 - [ADR-019](./ADR-019-offline-connectivity-model.md) — offline connectivity model that mobile owns; web inherits the terminology but not the write queue
-- Phase 3: [README](../../phases/phase-3-plants-monitoring-rebuild/README.md) · [web](../../phases/phase-3-plants-monitoring-rebuild/web.md) · [ui-ux](../../phases/phase-3-plants-monitoring-rebuild/ui-ux.md)
+- Phase 3: [README](../../history/CHANGELOG.md) · [web](../../history/CHANGELOG.md) · [ui-ux](../../history/CHANGELOG.md)

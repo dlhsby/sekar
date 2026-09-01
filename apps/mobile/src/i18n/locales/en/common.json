@@ -34,7 +34,7 @@
   "entities": {
     "user": "User",
     "area": "Area",
-    "rayon": "Rayon",
+    "district": "District",
     "task": "Task",
     "activity": "Activity",
     "schedule": "Schedule",

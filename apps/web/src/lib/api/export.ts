@@ -15,7 +15,7 @@ import { apiClient } from './client';
 export type ExportEntityType =
   | 'users'
   | 'areas'
-  | 'rayons'
+  | 'districts'
   | 'tasks'
   | 'activities'
   | 'overtime';
@@ -29,7 +29,7 @@ export interface ExportRequest {
   format?: ExportFormat;
   startDate?: string;
   endDate?: string;
-  rayonId?: string;
+  districtId?: string;
   areaId?: string;
 }
 

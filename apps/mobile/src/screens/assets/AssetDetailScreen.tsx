@@ -33,6 +33,7 @@ import {
 } from '../../store/slices/assetsSlice';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { nbColors, nbSpacing } from '../../constants/nbTokens';
+import { screenContent } from '../../constants/layout';
 import type { MainTabParamList } from '../../types/navigation.types';
 import type { AssetAssignment } from '../../types/assets.types';
 
@@ -282,7 +283,7 @@ export function AssetDetailScreen({ navigation, route }: Props): React.JSX.Eleme
 
 /**
  * Local hook for asset-specific role access
- * User role types: satgas | linmas | korlap | admin_data | kepala_rayon | top_management | admin_system | superadmin
+ * User role types: satgas | linmas | korlap | admin_rayon | kepala_rayon | management | admin_system | superadmin
  */
 function useAssetRoleAccess() {
   const user = useAppSelector((state) => state.auth.user);
@@ -303,8 +304,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   content: {
-    paddingHorizontal: nbSpacing.md,
-    paddingVertical: nbSpacing.md,
+    ...screenContent,
     gap: nbSpacing.md,
   },
   cardTitle: {

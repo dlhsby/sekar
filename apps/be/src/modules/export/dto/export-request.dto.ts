@@ -14,7 +14,7 @@ import type { ExportEntityType, ExportFormat } from '../entities/export-job.enti
 export const EXPORT_ENTITY_TYPES: ExportEntityType[] = [
   'users',
   'areas',
-  'rayons',
+  'districts',
   'tasks',
   'activities',
   'overtime',
@@ -80,8 +80,8 @@ export class ExportRequestDto {
   @IsUUID()
   areaId?: string;
 
-  @ApiPropertyOptional({ description: 'Filter by rayon id' })
+  @ApiPropertyOptional({ description: 'Filter by district id' })
   @IsOptional()
   @IsUUID()
-  rayonId?: string;
+  districtId?: string;
 }

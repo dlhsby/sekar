@@ -4,16 +4,17 @@ import { MonitoringService } from './monitoring.service';
 import { MonitoringConfigService } from './services/monitoring-config.service';
 import { MonitoringStatsService } from './services/monitoring-stats.service';
 import { MonitoringReassignService } from './services/monitoring-reassign.service';
+import { MonitoringAttendanceService } from './services/monitoring-attendance.service';
 import { AreaPlantStatusService } from './services/area-plant-status.service';
 import { AuditLogService } from '../audit/audit.service';
 import { CityStatsDto } from './dto/city-stats.dto';
-import { RayonStatsDto } from './dto/rayon-stats.dto';
+import { DistrictStatsDto } from './dto/district-stats.dto';
 import { AreaStatsDto } from './dto/area-stats.dto';
 import { LiveUsersResponseDto, LiveUsersFilterDto } from './dto/live-users.dto';
 import { User, UserRole } from '../users/entities/user.entity';
 import { TrackingStatus } from './entities/user-tracking-status.entity';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
-import { UserAreasService } from '../user-areas/user-areas.service';
+import { UserLocationsService } from '../../modules/user-locations/user-locations.service';
 
 describe('MonitoringController', () => {
   let controller: MonitoringController;
@@ -30,14 +31,14 @@ describe('MonitoringController', () => {
     updated_at: new Date(),
   } as User;
 
-  const mockKepalaRayon = {
-    id: 'kepala-rayon-uuid',
+  const mockKepalaDistrict = {
+    id: 'kepala-district-uuid',
     username: 'kepala_rayon1',
     password_hash: 'hashed',
     full_name: 'Kepala Rayon 1',
     role: UserRole.KEPALA_RAYON,
     is_active: true,
-    rayon_id: 'rayon-1',
+    district_id: 'district-1',
     created_at: new Date(),
     updated_at: new Date(),
   } as User;
@@ -49,8 +50,8 @@ describe('MonitoringController', () => {
     full_name: 'Korlap 1',
     role: UserRole.KORLAP,
     is_active: true,
-    rayon_id: 'rayon-1',
-    area_id: 'area-1',
+    district_id: 'district-1',
+    location_id: 'area-1',
     created_at: new Date(),
     updated_at: new Date(),
   } as User;
@@ -60,15 +61,15 @@ describe('MonitoringController', () => {
     username: 'admindata1',
     password_hash: 'hashed',
     full_name: 'Admin Data 1',
-    role: UserRole.ADMIN_DATA,
+    role: UserRole.ADMIN_RAYON,
     is_active: true,
-    rayon_id: 'rayon-1',
+    district_id: 'district-1',
     created_at: new Date(),
     updated_at: new Date(),
   } as User;
 
   const mockCityStats: CityStatsDto = {
-    total_rayons: 7,
+    total_districts: 7,
     total_areas: 50,
     total_workers: 200,
     workers_online: 150,
@@ -78,9 +79,9 @@ describe('MonitoringController', () => {
     tasks_in_progress: 45,
     tasks_completed_today: 25,
     activities_submitted_today: 100,
-    rayons: [
+    districts: [
       {
-        id: 'rayon-1',
+        id: 'district-1',
         name: 'Rayon Selatan',
         area_count: 10,
         worker_count: 30,
@@ -93,8 +94,8 @@ describe('MonitoringController', () => {
     generated_at: new Date(),
   };
 
-  const mockRayonStats: RayonStatsDto = {
-    id: 'rayon-1',
+  const mockDistrictStats: DistrictStatsDto = {
+    id: 'district-1',
     name: 'Rayon Selatan',
     total_areas: 10,
     total_workers: 30,
@@ -139,8 +140,8 @@ describe('MonitoringController', () => {
     name: 'Taman Bungkul',
     area_type: 'Taman',
     area_type_category: 'active',
-    rayon_id: 'rayon-1',
-    rayon_name: 'Rayon Selatan',
+    district_id: 'district-1',
+    district_name: 'Rayon Selatan',
     latitude: -7.2905,
     longitude: 112.7398,
     coverage_area: 2500,
@@ -157,9 +158,7 @@ describe('MonitoringController', () => {
         delta: -1,
         is_met: false,
         active_count: 3,
-        inactive_count: 1,
-        outside_area_count: 1,
-        missing_count: 0,
+        offline_count: 2,
       },
     ],
     users: [
@@ -192,30 +191,36 @@ describe('MonitoringController', () => {
 
   const mockLiveUsers: LiveUsersResponseDto = {
     total_active: 100,
-    total_inactive: 30,
-    total_outside_area: 10,
-    total_missing: 10,
     total_offline: 50,
+    total_absent: 40,
+    total_outside_area: 10,
     total_online: 100,
     users: [
       {
         id: 'user-1',
         full_name: 'Worker One',
         role: UserRole.SATGAS,
+        role_marker_icon: null,
+        role_marker_color: null,
         phone: '081234567890',
         status: TrackingStatus.ACTIVE,
         activity: 'aktif',
         location: 'dalam_area',
-        area_id: 'area-1',
-        area_name: 'Taman Bungkul',
-        rayon_id: 'rayon-1',
-        rayon_name: 'Rayon Selatan',
+        location_id: 'area-1',
+        location_name: 'Taman Bungkul',
+        district_id: 'district-1',
+        district_name: 'Rayon Selatan',
+        region_id: 'region-1',
+        region_name: 'Kawasan Bungkul',
         latitude: -7.2905,
         longitude: 112.7398,
         accuracy: 10,
         battery_level: 85,
         last_update: new Date(),
         is_within_area: true,
+        lifecycle_state: 'bertugas',
+        is_late: false,
+        lifecycle_flags: [],
         is_scheduled: true,
         outside_boundary: false,
         shift_id: 'shift-1',
@@ -224,6 +229,11 @@ describe('MonitoringController', () => {
         clock_in_time: new Date(),
         current_task_status: null,
         current_task_title: null,
+        team_id: null,
+        team_name: null,
+        team_color: null,
+        team_opacity: null,
+        team_icon: null,
       },
     ],
     expected_count: 0,
@@ -232,6 +242,7 @@ describe('MonitoringController', () => {
     on_leave_count: 0,
     off_schedule_count: 0,
     absent_users: [],
+    on_leave_users: [],
     generated_at: new Date(),
   };
 
@@ -243,7 +254,7 @@ describe('MonitoringController', () => {
           provide: MonitoringService,
           useValue: {
             getCityStats: jest.fn(),
-            getRayonStats: jest.fn(),
+            getDistrictStats: jest.fn(),
             getAreaStats: jest.fn(),
             getLiveUsers: jest.fn(),
             getLocationHistory: jest.fn(),
@@ -264,6 +275,14 @@ describe('MonitoringController', () => {
           useValue: {
             getBoundaries: jest.fn(),
             getAggregate: jest.fn(),
+            // korlap coverage resolver (PR0b): default to "no shift / no occurrence"
+            // so coverage falls back to the static assignment the other mocks provide.
+            getCurrentShiftDefinition: jest.fn().mockResolvedValue(null),
+            occurrenceCoverageForCurrentShift: jest
+              .fn()
+              .mockResolvedValue({ locationIds: [], regionIds: [], districtIds: [] }),
+            locationIdsForRegions: jest.fn().mockResolvedValue([]),
+            locationIdsForDistricts: jest.fn().mockResolvedValue([]),
           },
         },
         {
@@ -273,8 +292,15 @@ describe('MonitoringController', () => {
           },
         },
         {
-          provide: UserAreasService,
-          useValue: { getPermanentAreaIds: jest.fn().mockResolvedValue([]) },
+          provide: MonitoringAttendanceService,
+          useValue: {
+            getAttendance: jest.fn(),
+            getUserAttendanceDetail: jest.fn(),
+          },
+        },
+        {
+          provide: UserLocationsService,
+          useValue: { getPermanentLocationIds: jest.fn().mockResolvedValue([]) },
         },
         {
           provide: AreaPlantStatusService,
@@ -314,7 +340,7 @@ describe('MonitoringController', () => {
 
       const result = await controller.getCityStats();
 
-      expect(result).toHaveProperty('total_rayons');
+      expect(result).toHaveProperty('total_districts');
       expect(result).toHaveProperty('total_areas');
       expect(result).toHaveProperty('total_workers');
       expect(result).toHaveProperty('workers_online');
@@ -324,65 +350,65 @@ describe('MonitoringController', () => {
       expect(result).toHaveProperty('tasks_in_progress');
       expect(result).toHaveProperty('tasks_completed_today');
       expect(result).toHaveProperty('activities_submitted_today');
-      expect(result).toHaveProperty('rayons');
+      expect(result).toHaveProperty('districts');
       expect(result).toHaveProperty('generated_at');
     });
   });
 
-  describe('getRayonStats', () => {
-    it('should return rayon statistics', async () => {
-      service.getRayonStats.mockResolvedValue(mockRayonStats);
+  describe('getDistrictStats', () => {
+    it('should return district statistics', async () => {
+      service.getDistrictStats.mockResolvedValue(mockDistrictStats);
 
-      const result = await controller.getRayonStats('rayon-1', mockSuperadmin);
+      const result = await controller.getDistrictStats('district-1', mockSuperadmin);
 
-      expect(service.getRayonStats).toHaveBeenCalledWith('rayon-1');
-      expect(result).toEqual(mockRayonStats);
+      expect(service.getDistrictStats).toHaveBeenCalledWith('district-1');
+      expect(result).toEqual(mockDistrictStats);
     });
 
     it('should propagate NotFoundException from service', async () => {
-      service.getRayonStats.mockRejectedValue(
-        new NotFoundException('Rayon with ID rayon-1 not found'),
+      service.getDistrictStats.mockRejectedValue(
+        new NotFoundException('District with ID district-1 not found'),
       );
 
-      await expect(controller.getRayonStats('rayon-1', mockSuperadmin)).rejects.toThrow(
+      await expect(controller.getDistrictStats('district-1', mockSuperadmin)).rejects.toThrow(
         NotFoundException,
       );
     });
 
-    it('should allow kepala_rayon to access own rayon', async () => {
-      service.getRayonStats.mockResolvedValue(mockRayonStats);
+    it('should allow kepala_rayon to access own district', async () => {
+      service.getDistrictStats.mockResolvedValue(mockDistrictStats);
 
-      const result = await controller.getRayonStats('rayon-1', mockKepalaRayon);
+      const result = await controller.getDistrictStats('district-1', mockKepalaDistrict);
 
-      expect(service.getRayonStats).toHaveBeenCalledWith('rayon-1');
-      expect(result).toEqual(mockRayonStats);
+      expect(service.getDistrictStats).toHaveBeenCalledWith('district-1');
+      expect(result).toEqual(mockDistrictStats);
     });
 
-    it('should deny kepala_rayon access to other rayon', async () => {
-      await expect(controller.getRayonStats('rayon-other', mockKepalaRayon)).rejects.toThrow(
-        ForbiddenException,
-      );
+    it('should deny kepala_rayon access to other district', async () => {
+      await expect(
+        controller.getDistrictStats('district-other', mockKepalaDistrict),
+      ).rejects.toThrow(ForbiddenException);
     });
 
-    it('should allow admin_data to access own rayon', async () => {
-      service.getRayonStats.mockResolvedValue(mockRayonStats);
+    it('should allow admin_rayon to access own district', async () => {
+      service.getDistrictStats.mockResolvedValue(mockDistrictStats);
 
-      const result = await controller.getRayonStats('rayon-1', mockAdminData);
+      const result = await controller.getDistrictStats('district-1', mockAdminData);
 
-      expect(service.getRayonStats).toHaveBeenCalledWith('rayon-1');
-      expect(result).toEqual(mockRayonStats);
+      expect(service.getDistrictStats).toHaveBeenCalledWith('district-1');
+      expect(result).toEqual(mockDistrictStats);
     });
 
-    it('should deny admin_data access to other rayon', async () => {
-      await expect(controller.getRayonStats('rayon-other', mockAdminData)).rejects.toThrow(
+    it('should deny admin_rayon access to other district', async () => {
+      await expect(controller.getDistrictStats('district-other', mockAdminData)).rejects.toThrow(
         ForbiddenException,
       );
     });
 
     it('should return statistics with area summaries', async () => {
-      service.getRayonStats.mockResolvedValue(mockRayonStats);
+      service.getDistrictStats.mockResolvedValue(mockDistrictStats);
 
-      const result = await controller.getRayonStats('rayon-1', mockSuperadmin);
+      const result = await controller.getDistrictStats('district-1', mockSuperadmin);
 
       expect(result.areas).toBeDefined();
       expect(result.areas.length).toBeGreaterThan(0);
@@ -392,9 +418,9 @@ describe('MonitoringController', () => {
     });
 
     it('should return statistics with shift summaries', async () => {
-      service.getRayonStats.mockResolvedValue(mockRayonStats);
+      service.getDistrictStats.mockResolvedValue(mockDistrictStats);
 
-      const result = await controller.getRayonStats('rayon-1', mockSuperadmin);
+      const result = await controller.getDistrictStats('district-1', mockSuperadmin);
 
       expect(result.shifts).toBeDefined();
       expect(result.shifts.length).toBeGreaterThan(0);
@@ -404,9 +430,9 @@ describe('MonitoringController', () => {
     });
 
     it('should return statistics with alerts', async () => {
-      service.getRayonStats.mockResolvedValue(mockRayonStats);
+      service.getDistrictStats.mockResolvedValue(mockDistrictStats);
 
-      const result = await controller.getRayonStats('rayon-1', mockSuperadmin);
+      const result = await controller.getDistrictStats('district-1', mockSuperadmin);
 
       expect(result.alerts).toBeDefined();
       expect(result.alerts.length).toBeGreaterThan(0);
@@ -425,7 +451,7 @@ describe('MonitoringController', () => {
 
     it('should propagate NotFoundException from service', async () => {
       service.getAreaStats.mockRejectedValue(
-        new NotFoundException('Area with ID area-1 not found'),
+        new NotFoundException('Location with ID area-1 not found'),
       );
 
       await expect(controller.getAreaStats('area-1', mockSuperadmin)).rejects.toThrow(
@@ -496,8 +522,8 @@ describe('MonitoringController', () => {
 
     it('should pass filters to service', async () => {
       const filters: LiveUsersFilterDto = {
-        area_id: 'area-1',
-        rayon_id: 'rayon-1',
+        location_id: 'area-1',
+        district_id: 'district-1',
         role: UserRole.SATGAS,
       };
       service.getLiveUsers.mockResolvedValue(mockLiveUsers);
@@ -505,6 +531,21 @@ describe('MonitoringController', () => {
       await controller.getLiveUsers(filters, mockSuperadmin);
 
       expect(service.getLiveUsers).toHaveBeenCalledWith(filters);
+    });
+
+    describe('searchMonitoring (5.7a)', () => {
+      it('returns an empty result and does NOT query when the term is blank', async () => {
+        const result = await controller.searchMonitoring({ q: '   ' }, mockSuperadmin);
+        expect(service.getLiveUsers).not.toHaveBeenCalled();
+        expect(result.users).toEqual([]);
+        expect(result.total_active).toBe(0);
+      });
+
+      it('delegates a real term to getLiveUsers (scope-filtered)', async () => {
+        service.getLiveUsers.mockResolvedValue(mockLiveUsers);
+        await controller.searchMonitoring({ q: 'John' }, mockSuperadmin);
+        expect(service.getLiveUsers).toHaveBeenCalledWith(expect.objectContaining({ q: 'John' }));
+      });
     });
 
     it('should return user positions with location data', async () => {
@@ -525,17 +566,12 @@ describe('MonitoringController', () => {
       const result = await controller.getLiveUsers({}, mockSuperadmin);
 
       expect(result.total_active).toBeDefined();
-      expect(result.total_inactive).toBeDefined();
-      expect(result.total_outside_area).toBeDefined();
-      expect(result.total_missing).toBeDefined();
       expect(result.total_offline).toBeDefined();
-      expect(
-        result.total_active +
-          result.total_inactive +
-          result.total_outside_area +
-          result.total_missing +
-          result.total_offline,
-      ).toBe(200);
+      expect(result.total_absent).toBeDefined();
+      expect(result.total_outside_area).toBeDefined();
+      // Sum of clocked-in workers (active + offline), not including absent or outside_area
+      // (outside_area overlaps active+offline, so don't double-count it)
+      expect(result.total_active + result.total_offline).toBe(150);
     });
 
     it('should return user task information', async () => {
@@ -557,36 +593,38 @@ describe('MonitoringController', () => {
       expect(result.users[0]).toHaveProperty('clock_in_time');
     });
 
-    it('should force area_id scope for KORLAP user', async () => {
+    it('should scope KORLAP to their coverage area_ids', async () => {
       service.getLiveUsers.mockResolvedValue(mockLiveUsers);
       const filters: LiveUsersFilterDto = {};
 
       await controller.getLiveUsers(filters, mockKorlap);
 
+      // Korlap coverage is a location-id union (PR0b) — a lone legacy `location_id`
+      // now surfaces as a single-element `area_ids` list, not `location_id`.
       expect(service.getLiveUsers).toHaveBeenCalledWith(
-        expect.objectContaining({ area_id: 'area-1' }),
+        expect.objectContaining({ area_ids: ['area-1'] }),
       );
     });
 
-    it('should force rayon_id scope for ADMIN_DATA user', async () => {
+    it('should force district_id scope for ADMIN_RAYON user', async () => {
       service.getLiveUsers.mockResolvedValue(mockLiveUsers);
       const filters: LiveUsersFilterDto = {};
 
       await controller.getLiveUsers(filters, mockAdminData);
 
       expect(service.getLiveUsers).toHaveBeenCalledWith(
-        expect.objectContaining({ rayon_id: 'rayon-1' }),
+        expect.objectContaining({ district_id: 'district-1' }),
       );
     });
 
-    it('should not override explicit rayon_id filter for ADMIN_DATA', async () => {
+    it('should not override explicit district_id filter for ADMIN_RAYON', async () => {
       service.getLiveUsers.mockResolvedValue(mockLiveUsers);
-      const filters: LiveUsersFilterDto = { rayon_id: 'rayon-1' };
+      const filters: LiveUsersFilterDto = { district_id: 'district-1' };
 
       await controller.getLiveUsers(filters, mockAdminData);
 
       expect(service.getLiveUsers).toHaveBeenCalledWith(
-        expect.objectContaining({ rayon_id: 'rayon-1' }),
+        expect.objectContaining({ district_id: 'district-1' }),
       );
     });
   });
@@ -596,8 +634,8 @@ describe('MonitoringController', () => {
       const mockHistory = { user_id: 'user-1', points: [], date: '2026-03-04' };
       service.getLocationHistory.mockResolvedValue(mockHistory as any);
       service.getUserDaySummary.mockResolvedValue({
-        area_id: 'area-1',
-        rayon_id: 'rayon-1',
+        location_id: 'area-1',
+        district_id: 'district-1',
       } as any);
 
       const result = await controller.getLocationHistory(
@@ -612,8 +650,8 @@ describe('MonitoringController', () => {
 
     it('should deny korlap access to user in different area', async () => {
       service.getUserDaySummary.mockResolvedValue({
-        area_id: 'area-other',
-        rayon_id: 'rayon-1',
+        location_id: 'area-other',
+        district_id: 'district-1',
       } as any);
 
       await expect(
@@ -621,21 +659,44 @@ describe('MonitoringController', () => {
       ).rejects.toThrow(ForbiddenException);
     });
 
-    it('should deny kepala_rayon access to user in different rayon', async () => {
+    // PR0b: the worker-detail boundary uses the SAME coverage as the roster — a
+    // korlap may open the detail of a worker in a lokasi they are only scheduled to.
+    it('allows korlap to view a user in a lokasi they are scheduled to (occurrence coverage)', async () => {
+      const statsService = controller['statsService'] as any;
+      const userAreasService = controller['userAreasService'] as any;
+      service.getLocationHistory.mockResolvedValue({ user_id: 'user-3', points: [] } as any);
       service.getUserDaySummary.mockResolvedValue({
-        area_id: 'area-1',
-        rayon_id: 'rayon-other',
+        location_id: 'area-scheduled',
+        district_id: 'district-1',
+      } as any);
+      userAreasService.getPermanentLocationIds.mockResolvedValue([]);
+      statsService.getCurrentShiftDefinition.mockResolvedValue({ id: 'shift-1' });
+      statsService.occurrenceCoverageForCurrentShift.mockResolvedValue({
+        locationIds: ['area-scheduled'],
+        regionIds: [],
+        districtIds: [],
+      });
+
+      await controller.getLocationHistory('user-3', { date: '2026-03-04' }, mockKorlap);
+
+      expect(service.getLocationHistory).toHaveBeenCalledWith('user-3', '2026-03-04', undefined);
+    });
+
+    it('should deny kepala_rayon access to user in different district', async () => {
+      service.getUserDaySummary.mockResolvedValue({
+        location_id: 'area-1',
+        district_id: 'district-other',
       } as any);
 
       await expect(
-        controller.getLocationHistory('user-2', { date: '2026-03-04' }, mockKepalaRayon),
+        controller.getLocationHistory('user-2', { date: '2026-03-04' }, mockKepalaDistrict),
       ).rejects.toThrow(ForbiddenException);
     });
   });
 
   describe('getUserDaySummary', () => {
     it('should return user day summary', async () => {
-      const mockSummary = { user_id: 'user-1', area_id: 'area-1', rayon_id: 'rayon-1' };
+      const mockSummary = { user_id: 'user-1', location_id: 'area-1', district_id: 'district-1' };
       service.getUserDaySummary.mockResolvedValue(mockSummary as any);
 
       const result = await controller.getUserDaySummary('user-1', mockSuperadmin);
@@ -653,7 +714,7 @@ describe('MonitoringController', () => {
     });
 
     it('should return boundaries without filters for superadmin', async () => {
-      const mockBoundaries = { rayons: [], generated_at: new Date() };
+      const mockBoundaries = { districts: [], generated_at: new Date() };
       statsService.getBoundaries.mockResolvedValue(mockBoundaries);
 
       const result = await controller.getBoundaries(undefined, mockSuperadmin);
@@ -662,40 +723,40 @@ describe('MonitoringController', () => {
       expect(result).toEqual(mockBoundaries);
     });
 
-    it('should pass rayon_id filter', async () => {
-      const mockBoundaries = { rayons: [], generated_at: new Date() };
+    it('should pass district_id filter', async () => {
+      const mockBoundaries = { districts: [], generated_at: new Date() };
       statsService.getBoundaries.mockResolvedValue(mockBoundaries);
 
-      await controller.getBoundaries('rayon-1', mockSuperadmin);
+      await controller.getBoundaries('district-1', mockSuperadmin);
 
-      expect(statsService.getBoundaries).toHaveBeenCalledWith({ rayon_id: 'rayon-1' });
+      expect(statsService.getBoundaries).toHaveBeenCalledWith({ district_id: 'district-1' });
     });
 
-    it('should scope korlap to assigned areas only (not full rayon)', async () => {
-      const mockBoundaries = { rayons: [], generated_at: new Date() };
+    it('should scope korlap to assigned areas only (not full district)', async () => {
+      const mockBoundaries = { districts: [], generated_at: new Date() };
       statsService.getBoundaries.mockResolvedValue(mockBoundaries);
 
       await controller.getBoundaries(undefined, mockKorlap);
 
-      // Korlap can span rayons (e.g. Bungkul lives in Rayon Taman Aktif while
-      // home rayon is Pusat). area_ids must include the legacy single area;
-      // area_id AND rayon_id must both be dropped so cross-rayon areas show.
+      // Korlap can span districts (e.g. Bungkul lives in Rayon Taman Aktif while
+      // home district is Pusat). area_ids must include the legacy single area;
+      // location_id AND district_id must both be dropped so cross-district areas show.
       expect(statsService.getBoundaries).toHaveBeenCalledWith(
         expect.objectContaining({ area_ids: ['area-1'] }),
       );
       const call = statsService.getBoundaries.mock.calls[0][0];
-      expect(call).not.toHaveProperty('area_id');
-      expect(call).not.toHaveProperty('rayon_id');
+      expect(call).not.toHaveProperty('location_id');
+      expect(call).not.toHaveProperty('district_id');
     });
 
-    it('should scope admin_data to own rayon', async () => {
-      const mockBoundaries = { rayons: [], generated_at: new Date() };
+    it('should scope admin_rayon to own district', async () => {
+      const mockBoundaries = { districts: [], generated_at: new Date() };
       statsService.getBoundaries.mockResolvedValue(mockBoundaries);
 
       await controller.getBoundaries(undefined, mockAdminData);
 
       expect(statsService.getBoundaries).toHaveBeenCalledWith(
-        expect.objectContaining({ rayon_id: 'rayon-1' }),
+        expect.objectContaining({ district_id: 'district-1' }),
       );
     });
   });
@@ -754,8 +815,9 @@ describe('MonitoringController', () => {
 
       await controller.getStaffingSummary({}, mockKorlap);
 
+      // Korlap coverage → area_ids union (PR0b); lone legacy location_id becomes ['area-1'].
       expect(service.getStaffingSummary).toHaveBeenCalledWith(
-        expect.objectContaining({ area_id: 'area-1' }),
+        expect.objectContaining({ area_ids: ['area-1'] }),
       );
     });
   });
@@ -770,7 +832,7 @@ describe('MonitoringController', () => {
     });
 
     it('should return area plant status for superadmin', async () => {
-      const mockStatus = { area_id: 'area-1', overdue: 0 };
+      const mockStatus = { location_id: 'area-1', overdue: 0 };
       plantStatusService.getAreaPlantStatus.mockResolvedValue(mockStatus);
 
       const result = await controller.getAreaPlantStatus('area-1', mockSuperadmin);
@@ -780,9 +842,9 @@ describe('MonitoringController', () => {
     });
 
     it('should allow korlap to access assigned area', async () => {
-      const mockStatus = { area_id: 'area-1', overdue: 0 };
+      const mockStatus = { location_id: 'area-1', overdue: 0 };
       plantStatusService.getAreaPlantStatus.mockResolvedValue(mockStatus);
-      userAreasService.getPermanentAreaIds.mockResolvedValue(['area-1', 'area-9']);
+      userAreasService.getPermanentLocationIds.mockResolvedValue(['area-1', 'area-9']);
 
       await controller.getAreaPlantStatus('area-1', mockKorlap);
 
@@ -790,7 +852,7 @@ describe('MonitoringController', () => {
     });
 
     it('should deny korlap access to non-assigned area when they have multi-area assignment', async () => {
-      userAreasService.getPermanentAreaIds.mockResolvedValue(['area-9', 'area-10']);
+      userAreasService.getPermanentLocationIds.mockResolvedValue(['area-9', 'area-10']);
 
       await expect(controller.getAreaPlantStatus('area-1', mockKorlap)).rejects.toThrow(
         ForbiddenException,
@@ -798,9 +860,62 @@ describe('MonitoringController', () => {
     });
 
     it('should deny korlap access to mismatched legacy single area', async () => {
-      userAreasService.getPermanentAreaIds.mockResolvedValue([]);
+      userAreasService.getPermanentLocationIds.mockResolvedValue([]);
 
       await expect(controller.getAreaPlantStatus('area-other', mockKorlap)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    // PR0b: coverage is the union of static assignment AND today's schedule
+    // occurrences (individual or team). A korlap SCHEDULED to a lokasi/kawasan they
+    // are not statically assigned to may view it.
+    it('allows korlap to access an occurrence lokasi outside their static assignment', async () => {
+      const statsService = controller['statsService'] as any;
+      userAreasService.getPermanentLocationIds.mockResolvedValue([]);
+      statsService.getCurrentShiftDefinition.mockResolvedValue({ id: 'shift-1' });
+      statsService.occurrenceCoverageForCurrentShift.mockResolvedValue({
+        locationIds: ['area-scheduled'],
+        regionIds: [],
+        districtIds: [],
+      });
+      plantStatusService.getAreaPlantStatus.mockResolvedValue({ location_id: 'area-scheduled' });
+
+      await controller.getAreaPlantStatus('area-scheduled', mockKorlap);
+
+      expect(plantStatusService.getAreaPlantStatus).toHaveBeenCalledWith('area-scheduled');
+    });
+
+    it('allows korlap to access a kawasan-scheduled lokasi via region expansion', async () => {
+      const statsService = controller['statsService'] as any;
+      userAreasService.getPermanentLocationIds.mockResolvedValue([]);
+      statsService.getCurrentShiftDefinition.mockResolvedValue({ id: 'shift-1' });
+      statsService.occurrenceCoverageForCurrentShift.mockResolvedValue({
+        locationIds: [],
+        regionIds: ['kawasan-1'],
+        districtIds: [],
+      });
+      // The kawasan expands to its member lokasi, which authorizes them.
+      statsService.locationIdsForRegions.mockResolvedValue(['area-in-kawasan']);
+      plantStatusService.getAreaPlantStatus.mockResolvedValue({ location_id: 'area-in-kawasan' });
+
+      await controller.getAreaPlantStatus('area-in-kawasan', mockKorlap);
+
+      expect(statsService.locationIdsForRegions).toHaveBeenCalledWith(['kawasan-1']);
+      expect(plantStatusService.getAreaPlantStatus).toHaveBeenCalledWith('area-in-kawasan');
+    });
+
+    it('still denies a lokasi neither statically assigned nor scheduled', async () => {
+      const statsService = controller['statsService'] as any;
+      userAreasService.getPermanentLocationIds.mockResolvedValue(['area-9']);
+      statsService.getCurrentShiftDefinition.mockResolvedValue({ id: 'shift-1' });
+      statsService.occurrenceCoverageForCurrentShift.mockResolvedValue({
+        locationIds: ['area-scheduled'],
+        regionIds: [],
+        districtIds: [],
+      });
+
+      await expect(controller.getAreaPlantStatus('area-unrelated', mockKorlap)).rejects.toThrow(
         ForbiddenException,
       );
     });
@@ -815,23 +930,52 @@ describe('MonitoringController', () => {
 
     it('returns city aggregate for city role', async () => {
       await controller.getAggregate(mockSuperadmin, 'city');
-      expect(statsService.getAggregate).toHaveBeenCalledWith('city', undefined);
+      expect(statsService.getAggregate).toHaveBeenCalledWith('city', undefined, undefined);
     });
 
-    it('rejects city scope for rayon-scoped role', async () => {
-      await expect(controller.getAggregate(mockKepalaRayon, 'city')).rejects.toThrow(
+    it('rejects city scope for district-scoped role', async () => {
+      await expect(controller.getAggregate(mockKepalaDistrict, 'city')).rejects.toThrow(
         ForbiddenException,
       );
     });
 
-    it('forces rayon-scoped role to own rayon regardless of requested id', async () => {
-      await controller.getAggregate(mockKepalaRayon, 'rayon', 'rayon-other');
-      expect(statsService.getAggregate).toHaveBeenCalledWith('rayon', 'rayon-1');
+    it('forces district-scoped role to own district regardless of requested id', async () => {
+      await controller.getAggregate(mockKepalaDistrict, 'district', 'district-other');
+      expect(statsService.getAggregate).toHaveBeenCalledWith('district', 'district-1', undefined);
     });
 
-    it('lets city role target any rayon', async () => {
-      await controller.getAggregate(mockSuperadmin, 'rayon', 'rayon-9');
-      expect(statsService.getAggregate).toHaveBeenCalledWith('rayon', 'rayon-9');
+    it('lets city role target any district', async () => {
+      await controller.getAggregate(mockSuperadmin, 'district', 'district-9');
+      expect(statsService.getAggregate).toHaveBeenCalledWith('district', 'district-9', undefined);
+    });
+
+    it('region scope forces a district-scoped role to its own district (5.5c)', async () => {
+      await controller.getAggregate(mockKepalaDistrict, 'region', 'district-other');
+      expect(statsService.getAggregate).toHaveBeenCalledWith('region', 'district-1', undefined);
+    });
+
+    it('region scope lets a city role target any district', async () => {
+      await controller.getAggregate(mockSuperadmin, 'region', 'district-9');
+      expect(statsService.getAggregate).toHaveBeenCalledWith('region', 'district-9', undefined);
+    });
+
+    it('passes a parsed bbox through for scope=all (viewport mode)', async () => {
+      await controller.getAggregate(mockSuperadmin, 'all', undefined, '112.7,-7.3,112.8,-7.2');
+      expect(statsService.getAggregate).toHaveBeenCalledWith(
+        'all',
+        undefined,
+        [112.7, -7.3, 112.8, -7.2],
+      );
+    });
+
+    it('IGNORES a bbox on the drill scopes — they already return one level', async () => {
+      await controller.getAggregate(mockSuperadmin, 'city', undefined, '112.7,-7.3,112.8,-7.2');
+      expect(statsService.getAggregate).toHaveBeenCalledWith('city', undefined, undefined);
+    });
+
+    it('degrades a malformed bbox to no filter rather than blanking the map', async () => {
+      await controller.getAggregate(mockSuperadmin, 'all', undefined, 'not,a,box');
+      expect(statsService.getAggregate).toHaveBeenCalledWith('all', undefined, undefined);
     });
   });
 
@@ -847,40 +991,40 @@ describe('MonitoringController', () => {
     });
 
     it('should reject city scope for non-city role', async () => {
-      await expect(controller.getSnapshot(mockKepalaRayon, 'city')).rejects.toThrow(
+      await expect(controller.getSnapshot(mockKepalaDistrict, 'city')).rejects.toThrow(
         ForbiddenException,
       );
     });
 
-    it('should enforce rayon scope for kepala_rayon', async () => {
-      service.getSnapshot.mockResolvedValue({ scope: 'rayon' } as any);
+    it('should enforce district scope for kepala_rayon', async () => {
+      service.getSnapshot.mockResolvedValue({ scope: 'district' } as any);
 
-      await controller.getSnapshot(mockKepalaRayon, 'rayon', 'rayon-1');
+      await controller.getSnapshot(mockKepalaDistrict, 'district', 'district-1');
 
-      expect(service.getSnapshot).toHaveBeenCalledWith('rayon', 'rayon-1');
+      expect(service.getSnapshot).toHaveBeenCalledWith('district', 'district-1');
     });
 
-    it('should reject rayon scope for kepala_rayon viewing other rayon', async () => {
-      await expect(controller.getSnapshot(mockKepalaRayon, 'rayon', 'rayon-other')).rejects.toThrow(
-        ForbiddenException,
-      );
+    it('should reject district scope for kepala_rayon viewing other district', async () => {
+      await expect(
+        controller.getSnapshot(mockKepalaDistrict, 'district', 'district-other'),
+      ).rejects.toThrow(ForbiddenException);
     });
 
-    it('should enforce area scope for korlap', async () => {
+    it('should enforce location scope for korlap', async () => {
       const userAreasService = controller['userAreasService'] as any;
-      userAreasService.getPermanentAreaIds.mockResolvedValue(['area-1']);
-      service.getSnapshot.mockResolvedValue({ scope: 'area' } as any);
+      userAreasService.getPermanentLocationIds.mockResolvedValue(['area-1']);
+      service.getSnapshot.mockResolvedValue({ scope: 'location' } as any);
 
-      await controller.getSnapshot(mockKorlap, 'area', 'area-1');
+      await controller.getSnapshot(mockKorlap, 'location', 'area-1');
 
-      expect(service.getSnapshot).toHaveBeenCalledWith('area', 'area-1');
+      expect(service.getSnapshot).toHaveBeenCalledWith('location', 'area-1');
     });
 
-    it('should reject area scope for korlap accessing non-assigned area', async () => {
+    it('should reject location scope for korlap accessing non-assigned area', async () => {
       const userAreasService = controller['userAreasService'] as any;
-      userAreasService.getPermanentAreaIds.mockResolvedValue(['area-9']);
+      userAreasService.getPermanentLocationIds.mockResolvedValue(['area-9']);
 
-      await expect(controller.getSnapshot(mockKorlap, 'area', 'area-1')).rejects.toThrow(
+      await expect(controller.getSnapshot(mockKorlap, 'location', 'area-1')).rejects.toThrow(
         ForbiddenException,
       );
     });
@@ -889,20 +1033,20 @@ describe('MonitoringController', () => {
   describe('applyScopeFilters — korlap with assigned areas', () => {
     it('should set area_ids when korlap has multi-area assignment', async () => {
       const userAreasService = controller['userAreasService'] as any;
-      userAreasService.getPermanentAreaIds.mockResolvedValue(['area-1', 'area-2']);
+      userAreasService.getPermanentLocationIds.mockResolvedValue(['area-1', 'area-2']);
       service.getStaffingSummary.mockResolvedValue({ items: [], generated_at: new Date() } as any);
 
       await controller.getStaffingSummary({}, mockKorlap);
 
       expect(service.getStaffingSummary).toHaveBeenCalledWith(
-        expect.objectContaining({ area_ids: ['area-1', 'area-2'], rayon_id: 'rayon-1' }),
+        expect.objectContaining({ area_ids: ['area-1', 'area-2'], district_id: 'district-1' }),
       );
     });
   });
 
   describe('enforceScopeUser — korlap branches', () => {
-    it('should allow korlap when target user has no area_id', async () => {
-      service.getUserDaySummary.mockResolvedValue({ area_id: null } as any);
+    it('should allow korlap when target user has no location_id', async () => {
+      service.getUserDaySummary.mockResolvedValue({ location_id: null } as any);
       service.getLocationHistory.mockResolvedValue({ points: [] } as any);
 
       await controller.getLocationHistory('user-1', { date: '2026-05-24' }, mockKorlap);
@@ -912,8 +1056,8 @@ describe('MonitoringController', () => {
 
     it('should allow korlap to view user in assigned multi-area', async () => {
       const userAreasService = controller['userAreasService'] as any;
-      userAreasService.getPermanentAreaIds.mockResolvedValue(['area-1', 'area-2']);
-      service.getUserDaySummary.mockResolvedValue({ area_id: 'area-2' } as any);
+      userAreasService.getPermanentLocationIds.mockResolvedValue(['area-1', 'area-2']);
+      service.getUserDaySummary.mockResolvedValue({ location_id: 'area-2' } as any);
       service.getLocationHistory.mockResolvedValue({ points: [] } as any);
 
       await controller.getLocationHistory('user-1', { date: '2026-05-24' }, mockKorlap);
@@ -923,8 +1067,8 @@ describe('MonitoringController', () => {
 
     it('should deny korlap viewing user outside assigned multi-area set', async () => {
       const userAreasService = controller['userAreasService'] as any;
-      userAreasService.getPermanentAreaIds.mockResolvedValue(['area-1', 'area-2']);
-      service.getUserDaySummary.mockResolvedValue({ area_id: 'area-9' } as any);
+      userAreasService.getPermanentLocationIds.mockResolvedValue(['area-1', 'area-2']);
+      service.getUserDaySummary.mockResolvedValue({ location_id: 'area-9' } as any);
 
       await expect(
         controller.getLocationHistory('user-1', { date: '2026-05-24' }, mockKorlap),
@@ -981,8 +1125,8 @@ describe('MonitoringController', () => {
           action: 'reassign',
           actor_id: actor.id,
           actor,
-          old_value: { area_id: 'area-1', area_name: 'Taman Bungkul' },
-          new_value: { area_id: 'area-2', area_name: 'Taman Sapran' },
+          old_value: { location_id: 'area-1', location_name: 'Taman Bungkul' },
+          new_value: { location_id: 'area-2', location_name: 'Taman Sapran' },
           metadata: { reason: 'Rebalancing', effective_date: '2026-06-11', new_schedule_id: null },
           created_at: new Date('2026-06-11T10:30:00Z'),
         },
@@ -993,8 +1137,8 @@ describe('MonitoringController', () => {
           action: 'reassign',
           actor_id: actor.id,
           actor,
-          old_value: { area_id: null, area_name: null },
-          new_value: { area_id: 'area-1', area_name: 'Taman Bungkul' },
+          old_value: { location_id: null, location_name: null },
+          new_value: { location_id: 'area-1', location_name: 'Taman Bungkul' },
           metadata: { reason: null, effective_date: '2026-06-01', new_schedule_id: null },
           created_at: new Date('2026-06-01T08:00:00Z'),
         },
@@ -1002,8 +1146,8 @@ describe('MonitoringController', () => {
 
       auditLogService.getEntityHistory.mockResolvedValue(mockLogs);
       service.getUserDaySummary.mockResolvedValue({
-        area_id: 'area-2',
-        rayon_id: 'rayon-1',
+        location_id: 'area-2',
+        district_id: 'district-1',
       } as any);
 
       const result = await controller.getReassignmentHistory('user-1', mockSuperadmin);
@@ -1027,8 +1171,8 @@ describe('MonitoringController', () => {
           action: 'reassign',
           actor_id: actor.id,
           actor,
-          old_value: { area_id: 'area-1', area_name: 'Taman Bungkul' },
-          new_value: { area_id: 'area-2', area_name: 'Taman Sapran' },
+          old_value: { location_id: 'area-1', location_name: 'Taman Bungkul' },
+          new_value: { location_id: 'area-2', location_name: 'Taman Sapran' },
           metadata: { reason: null, effective_date: '2026-06-11', new_schedule_id: null },
           created_at: new Date('2026-06-11T10:30:00Z'),
         },
@@ -1048,8 +1192,8 @@ describe('MonitoringController', () => {
 
       auditLogService.getEntityHistory.mockResolvedValue(mixedLogs);
       service.getUserDaySummary.mockResolvedValue({
-        area_id: 'area-2',
-        rayon_id: 'rayon-1',
+        location_id: 'area-2',
+        district_id: 'district-1',
       } as any);
 
       const result = await controller.getReassignmentHistory('user-1', mockSuperadmin);
@@ -1068,16 +1212,16 @@ describe('MonitoringController', () => {
         action: 'reassign',
         actor_id: actor.id,
         actor,
-        old_value: { area_id: 'area-1', area_name: 'Old' },
-        new_value: { area_id: 'area-2', area_name: 'New' },
+        old_value: { location_id: 'area-1', location_name: 'Old' },
+        new_value: { location_id: 'area-2', location_name: 'New' },
         metadata: { reason: null, effective_date: '2026-06-11', new_schedule_id: null },
         created_at: new Date(),
       }));
 
       auditLogService.getEntityHistory.mockResolvedValue(manyLogs);
       service.getUserDaySummary.mockResolvedValue({
-        area_id: 'area-2',
-        rayon_id: 'rayon-1',
+        location_id: 'area-2',
+        district_id: 'district-1',
       } as any);
 
       const result = await controller.getReassignmentHistory('user-1', mockSuperadmin);
@@ -1095,8 +1239,8 @@ describe('MonitoringController', () => {
           action: 'reassign',
           actor_id: actor.id,
           actor,
-          old_value: { area_id: 'area-1', area_name: 'Taman Bungkul' },
-          new_value: { area_id: 'area-2', area_name: 'Taman Sapran' },
+          old_value: { location_id: 'area-1', location_name: 'Taman Bungkul' },
+          new_value: { location_id: 'area-2', location_name: 'Taman Sapran' },
           metadata: null,
           created_at: new Date('2026-06-11T10:30:00Z'),
         },
@@ -1104,8 +1248,8 @@ describe('MonitoringController', () => {
 
       auditLogService.getEntityHistory.mockResolvedValue(logsWithNulls);
       service.getUserDaySummary.mockResolvedValue({
-        area_id: 'area-2',
-        rayon_id: 'rayon-1',
+        location_id: 'area-2',
+        district_id: 'district-1',
       } as any);
 
       const result = await controller.getReassignmentHistory('user-1', mockSuperadmin);
@@ -1115,13 +1259,13 @@ describe('MonitoringController', () => {
       expect(result.history[0].effective_date).toBeNull();
     });
 
-    it('should deny kepala_rayon access to user in different rayon', async () => {
+    it('should deny kepala_rayon access to user in different district', async () => {
       service.getUserDaySummary.mockResolvedValue({
-        area_id: 'area-1',
-        rayon_id: 'rayon-other',
+        location_id: 'area-1',
+        district_id: 'district-other',
       } as any);
 
-      await expect(controller.getReassignmentHistory('user-1', mockKepalaRayon)).rejects.toThrow(
+      await expect(controller.getReassignmentHistory('user-1', mockKepalaDistrict)).rejects.toThrow(
         ForbiddenException,
       );
     });
@@ -1136,8 +1280,8 @@ describe('MonitoringController', () => {
           action: 'reassign',
           actor_id: actorWithoutName.id,
           actor: null,
-          old_value: { area_id: 'area-1', area_name: 'Taman Bungkul' },
-          new_value: { area_id: 'area-2', area_name: 'Taman Sapran' },
+          old_value: { location_id: 'area-1', location_name: 'Taman Bungkul' },
+          new_value: { location_id: 'area-2', location_name: 'Taman Sapran' },
           metadata: { reason: null, effective_date: '2026-06-11', new_schedule_id: null },
           created_at: new Date('2026-06-11T10:30:00Z'),
         },
@@ -1145,8 +1289,8 @@ describe('MonitoringController', () => {
 
       auditLogService.getEntityHistory.mockResolvedValue(logsWithMissingActor);
       service.getUserDaySummary.mockResolvedValue({
-        area_id: 'area-2',
-        rayon_id: 'rayon-1',
+        location_id: 'area-2',
+        district_id: 'district-1',
       } as any);
 
       const result = await controller.getReassignmentHistory('user-1', mockSuperadmin);

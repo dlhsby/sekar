@@ -1,7 +1,6 @@
 /**
  * Plants & Pruning API Hooks (Phase 3)
- * Read hooks consumed by AreaDetailDrawer to show plant + pruning context
- * for an area.
+ * Read hooks for plant + pruning context on a location (plants feature — parked).
  */
 
 import { useQuery } from '@tanstack/react-query';
@@ -79,7 +78,7 @@ export interface PruningRequestRow {
   tree_count: number | null;
   requester_name: string | null;
   status: PruningRequestStatus;
-  rayon_id: string | null;
+  district_id: string | null;
   created_at: string;
 }
 
@@ -101,7 +100,7 @@ export const plantsKeys = {
   speciesDetail: (id: string) => [...plantsKeys.speciesDetails(), id] as const,
   areaPlants: (areaId: string) => ['areaPlants', areaId] as const,
   notablePlants: (areaId: string) => ['notablePlants', areaId] as const,
-  pruningByRayon: (rayonId: string) => ['pruningByRayon', rayonId] as const,
+  pruningByDistrict: (districtId: string) => ['pruningByDistrict', districtId] as const,
   speciesCatalog: (page: number, q: string) => ['speciesCatalog', page, q] as const,
 };
 
@@ -188,23 +187,23 @@ export function summarizePlantStatuses(
 // Plant-status rollup (Phase 3-8 close-out — dashboard widget + map toggle)
 // ---------------------------------------------------------------------------
 
-export interface RayonPlantStatusSummary {
-  rayon_id: string | null;
-  rayon_name: string | null;
+export interface DistrictPlantStatusSummary {
+  district_id: string | null;
+  district_name: string | null;
   ok: number;
   due_soon: number;
   overdue: number;
   unknown: number;
-  overdue_areas: { area_id: string; area_name: string; overdue: number }[];
+  overdue_areas: { area_id: string; location_name: string; overdue: number }[];
 }
 
 export interface PlantStatusSummaryResponse {
   generated_at: string;
-  rayons: RayonPlantStatusSummary[];
+  districts: DistrictPlantStatusSummary[];
 }
 
-/** Per-rayon ok/due/overdue rollup. City roles get all rayons; rayon-scoped
- * roles are server-side forced to their own rayon. */
+/** Per-district ok/due/overdue rollup. City roles get all districts; district-scoped
+ * roles are server-side forced to their own district. */
 export function usePlantStatusSummary(enabled: boolean = true) {
   return useQuery({
     queryKey: ['plantStatusSummary'],
@@ -225,7 +224,7 @@ export function useAreaPlants(areaId: string | null | undefined) {
   return useQuery({
     queryKey: areaId ? plantsKeys.areaPlants(areaId) : ['areaPlants', 'null'],
     queryFn: async (): Promise<AreaPlantRow[]> => {
-      const { data } = await apiClient.get(`/areas/${areaId}/plants`);
+      const { data } = await apiClient.get(`/locations/${areaId}/plants`);
       return Array.isArray(data) ? data : (data?.data ?? []);
     },
     enabled: !!areaId,
@@ -237,7 +236,7 @@ export function useNotablePlants(areaId: string | null | undefined) {
   return useQuery({
     queryKey: areaId ? plantsKeys.notablePlants(areaId) : ['notablePlants', 'null'],
     queryFn: async (): Promise<NotablePlantRow[]> => {
-      const { data } = await apiClient.get(`/areas/${areaId}/notable-plants`);
+      const { data } = await apiClient.get(`/locations/${areaId}/notable-plants`);
       return Array.isArray(data) ? data : (data?.data ?? []);
     },
     enabled: !!areaId,
@@ -246,23 +245,23 @@ export function useNotablePlants(areaId: string | null | undefined) {
 }
 
 /**
- * Pruning requests are filterable by `rayonId`, not `area_id` (the entity
- * has no FK to areas — it carries `kecamatan_name` + `rayon_id` only).
- * The drawer fetches the rayon-wide list and the caller can narrow it down
+ * Pruning requests are filterable by `districtId`, not `area_id` (the entity
+ * has no FK to areas — it carries `kecamatan_name` + `district_id` only).
+ * The drawer fetches the district-wide list and the caller can narrow it down
  * for display.
  */
-export function usePruningByRayon(
-  rayonId: string | null | undefined,
+export function usePruningByDistrict(
+  districtId: string | null | undefined,
   options?: { limit?: number; status?: PruningRequestStatus },
 ) {
   const { limit = 10, status } = options ?? {};
   return useQuery({
-    queryKey: rayonId
-      ? [...plantsKeys.pruningByRayon(rayonId), limit, status ?? 'any']
-      : ['pruningByRayon', 'null'],
+    queryKey: districtId
+      ? [...plantsKeys.pruningByDistrict(districtId), limit, status ?? 'any']
+      : ['pruningByDistrict', 'null'],
     queryFn: async (): Promise<PruningRequestRow[]> => {
       const params: Record<string, string | number> = {
-        rayonId: rayonId!,
+        districtId: districtId!,
         limit,
         page: 1,
       };
@@ -272,7 +271,7 @@ export function usePruningByRayon(
       if (Array.isArray(data)) return data as PruningRequestRow[];
       return (data?.data as PruningRequestRow[] | undefined) ?? [];
     },
-    enabled: !!rayonId,
+    enabled: !!districtId,
     staleTime: 30_000,
   });
 }

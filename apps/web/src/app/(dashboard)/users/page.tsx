@@ -9,11 +9,10 @@
 import { useCallback, useMemo, useState } from 'react';
 import type { FilterFn } from '@tanstack/react-table';
 import { useTranslation } from 'react-i18next';
-import { Plus, Eye, Pencil, Trash2, Power, KeyRound, MapPin } from 'lucide-react';
+import { Eye, Pencil, Trash2, Power, KeyRound, MapPin } from 'lucide-react';
 import { UserAreasSheet, type UserAreasSheetTarget } from '@/components/users/UserAreasSheet';
 import { toast } from 'sonner';
 import {
-  Button,
   ConfirmDialog,
   DataTable,
   PageHeader,
@@ -33,11 +32,12 @@ import {
   useActivateUser,
   useResetUserPassword,
 } from '@/lib/api/users';
-import { useShiftDefinitions } from '@/lib/api/shift-definitions';
-import { useRayons } from '@/lib/api/rayons';
-import { useAreas } from '@/lib/api/areas';
+import { useDistricts } from '@/lib/api/districts';
+import { useRegions } from '@/lib/api/regions';
+import { useRoles } from '@/lib/api/roles';
+import { useLocationLookup } from '@/lib/api/locations';
 import { useUser } from '@/lib/auth/hooks';
-import { ADMIN_ROLES, ROLE_LABELS } from '@/lib/constants/roles';
+import { ADMIN_ROLES, roleLabel } from '@/lib/constants/roles';
 import { formatDate } from '@/lib/utils/time';
 import { getErrorMessage } from '@/lib/api/client';
 import type { User } from '@/types/models';
@@ -46,7 +46,7 @@ export default function UsersPage() {
   const { t } = useTranslation();
   const currentUser = useUser();
   // Full management (create/edit/delete) is admin-only; other roles that can
-  // reach this page (admin_data) get a view-only kebab.
+  // reach this page (admin_rayon) get a view-only kebab.
   const canManage = !!currentUser && ADMIN_ROLES.includes(currentUser.role);
 
   const { data, isLoading, error, refetch } = useUsers({ limit: 1000 });
@@ -56,28 +56,45 @@ export default function UsersPage() {
   const deactivateUser = useDeactivateUser();
   const activateUser = useActivateUser();
   const resetPassword = useResetUserPassword();
-  const { data: shifts = [] } = useShiftDefinitions();
-  const shiftNameById = useMemo(() => new Map(shifts.map((s) => [s.id, s.name])), [shifts]);
-  // Rayon has no entity relation on User (only rayon_id) — resolve the name via
-  // a map, mirroring how shift names are resolved above.
-  const { data: rayons = [] } = useRayons();
-  const rayonNameById = useMemo(() => new Map(rayons.map((r) => [r.id, r.name])), [rayons]);
-  const rayonFilterOptions = useMemo(
-    () => rayons.map((r) => ({ value: r.name, label: r.name })),
-    [rayons]
+  // Rayon has no entity relation on User (only district_id) — resolve the name via a map.
+  const { data: districts = [] } = useDistricts();
+  const districtNameById = useMemo(() => new Map(districts.map((r) => [r.id, r.name])), [districts]);
+  const districtFilterOptions = useMemo(
+    () => districts.map((r) => ({ value: r.name, label: r.name })),
+    [districts]
   );
-  const shiftFilterOptions = useMemo(
-    () => shifts.map((s) => ({ value: s.name, label: s.name })),
-    [shifts]
+  // Kawasan (region) — like district, only region_id is on the user; resolve the
+  // name via the full regions catalog (no district filter → every region).
+  const { data: regions = [] } = useRegions();
+  const regionNameById = useMemo(() => new Map(regions.map((r) => [r.id, r.name])), [regions]);
+  const regionFilterOptions = useMemo(
+    () => regions.map((r) => ({ value: r.name, label: r.name })),
+    [regions]
+  );
+  // Role filter is data-driven (ADR-044) — options come from the /roles catalog
+  // (incl. custom roles), labelled via roleLabel to match the column accessor.
+  const { data: rolesCatalog = [] } = useRoles();
+  const roleFilterOptions = useMemo(
+    () => rolesCatalog.map((r) => ({ value: roleLabel(r.code), label: roleLabel(r.code) })),
+    [rolesCatalog]
+  );
+  // Data-driven role accent (ADR-044): resolve each role code → its marker_color
+  // so the pill + avatar tint follows the role-management colour (incl. custom
+  // roles). Falls back to the fixed per-role token when a colour isn't set.
+  const roleColorByCode = useMemo(
+    () => new Map(rolesCatalog.map((r) => [r.code, r.marker_color ?? undefined])),
+    [rolesCatalog]
   );
 
   // Full area master data so the multi-value Area filter can list every area
-  // (a user can be assigned several) and resolve assigned_area_ids → names.
+  // (a user can be assigned several) and resolve assigned_location_ids → names.
   // include_inactive: a user's assigned area may have since been deactivated —
   // keep resolving its name (and offering it as a filter option) rather than
   // silently showing "—" for that assignment.
-  const { data: areasData } = useAreas({ limit: 1000, include_inactive: true });
-  const allAreas = useMemo(() => areasData?.data ?? [], [areasData]);
+  // Lookup: only lokasi NAMES are resolved here (an assigned-areas column and
+  // its filter). It already includes deactivated lokasi, which this column needs
+  // — a user may still be assigned to one.
+  const { data: allAreas = [] } = useLocationLookup();
   const areaNameById = useMemo(() => new Map(allAreas.map((a) => [a.id, a.name])), [allAreas]);
   const areaFilterOptions = useMemo(
     () => allAreas.map((a) => ({ value: a.name, label: a.name })),
@@ -142,7 +159,13 @@ export default function UsersPage() {
           const u = row.original;
           return (
             <div className="flex items-center gap-2.5">
-              <RoleAvatar name={u.full_name} role={u.role} src={u.profile_picture_url} size="sm" />
+              <RoleAvatar
+                name={u.full_name}
+                role={u.role}
+                color={roleColorByCode.get(u.role)}
+                src={u.profile_picture_url}
+                size="sm"
+              />
               <div className="min-w-0">
                 <p className="truncate font-bold text-nb-black">{u.full_name}</p>
                 <p className="truncate font-mono text-[11px] text-nb-gray-600">{u.username}</p>
@@ -162,16 +185,18 @@ export default function UsersPage() {
       },
       {
         id: 'role',
-        // Filter/sort/search against the human label ("Top Management"), not the
-        // raw enum ("top_management"), so typing the visible text matches.
-        accessorFn: (u) => ROLE_LABELS[u.role] ?? u.role,
+        // Filter/sort/search against the human label ("Management"), not the raw
+        // code ("management"). roleLabel() covers custom roles too (ADR-044).
+        accessorFn: (u) => roleLabel(u.role),
         header: t('admin:users.columnRole'),
         meta: {
           label: t('admin:users.columnRole'),
           filterVariant: 'enum',
-          filterOptions: Object.values(ROLE_LABELS).map((label) => ({ value: label, label })),
+          filterOptions: roleFilterOptions,
         },
-        cell: ({ row }) => <RolePill role={row.original.role} />,
+        cell: ({ row }) => (
+          <RolePill role={row.original.role} color={roleColorByCode.get(row.original.role)} />
+        ),
       },
       {
         id: 'phone_number',
@@ -183,26 +208,42 @@ export default function UsersPage() {
         ),
       },
       {
-        id: 'rayon',
-        accessorFn: (u) => (u.rayon_id ? (rayonNameById.get(u.rayon_id) ?? '') : ''),
-        header: t('admin:users.columnRayon'),
+        id: 'district',
+        accessorFn: (u) => (u.district_id ? (districtNameById.get(u.district_id) ?? '') : ''),
+        header: t('admin:users.columnDistrict'),
         meta: {
-          label: t('admin:users.columnRayon'),
+          label: t('admin:users.columnDistrict'),
           filterVariant: 'enum',
-          filterOptions: rayonFilterOptions,
+          filterOptions: districtFilterOptions,
         },
         cell: ({ row }) => {
-          const id = row.original.rayon_id;
-          return <span className="text-nb-body-sm">{id ? (rayonNameById.get(id) ?? '—') : '—'}</span>;
+          const id = row.original.district_id;
+          return <span className="text-nb-body-sm">{id ? (districtNameById.get(id) ?? '—') : '—'}</span>;
+        },
+      },
+      {
+        id: 'region',
+        accessorFn: (u) => (u.region_id ? (regionNameById.get(u.region_id) ?? '') : ''),
+        header: t('admin:users.columnRegion'),
+        meta: {
+          label: t('admin:users.columnRegion'),
+          filterVariant: 'enum',
+          filterOptions: regionFilterOptions,
+        },
+        cell: ({ row }) => {
+          const id = row.original.region_id;
+          return (
+            <span className="text-nb-body-sm">{id ? (regionNameById.get(id) ?? '—') : '—'}</span>
+          );
         },
       },
       {
         id: 'areas',
-        accessorFn: (u) => (u.assigned_area_ids ?? []).map((id) => areaNameById.get(id) ?? '').filter(Boolean),
-        header: 'Area',
+        accessorFn: (u) => (u.assigned_location_ids ?? []).map((id) => areaNameById.get(id) ?? '').filter(Boolean),
+        header: t('admin:users.columnArea'),
         filterFn: enumArrayFilterFn as FilterFn<User>,
         meta: {
-          label: 'Area',
+          label: t('admin:users.columnArea'),
           filterVariant: 'enum',
           filterOptions: areaFilterOptions,
         },
@@ -214,27 +255,13 @@ export default function UsersPage() {
             <button
               type="button"
               onClick={() => setAreasSheetUser({ id: u.id, full_name: u.full_name })}
-              aria-label={t('admin:areas.viewAssignedAreasAria', { count: count, name: u.full_name })}
+              aria-label={t('admin:locations.viewAssignedAreasAria', { count: count, name: u.full_name })}
               className="inline-flex items-center gap-1.5 px-2.5 py-1.5 border-2 border-nb-black rounded-nb-base bg-nb-white text-nb-body-sm font-bold shadow-nb-xs hover:shadow-nb-sm active:shadow-none transition-shadow duration-100"
             >
               <MapPin className="w-3.5 h-3.5" aria-hidden="true" />
               {t('admin:users.areaCount', { count })}
             </button>
           );
-        },
-      },
-      {
-        id: 'shift',
-        accessorFn: (u) => (u.shift_definition_id ? shiftNameById.get(u.shift_definition_id) ?? '' : ''),
-        header: t('admin:users.columnShift'),
-        meta: {
-          label: t('admin:users.columnShift'),
-          filterVariant: 'enum',
-          filterOptions: shiftFilterOptions,
-        },
-        cell: ({ row }) => {
-          const id = row.original.shift_definition_id;
-          return <span className="text-nb-body-sm">{id ? shiftNameById.get(id) ?? '—' : '—'}</span>;
         },
       },
       {
@@ -255,7 +282,9 @@ export default function UsersPage() {
               {t('admin:users.statusYes')}
             </StatusPill>
           ) : (
-            <span className="text-nb-body-sm text-nb-gray-600">{t('admin:users.statusNo')}</span>
+            <StatusPill tone="neutral" dot>
+              {t('admin:users.statusNo')}
+            </StatusPill>
           ),
       },
       {
@@ -328,14 +357,35 @@ export default function UsersPage() {
     ],
     [
       actorName,
-      shiftNameById,
-      rayonNameById,
+      districtNameById,
       t,
-      rayonFilterOptions,
-      shiftFilterOptions,
+      districtFilterOptions,
+      regionNameById,
+      regionFilterOptions,
+      roleFilterOptions,
+      roleColorByCode,
       areaNameById,
       areaFilterOptions,
     ]
+  );
+
+  /** Toggle a user's active flag, surfacing both outcomes. */
+  const handleToggleActive = useCallback(
+    async (u: User) => {
+      try {
+        if (u.is_active) {
+          await deactivateUser.mutateAsync(u.id);
+          toast.success(t('admin:shared.successDeactivated', { name: u.full_name }));
+        } else {
+          await activateUser.mutateAsync(u.id);
+          toast.success(t('admin:shared.successActivated', { name: u.full_name }));
+        }
+        refetch();
+      } catch (err: unknown) {
+        toast.error(getErrorMessage(err));
+      }
+    },
+    [activateUser, deactivateUser, refetch, t]
   );
 
   const rowActions = useCallback(
@@ -371,7 +421,9 @@ export default function UsersPage() {
         label: u.is_active ? t('admin:users.actionDeactivate') : t('admin:users.actionActivate'),
         icon: Power,
         hidden: !canManage,
-        onClick: () => (u.is_active ? deactivateUser.mutate(u.id) : activateUser.mutate(u.id)),
+        // Same reasoning as the districts/lokasi toggle: `mutate` reported
+        // neither success nor refusal, so the row just sat there.
+        onClick: () => void handleToggleActive(u),
       },
       {
         key: 'delete',
@@ -382,7 +434,7 @@ export default function UsersPage() {
         onClick: () => setUserToDelete(u),
       },
     ],
-    [canManage, deactivateUser, activateUser, t]
+    [canManage, handleToggleActive, t]
   );
 
   return (
@@ -399,19 +451,14 @@ export default function UsersPage() {
         getRowId={(u) => u.id}
         searchPlaceholder={t('admin:users.searchPlaceholder')}
         rowActions={rowActions}
-        actions={
-          canManage ? (
-            <Button
-              onClick={() => {
-                setEditingUser(null);
-                setFormOpen(true);
-              }}
-              leftIcon={<Plus className="h-5 w-5" />}
-            >
-              {t('admin:users.buttonAdd')}
-            </Button>
-          ) : undefined
-        }
+        createAction={{
+          label: t('admin:users.buttonAdd'),
+          hidden: !canManage,
+          onClick: () => {
+            setEditingUser(null);
+            setFormOpen(true);
+          },
+        }}
         emptyTitle={t('admin:users.emptyTitle')}
         emptyDescription={
           canManage ? t('admin:users.emptyDescription') : undefined

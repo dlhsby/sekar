@@ -2,17 +2,24 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan } from 'typeorm';
-import { ConfigService } from '@nestjs/config';
 import { UserTrackingStatus, TrackingStatus } from '../entities/user-tracking-status.entity';
 import { StatusCalculatorService } from './status-calculator.service';
+import { SystemConfigService } from '../../settings/services/system-config.service';
 
 const BATCH_SIZE = 50;
 
 /**
  * StaleStatusSweeperService
  *
- * Runs every 5 minutes and promotes ACTIVE workers whose last_location_at
- * is older than MISSING_THRESHOLD_SECONDS (default 900 s / 15 min) to MISSING.
+ * Runs every 5 minutes and flips ACTIVE workers whose last_location_at is older
+ * than the offline threshold (monitoring.active_max_age_sec, default 600 s /
+ * 10 min — the same value the status calculator uses) to OFFLINE.
+ *
+ * The 5-min sweep interval now sits safely BELOW the 10-min threshold (ADR-050),
+ * so a silent device is caught within ~5 min of crossing it — the backstop lag
+ * the 5.3 collapse briefly introduced (interval == threshold) is resolved. The
+ * calculator still flips a worker the instant any ping arrives; this only nets
+ * devices that go quiet without a clean clock-out.
  *
  * This is a safety net for workers whose devices stop sending pings without
  * going through a clean clock-out — e.g. device battery death, network loss,
@@ -24,19 +31,22 @@ const BATCH_SIZE = 50;
 @Injectable()
 export class StaleStatusSweeperService {
   private readonly logger = new Logger(StaleStatusSweeperService.name);
-  private readonly missingStaleSecs: number;
   private sweepRunning = false;
 
   constructor(
     @InjectRepository(UserTrackingStatus)
     private readonly trackingRepository: Repository<UserTrackingStatus>,
-    private readonly config: ConfigService,
+    private readonly systemConfig: SystemConfigService,
     // Phase 4-3 (§C1 #8): reuse the calculator's recipient-resolution + dedup so
     // workers the sweeper flips directly (bypassing recalculate) still alert
     // korlap + kepala_rayon.
     private readonly statusCalculator: StatusCalculatorService,
-  ) {
-    this.missingStaleSecs = config.get<number>('MISSING_THRESHOLD_SECONDS', 900);
+  ) {}
+
+  /** Resolved at use-time (DB → env → default) so overrides apply without restart.
+   *  Unified with the status calculator's missing threshold (ADR-049). */
+  private get staleSecs(): number {
+    return this.systemConfig.getNumber('monitoring.active_max_age_sec', 600);
   }
 
   @Cron('*/5 * * * *')
@@ -54,7 +64,7 @@ export class StaleStatusSweeperService {
   }
 
   private async doSweep(): Promise<void> {
-    const cutoff = new Date(Date.now() - this.missingStaleSecs * 1000);
+    const cutoff = new Date(Date.now() - this.staleSecs * 1000);
     let total = 0;
 
     while (true) {
@@ -70,7 +80,7 @@ export class StaleStatusSweeperService {
 
       const now = new Date();
       for (const record of stale) {
-        record.status = TrackingStatus.MISSING;
+        record.status = TrackingStatus.OFFLINE;
         record.updated_at = now;
       }
 
@@ -84,8 +94,8 @@ export class StaleStatusSweeperService {
       for (const record of stale) {
         void this.statusCalculator.notifyMissingWorker(
           record.user_id,
-          record.area_id,
-          record.rayon_id,
+          record.location_id,
+          record.district_id,
         );
       }
 

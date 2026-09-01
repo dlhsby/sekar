@@ -23,10 +23,12 @@ import { ConnectivityBanner } from './src/components/common/ConnectivityBanner';
 import fcmService from './src/services/notifications/fcmService';
 import { NBToastProvider } from './src/components/nb';
 import { ErrorBoundary } from './src/components/common';
+import { MockLocationBlocker } from './src/components/integrity/MockLocationBlocker';
 import { locationTracker } from './src/services/location';
 import { useAppSelector, useAppDispatch } from './src/store/hooks';
 import './src/i18n/config'; // initialize i18next (side effect)
 import { bootstrapLanguage, applyLanguage, normalizeLanguage } from './src/i18n/language';
+import { useSessionExpiry } from './src/hooks/useSessionExpiry';
 
 /**
  * Inner App component that initializes services after providers are set up
@@ -35,6 +37,10 @@ function AppContent(): React.JSX.Element {
   const { isAuthenticated, isRestoring } = useAppSelector((state) => state.auth);
   const preferredLanguage = useAppSelector((state) => state.auth.user?.preferred_language);
   const dispatch = useAppDispatch();
+
+  // A session the server has stopped accepting must actually sign the worker
+  // out, rather than leaving them inside the app with dead credentials.
+  useSessionExpiry();
 
   // Hydrate the persisted UI language from AsyncStorage on startup.
   useEffect(() => {
@@ -139,6 +145,10 @@ function AppContent(): React.JSX.Element {
       <RootNavigator />
       {/* Global toast renderer — replaces ad-hoc Alert/inline NBAlert usage. */}
       <NBToastProvider />
+      {/* Renders nothing unless a mock-location provider is detected, then
+          takes over the whole app until it is turned off. Mounted last so its
+          modal sits above the navigator and the toasts. */}
+      <MockLocationBlocker />
     </AuthProvider>
   );
 }

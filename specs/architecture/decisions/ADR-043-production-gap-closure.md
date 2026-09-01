@@ -23,7 +23,7 @@ Approaching release, the project owner explicitly flagged doubt about four produ
 
 The original Phase 4 README (March 12, 2026) made assumptions about each of these (e.g., "FCM_ENABLED=false → set to true"; "Redis not installed") that were already stale by May 2026 because Phase 3 silently shipped a lot of the infrastructure. The owner wants verified findings, not speculation.
 
-Sub-Phase 4-V (Production-Readiness Gap Audit) runs each gap as a staging-build verification with explicit pass/fail criteria. The output of that audit lands in `specs/phases/phase-4-production-readiness/status_reviews.md § Gap Audit`. This ADR records the **decision framework** the audit feeds into, the **expected verdict** for each gap based on current code-survey evidence, and **what we will do** about each verdict.
+Sub-Phase 4-V (Production-Readiness Gap Audit) runs each gap as a staging-build verification with explicit pass/fail criteria. The output of that audit lands in history/CHANGELOG.md § Gap Audit`. This ADR records the **decision framework** the audit feeds into, the **expected verdict** for each gap based on current code-survey evidence, and **what we will do** about each verdict.
 
 ## Decision
 
@@ -101,12 +101,12 @@ Future migration path: if FCM retry volume grows to require partitioned consumer
 
 ## Implementation
 
-Phase 4 Sub-Phase 4-V (audit), then sub-phases 4-2 / 4-3 / 4-5 carry the resulting work. See [`status_reviews.md § Gap Audit`](../../phases/phase-4-production-readiness/status_reviews.md#gap-audit) for the running findings.
+Phase 4 Sub-Phase 4-V (audit), then sub-phases 4-2 / 4-3 / 4-5 carry the resulting work. See [`status_reviews.md § Gap Audit`](../../history/CHANGELOG.md) for the running findings.
 
 ## References
 
 - ADR-016 — Redis for WebSocket scaling (parent infra)
 - ADR-019 — Offline connectivity model (Gap 1)
-- `specs/phases/phase-4-production-readiness/README.md § 4-V` — audit scope
-- `specs/phases/phase-4-production-readiness/backend.md § R2` — BullMQ implementation
-- `specs/phases/phase-4-production-readiness/infrastructure.md § I1` — BullMQ on existing Redis
+- history/CHANGELOG.md § 4-V` — audit scope
+- history/CHANGELOG.md § R2` — BullMQ implementation
+- history/CHANGELOG.md § I1` — BullMQ on existing Redis

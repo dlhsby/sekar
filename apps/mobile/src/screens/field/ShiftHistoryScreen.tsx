@@ -22,6 +22,7 @@ import {
   nbShadows,
   nbBorders,
 } from '../../constants/nbTokens';
+import { screenContentGrow } from '../../constants/layout';
 import type { CurrentShiftResponse } from '../../types/api.types';
 import type { Shift } from '../../types/models.types';
 
@@ -265,9 +266,9 @@ function ShiftRow({
         <NBText variant="body" color="black" style={styles.shiftRowTitle} numberOfLines={1}>
           {shift.area?.name ?? t('schedules:shiftHistory.unknownArea')}
         </NBText>
-        {shift.area?.areaType?.name ? (
+        {shift.area?.locationType?.name ? (
           <NBText variant="body-sm" color="gray500" style={styles.shiftRowAreaType}>
-            {shift.area.areaType.name}
+            {shift.area.locationType.name}
           </NBText>
         ) : null}
 
@@ -318,7 +319,7 @@ function ShiftRow({
               style={styles.shiftTimeIcon}
             />
             <NBText variant="mono-sm" color="gray600" style={styles.shiftTimeLabel}>{t('schedules:shiftHistory.duration')}</NBText>
-            <NBText variant="body-sm" color="gray400" style={styles.invisible}>·</NBText>
+            <NBText variant="body-sm" color="gray500" style={styles.invisible}>·</NBText>
             <NBText variant="body-sm" color="successDark" style={styles.semibold}>
               {dur.formatted}
             </NBText>
@@ -509,7 +510,7 @@ export function ShiftHistoryScreen(): React.JSX.Element {
                 </View>
               </ScrollView>
             ) : (
-              <NBText variant="body-sm" color="gray400" style={styles.filterBarPlaceholder}>{t('schedules:shiftHistory.allShifts')}</NBText>
+              <NBText variant="body-sm" color="gray500" style={styles.filterBarPlaceholder}>{t('schedules:shiftHistory.allShifts')}</NBText>
             )}
             {isFiltered && (
               <TouchableOpacity
@@ -724,12 +725,7 @@ const styles = StyleSheet.create({
   },
 
   // List
-  listContent: {
-    paddingHorizontal: nbSpacing.md,
-    paddingTop: nbSpacing.sm,
-    paddingBottom: nbSpacing.xl,
-    flexGrow: 1,
-  },
+  listContent: {...screenContentGrow, paddingBottom: nbSpacing.xl},
 
   // Month header
   dateHeader: {

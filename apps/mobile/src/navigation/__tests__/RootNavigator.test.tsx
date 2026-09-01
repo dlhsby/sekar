@@ -234,14 +234,14 @@ describe('RootNavigator', () => {
       expect(await screen.findByTestId('main-navigator')).toBeTruthy();
     });
 
-    it('should render MainNavigator for admin_data role', async () => {
+    it('should render MainNavigator for admin_rayon role', async () => {
       const store = createTestStore({
         auth: {
           user: {
             id: '8',
-            username: 'admin_data1',
+            username: 'admin_rayon1',
             full_name: 'Test Admin Data',
-            role: 'admin_data',
+            role: 'admin_rayon',
           },
           assignedArea: null,
           isAuthenticated: true,
@@ -284,14 +284,14 @@ describe('RootNavigator', () => {
       expect(await screen.findByTestId('main-navigator')).toBeTruthy();
     });
 
-    it('should render MainNavigator for top_management role', async () => {
+    it('should render MainNavigator for management role', async () => {
       const store = createTestStore({
         auth: {
           user: {
             id: '7',
             username: 'topmanager1',
             full_name: 'Test Top Management',
-            role: 'top_management',
+            role: 'management',
           },
           assignedArea: null,
           isAuthenticated: true,

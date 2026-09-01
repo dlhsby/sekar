@@ -25,6 +25,7 @@ import { MenuScreen } from '../screens/menu/MenuScreen';
 import { ClockInOutScreen } from '../screens/field/ClockInOutScreen';
 import { AttendanceListScreen } from '../screens/attendance/AttendanceListScreen';
 import { AttendanceDetailScreen } from '../screens/attendance/AttendanceDetailScreen';
+import { TimeRecordHubScreen } from '../screens/attendance/TimeRecordHubScreen';
 import { ActivitySubmissionScreen } from '../screens/field/ActivitySubmissionScreen';
 import { TasksScreen, ActivitiesScreen } from '../screens/taskActivity';
 import { TaskDetailScreen } from '../screens/field/TaskDetailScreen';
@@ -131,7 +132,6 @@ const headerChrome = { ...NB_HEADER_STYLE, justifyContent: 'center' as const };
 // Profile is a bottom tab (rendered directly in TabNavigator), so it is NOT wrapped
 // here — the header avatar and the tab both resolve to that single ProfileScreen.
 const ShiftHistoryWithHeader = withProfileHeader(ShiftHistoryScreen, i18n.t('profile:menu.shiftHistory'));
-const MyScheduleWithHeader = withProfileHeader(MyScheduleScreen, i18n.t('profile:menu.mySchedule'));
 const SettingsWithHeader   = withProfileHeader(SettingsScreen,   i18n.t('settings:title'));
 const NotificationPreferencesWithHeader = withProfileHeader(
   NotificationPreferencesScreen,
@@ -139,15 +139,20 @@ const NotificationPreferencesWithHeader = withProfileHeader(
 );
 const EditProfileWithHeader = withProfileHeader(EditProfileScreen, i18n.t('profile:menu.editProfile'));
 const DiagnosticsWithHeader = withProfileHeader(DiagnosticsScreen, i18n.t('profile:menu.diagnostics'));
-// Back returns to the tab the bell was tapped from (`origin`), or Home as a
-// fallback. Routing to a fixed tab (rather than a stack pop) also keeps the
-// deep-link round-trip — inbox → detail → back → inbox → back — from looping.
+// Back is a real stack pop, so it plays the inverse of the enter animation
+// (slide_from_right → slides back out to the right). goBack() returns to the tab
+// the bell was tapped from because the tab navigator keeps its own state; the
+// `origin` navigate is only a fallback when the inbox somehow can't pop.
 const NotificationsWithHeader = withProfileHeader(
   NotificationsScreen,
   i18n.t('settings:tabs.notifications'),
   (navigation, route) => {
-    const origin = (route?.params as { origin?: string } | undefined)?.origin;
-    navigation.navigate('Tabs', { screen: origin ?? 'Home' });
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      const origin = (route?.params as { origin?: string } | undefined)?.origin;
+      navigation.navigate('Tabs', { screen: origin ?? 'Home' });
+    }
   },
 );
 
@@ -312,12 +317,17 @@ function TabNavigator(): React.JSX.Element {
       />
 
       {/* Feature screens — reached from the Menu launcher (hidden from the bar) */}
+      <Tab.Screen name="TimeRecordHub" component={TimeRecordHubScreen} options={featureScreen(i18n.t('navigation:screens.timeRecordHub'))} />
       <Tab.Screen name="Attendance" component={AttendanceListScreen} options={featureScreen(i18n.t('navigation:screens.attendance'))} />
       <Tab.Screen name="AttendanceDetail" component={AttendanceDetailScreen} options={featureScreen(i18n.t('navigation:screens.attendanceDetail'))} />
       <Tab.Screen name="Absensi" component={ClockInOutScreen} options={featureScreen(i18n.t('navigation:screens.clockInOut'))} />
       <Tab.Screen name="Lembur" component={OvertimeListScreen} options={featureScreen(i18n.t('menu:tiles.overtime'))} />
       <Tab.Screen name="Tasks" component={TasksScreen} options={featureScreen(i18n.t('menu:tiles.tasks'))} />
       <Tab.Screen name="Activities" component={ActivitiesScreen} options={featureScreen(i18n.t('menu:tiles.activities'))} />
+      {/* Reached from home, Profil and the Menu tile — a hidden feature tab (like
+          the others) so its entry transition matches every other page instead of
+          the profile-cluster slide. */}
+      <Tab.Screen name="MySchedule" component={MyScheduleScreen} options={featureScreen(i18n.t('profile:menu.mySchedule'))} />
       <Tab.Screen name="Monitoring" component={MapDashboardScreen} options={featureScreen(i18n.t('menu:tiles.monitoring'))} />
       <Tab.Screen name="Reports" component={ReportsScreen} options={featureScreen(i18n.t('menu:tiles.reports'))} />
       <Tab.Screen name="Assets" component={AssetListScreen} options={featureScreen(i18n.t('menu:tiles.assets'))} />
@@ -569,11 +579,6 @@ function MainNavigator(): React.JSX.Element {
         options={{ animation: 'slide_from_left' }}
       />
       <MainStack.Screen
-        name="MySchedule"
-        component={MyScheduleWithHeader}
-        options={{ animation: 'slide_from_left' }}
-      />
-      <MainStack.Screen
         name="Settings"
         component={SettingsWithHeader}
         options={{ animation: 'slide_from_left' }}
@@ -588,15 +593,17 @@ function MainNavigator(): React.JSX.Element {
         component={EditProfileWithHeader}
         options={{ animation: 'slide_from_left' }}
       />
-      {/* Notifications inbox — slide-in from the header bell, matching the
-          Profile cluster. Deep-links into tab detail screens via navigate('Tabs', …). */}
+      {/* Notifications inbox — opened from the header bell. Standard push:
+          slides in from the right on open and back out to the right on leave
+          (the inverse), matching the platform default for a forward push.
+          Deep-links into tab detail screens via navigate('Tabs', …). */}
       <MainStack.Screen
         name="Notifications"
         component={NotificationsWithHeader}
         // gestureEnabled:false — the inbox owns its back (header + hardware) so it
         // can return to the origin tab; a raw swipe-pop could reveal a deep-linked
         // detail left underneath and loop. slide-in animation is unaffected.
-        options={{ animation: 'slide_from_left', gestureEnabled: false }}
+        options={{ animation: 'slide_from_right', gestureEnabled: false }}
       />
       <MainStack.Screen
         name="Diagnostics"

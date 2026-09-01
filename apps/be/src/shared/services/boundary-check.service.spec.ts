@@ -22,17 +22,21 @@ describe('BoundaryCheckService', () => {
       boundary_polygon: { type: 'Polygon', coordinates: [SQUARE_RING] },
       gps_lat: -7.2895,
       gps_lng: 112.7395,
-      radius_meters: 150,
       ...overrides,
     };
   }
 
-  function makeRadiusArea(overrides: Partial<BoundaryArea> = {}): BoundaryArea {
+  /**
+   * A lokasi with a centre but no ring. The radius arm is retired (migration
+   * 17504000000000 turned every radius-only lokasi into a real polygon), so this
+   * is now the "un-mapped lokasi" shape: geofencing can't contain it, but its
+   * centre still answers distance-to-nearest.
+   */
+  function makeCentreOnlyArea(overrides: Partial<BoundaryArea> = {}): BoundaryArea {
     return {
       boundary_polygon: null,
       gps_lat: -7.2895,
       gps_lng: 112.7395,
-      radius_meters: 100,
       ...overrides,
     };
   }
@@ -84,21 +88,22 @@ describe('BoundaryCheckService', () => {
       expect(service.isWithinAreaBoundary(OUTSIDE.lat, OUTSIDE.lng, area)).toBe(false);
     });
 
-    it('should fall back to the radius check when no polygon exists', () => {
-      const area = makeRadiusArea();
-      expect(service.isWithinAreaBoundary(INSIDE.lat, INSIDE.lng, area)).toBe(true);
-      expect(service.isWithinAreaBoundary(OUTSIDE.lat, OUTSIDE.lng, area)).toBe(false);
-    });
-
-    it('should allow the point when the area defines no boundary at all', () => {
-      const area: BoundaryArea = { boundary_polygon: null };
-      expect(service.isWithinAreaBoundary(OUTSIDE.lat, OUTSIDE.lng, area)).toBe(true);
+    it('fails OPEN for a lokasi with no ring, centre or not', () => {
+      // Deliberate: an un-mapped lokasi must not mark everyone standing in it as
+      // outside-area. A centre point alone no longer contains anything — the
+      // radius arm that used to make it do so is retired.
+      expect(service.isWithinAreaBoundary(OUTSIDE.lat, OUTSIDE.lng, makeCentreOnlyArea())).toBe(
+        true,
+      );
+      expect(
+        service.isWithinAreaBoundary(OUTSIDE.lat, OUTSIDE.lng, { boundary_polygon: null }),
+      ).toBe(true);
     });
   });
 
   describe('findContainingArea', () => {
     it('should return the first area containing the point', () => {
-      const far = makeRadiusArea({ gps_lat: -7.5, gps_lng: 112.5 });
+      const far = makeCentreOnlyArea({ gps_lat: -7.5, gps_lng: 112.5 });
       const hit = makePolygonArea();
       expect(service.findContainingArea(INSIDE.lat, INSIDE.lng, [far, hit])).toBe(hit);
     });
@@ -111,6 +116,13 @@ describe('BoundaryCheckService', () => {
       const boundaryless: BoundaryArea = { boundary_polygon: null };
       expect(service.findContainingArea(OUTSIDE.lat, OUTSIDE.lng, [boundaryless])).toBeNull();
     });
+
+    it('skips a centre-only lokasi rather than claiming it contains the point', () => {
+      // findContainingArea and isWithinAreaBoundary default OPPOSITE ways on a
+      // ring-less lokasi, on purpose: "which area am I in?" must not invent an
+      // answer, while "may I clock in here?" must not punish an un-mapped lokasi.
+      expect(service.findContainingArea(INSIDE.lat, INSIDE.lng, [makeCentreOnlyArea()])).toBeNull();
+    });
   });
 
   describe('validateClockLocation', () => {
@@ -121,7 +133,7 @@ describe('BoundaryCheckService', () => {
     });
 
     it('should be invalid with nearest area and distance when outside', () => {
-      const area = makeRadiusArea();
+      const area = makeCentreOnlyArea();
       const result = service.validateClockLocation(OUTSIDE.lat, OUTSIDE.lng, [area]);
       expect(result.valid).toBe(false);
       expect(result.area).toBe(area);

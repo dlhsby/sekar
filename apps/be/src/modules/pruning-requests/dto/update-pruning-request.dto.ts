@@ -14,7 +14,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
  * - workflow timestamps (submittedAt, reviewedAt, etc.)
  * - reference code, submitted by, etc. (audit)
  *
- * Used by admin_data, kepala_rayon, top_management, admin_system, and superadmin.
+ * Used by admin_rayon, kepala_rayon, management, admin_system, and superadmin.
  */
 export class UpdatePruningRequestDto {
   @ApiPropertyOptional({

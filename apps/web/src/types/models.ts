@@ -11,9 +11,9 @@ export type UserRole =
   | 'satgas'
   | 'linmas'
   | 'korlap'
-  | 'admin_data'
+  | 'admin_rayon'
   | 'kepala_rayon'
-  | 'top_management'
+  | 'management'
   | 'admin_system'
   | 'superadmin'
   /** Phase 3 ADR-033 — external sub-district staff; no dashboard access */
@@ -30,17 +30,18 @@ export interface User extends Record<string, unknown> {
   role: UserRole;
   phone_number?: string;
   profile_picture_url?: string;
-  rayon_id?: string;
-  rayon?: Rayon;
-  area_id?: string;
-  area?: Area;
+  district_id?: string;
+  district?: District;
+  region_id?: string;
+  location_id?: string;
+  location?: Location;
   shift_definition_id?: string;
   shift_definition?: ShiftDefinition;
-  user_areas?: Array<{ id: string; area_id: string; area: Area }>;
-  /** Count of permanent area assignments (from the users-list query) — grid Area column. */
-  assigned_area_count?: number;
-  /** IDs of permanent area assignments (from the users-list query) — grid Area column filter. */
-  assigned_area_ids?: string[];
+  user_locations?: Array<{ id: string; location_id: string; location: Location }>;
+  /** Count of permanent location assignments (from the users-list query) — grid Location column. */
+  assigned_location_count?: number;
+  /** IDs of permanent location assignments (from the users-list query) — grid Location column filter. */
+  assigned_location_ids?: string[];
   password_must_change?: boolean;
   is_active?: boolean;
   created_at: string;
@@ -55,15 +56,27 @@ export interface User extends Record<string, unknown> {
 /**
  * Rayon Interface
  */
-export interface Rayon {
+/** The tier a district's staffing requirements attach to (region = kawasan). */
+export type StaffingLevel = 'region' | 'location' | 'district';
+
+export interface District {
   id: string;
   name: string;
-  color?: string | null;
   description?: string | null;
   center_lat?: number | string | null;
   center_lng?: number | string | null;
   /** Official KMZ "Batas Wilayah Kerja Rayon" outline (Polygon or MultiPolygon). */
   boundary_polygon?: GeoJSON.Polygon | GeoJSON.MultiPolygon | null;
+  // Per-level map styling (ADR-045).
+  border_color?: string | null;
+  fill_color?: string | null;
+  border_opacity?: number | null;
+  fill_opacity?: number | null;
+  marker_icon?: string | null;
+  /** Tier its staffing requirements attach to (defaults to region = kawasan). */
+  staffing_level?: StaffingLevel;
+  /** Reversible soft-retire: hidden from pickers/filters, kept and reactivatable. */
+  is_active: boolean;
   created_at: string;
   updated_at: string;
   /** Actor audit — ids of the users who created/updated/soft-deleted the row. */
@@ -75,8 +88,8 @@ export interface Rayon {
 /**
  * Rayon Statistics Interface
  */
-export interface RayonStats {
-  rayon_id: string;
+export interface DistrictStats {
+  district_id: string;
   total_areas: number;
   total_users: number;
   active_users: number;
@@ -89,6 +102,10 @@ export interface RayonStats {
 export interface UserFilters {
   search?: string;
   role?: UserRole;
+  /** Filter to any of these role codes (server-side, comma-joined). */
+  roles?: string[];
+  /** true → active accounts only; omit → both (the admin grid needs both). */
+  is_active?: boolean;
   page?: number;
   limit?: number;
 }
@@ -101,12 +118,15 @@ export interface CreateUserDto {
   full_name: string;
   /** Omit → backend auto-generates a one-time temp password (returned once). */
   password?: string;
-  role: UserRole;
+  /** Role code — any code from the data-driven roles catalog (ADR-044). */
+  role: string;
   phone_number?: string;
-  /** `null` explicitly clears the field (roles without a rayon scope). */
-  rayon_id?: string | null;
-  /** Permanent area assignments (multi); first becomes the primary area. */
-  area_ids?: string[];
+  /** `null` explicitly clears the field (roles without a district scope). */
+  district_id?: string | null;
+  /** Region (Kawasan) for region-scoped roles (korlap). `null` clears it. */
+  region_id?: string | null;
+  /** Permanent location assignments (multi); first becomes the primary location. */
+  location_ids?: string[];
   /** `null` explicitly clears the field (roles without a shift scope). */
   shift_definition_id?: string | null;
 }
@@ -122,11 +142,13 @@ export interface CreatedUser extends User {
 export interface UpdateUserDto {
   username?: string;
   full_name?: string;
-  role?: UserRole;
+  role?: string;
   phone_number?: string;
-  /** `null` explicitly clears the field (roles without a rayon scope). */
-  rayon_id?: string | null;
-  area_ids?: string[];
+  /** `null` explicitly clears the field (roles without a district scope). */
+  district_id?: string | null;
+  /** Region (Kawasan) for region-scoped roles (korlap). `null` clears it. */
+  region_id?: string | null;
+  location_ids?: string[];
   /** `null` explicitly clears the field (roles without a shift scope). */
   shift_definition_id?: string | null;
   is_active?: boolean;
@@ -146,9 +168,9 @@ export interface PaginatedResponse<T> {
 }
 
 /**
- * Area Type Interface
+ * Location Type Interface
  */
-export interface AreaType {
+export interface LocationType {
   id: string;
   name: string;
   code: string;
@@ -159,23 +181,29 @@ export interface AreaType {
 }
 
 /**
- * Area Interface
+ * Location Interface
  */
-export interface Area extends Record<string, unknown> {
+export interface Location extends Record<string, unknown> {
   id: string;
   name: string;
-  rayon_id: string;
-  rayon?: Rayon;
-  area_type_id: string;
-  areaType?: AreaType;
+  district_id: string;
+  district?: District;
+  location_type_id: string;
+  locationType?: LocationType;
   gps_lat?: number | string;
   gps_lng?: number | string;
-  radius_meters?: number;
   // Stored boundaries can be Polygon OR MultiPolygon (KMZ/shapefile imports).
   boundary_polygon?: GeoJSON.Polygon | GeoJSON.MultiPolygon;
   coverage_area?: number;
   address?: string | null;
   is_active?: boolean;
+  // Region (Kawasan) parent + per-level map styling (ADR-045).
+  region_id?: string | null;
+  border_color?: string | null;
+  fill_color?: string | null;
+  border_opacity?: number | null;
+  fill_opacity?: number | null;
+  marker_icon?: string | null;
   created_at: string;
   updated_at: string;
   /** Actor audit — ids of the users who created/updated/soft-deleted the row. */
@@ -184,46 +212,55 @@ export interface Area extends Record<string, unknown> {
   deleted_by?: string;
 }
 
+/** Per-level map styling fields (ADR-045), shared by area/district DTOs. */
+export interface MapStyleFieldsDto {
+  border_color?: string | null;
+  fill_color?: string | null;
+  border_opacity?: number | null;
+  fill_opacity?: number | null;
+  marker_icon?: string | null;
+}
+
 /**
- * Area Filter Options
+ * Location Filter Options
  */
-export interface AreaFilters {
+export interface LocationFilters {
   search?: string;
-  rayon_id?: string;
-  area_type_id?: string;
+  district_id?: string;
+  location_type_id?: string;
   page?: number;
   limit?: number;
-  /** Also return deactivated areas — admin grid + name-resolution maps that
-   *  must still resolve a since-deactivated area's name. */
+  /** Also return deactivated locations — admin grid + name-resolution maps that
+   *  must still resolve a since-deactivated location's name. */
   include_inactive?: boolean;
 }
 
 /**
- * Create Area DTO
+ * Create Location DTO
  */
-export interface CreateAreaDto {
+export interface CreateLocationDto extends MapStyleFieldsDto {
   name: string;
-  rayon_id: string;
-  area_type_id: string;
+  district_id: string;
+  location_type_id: string;
   gps_lat?: number;
   gps_lng?: number;
-  radius_meters?: number;
   boundary_polygon?: GeoJSON.Polygon | GeoJSON.MultiPolygon;
   address?: string | null;
+  region_id?: string | null;
 }
 
 /**
- * Update Area DTO
+ * Update Location DTO
  */
-export interface UpdateAreaDto {
+export interface UpdateLocationDto extends MapStyleFieldsDto {
   name?: string;
-  rayon_id?: string;
-  area_type_id?: string;
+  district_id?: string;
+  location_type_id?: string;
   gps_lat?: number;
   gps_lng?: number;
-  radius_meters?: number;
   boundary_polygon?: GeoJSON.Polygon | GeoJSON.MultiPolygon;
   address?: string | null;
+  region_id?: string | null;
 }
 
 /**
@@ -232,11 +269,16 @@ export interface UpdateAreaDto {
 export interface ShiftDefinition {
   id: string;
   name: string;
-  code: string;
   start_time: string;
   end_time: string;
   crosses_midnight: boolean;
   is_active: boolean;
+  // ADR-055 attribution window (minutes) — configurable per shift.
+  early_window_min?: number;
+  cutoff_grace_min?: number;
+  // ADR-055 reminder timing (minutes). start default 15; end null = off.
+  start_reminder_min?: number;
+  end_reminder_min?: number | null;
   created_at: string;
 }
 
@@ -247,8 +289,8 @@ export interface Schedule extends Record<string, unknown> {
   id: string;
   user_id: string;
   user?: User;
-  area_id: string;
-  area?: Area;
+  location_id: string;
+  location?: Location;
   shift_definition_id: string;
   shift_definition?: ShiftDefinition;
   effective_date: string;
@@ -258,15 +300,12 @@ export interface Schedule extends Record<string, unknown> {
   updated_at: string;
 }
 
-/** @deprecated Use Schedule instead */
-export type WorkerSchedule = Schedule;
-
 /**
  * Schedule Filter Options
  */
 export interface ScheduleFilters {
   search?: string;
-  area_id?: string;
+  location_id?: string;
   shift_definition_id?: string;
   date_from?: string;
   date_to?: string;
@@ -279,7 +318,7 @@ export interface ScheduleFilters {
  */
 export interface CreateScheduleDto {
   user_id: string;
-  area_id: string;
+  location_id: string;
   shift_definition_id: string;
   effective_date: string;
   end_date?: string;
@@ -290,7 +329,7 @@ export interface CreateScheduleDto {
  */
 export interface UpdateScheduleDto {
   user_id?: string;
-  area_id?: string;
+  location_id?: string;
   shift_definition_id?: string;
   effective_date?: string;
   end_date?: string;
@@ -328,7 +367,7 @@ export interface Activity extends Record<string, unknown> {
     role: UserRole;
   };
   shift_id: string;
-  area_id: string;
+  location_id: string;
   area?: {
     id: string;
     name: string;
@@ -341,6 +380,8 @@ export interface Activity extends Record<string, unknown> {
   };
   description: string;
   photo_urls: string[];
+  /** Photo count on LIST responses (photo_urls is empty there; photos load on detail). */
+  photo_count?: number;
   gps_lat?: number;
   gps_lng?: number;
   status: ActivityStatus;
@@ -356,10 +397,10 @@ export interface Activity extends Record<string, unknown> {
  */
 export interface ActivityFilters {
   activity_type_id?: string;
-  area_id?: string;
+  location_id?: string;
   user_id?: string;
   status?: ActivityStatus;
-  rayon_id?: string;
+  district_id?: string;
   from_date?: string;
   to_date?: string;
   sort_by?: string;
@@ -404,7 +445,7 @@ export interface Overtime extends Record<string, unknown> {
     full_name: string;
     role: UserRole;
   };
-  area_id: string;
+  location_id: string;
   area?: {
     id: string;
     name: string;
@@ -438,8 +479,8 @@ export interface Overtime extends Record<string, unknown> {
  */
 export interface OvertimeFilters {
   status?: OvertimeStatus;
-  area_id?: string;
-  rayon_id?: string;
+  location_id?: string;
+  district_id?: string;
   user_id?: string;
   from_date?: string;
   to_date?: string;

@@ -203,8 +203,8 @@ export class TaskStatusTransitionsService {
       ...pick(parent, [
         'title',
         'description',
-        'area_id',
-        'rayon_id',
+        'location_id',
+        'district_id',
         'taskType',
         'assigned_to',
         'deadline',

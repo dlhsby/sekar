@@ -23,10 +23,10 @@ const user = (id: string, status: LiveUser['status']): LiveUser => ({
   role: 'satgas',
   phone: null,
   status,
-  area_id: 'a1',
-  area_name: 'Taman',
-  rayon_id: 'r1',
-  rayon_name: 'Rayon 1',
+  location_id: 'a1',
+  location_name: 'Taman',
+  district_id: 'r1',
+  district_name: 'Rayon 1',
   latitude: 0,
   longitude: 0,
   accuracy: null,
@@ -49,7 +49,7 @@ const group: PersonnelGroup = {
     user('1', 'active'),
     user('2', 'active'),
     user('3', 'active'),
-    user('4', 'inactive'),
+    user('4', 'absent'),
   ],
 };
 

@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { isValid, parse } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { FormInput, FormCombobox, Textarea, DateTimePicker } from '@/components/ui';
-import { useUsers } from '@/lib/api/users';
+import { useUsers, useUserLookup } from '@/lib/api/users';
 import { useActivityTypes } from '@/lib/api/activity-types';
 import type { Overtime } from '@/types/models';
 
@@ -81,8 +81,10 @@ export function OvertimeForm({
     [t],
   );
 
-  const { data: usersResponse, isLoading: loadingUsers } = useUsers({ limit: 1000 });
-  const usersData = usersResponse?.data ?? [];
+  // Lookup, not the paginated list: this reads a name, and `useUsers({ limit: 1000 })`
+  // pages the full user entity twice — 928 KB.
+  const { data: users = [], isLoading: loadingUsers } = useUserLookup();
+  const usersData = users ?? [];
   const { data: activityTypesData, isLoading: loadingActivityTypes } = useActivityTypes();
 
   const {

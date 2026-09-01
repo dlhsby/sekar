@@ -22,8 +22,9 @@ import { MeResponseDto } from './dto/me-response.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { GetUser } from './decorators/get-user.decorator';
 import { User } from '../users/entities/user.entity';
-import { Area } from '../areas/entities/area.entity';
-import { UserAreasService } from '../user-areas/user-areas.service';
+import { Location } from '../locations/entities/location.entity';
+import { UserLocationsService } from '../../modules/user-locations/user-locations.service';
+import { RolePermissionsService } from '../rbac/services/role-permissions.service';
 
 /**
  * Authentication Controller
@@ -36,9 +37,10 @@ import { UserAreasService } from '../user-areas/user-areas.service';
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    @InjectRepository(Area)
-    private readonly areaRepository: Repository<Area>,
-    private readonly userAreasService: UserAreasService,
+    @InjectRepository(Location)
+    private readonly areaRepository: Repository<Location>,
+    private readonly userAreasService: UserLocationsService,
+    private readonly rolePermissions: RolePermissionsService,
   ) {}
 
   /**
@@ -53,10 +55,14 @@ export class AuthController {
    */
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  // Env-driven so dev/e2e can raise or disable the limit (default 5/min for prod safety).
+  // Static fallback only — AppThrottlerGuard resolves the effective login limit at
+  // request time as `ratelimit.login_per_min` (DB Setting → env RATE_LIMIT_LOGIN_PER_MIN →
+  // default 5), so operators tune it live in System Settings without a restart (ADR-049).
+  // These env keys MUST match the catalog envKeys so the static default and the guard's
+  // env fallback resolve to the same value.
   @Throttle({
     default: {
-      limit: parseInt(process.env.AUTH_LOGIN_THROTTLE_LIMIT || '5', 10),
+      limit: parseInt(process.env.RATE_LIMIT_LOGIN_PER_MIN || '5', 10),
       ttl: parseInt(process.env.AUTH_LOGIN_THROTTLE_TTL || '60000', 10),
     },
   })
@@ -288,6 +294,11 @@ export class AuthController {
     },
   })
   async getMe(@GetUser() user: User): Promise<MeResponseDto> {
+    const [permissions, monitoringScope, assignedLocationIds] = await Promise.all([
+      this.rolePermissions.getRolePermissionKeys(user.role),
+      this.rolePermissions.getMonitoringScope(user.role),
+      this.userAreasService.getPermanentLocationIds(user.id),
+    ]);
     const userData: MeResponseDto = {
       id: user.id,
       username: user.username,
@@ -295,26 +306,33 @@ export class AuthController {
       phone_number: user.phone_number || null,
       profile_picture_url: user.profile_picture_url || null,
       role: user.role,
-      area_id: user.area_id || null,
-      rayon_id: user.rayon_id || null,
+      location_id: user.location_id || null,
+      district_id: user.district_id || null,
+      // Region (Kawasan) + monitoring scope drive where the caller lands and what
+      // they may view on the map (ADR-044/046). `assigned_location_ids` is the
+      // STATIC fallback for korlap coverage; live coverage is occurrence-derived.
+      region_id: user.region_id || null,
+      monitoring_scope: monitoringScope,
+      assigned_location_ids: assignedLocationIds,
       kecamatan_id: user.kecamatan_id || null,
       kecamatan_name: user.kecamatan_name || null,
       created_at: user.created_at,
       password_must_change: user.password_must_change ?? false,
+      permissions,
     };
 
     // Include area info for field roles
-    // Phase 2C: Check both User.area_id (korlap permanent assignment)
+    // Phase 2C: Check both User.location_id (korlap permanent assignment)
     // and active Schedule (satgas/linmas date-based assignment)
-    if (user.area_id) {
+    if (user.location_id) {
       // Korlap with permanent area assignment
-      userData.area_id = user.area_id;
-      userData.rayon_id = user.rayon_id ?? null;
+      userData.location_id = user.location_id;
+      userData.district_id = user.district_id ?? null;
 
       // Fetch full area details for clock-in/out
       const area = await this.areaRepository.findOne({
-        where: { id: user.area_id },
-        relations: ['areaType'],
+        where: { id: user.location_id },
+        relations: ['locationType'],
       });
       if (area) {
         userData.assigned_area = {
@@ -322,32 +340,34 @@ export class AuthController {
           name: area.name,
           gps_lat: area.gps_lat,
           gps_lng: area.gps_lng,
-          radius_meters: area.radius_meters,
           boundary_polygon: area.boundary_polygon || null,
-          area_type: area.areaType ? { id: area.areaType.id, name: area.areaType.name } : null,
+          area_type: area.locationType
+            ? { id: area.locationType.id, name: area.locationType.name }
+            : null,
         };
       }
     } else {
       // Satgas/Linmas: resolve the assigned area from the worker's effective
       // areas (permanent user_areas ∪ task-based). ADR-013 made the user the
       // source of truth, replacing the legacy date-based schedules lookup.
-      const effective = await this.userAreasService.getEffectiveAreas(user.id);
+      const effective = await this.userAreasService.getEffectiveLocations(user.id);
       const primary = effective[0];
       if (primary) {
         const area = await this.areaRepository.findOne({
           where: { id: primary.id },
-          relations: ['areaType'],
+          relations: ['locationType'],
         });
         if (area) {
-          userData.area_id = area.id;
+          userData.location_id = area.id;
           userData.assigned_area = {
             id: area.id,
             name: area.name,
             gps_lat: area.gps_lat,
             gps_lng: area.gps_lng,
-            radius_meters: area.radius_meters,
             boundary_polygon: area.boundary_polygon || null,
-            area_type: area.areaType ? { id: area.areaType.id, name: area.areaType.name } : null,
+            area_type: area.locationType
+              ? { id: area.locationType.id, name: area.locationType.name }
+              : null,
           };
         }
       }

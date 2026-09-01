@@ -1,6 +1,6 @@
 /**
  * GENERATED FILE — DO NOT EDIT.
- * Source of truth: specs/ui-ux/tokens.json
+ * Source of truth: specs/design-system/tokens.json
  * Run `npm run tokens:build` from the repo root to regenerate.
  * CI rejects drift via the `tokens-verify` job (ADR-036).
  */
@@ -77,6 +77,7 @@ export const nbColors = {
   successDark: "#15803D",
   successLight: "#BAFCA2",
   warning: "#E3A018",
+  warningDark: "#8A5A00",
   warningLight: "#FFDB58",
   white: "#FFFFFF",
 } as const;

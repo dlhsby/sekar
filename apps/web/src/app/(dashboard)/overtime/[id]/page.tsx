@@ -16,6 +16,7 @@ import Link from 'next/link';
 import { ArrowLeft, Check, X } from 'lucide-react';
 import { MONITORING_ROLES, OVERTIME_APPROVER_ROLES, hasRole } from '@/lib/constants/roles';
 import { getOvertimeStatusLabels, OVERTIME_STATUS_BADGES } from '@/lib/constants/overtime';
+import { runAction } from '@/lib/hooks/use-action';
 
 interface OvertimeDetailPageProps {
   params: Promise<{ id: string }>;
@@ -68,13 +69,17 @@ export default function OvertimeDetailPage({ params }: OvertimeDetailPageProps) 
   const canApprove = hasRole(user.role, OVERTIME_APPROVER_ROLES) && overtime.status === 'pending';
 
   const handleApprove = async () => {
-    await approveMutation.mutateAsync(overtimeId);
+    await runAction(() => approveMutation.mutateAsync(overtimeId), {
+      success: t('common:messages.approved'),
+    });
     router.push('/overtime');
   };
 
   const handleReject = async () => {
     if (!rejectReason.trim()) return;
-    await rejectMutation.mutateAsync({ id: overtimeId, reason: rejectReason });
+    await runAction(() => rejectMutation.mutateAsync({ id: overtimeId, reason: rejectReason }), {
+      success: t('common:messages.rejected'),
+    });
     router.push('/overtime');
   };
 
@@ -87,7 +92,7 @@ export default function OvertimeDetailPage({ params }: OvertimeDetailPageProps) 
               {t('overtime:detail.breadcrumb')}
             </Link>
           </li>
-          <li className="text-nb-gray-400">/</li>
+          <li className="text-nb-gray-500">/</li>
           <li className="text-nb-gray-600">{t('common:actions.detail')}</li>
         </ol>
       </nav>

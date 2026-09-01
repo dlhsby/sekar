@@ -6,7 +6,6 @@
 import {
   calculateMapRegion,
   filterUsersByArea,
-  getAreaCircles,
   clusterUsers,
   shouldCluster,
   isWorkerInRegion,
@@ -210,62 +209,6 @@ describe('mapUtils', () => {
       const filtered = filterUsersByArea(workers, '1');
 
       expect(filtered).toHaveLength(0);
-    });
-  });
-
-  describe('getAreaCircles', () => {
-    const fullAreas: Area[] = [
-      {
-        id: '1',
-        name: 'Taman Bungkul',
-        area_type_id: '1',
-        gps_lat: -7.2905,
-        gps_lng: 112.7398,
-        radius_meters: 100,
-        address: 'Surabaya',
-        created_at: '2026-01-01T00:00:00.000Z',
-        updated_at: '2026-01-01T00:00:00.000Z',
-      },
-      {
-        id: '2',
-        name: 'Taman Jayengrono',
-        area_type_id: '1',
-        gps_lat: -7.2575,
-        gps_lng: 112.7521,
-        radius_meters: 150,
-        address: 'Surabaya',
-        created_at: '2026-01-01T00:00:00.000Z',
-        updated_at: '2026-01-01T00:00:00.000Z',
-      },
-    ];
-
-    it('should format areas as circle overlays', () => {
-      const circles = getAreaCircles(fullAreas);
-
-      expect(circles).toHaveLength(2);
-      expect(circles[0]).toEqual({
-        center: { latitude: -7.2905, longitude: 112.7398 },
-        radius: 100,
-        key: 'area-1',
-      });
-      expect(circles[1]).toEqual({
-        center: { latitude: -7.2575, longitude: 112.7521 },
-        radius: 150,
-        key: 'area-2',
-      });
-    });
-
-    it('should handle empty area list', () => {
-      const circles = getAreaCircles([]);
-      expect(circles).toHaveLength(0);
-    });
-
-    it('should generate unique keys for each area', () => {
-      const circles = getAreaCircles(fullAreas);
-      const keys = circles.map(c => c.key);
-      const uniqueKeys = new Set(keys);
-
-      expect(uniqueKeys.size).toBe(keys.length);
     });
   });
 

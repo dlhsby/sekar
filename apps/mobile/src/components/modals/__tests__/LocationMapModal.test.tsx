@@ -142,10 +142,10 @@ const POLYGON_AREA = {
   name: 'Taman Bungkul',
 };
 
-const CIRCLE_AREA = {
+/** A lokasi with a centre but no drawn boundary. */
+const CENTRE_ONLY_AREA = {
   gps_lat: -7.2888,
   gps_lng: 112.7378,
-  radius_meters: 150,
   boundary_polygon: null,
   name: 'Taman Kecil',
 };
@@ -245,17 +245,19 @@ describe('LocationMapModal', () => {
       expect(getByTestId('polygon')).toBeTruthy();
     });
 
-    it('renders circle fallback when area has no boundary_polygon', () => {
-      const { getByTestId, queryByTestId } = render(
+    // The circle fallback is retired with `radius_meters`: a lokasi with no ring
+    // draws no boundary, rather than a circle the server does not share.
+    it('draws no boundary when the area has no boundary_polygon', () => {
+      const { queryByTestId } = render(
         <LocationMapModal
           visible
           onClose={onClose}
           location={VALID_LOCATION}
-          area={CIRCLE_AREA}
+          area={CENTRE_ONLY_AREA}
         />,
       );
 
-      expect(getByTestId('circle')).toBeTruthy();
+      expect(queryByTestId('circle')).toBeNull();
       expect(queryByTestId('polygon')).toBeNull();
     });
 

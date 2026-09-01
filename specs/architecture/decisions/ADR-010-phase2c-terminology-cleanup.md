@@ -1,7 +1,7 @@
 # ADR-010: Phase 2C Terminology Cleanup, Schema Redesign & Polygon Geofencing
 
 **Date:** 2026-02-11
-**Status:** Accepted (Backend Implemented Feb 11, 2026)
+**Status:** Accepted (Backend Implemented Feb 11, 2026) — amended by [ADR-045](./ADR-045-four-level-location-hierarchy.md) (four-level hierarchy; leaf entity renamed Area→Location)
 **Deciders:** System Architect, Product Owner
 **Tags:** naming, schema, geofencing, breaking-change
 **Supersedes:** Portions of initial Phase 2C spec (2026-02-10)
@@ -128,11 +128,11 @@ The `report_type` enum (cleaning, planting, maintenance, inspection, task_comple
 ## Implementation
 
 See updated spec documents:
-- [database.md](../../phases/phase-2-c-client-feedback/database.md) — Full migration plan
-- [backend.md](../../phases/phase-2-c-client-feedback/backend.md) — Module/entity/route renames
-- [mobile.md](../../phases/phase-2-c-client-feedback/mobile.md) — Screen/type/API renames
-- [web.md](../../phases/phase-2-c-client-feedback/web.md) — Page/type/API renames
-- [testing.md](../../phases/phase-2-c-client-feedback/testing.md) — Updated test plan
+- [database.md](../../history/CHANGELOG.md) — Full migration plan
+- [backend.md](../../history/CHANGELOG.md) — Module/entity/route renames
+- [mobile.md](../../history/CHANGELOG.md) — Screen/type/API renames
+- [web.md](../../history/CHANGELOG.md) — Page/type/API renames
+- [testing.md](../../history/CHANGELOG.md) — Updated test plan
 
 **Related ADRs:**
 - [ADR-009: Role System Overhaul](./ADR-009-phase2c-role-system-overhaul.md) — Role changes (unchanged)

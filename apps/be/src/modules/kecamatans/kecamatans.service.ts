@@ -10,17 +10,17 @@ export class KecamatansService {
     private readonly repo: Repository<Kecamatan>,
   ) {}
 
-  async findAll(rayonId?: string): Promise<Kecamatan[]> {
+  async findAll(districtId?: string): Promise<Kecamatan[]> {
     const qb = this.repo
       .createQueryBuilder('k')
-      .leftJoinAndSelect('k.rayon', 'rayon')
+      .leftJoinAndSelect('k.district', 'district')
       .orderBy('k.name', 'ASC');
-    if (rayonId) qb.where('k.rayon_id = :rayonId', { rayonId });
+    if (districtId) qb.where('k.district_id = :districtId', { districtId });
     return qb.getMany();
   }
 
   async findOne(id: string): Promise<Kecamatan> {
-    const found = await this.repo.findOne({ where: { id }, relations: ['rayon'] });
+    const found = await this.repo.findOne({ where: { id }, relations: ['district'] });
     if (!found) throw new NotFoundException(`Kecamatan ${id} not found`);
     return found;
   }

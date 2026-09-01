@@ -22,7 +22,7 @@ import { usePruningDraftPersistence, type DraftShape } from './hooks/usePruningD
 import { usePruningGpsCapture } from './hooks/usePruningGpsCapture';
 import { usePruningPhotoManagement } from './hooks/usePruningPhotoManagement';
 import { usePruningSubmitMutation } from './hooks/usePruningSubmitMutation';
-import { usePruningRayons } from './hooks/usePruningRayons';
+import { usePruningDistricts } from './hooks/usePruningDistricts';
 import { usePruningCapacityCalendar } from './hooks/usePruningCapacityCalendar';
 import { usePruningNavigationHandlers } from './hooks/usePruningNavigationHandlers';
 
@@ -38,6 +38,7 @@ import {
   nbColors,
   nbSpacing,
 } from '../../constants/nbTokens';
+import { screenContent } from '../../constants/layout';
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
@@ -47,12 +48,12 @@ export function SubmitScreen(): React.JSX.Element {
   const dispatch = useAppDispatch();
 
   const user = useAppSelector((state) => state.auth.user);
-  const rayonIdInitial = user?.rayon_id ?? '';
+  const districtIdInitial = user?.district_id ?? '';
   const kecamatanNameInitial = user?.kecamatan_name ?? '';
 
   // Compose hooks
   const { formState, formSetters, validate, resetForm } = usePruningSubmitForm(
-    rayonIdInitial,
+    districtIdInitial,
     kecamatanNameInitial,
   );
 
@@ -62,15 +63,15 @@ export function SubmitScreen(): React.JSX.Element {
   const { photos, handlePickFromCamera, handlePickFromGallery, handleRemovePhoto } =
     usePruningPhotoManagement();
 
-  const { rayons } = usePruningRayons();
+  const { districts } = usePruningDistricts();
 
   const { capacityRows, capacityLoading } = usePruningCapacityCalendar(
-    formState.rayonId,
+    formState.districtId,
   );
 
   // Draft persistence
   const formRef = useRef<DraftShape>({
-    rayonId: '',
+    districtId: '',
     kecamatanName: '',
     address: '',
     treeCount: '',
@@ -89,7 +90,7 @@ export function SubmitScreen(): React.JSX.Element {
 
   useEffect(() => {
     formRef.current = {
-      rayonId: formState.rayonId,
+      districtId: formState.districtId,
       kecamatanName: formState.kecamatanName,
       address: formState.address,
       treeCount: formState.treeCount,
@@ -112,7 +113,7 @@ export function SubmitScreen(): React.JSX.Element {
       formRef,
       photosLength: photos.length,
       onRestoreCallback: (draft) => {
-        if (draft.rayonId) formSetters.setRayonId(draft.rayonId);
+        if (draft.districtId) formSetters.setDistrictId(draft.districtId);
         if (draft.kecamatanName) formSetters.setKecamatanName(draft.kecamatanName);
         formSetters.setAddress(draft.address ?? '');
         formSetters.setTreeCount(draft.treeCount ?? '');
@@ -198,9 +199,9 @@ export function SubmitScreen(): React.JSX.Element {
             captureLocation={captureLocation}
             address={formState.address}
             setAddress={formSetters.setAddress}
-            rayons={rayons}
-            rayonId={formState.rayonId}
-            setRayonId={formSetters.setRayonId}
+            districts={districts}
+            districtId={formState.districtId}
+            setDistrictId={formSetters.setDistrictId}
             kecamatanName={formState.kecamatanName}
             setKecamatanName={formSetters.setKecamatanName}
             pickerOpen={pickerOpen}
@@ -272,7 +273,7 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.bgCanvas,
   },
   scrollContent: {
-    padding: nbSpacing[4],
+    ...screenContent,
     paddingBottom: nbSpacing[6],
   },
 });

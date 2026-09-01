@@ -37,6 +37,7 @@ import {
 } from '../../store/slices/analyticsSlice';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { nbColors, nbSpacing } from '../../constants/nbTokens';
+import { screenContent } from '../../constants/layout';
 
 type Props = {
   route?: { params?: { areaId?: string } };
@@ -63,7 +64,7 @@ export function TeamAnalyticsScreen({ route }: Props): React.JSX.Element {
         fetchTeamAnalytics({
           page: 1,
           limit: TEAM_PAGE_SIZE,
-          area_id: areaId,
+          location_id: areaId,
           reset: true,
         }),
       );
@@ -76,7 +77,7 @@ export function TeamAnalyticsScreen({ route }: Props): React.JSX.Element {
       fetchTeamAnalytics({
         page: 1,
         limit: TEAM_PAGE_SIZE,
-        area_id: areaId,
+        location_id: areaId,
         reset: true,
       }),
     );
@@ -233,8 +234,7 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.bgCanvas,
   },
   scrollContent: {
-    paddingHorizontal: nbSpacing.md,
-    paddingVertical: nbSpacing.md,
+    ...screenContent,
     gap: nbSpacing.md,
   },
   loadingContainer: {

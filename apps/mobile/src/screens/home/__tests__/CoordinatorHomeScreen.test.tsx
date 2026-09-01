@@ -39,10 +39,10 @@ const liveUser = (over: Record<string, unknown>) => ({
   role: 'satgas',
   phone: null,
   status: 'active',
-  area_id: 'a1',
-  area_name: 'Zona A',
-  rayon_id: 'r1',
-  rayon_name: 'Pusat',
+  location_id: 'a1',
+  location_name: 'Zona A',
+  district_id: 'r1',
+  district_name: 'Pusat',
   latitude: -7.25,
   longitude: 112.75,
   accuracy: 10,
@@ -76,7 +76,7 @@ const renderScreen = () => {
       monitoring: {
         liveUsers: [],
         cityStats: null,
-        rayonStats: {},
+        districtStats: {},
         areaStats: {},
         filters: { statuses: [] },
         selectedUser: null,
@@ -128,16 +128,15 @@ describe('CoordinatorHomeScreen (HOME-2)', () => {
     (monitoringApi.getLiveUsers as jest.Mock).mockResolvedValue({
       data: {
         total_active: 1,
-        total_inactive: 0,
-        total_outside_area: 1,
-        total_missing: 1,
         total_offline: 0,
+        total_absent: 1,
+        total_outside_area: 1,
         total_online: 1,
         generated_at: new Date().toISOString(),
         users: [
           liveUser({ id: 'u1', full_name: 'Andi Aktif', status: 'active' }),
-          liveUser({ id: 'u2', full_name: 'Budi Keluar', status: 'outside_area', outside_boundary: true, area_name: 'Zona B' }),
-          liveUser({ id: 'u3', full_name: 'Citra Hilang', status: 'missing', area_name: 'Zona C' }),
+          liveUser({ id: 'u2', full_name: 'Budi Keluar', status: 'absent', outside_boundary: true, location_name: 'Zona B' }),
+          liveUser({ id: 'u3', full_name: 'Citra Hilang', status: 'absent', location_name: 'Zona C' }),
         ],
       },
     });
@@ -155,23 +154,23 @@ describe('CoordinatorHomeScreen (HOME-2)', () => {
     });
   });
 
-  it('renders the 5-status KPI tiles', async () => {
+  it('renders the 4-status KPI tiles', async () => {
     const { getByTestId } = renderScreen();
     await waitFor(() => {
       expect(getByTestId('kpi-active')).toBeTruthy();
       expect(getByTestId('kpi-outside')).toBeTruthy();
-      expect(getByTestId('kpi-missing')).toBeTruthy();
+      expect(getByTestId('kpi-absent')).toBeTruthy();
       expect(getByTestId('kpi-offline')).toBeTruthy();
     });
   });
 
-  it('derives alerts from out-of-area + missing personnel', async () => {
+  it('derives alerts from out-of-area + absent personnel', async () => {
     const { getByText, getByTestId } = renderScreen();
     await waitFor(() => {
       expect(getByText('Budi Keluar keluar area')).toBeTruthy();
       expect(getByText('Citra Hilang tidak hadir')).toBeTruthy();
       expect(getByTestId('alert-out-u2')).toBeTruthy();
-      expect(getByTestId('alert-miss-u3')).toBeTruthy();
+      expect(getByTestId('alert-abs-u3')).toBeTruthy();
     });
   });
 
@@ -179,10 +178,9 @@ describe('CoordinatorHomeScreen (HOME-2)', () => {
     (monitoringApi.getLiveUsers as jest.Mock).mockResolvedValue({
       data: {
         total_active: 2,
-        total_inactive: 0,
-        total_outside_area: 0,
-        total_missing: 0,
         total_offline: 0,
+        total_absent: 0,
+        total_outside_area: 0,
         total_online: 2,
         generated_at: new Date().toISOString(),
         users: [

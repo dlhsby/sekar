@@ -17,10 +17,10 @@ export interface WorkerPatch {
   status?: TrackingStatus;
   lat?: number;
   lng?: number;
-  area_id?: string | null;
-  area_name?: string | null;
-  rayon_id?: string | null;
-  rayon_name?: string | null;
+  location_id?: string | null;
+  location_name?: string | null;
+  district_id?: string | null;
+  district_name?: string | null;
   is_within_area?: boolean;
   battery_level?: number | null;
   last_update?: string;
@@ -28,10 +28,8 @@ export interface WorkerPatch {
 
 const STATUS_KEYS: TrackingStatus[] = [
   'active',
-  'inactive',
-  'outside_area',
-  'missing',
   'offline',
+  'absent',
 ];
 
 /** Recompute the status totals from the current worker list. */
@@ -40,27 +38,31 @@ export function recomputeTotals(
 ): Pick<
   MonitoringSnapshotData,
   | 'total_active'
-  | 'total_inactive'
-  | 'total_outside_area'
-  | 'total_missing'
   | 'total_offline'
+  | 'total_absent'
+  | 'total_outside_area'
 > {
   const counts: Record<TrackingStatus, number> = {
     active: 0,
-    inactive: 0,
-    outside_area: 0,
-    missing: 0,
     offline: 0,
+    absent: 0,
   };
+  // `outside_area` is an AXIS, not a status, so it comes from `is_within_area`
+  // rather than the status column. It OVERLAPS active/offline — a worker outside
+  // their boundary is counted under their status AND here — so these four totals
+  // must never be summed into a headcount.
+  let outsideArea = 0;
   for (const w of workers) {
     if (STATUS_KEYS.includes(w.status)) counts[w.status] += 1;
+    // Skip ABSENT: their `is_within_area` is a leftover from whenever they last
+    // reported, so counting it would report people at home as outside their area.
+    if (w.is_within_area === false && w.status !== 'absent') outsideArea += 1;
   }
   return {
     total_active: counts.active,
-    total_inactive: counts.inactive,
-    total_outside_area: counts.outside_area,
-    total_missing: counts.missing,
     total_offline: counts.offline,
+    total_absent: counts.absent,
+    total_outside_area: outsideArea,
   };
 }
 
@@ -72,10 +74,10 @@ function mergeDefined(worker: SnapshotWorker, patch: WorkerPatch): SnapshotWorke
   if (patch.status !== undefined) next.status = patch.status;
   if (patch.lat !== undefined) next.lat = patch.lat;
   if (patch.lng !== undefined) next.lng = patch.lng;
-  if (patch.area_id !== undefined) next.area_id = patch.area_id;
-  if (patch.area_name !== undefined) next.area_name = patch.area_name;
-  if (patch.rayon_id !== undefined) next.rayon_id = patch.rayon_id;
-  if (patch.rayon_name !== undefined) next.rayon_name = patch.rayon_name;
+  if (patch.location_id !== undefined) next.location_id = patch.location_id;
+  if (patch.location_name !== undefined) next.location_name = patch.location_name;
+  if (patch.district_id !== undefined) next.district_id = patch.district_id;
+  if (patch.district_name !== undefined) next.district_name = patch.district_name;
   if (patch.is_within_area !== undefined) next.is_within_area = patch.is_within_area;
   if (patch.battery_level !== undefined) next.battery_level = patch.battery_level;
   if (patch.last_update !== undefined) next.last_update = patch.last_update;
@@ -105,10 +107,10 @@ export function applyWorkerPatch(
       lat: patch.lat,
       lng: patch.lng,
       status: patch.status,
-      area_id: patch.area_id ?? null,
-      area_name: patch.area_name ?? null,
-      rayon_id: patch.rayon_id ?? null,
-      rayon_name: patch.rayon_name ?? null,
+      location_id: patch.location_id ?? null,
+      location_name: patch.location_name ?? null,
+      district_id: patch.district_id ?? null,
+      district_name: patch.district_name ?? null,
       last_update: patch.last_update ?? new Date(0).toISOString(),
       is_within_area: patch.is_within_area ?? true,
       battery_level: patch.battery_level ?? null,

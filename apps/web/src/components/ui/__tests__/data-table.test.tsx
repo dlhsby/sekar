@@ -247,3 +247,51 @@ describe('DataTable', () => {
     expect(screen.getByText(/Menampilkan 1–5 dari 12/)).toBeInTheDocument();
   });
 });
+
+// The create action belongs in the SAME toolbar row as filter/columns/refresh —
+// a full-width labelled button wrapped onto its own line on a phone, stacking
+// every list page into three rows.
+describe('DataTable — createAction', () => {
+  const cols = [{ accessorKey: 'name', header: 'Nama' }];
+
+  it('renders the create button inside the toolbar row', () => {
+    render(<DataTable columns={cols} data={[]} createAction={{ label: 'Tambah Rayon', onClick: jest.fn() }} />);
+
+    expect(screen.getByRole('button', { name: 'Tambah Rayon' })).toBeInTheDocument();
+  });
+
+  it('renders nothing when hidden (permission gating lives in the prop)', () => {
+    render(
+      <DataTable columns={cols} data={[]} createAction={{ label: 'Tambah Rayon', onClick: jest.fn(), hidden: true }} />
+    );
+
+    expect(screen.queryByRole('button', { name: 'Tambah Rayon' })).not.toBeInTheDocument();
+  });
+
+  it('keeps search on a row of its own above the right-hand group on mobile', () => {
+    // The left slot is w-full below sm, so the button group wraps underneath
+    // rather than sharing the line — the search grows to full width when focused
+    // and would otherwise shove the buttons around, and the slot has to leave
+    // room for more left-hand tools than just search.
+    const { container } = render(
+      <DataTable
+        columns={cols}
+        data={[]}
+        searchPlaceholder="Cari…"
+        createAction={{ label: 'Tambah', onClick: jest.fn() }}
+      />
+    );
+
+    const leftSlot = container.querySelector('div.flex.w-full.items-center.sm\\:w-auto');
+    expect(leftSlot).not.toBeNull();
+    expect(leftSlot).toContainElement(screen.getByRole('textbox'));
+    // ...and the create button is NOT in that slot — it belongs to the right group.
+    expect(leftSlot).not.toContainElement(screen.getByRole('button', { name: 'Tambah' }));
+  });
+
+  it('shows the toolbar for a createAction alone, with no search or filters', () => {
+    render(<DataTable columns={cols} data={[]} createAction={{ label: 'Tambah', onClick: jest.fn() }} />);
+
+    expect(screen.getByRole('button', { name: 'Tambah' })).toBeInTheDocument();
+  });
+});

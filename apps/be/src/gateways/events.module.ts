@@ -5,7 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EventsGateway } from './events.gateway';
 import { RoomJoinService } from './services/room-join.service';
 import { User } from '../modules/users/entities/user.entity';
-import { UserAreasModule } from '../modules/user-areas/user-areas.module';
+import { UserLocationsModule } from '../modules/user-locations/user-locations.module';
 import { MonitoringModule } from '../modules/monitoring/monitoring.module';
 
 @Module({
@@ -18,7 +18,7 @@ import { MonitoringModule } from '../modules/monitoring/monitoring.module';
       }),
       inject: [ConfigService],
     }),
-    UserAreasModule,
+    UserLocationsModule,
     forwardRef(() => MonitoringModule),
   ],
   providers: [EventsGateway, RoomJoinService],
