@@ -35,12 +35,18 @@ services:
       NODE_ENV: staging
       REDIS_URL: redis://redis:6379
       # Pin the V8 old-space cap explicitly. Node otherwise auto-derives it from the
-      # cgroup limit (~256 MB at mem_limit 448m) — a value that was silently reached
-      # and crashed the process (F9). Kept below mem_limit so V8 GC's hard-fail is
-      # reached before the kernel OOM-kills the container (a clean heap error is
-      # debuggable; a SIGKILL is not). The real relief is not loading activity photo
-      # data-URIs into the heap (see the query changes) — this is the safety net.
-      NODE_OPTIONS: "--max-old-space-size=384"
+      # cgroup limit — a value that was silently reached and crashed the process (F9).
+      # Kept below mem_limit so V8 GC's hard-fail is reached before the kernel
+      # OOM-kills the container (a clean heap error is debuggable; a SIGKILL is not).
+      #
+      # Raised 384 -> 768 (mem_limit 448m -> 1024m) at the 2026-09-01 account cutover:
+      # the limits were sized for the old t3.micro box, but staging now runs on a
+      # t3.small (1.9 GB). At the old cap the boot ScheduleEventMaterializationCron
+      # was SIGKILLed (exit 137) before the healthcheck could ever pass.
+      #
+      # The real relief is not loading polygon/photo blobs into the heap — this is
+      # the safety net. See the F10 note below.
+      NODE_OPTIONS: "--max-old-space-size=768"
     expose:
       - "3000" # internal only; reached via Caddy on the edge network
     depends_on:
@@ -51,9 +57,9 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 45s
-    mem_limit: 448m
-    mem_reservation: 320m
+      start_period: 180s
+    mem_limit: 1024m
+    mem_reservation: 512m
     restart: unless-stopped
     logging: *default-logging
     networks: [edge, internal]
