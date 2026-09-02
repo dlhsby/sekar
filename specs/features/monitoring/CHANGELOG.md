@@ -2,6 +2,22 @@
 
 Newest first. Feature overview + current design live in [README.md](./README.md).
 
+- **2026-09-02** — **Mobile monitoring markers brought onto the web canon, across all three
+  map modes.** The mobile map still drew each aggregate node as a `hadir/terjadwal` ratio bubble —
+  the design ADR-051 retired and web migrated off (`nodeRatioIcon` → `nodeCountIcon`) — so it now
+  draws the same unified glyph pin: white teardrop, neutral ring, staffing-health count badge
+  carrying `active`. Web's `pinSvg` markup is ported rather than re-drawn (it is renderer-agnostic;
+  `react-native-svg` renders the identical string), with cross-references both ways. Three
+  divergences fell out of the same layer, each one mobile computing web's logic and discarding it:
+  node clustering is removed (ADR-060 §4 forbids it), and `promotedNodes` / `labelledNodes` are now
+  consumed, so nodes demote to still-drillable dots in viewport mode and node names go through the
+  label declutter pass. Separately, zoom and viewport drew only the current tier because the node
+  list always came from the drill composition — both now fetch `scope=all` (viewport adding the
+  shared camera bbox), which the backend already served. Retired ratio-bubble code is deleted on
+  both platforms, including a second, disagreeing mobile implementation inside `BoundaryOverlay`.
+  `specs/features/monitoring/PARITY.md` corrected: its "level-wise node markers" row was true at
+  the symbol level only.
+
 - **2026-08-30** — **Two real derived-state defects fixed out of the 18 `set-state-in-effect`
   warnings; the rest triaged rather than blanket-silenced.** The export page corrected an invalid
   format (`kmz` on a non-area entity) inside an effect, i.e. AFTER the render that already displayed —
