@@ -24,6 +24,7 @@ import {
   showsBoundary,
   showsFill,
   showsNodeLabel,
+  showsNodeMarker,
   showsPolygon,
   type MonitoringV2VisibleLayers,
 } from '../../../utils/layerVisibility';
@@ -162,18 +163,25 @@ export function MapLayerContent({
     showDistrictBoundaries || showAreaBoundaries || showRegionBoundaries ||
     showDistrictMarker || showAreaMarker;
 
-  // Bubbles obey the same depth gate as the polygons, or a tier would draw its
-  // pins with no shape (and, at city height, hundreds of them at once).
+  // Two gates, both of which must pass — the same pair web applies in
+  // `visibleNodeMarkers`:
+  //
+  //  * the operator's per-tier MARKER facet. Without it the operator had no way
+  //    to quiet a tier: zoom mode draws every lokasi in the city at once, and on
+  //    web that is tamed by switching the tier's marker off. Mobile drew them
+  //    unconditionally, so the facet row was there but did nothing for pins.
+  //  * the depth gate, or a tier would draw its pins with no shape (and, at city
+  //    height, hundreds of them at once).
   const tierScopedNodes = useMemo(
     () =>
       nodeMarkers.filter(n =>
         n.variant === 'district'
-          ? tiers.district
+          ? showsNodeMarker(visibleLayers.district) && tiers.district
           : n.variant === 'region'
-            ? tiers.region
-            : tiers.location,
+            ? showsNodeMarker(visibleLayers.kawasan) && tiers.region
+            : showsNodeMarker(visibleLayers.lokasi) && tiers.location,
       ),
-    [nodeMarkers, tiers],
+    [nodeMarkers, tiers, visibleLayers.district, visibleLayers.kawasan, visibleLayers.lokasi],
   );
 
   // ── Progressive reveal ─────────────────────────────────────────────────────
