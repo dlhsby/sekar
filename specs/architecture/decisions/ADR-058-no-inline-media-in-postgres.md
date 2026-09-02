@@ -1,6 +1,6 @@
 # ADR-058 — No inline media in Postgres
 
-**Status:** Active · implemented
+**Status:** Active · implemented in code; data backfilled on live staging 2026-09-02 (see tail) · enforcement partial
 **Date:** 2026-08-01
 **Rests on:** F9 tier-2 (see [`../../deployment/staging-cutover-runbook.md`](../../deployment/staging-cutover-runbook.md) §2, §8)
 
@@ -102,3 +102,44 @@ columns then report 0 inline. After `VACUUM (FULL)`:
 
 End to end: a multipart upload lands a bare URL in the column, the API returns it
 presigned, and the browser decodes it.
+
+---
+
+## Applied to live staging — 2026-09-02
+
+The results above were measured on the **2026-08-01 rehearsal clone**. Live
+staging was not migrated at that time and kept accumulating inline photos, so
+the "implemented" status was true of the *code path* but not of the *data*.
+
+The backfill finally ran on live staging during the AWS account migration, and
+the real numbers were an order of magnitude larger than the clone's:
+
+| | Clone (2026-08-01) | Live staging (2026-09-02) |
+|---|---|---|
+| `activities` inline rows | — | **22,802** |
+| `activities` size | — | 12 GB → **18 MB** |
+| Total inline media | 528 MB | **12.9 GB** across 12 columns |
+| Database | 658 MB → 100 MB | 16 GB → **224 MB** |
+
+Objects now in S3: **38,289** (9.89 GB). Rows still holding a `data:` URI: **0**.
+
+### What this cost before it was fixed
+
+Not hypothetical. On 2026-09-02 the inline photos filled the 20 GB staging
+volume during the cutover, and Postgres stopped accepting writes — at zero free
+space it cannot even `TRUNCATE`, because that needs WAL space. Recovery required
+raising storage (RDS storage can never be reduced in place, so this then forced
+a dump/restore onto a fresh instance). Migration `17520` made it worse by
+copying `shifts.photo_url` verbatim into the new `attendance_punches` table —
+519 MB for 1,361 photos, the same image stored twice.
+
+### The rule is only half-enforced
+
+F9 Phase A stopped new inline photos on `activities`. **The other write paths
+can still inline one**, so the debt re-accrues and the backfill has to be
+re-run. The remaining columns are enumerated in
+[`../../deployment/data-retention.md`](../../deployment/data-retention.md) §3.
+Closing those paths is what would let this ADR claim "implemented" without
+qualification.
+
+**Status is therefore better read as: decided and proven, enforcement partial.**

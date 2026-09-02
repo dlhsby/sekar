@@ -27,7 +27,7 @@
 
 **Production (On-Prem):** Local Docker PostgreSQL via `docker-compose.prod.yml`. Manual backups + point-in-time restore via pg_dump.
 
-**Staging (AWS):** Shared AWS RDS instance (`dlhsby`, database `sekar_staging`) in ap-southeast-3. Automated daily snapshots with 7-day retention.
+**Staging (AWS):** Shared AWS RDS instance (`sekar-staging-2`, database `sekar_staging`) in ap-southeast-3. Automated daily snapshots with 7-day retention.
 
 **Development:** Local Docker PostgreSQL via `infra/docker-compose.yml`.
 
@@ -802,7 +802,7 @@ df -h /                          # confirm freed
 ```
 
 Staging has no SSH — run the above via **SSM Run Command** (`AWS-RunShellScript`,
-region `ap-southeast-3`, instance `i-08edccdc966c0985e`). Since v0.1.x+ the backend
+region `ap-southeast-3`, instance `i-004167ea140d1ab28`). Since v0.1.x+ the backend
 sweeps stale profiles on startup, force-kills hung Chrome on browser recycle, and
 runs a periodic (30-min) sweep, so this should no longer accumulate.
 

@@ -1,5 +1,13 @@
 # AWS cost position and runway
 
+> **Historical.** This analysis describes the **closed** account `659828096624` and the
+> July 2026 bill that led to its credit exhaustion. It is kept because its diagnosis was
+> correct and is what drove the fixes. Since 2026-09-02 staging runs in `204284492859`,
+> and the dominant cost driver identified here — ~8 GB of base64 photos stored inline in
+> `activities` — **has been fixed**: 22,815 rows now reference S3, 0 remain inline, and the
+> database shrank 16 GB → 3.8 GB. Cross-AZ transfer is also gone, since EC2 and RDS are now
+> co-located in `3a`.
+
 **As of 2026-08-02.** Account `659828096624`, region `ap-southeast-3` (Jakarta).
 
 Written because the account is on the **AWS Free Plan**, where the consequence of

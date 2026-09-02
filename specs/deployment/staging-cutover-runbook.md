@@ -455,3 +455,65 @@ must be run, and the same fix applies to production.
 - [`operations.md`](./operations.md) — migrations, backup/restore, SSM access
 - [`../REVAMP-STATUS.md`](../REVAMP-STATUS.md) — phase status + the hazard table
 - [`../testing/manual-uat.md`](../testing/manual-uat.md) — the acceptance matrix
+
+---
+
+## 9. Executed 2026-09-02 — outcome and what the runbook missed
+
+The cutover ran during the migration from AWS account `659828096624` (closed on
+credit exhaustion) to `204284492859`. Migrations **46 → 90** applied; the RBAC
+seed populated 9 roles / 72 permissions, so the F1 trap was avoided as designed.
+
+**F8 closed:** mobile **v0.1.4 / versionCode 6** published to the registry.
+
+**F11 applied by chunking.** The one-shot `--all --apply` loads every candidate
+row in a single transaction and stalled twice on `db.t4g.micro` — 20 minutes on
+one SELECT with nothing written. Walking `--lookback` up in steps (7 → 14 → 21 →
+30 → 40 → 50 → 65) completed cleanly: **43,718 marked absent, 28,864 self-healed
+to `present`**. The self-heal number matters — those are workers who *did*
+attend but were never reconciled, so raw-status reports had them as `planned`.
+**Use the lookback ladder, not `--all`.**
+
+### F13 — free space on the DATABASE volume (new)
+
+§4's pre-flight checks `df -h /` on the **EC2 box**. Nothing checked RDS. The
+chain filled a 20 GB volume and Postgres stopped accepting writes.
+
+At zero free space nothing can be freed from inside the database: `TRUNCATE`
+needs WAL space, and `VACUUM FULL` needs free space roughly equal to the table's
+live size **plus** an `ACCESS EXCLUSIVE` lock. The only exit is adding storage —
+and **RDS storage can never be reduced in place**, so that decision is one-way
+and forces a later dump/restore onto a fresh instance.
+
+Migration `17520` is the specific aggravator: it copies `shifts.photo_url`
+verbatim into `attendance_punches`, so a chain that looks read-mostly duplicates
+a base64 column. **Add to pre-flight:** `FreeStorageSpace` must have headroom for
+the largest table being copied, with a real margin — not 5%.
+
+### F14 — instance memory, and why the health check lies (new)
+
+`db.t4g.micro` has 1 GB. Under pressure Postgres kept serving **existing pooled
+connections** while refusing **new** ones. `/health/live` returned 200 the whole
+time; nobody could log in, and every script failed with
+`Connection terminated due to connection timeout`. A reboot cleared it
+(FreeableMemory 77 MB → 207 MB).
+
+**Two operational consequences.** Alarm on `FreeableMemory`, not just liveness.
+And when a job fails fast and repeatedly, **do not auto-restart it** — a retry
+loop against a memory-starved instance is a connection storm that deepens the
+outage.
+
+### Tooling traps worth knowing
+
+- `timeout N docker run …` kills the docker **client**, not the container. Leaked
+  containers hold DB connections. Use `--name` and an explicit `docker rm -f`.
+- `pg_dump --exclude-table-data=<t>` avoids needing a `TRUNCATE` at all — no
+  lock, no scan. Preferred when a table is being reloaded separately.
+- A restore with `--no-owner` leaves tables owned by the RDS master. `GRANT ALL`
+  is **not** ownership and `ALTER TABLE` needs ownership, so the chain aborts at
+  the first `ALTER` (this happened at migration 48). Create the app role first,
+  then `GRANT <approle> TO <master>;` before `REASSIGN OWNED BY <master> TO
+  <approle>;` — the grant is required because the RDS master is not a superuser.
+- The free plan blocks **cross-account snapshot restore** outright
+  (`FreeTierRestrictionError`) and caps automated backup retention at **1 day**.
+  A snapshot share is not a migration path; use `pg_dump`.
