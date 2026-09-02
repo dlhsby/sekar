@@ -1,6 +1,6 @@
 # SEKAR — Status (Source of Truth)
 
-**Last updated:** 2026-09-01 · **Single source of truth** for status & metrics. Specs do not
+**Last updated:** 2026-09-02 · **Single source of truth** for status & metrics. Specs do not
 duplicate these numbers. Build history: [`history/CHANGELOG.md`](history/CHANGELOG.md).
 
 ## Deployment
@@ -9,10 +9,12 @@ duplicate these numbers. Build history: [`history/CHANGELOG.md`](history/CHANGEL
 |-------|-------------|--------|-----|
 | Backend (NestJS + PostgreSQL + Redis + MinIO) | Staging (AWS) | ✅ Live | https://api.sekar.wahyutrip.com · docs `/api/v1/docs` |
 | Web (Next.js 16) | Staging (AWS) | ✅ Live | https://sekar.wahyutrip.com |
-| Mobile (React Native APK) | UAT | ✅ Distributed | sekar.wahyutrip.com/android |
+| Mobile (React Native APK) | UAT | ✅ Distributed — **v0.1.4 / versionCode 6** | sekar.wahyutrip.com/android |
 | Production (on-prem Docker Compose) | — | ⏳ Pending pemkot box | platform-agnostic, ready |
 | Monitoring (Sentry) | wired | 🔄 Dormant until DSN set | backend + web + mobile |
 | Secrets (dotenvx) | all envs | ✅ Encrypted (key in AWS SSM) | — |
+| AWS account | staging | ✅ **`204284492859`** (migrated 2026-09-02) | region `ap-southeast-3` |
+| Nightly DB backup | staging | ✅ systemd timer 19:15 UTC → S3, 14-day retention | `sekar-db-backups-204284492859` |
 
 **UAT sign-off:** 2026-06-22. **Staging deploys are DELIBERATE** — `deploy-staging.yml` runs only on a
 push to the `staging` branch (merge `main` → `staging`) or a manual dispatch. Merging to `main` does

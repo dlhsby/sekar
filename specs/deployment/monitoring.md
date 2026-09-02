@@ -4,7 +4,7 @@ Comprehensive monitoring, logging, and observability specifications for SEKAR pr
 
 **What's live vs planned (2026-06):**
 - **LIVE:** Health endpoints (`/api/v1/health/live`, `/api/v1/health/ready` with DB + Redis checks), Docker container logs, Redis monitoring
-- **STAGING-ONLY:** CloudWatch metrics/dashboards (AWS EC2 `t3.micro` sole tenant; shared RDS `dlhsby` — SEKAR cannot own RDS-level alarms)
+- **STAGING-ONLY:** CloudWatch metrics/dashboards (AWS EC2 `t3.micro` sole tenant; shared RDS `sekar-staging-2` — SEKAR cannot own RDS-level alarms)
 - **WIRED, DORMANT:** Sentry error tracking — SDK integrated across **backend** (`apps/be/src/common/sentry`), **web** (`apps/web/src/instrumentation*.ts` + `global-error.tsx`), and **mobile** (`apps/mobile/src/services/crashReporting`). All no-op until a DSN is configured (`SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` / `SENTRY_DSN_MOBILE`). Create a Sentry project and set those to go live.
 - **PLANNED/NOT LIVE:** dedicated dashboards, production monitoring specification (on-prem Docker logs only for now)
 - **Authoritative hub:** [`README.md`](./README.md) for infra layout; [`ci-cd.md`](./ci-cd.md) for pipeline.
@@ -295,7 +295,7 @@ EvaluationPeriods: 5
 Threshold: 80
 ComparisonOperator: GreaterThanThreshold
 Actions:
-  - arn:aws:sns:ap-southeast-3:659828096624:sekar-high-alerts
+  - arn:aws:sns:ap-southeast-3:204284492859:sekar-high-alerts
 ```
 
 #### Alarm 4: Database Storage Low (Shared RDS)
@@ -319,7 +319,7 @@ EvaluationPeriods: 1
 Threshold: 10737418240  # 10 GB in bytes
 ComparisonOperator: LessThanThreshold
 Actions:
-  - arn:aws:sns:ap-southeast-3:659828096624:sekar-high-alerts
+  - arn:aws:sns:ap-southeast-3:204284492859:sekar-high-alerts
 ```
 
 ### Warning Alarms (Staging Only)
@@ -342,7 +342,7 @@ EvaluationPeriods: 3
 Threshold: 2.0
 ComparisonOperator: GreaterThanThreshold
 Actions:
-  - arn:aws:sns:ap-southeast-3:659828096624:sekar-warning-alerts
+  - arn:aws:sns:ap-southeast-3:204284492859:sekar-warning-alerts
 ```
 
 #### Alarm 6: Database Connections High (Shared RDS)
@@ -365,7 +365,7 @@ EvaluationPeriods: 2
 Threshold: 80
 ComparisonOperator: GreaterThanThreshold
 Actions:
-  - arn:aws:sns:ap-southeast-3:659828096624:sekar-warning-alerts
+  - arn:aws:sns:ap-southeast-3:204284492859:sekar-warning-alerts
 ```
 
 #### Alarm 7: S3 Upload Failures (Staging)
@@ -387,7 +387,7 @@ Threshold: 5
 ComparisonOperator: GreaterThanThreshold
 TreatMissingData: notBreaching
 Actions:
-  - arn:aws:sns:ap-southeast-3:659828096624:sekar-warning-alerts
+  - arn:aws:sns:ap-southeast-3:204284492859:sekar-warning-alerts
 ```
 
 #### Alarm 8: Root Disk Full (Staging) — ✅ LIVE (provisioned 2026-07-13)
@@ -396,7 +396,7 @@ Actions:
 not use), this alarm is actually deployed.** It exists because a Puppeteer temp-file
 leak filled the box's 30GB root disk and took the API down (see ADR-024).
 
-- **Metric:** custom `SEKAR/Staging` → `RootDiskUsedPercent` (dim `InstanceId=i-08edccdc966c0985e`).
+- **Metric:** custom `SEKAR/Staging` → `RootDiskUsedPercent` (dim `InstanceId=i-004167ea140d1ab28`).
   Published every 5 min by a **systemd timer** `sekar-disk-metric.timer` on the box
   (`/usr/local/bin/sekar-disk-metric.sh` → `df` → `cloudwatch put-metric-data`).
   Chosen over the CloudWatch **agent** (which would add ~40MB resident RAM to a
@@ -412,15 +412,15 @@ Namespace: SEKAR/Staging
 MetricName: RootDiskUsedPercent
 Dimensions:
   - Name: InstanceId
-    Value: i-08edccdc966c0985e
+    Value: i-004167ea140d1ab28
 Statistic: Maximum
 Period: 300
 EvaluationPeriods: 2        # > 80% sustained ~10 min
 Threshold: 80
 ComparisonOperator: GreaterThanThreshold
 TreatMissingData: notBreaching
-AlarmActions: [arn:aws:sns:ap-southeast-3:659828096624:sekar-staging-alerts]
-OKActions:    [arn:aws:sns:ap-southeast-3:659828096624:sekar-staging-alerts]
+AlarmActions: [arn:aws:sns:ap-southeast-3:204284492859:sekar-staging-alerts]
+OKActions:    [arn:aws:sns:ap-southeast-3:204284492859:sekar-staging-alerts]
 ```
 
 Reproduce/verify: `scripts/ops/setup-staging-disk-alarm.sh` (idempotent). Runbook on
@@ -740,7 +740,7 @@ Sentry.init({
 
 ### Notification Channels (Staging)
 
-#### SNS Topics (AWS ap-southeast-3, Account 659828096624)
+#### SNS Topics (AWS ap-southeast-3, Account 204284492859)
 
 **Topic 1: Critical Alerts**
 - **Name:** `sekar-critical-alerts`
@@ -1000,7 +1000,7 @@ Deep dive into why this happened.
 
 ### Staging (AWS Shared Box)
 
-**Cost Responsibility:** SEKAR shares t3.micro (EC2) + `dlhsby` (RDS) with KPI project. Cannot split costs per application without additional tagging/monitoring.
+**Cost Responsibility:** SEKAR shares t3.micro (EC2) + `sekar-staging-2` (RDS) with KPI project. Cannot split costs per application without additional tagging/monitoring.
 
 **Budget Tracking (Shared):**
 - AWS Cost Explorer: Filter by tags or project (if available)

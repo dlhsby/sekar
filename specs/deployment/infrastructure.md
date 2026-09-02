@@ -4,7 +4,7 @@ Deep-dive reference for AWS managed services and on-prem deployments. **For depl
 
 ## Current Topology (2026-06)
 
-SEKAR runs on two targets: **(1) Staging/UAT** on AWS account **659828096624** (region **ap-southeast-3** Jakarta), sole tenant on **t3.micro** EC2 (dlhsby box); **SHARED RDS `dlhsby` (database `sekar_staging`)** and S3 `sekar-media-staging` (via instance role, no static keys); Redis in-stack container; Caddy TLS edge (SEKAR-owned). Deploy via **GitHub OIDC + SSM Run Command** (no SSH). **(2) Production** on **on-prem (pemkot) server**, Docker Compose (`docker-compose.prod.yml`), self-hosted Postgres, Redis, MinIO — not yet deployed. **Env/secrets use dotenvx** (`.env.staging` / `.env.production` committed encrypted; private keys are GitHub Environment secrets; AWS staging box reads key from SSM `/sekar/staging/BE_DOTENV_PRIVATE_KEY`).
+SEKAR runs on two targets: **(1) Staging/UAT** on AWS account **204284492859** (region **ap-southeast-3** Jakarta), sole tenant on **t3.micro** EC2 (dlhsby box); **SHARED RDS `sekar-staging-2` (database `sekar_staging`)** and S3 `sekar-media-staging-id` (via instance role, no static keys); Redis in-stack container; Caddy TLS edge (SEKAR-owned). Deploy via **GitHub OIDC + SSM Run Command** (no SSH). **(2) Production** on **on-prem (pemkot) server**, Docker Compose (`docker-compose.prod.yml`), self-hosted Postgres, Redis, MinIO — not yet deployed. **Env/secrets use dotenvx** (`.env.staging` / `.env.production` committed encrypted; private keys are GitHub Environment secrets; AWS staging box reads key from SSM `/sekar/staging/BE_DOTENV_PRIVATE_KEY`).
 
 ---
 
@@ -16,12 +16,22 @@ The following VPC, RDS, CloudFront, and ElastiCache sections describe a fuller m
 
 ## 1. AWS Account Structure (Reference Layout)
 
-**Current reality:** Staging on account **659828096624** (sole tenant, SEKAR-only as of 2026-06 after KPI decommission). Production is on-prem (no AWS). This section describes the *reference* architecture for a dedicated multi-account, multi-region managed setup.
+> **Account migrated 2026-09-02.** The original account `659828096624` was closed on
+> free-plan credit exhaustion (hard deletion 21 Nov 2026) and everything was rebuilt in
+> **`204284492859`**, same region. Two corrections were made deliberately during the move:
+> EC2 and RDS are now **both in `ap-southeast-3a`** (the old split — EC2 `3a`, RDS `3c` —
+> generated 1,799 GB of cross-AZ transfer at $17.99/mo), and the ~12.9 GB of base64 photos
+> that had been stored inline in Postgres now live in S3. The database went from 16 GB to
+> 3.8 GB as a result. See [`data-retention.md`](data-retention.md) for what still needs a
+> retention policy, and note that RDS storage **cannot be reduced in place** — the exit from
+> an oversized volume is always dump/restore into a fresh instance.
+
+**Current reality:** Staging on account **204284492859** (sole tenant, SEKAR-only as of 2026-06 after KPI decommission). Production is on-prem (no AWS). This section describes the *reference* architecture for a dedicated multi-account, multi-region managed setup.
 
 ### Reference Account Organization
 
 ```
-Single AWS Account (659828096624)
+Single AWS Account (204284492859)
 └── Staging Environment (current)
     ├── EC2 t3.micro (SEKAR sole tenant, dlhsby box)
     ├── RDS: dlhsby, database sekar_staging (SEKAR-only as of 2026-06)
@@ -185,7 +195,7 @@ CIDR: 10.0.0.0/16
 
 ## 4. RDS PostgreSQL Configuration (Reference Layout)
 
-**Current reality:** Staging uses **shared `dlhsby` RDS instance** (database `sekar_staging`); production is on-prem (self-hosted Postgres). This section is the *reference* architecture for dedicated managed RDS.
+**Current reality:** Staging uses **shared `sekar-staging-2` RDS instance** (database `sekar_staging`); production is on-prem (self-hosted Postgres). This section is the *reference* architecture for dedicated managed RDS.
 
 ### Reference Database Instance Specifications
 
@@ -193,7 +203,7 @@ CIDR: 10.0.0.0/16
 | Parameter | Value |
 |-----------|-------|
 | Instance Type | db.t3.micro |
-| Database | sekar_staging (on shared RDS `dlhsby`, formerly `kobin-kpi-db`) |
+| Database | sekar_staging (on shared RDS `sekar-staging-2`, formerly `kobin-kpi-db`) |
 | Backup Retention | 7 days |
 | Notes | SEKAR sole tenant as of 2026-06; no dedicated RDS |
 
@@ -461,7 +471,7 @@ See [`README.md`](./README.md) for current staging/production deploy procedures 
 
 ### Current: GitHub OIDC Role (AWS Staging)
 
-**Role Name:** sekar-gha-deploy (in account 659828096624)
+**Role Name:** sekar-gha-deploy (in account 204284492859)
 
 **Trust Relationship:**
 ```json
@@ -471,7 +481,7 @@ See [`README.md`](./README.md) for current staging/production deploy procedures 
     {
       "Effect": "Allow",
       "Principal": {
-        "Federated": "arn:aws:iam::659828096624:oidc-provider/token.actions.githubusercontent.com"
+        "Federated": "arn:aws:iam::204284492859:oidc-provider/token.actions.githubusercontent.com"
       },
       "Action": "sts:AssumeRoleWithWebIdentity",
       "Condition": {
@@ -511,8 +521,8 @@ See [`README.md`](./README.md) for current staging/production deploy procedures 
         "s3:ListBucket"
       ],
       "Resource": [
-        "arn:aws:s3:::sekar-media-staging",
-        "arn:aws:s3:::sekar-media-staging/*"
+        "arn:aws:s3:::sekar-media-staging-id",
+        "arn:aws:s3:::sekar-media-staging-id/*"
       ]
     },
     {
@@ -522,7 +532,7 @@ See [`README.md`](./README.md) for current staging/production deploy procedures 
         "ssm:GetParameter",
         "ssm:GetParameters"
       ],
-      "Resource": "arn:aws:ssm:ap-southeast-3:659828096624:parameter/sekar/*"
+      "Resource": "arn:aws:ssm:ap-southeast-3:204284492859:parameter/sekar/*"
     }
   ]
 }

@@ -24,11 +24,11 @@
 | **Google Maps API Key** | Google Maps | https://console.cloud.google.com/google/maps-apis | `apps/web/.env.local` `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Web | Yes | Yes | Yes | Yes |
 | **AWS Access Key ID** | AWS IAM | AWS Console → IAM → Users → `sekar-s3-user` → Security credentials | `.env.staging` / `.env.production` `AWS_ACCESS_KEY_ID` | Backend | Staging only (Prod uses MinIO) | MinIO | Yes (staging) | N/A (MinIO) |
 | **AWS Secret Access Key** | AWS IAM | AWS Console → IAM → Users → `sekar-s3-user` → Security credentials | `.env.staging` / `.env.production` `AWS_SECRET_ACCESS_KEY` | Backend | Staging only (Prod uses MinIO) | MinIO | Yes (staging) | N/A (MinIO) |
-| **S3 Bucket Name** | AWS S3 | AWS Console → S3 → Bucket name | `.env.local` / `.env.staging` / `.env.production` `AWS_S3_BUCKET` | Backend | All environments | `sekar-media-dev` | `sekar-media-staging` (real AWS) | N/A (MinIO, configured in docker-compose.prod.yml) |
+| **S3 Bucket Name** | AWS S3 | AWS Console → S3 → Bucket name | `.env.local` / `.env.staging` / `.env.production` `AWS_S3_BUCKET` | Backend | All environments | `sekar-media-dev` | `sekar-media-staging-id` (real AWS) | N/A (MinIO, configured in docker-compose.prod.yml) |
 
 \* **FCM:** Enable with `FCM_ENABLED=true` and provide service account (encrypted env vars in `.env.staging`/`.env.production` via dotenvx). Optional in dev, required for staging/prod. Firebase services handle push notifications.
 
-\*\* **S3 by environment:** Dev = local MinIO (`sekar-media-dev`); Staging = real AWS S3 (`sekar-media-staging`); Production = MinIO in `docker-compose.prod.yml` (NOT real AWS, per project convention).
+\*\* **S3 by environment:** Dev = local MinIO (`sekar-media-dev`); Staging = real AWS S3 (`sekar-media-staging-id`); Production = MinIO in `docker-compose.prod.yml` (NOT real AWS, per project convention).
 
 ---
 
@@ -486,7 +486,7 @@ If you don't have one, sign up at https://aws.amazon.com/
 
 1. Navigate to **S3**
 2. Click **Create bucket**
-3. **Bucket name:** `sekar-media-staging` (for staging) or `sekar-media-production` (for production)
+3. **Bucket name:** `sekar-media-staging-id` (for staging) or `sekar-media-production` (for production)
 4. **Region:** `ap-southeast-3` (Jakarta, in-country; staging shares this region with the KPI box)
 5. **Object Ownership:** ACLs disabled (recommended)
 6. **Block Public Access:** Keep all blocks enabled ✓ (use signed URLs instead of public access)
@@ -621,7 +621,7 @@ MinIO credentials (root user/password) are managed via `docker-compose.prod.yml`
 
 ```bash
 aws s3api put-bucket-encryption \
-  --bucket sekar-media-staging \
+  --bucket sekar-media-staging-id \
   --server-side-encryption-configuration '{
     "Rules": [{
       "ApplyServerSideEncryptionByDefault": {
@@ -648,7 +648,7 @@ aws s3api put-bucket-encryption \
 aws s3 ls
 
 # List objects in bucket
-aws s3 ls s3://sekar-media-staging --recursive
+aws s3 ls s3://sekar-media-staging-id --recursive
 
 # Test upload (backend login + clock-in with selfie)
 # Verify uploaded file appears in bucket
@@ -699,7 +699,7 @@ NEXT_PUBLIC_API_URL=http://localhost:3000
 | FCM | Firebase | Required | `FCM_ENABLED=true`; creds encrypted in `.env.staging` (dotenvx) |
 | Google Maps | Google Cloud | Required | Use staging key; restrict to release SHA-1 of staging APK |
 | Google Maps | Google Maps | Required | Use staging token |
-| AWS S3 | Real AWS | Required | `sekar-media-staging` bucket; restricted IAM user (no instance role) |
+| AWS S3 | Real AWS | Required | `sekar-media-staging-id` bucket; restricted IAM user (no instance role) |
 | APNs | Apple | Recommended | Upload to Firebase for iOS push testing |
 
 **Sample `.env.staging` (encrypted; decrypted at runtime via dotenvx):**
@@ -720,7 +720,7 @@ See `specs/deployment/encrypted-secrets.md` for how to set up dotenvx encryption
 
 #### Staging RDS — master (root) credentials
 
-The staging database lives on the shared AWS RDS instance **`dlhsby`** (formerly `kobin-kpi-db`;
+The staging database lives on the shared AWS RDS instance **`sekar-staging-2`** (formerly `kobin-kpi-db`;
 renamed when project KPI was decommissioned in 2026-06). SEKAR's app authenticates
 as the dedicated **`sekar`** role against the **`sekar_staging`** database — it never
 uses the master account. The instance **master (root)** credentials are:
@@ -729,7 +729,7 @@ uses the master account. The instance **master (root)** credentials are:
 |---|---|
 | Master username | `kpi` (set at instance creation; not renamable) — also in SSM `/sekar/staging/RDS_MASTER_USERNAME` |
 | Master password | SSM SecureString **`/sekar/staging/RDS_MASTER_PASSWORD`** (rotated on the KPI decommission) |
-| Endpoint | `dlhsby.cvuoeguwo5dg.ap-southeast-3.rds.amazonaws.com:5432` |
+| Endpoint | `sekar-staging-2.c3iiyyyswr0m.ap-southeast-3.rds.amazonaws.com:5432` |
 
 Retrieve the master password (e.g. for `psql`/Adminer admin tasks):
 ```bash
