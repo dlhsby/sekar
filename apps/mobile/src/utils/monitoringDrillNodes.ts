@@ -18,6 +18,7 @@
  */
 
 import type { AggregateNode } from '../types/monitoring.types';
+import { isZoomLike, type MonitoringMode } from '../store/slices/monitoringV2Slice';
 import type { NodeMarker } from '../components/monitoring/NodeMarkerLayer';
 
 export type DrillScope = 'city' | 'district' | 'region' | 'location';
@@ -109,4 +110,34 @@ export function composeDrillNodes(
   }
   // location scope → workers only, no child nodes
   return [];
+}
+
+/**
+ * The node markers to DRAW, for the current mode and scope.
+ *
+ * The three modes differ in what is drawn or fetched, never in what is counted
+ * (ADR-060). Drill shows one tier of children at a time and composes it from the
+ * per-scope aggregate slices. Zoom and viewport show every tier at once, which is
+ * what a single `scope=all` fetch returns — so they use those nodes directly
+ * instead of composing, and the mode's own label ("Zoom (semua)") finally holds.
+ *
+ * The node currently drilled into is dropped: it cannot be drilled from itself,
+ * and it is already on screen as its own highlighted boundary polygon.
+ */
+export function selectDrawnNodes(input: {
+  mode: MonitoringMode;
+  view: DrillView;
+  aggregate: { nodes: AggregateNode[] } | null;
+  aggregateRegion: { nodes: AggregateNode[] } | null;
+}): NodeMarker[] {
+  const { mode, view, aggregate, aggregateRegion } = input;
+
+  if (isZoomLike(mode)) {
+    const nodes = (aggregate?.nodes ?? []).filter(n => n.id !== view.id);
+    return toMarkers(nodes);
+  }
+
+  const cityNodes = view.scope === 'city' ? (aggregate?.nodes ?? []) : [];
+  const districtNodes = view.scope !== 'city' ? (aggregate?.nodes ?? []) : [];
+  return composeDrillNodes(view.scope, view, cityNodes, districtNodes, aggregateRegion?.nodes ?? []);
 }

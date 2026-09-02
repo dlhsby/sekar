@@ -43,13 +43,14 @@ import {
   initMonitoringView,
   drillTo,
   drillBack,
+  isZoomLike,
 } from '../../store/slices/monitoringV2Slice';
 import type {
   MonitoringV2VisibleLayers,
   MonitoringScope,
   MonitoringMode,
 } from '../../store/slices/monitoringV2Slice';
-import { composeDrillNodes } from '../../utils/monitoringDrillNodes';
+import { selectDrawnNodes } from '../../utils/monitoringDrillNodes';
 import { regionToBox, regionWithinBox } from '../../utils/viewportBox';
 import { tiersAtDelta } from '../../utils/zoomTiers';
 import { useHiddenEntities } from '../../utils/hiddenEntities';
@@ -188,26 +189,47 @@ export function MapDashboardScreen(): React.JSX.Element {
   //
   // Boundaries are the payload that matters here: mobile asks for `level='area'`
   // city-wide in every other mode, which is every lokasi polygon in Surabaya.
+  //
+  // The box is held in state, not just a ref, because the AGGREGATE fetch needs
+  // the same one: two independently-derived boxes would have the polygons and
+  // the node pins answering for different rectangles.
+  const [aggregateBox, setAggregateBox] = useState<string | undefined>(undefined);
   const viewportBoxRef = useRef<string | null>(null);
   useEffect(() => {
     if (mode !== 'viewport') {
       // Clear on the way out so re-entering fetches for where the camera is NOW.
       viewportBoxRef.current = null;
+      setAggregateBox(undefined);
       return;
     }
     if (viewportBoxRef.current && regionWithinBox(currentRegion, viewportBoxRef.current)) return;
     const box = regionToBox(currentRegion);
     if (box === viewportBoxRef.current) return;
     viewportBoxRef.current = box;
+    setAggregateBox(box);
     void dispatch(fetchBoundaries({ bbox: box }));
   }, [mode, currentRegion, dispatch]);
 
-  // Aggregate fetch — city rollup feeds the district nodes; district rollup feeds
-  // the lokasi nodes. (The `region`/kawasan aggregate tier + its bubble rendering is
-  // a coupled follow-up — see PR2-visual — because switching the district-scope fetch
-  // to `region` without rendering kawasan bubbles would strip the lokasi bubbles'
-  // ratios. Until then a district drills straight to its lokasi, region-less.)
+  // Aggregate fetch.
+  //
+  // Zoom and viewport draw EVERY tier at once, which is exactly what one
+  // `scope=all` call returns — so they make that single request instead of the
+  // per-scope fan-out, and viewport narrows it to the camera with the same
+  // padded box the boundary fetch uses. Drill shows one tier of children at a
+  // time and keeps the per-scope calls: city rollup feeds the district nodes,
+  // district rollup feeds the lokasi nodes, and a district view needs BOTH its
+  // kawasan rollup and its lokasi rollup to render regions ∪ region-less lokasi.
   useEffect(() => {
+    if (isZoomLike(mode)) {
+      void dispatch(
+        fetchAggregate({
+          scope: 'all',
+          id: view.districtId ?? undefined,
+          bbox: mode === 'viewport' ? aggregateBox : undefined,
+        }),
+      );
+      return;
+    }
     if (scope === 'city') {
       void dispatch(fetchAggregate({ scope: 'city' }));
     } else if (scope === 'district' && view.id) {
@@ -222,7 +244,7 @@ export function MapDashboardScreen(): React.JSX.Element {
       void dispatch(fetchAggregate({ scope: 'district', id: view.districtId }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scope, view.id, view.districtId]);
+  }, [scope, view.id, view.districtId, mode, aggregateBox]);
 
   // Fetch the snapshot for the current drill scope (workers carry display_scope so
   // the map renders each at their own tier). Re-fetch on any scope/node change only —
@@ -448,12 +470,10 @@ export function MapDashboardScreen(): React.JSX.Element {
   // Drill bubbles are sourced from the AGGREGATE (not boundary geometry) so kawasan —
   // which have no polygon in the boundaries payload — can render: district shows
   // regions ∪ region-less lokasi, region shows the kawasan's lokasi. See composeDrillNodes.
-  const nodeMarkers = useMemo<NodeMarker[]>(() => {
-    const cityNodes = scope === 'city' ? (aggregate?.nodes ?? []) : [];
-    const districtNodes = scope !== 'city' ? (aggregate?.nodes ?? []) : [];
-    const regionNodes = aggregateRegion?.nodes ?? [];
-    return composeDrillNodes(scope, view, cityNodes, districtNodes, regionNodes);
-  }, [scope, view, aggregate, aggregateRegion]);
+  const nodeMarkers = useMemo<NodeMarker[]>(
+    () => selectDrawnNodes({ mode, view, aggregate, aggregateRegion }),
+    [mode, view, aggregate, aggregateRegion],
+  );
 
   // A bubble tap drills into that node (variant → target scope) and zooms in.
   const handleNodeDrill = useCallback(

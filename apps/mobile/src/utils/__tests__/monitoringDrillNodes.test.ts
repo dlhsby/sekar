@@ -7,6 +7,7 @@
 import {
   aggregateNodeToNodeMarker,
   composeDrillNodes,
+  selectDrawnNodes,
   type DrillView,
 } from '../monitoringDrillNodes';
 import type { AggregateNode } from '../../types/monitoring.types';
@@ -166,5 +167,65 @@ describe('composeDrillNodes', () => {
       [],
     );
     expect(out).toEqual([]);
+  });
+});
+
+describe('selectDrawnNodes', () => {
+  const cityAgg = (nodes: AggregateNode[]) =>
+    ({ scope: 'city', scope_id: null, nodes }) as never;
+  const allAgg = (nodes: AggregateNode[]) => ({ scope: 'all', scope_id: null, nodes }) as never;
+
+  it('composes one tier of children in drill mode', () => {
+    const drawn = selectDrawnNodes({
+      mode: 'drill',
+      view: view({ scope: 'city' }),
+      aggregate: cityAgg([
+        agg({ id: 'd1', type: 'district' }),
+        agg({ id: 'd2', type: 'district' }),
+      ]),
+      aggregateRegion: null,
+    });
+    expect(drawn.map(n => n.id)).toEqual(['d1', 'd2']);
+  });
+
+  it('draws EVERY tier at once in zoom mode, not just the current level', () => {
+    // What `scope=all` returns: rayon, kawasan and lokasi mixed in one payload.
+    const drawn = selectDrawnNodes({
+      mode: 'zoom',
+      view: view({ scope: 'city' }),
+      aggregate: allAgg([
+        agg({ id: 'd1', type: 'district' }),
+        agg({ id: 'k1', type: 'region' }),
+        agg({ id: 'l1', type: 'location' }),
+      ]),
+      aggregateRegion: null,
+    });
+    expect(drawn.map(n => n.id).sort()).toEqual(['d1', 'k1', 'l1']);
+  });
+
+  it('draws every tier in viewport mode too — the modes differ in FETCH, not in what is drawn', () => {
+    const drawn = selectDrawnNodes({
+      mode: 'viewport',
+      view: view({ scope: 'city' }),
+      aggregate: allAgg([agg({ id: 'd1', type: 'district' }), agg({ id: 'l1', type: 'location' })]),
+      aggregateRegion: null,
+    });
+    expect(drawn).toHaveLength(2);
+  });
+
+  it('drops the node currently drilled into, which cannot be drilled from itself', () => {
+    const drawn = selectDrawnNodes({
+      mode: 'zoom',
+      view: view({ scope: 'district', id: 'd1', districtId: 'd1' }),
+      aggregate: allAgg([agg({ id: 'd1', type: 'district' }), agg({ id: 'l1', type: 'location' })]),
+      aggregateRegion: null,
+    });
+    expect(drawn.map(n => n.id)).toEqual(['l1']);
+  });
+
+  it('returns nothing when the aggregate has not loaded', () => {
+    expect(
+      selectDrawnNodes({ mode: 'zoom', view: view({ scope: 'city' }), aggregate: null, aggregateRegion: null }),
+    ).toEqual([]);
   });
 });

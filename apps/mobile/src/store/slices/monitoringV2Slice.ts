@@ -15,7 +15,12 @@ import {
   DEFAULT_VISIBLE_LAYERS,
   type MonitoringV2VisibleLayers as VisibleLayers,
 } from '../../utils/layerVisibility';
-import type { LiveUser, AggregateNode, MonitoringAggregateResponse } from '../../types/models.types';
+import type {
+  LiveUser,
+  AggregateNode,
+  AggregateScope,
+  MonitoringAggregateResponse,
+} from '../../types/models.types';
 import { getMonitoringAggregate } from '../../services/api/monitoringApi';
 import apiClient from '../../services/api/apiClient';
 import i18n from '../../i18n/config';
@@ -103,8 +108,11 @@ export interface FetchSnapshotParams {
 }
 
 export interface FetchAggregateParams {
-  scope: 'city' | 'district' | 'region';
+  /** `all` returns every tier mixed — what zoom and viewport draw. */
+  scope: AggregateScope;
   id?: string;
+  /** Viewport mode only: narrow the nodes the server builds to the camera. */
+  bbox?: string;
 }
 
 // ─── Initial State ────────────────────────────────────────────────────────────
@@ -174,13 +182,13 @@ export const fetchSnapshot = createAsyncThunk(
 
 /**
  * Fetch the aggregate ("Ringkasan") rollup for the current scope.
- * Endpoint: GET /monitoring/aggregate?scope=city|district[&id=<uuid>]
+ * Endpoint: GET /monitoring/aggregate?scope=city|district|region|all[&id=][&bbox=]
  */
 export const fetchAggregate = createAsyncThunk(
   'monitoringV2/fetchAggregate',
   async (params: FetchAggregateParams, { rejectWithValue }) => {
     try {
-      const res = await getMonitoringAggregate(params.scope, params.id);
+      const res = await getMonitoringAggregate(params.scope, params.id, params.bbox);
       if (res.error || !res.data) {
         return rejectWithValue(res.error ?? i18n.t('monitoring:screen.error.failedSnapshot'));
       }
