@@ -26,7 +26,7 @@ It walks the four scenarios end-to-end — **run locally → obtain keys → dep
    Server *or* Linux). One host runs everything: PostgreSQL + Redis + MinIO + backend + web +
    reverse proxy. No cloud bill. → **§E** (`docker-compose.prod.yml`).
 2. **Staging / UAT → AWS** — EC2 `t3.micro` (dedicated SEKAR box, sole tenant as of 2026-06): backend + web + Redis
-   containers behind the SEKAR-owned Caddy, shared RDS `dlhsby` (database `sekar_staging`), AWS S3 (instance role),
+   containers behind the SEKAR-owned Caddy, shared RDS `sekar-staging-2` (database `sekar_staging`), AWS S3 (instance role),
    secrets in SSM Parameter Store. → **§D** (`infra/compose.staging.yml`).
 3. *(Reference)* fuller managed-cloud layout (ECS/ElastiCache/CloudFront) → **Appendix A**.
 
@@ -118,7 +118,7 @@ ciphertext). The one real secret is the per-file private key in **`.env.keys`** 
 ## D. Deploy to staging (AWS — sole tenant)
 
 Staging/UAT runs on **AWS**, sole tenant (SEKAR-owned as of 2026-06) on the `t3.micro`
-(account `659828096624`, region `ap-southeast-3`, CLI profile `sekar`). It does **not** use
+(account `204284492859`, region `ap-southeast-3`, CLI profile `sekar`). It does **not** use
 the self-hosted `docker-compose.prod.yml` — that's the on-prem **production** stack (§E).
 Authoritative deltas live in [ADR-028 addendum](../architecture/decisions/ADR-028-staging-environment.md).
 
@@ -136,7 +136,7 @@ Authoritative deltas live in [ADR-028 addendum](../architecture/decisions/ADR-02
   Parameter.Value --output text) npx @dotenvx/dotenvx get DATABASE_PASSWORD -f .env.staging`).
   The `adminer` service lives in
   `infra/compose.staging.yml` (internal-only `expose`, reached via Caddy on the `edge` network).
-  DNS A record `adminer.wahyutrip.com → 16.79.124.63`.
+  DNS A record `adminer.wahyutrip.com → 16.79.13.227`.
 
 ### Topology
 - **Edge/TLS:** SEKAR's own **Caddy** service (`sekar-caddy`) on 80/443 via a shared external Docker network `edge`;
@@ -155,12 +155,12 @@ Authoritative deltas live in [ADR-028 addendum](../architecture/decisions/ADR-02
   - **`docs`** is the public user manual (Docusaurus static site, [`apps/docs/`](../../apps/docs)),
     built into the `sekar-docs` ECR image by CI and served as static HTML by its bundled nginx.
     One-time setup: create the `sekar-docs` ECR repo, add the `ECR_DOCS` repo Variable, and add
-    DNS A record `docs.sekar.wahyutrip.com → 16.79.124.63`. Caddy block in
+    DNS A record `docs.sekar.wahyutrip.com → 16.79.13.227`. Caddy block in
     [`infra/Caddyfile.staging`](../../infra/Caddyfile.staging) is part of SEKAR's config
     and deployed with the SEKAR stack. No auth — anyone can read it. Content edits (markdown under
     `apps/docs/docs/`) rebuild & redeploy on the next staging release (merge to `staging` / manual run).
-- **DB:** `sekar_staging` database + `sekar` role on the **shared** RDS `dlhsby` (`DATABASE_SSL=true`).
-- **Media:** S3 `sekar-media-staging` via the **EC2 instance role** — no static AWS keys on the host.
+- **DB:** `sekar_staging` database + `sekar` role on the **shared** RDS `sekar-staging-2` (`DATABASE_SSL=true`).
+- **Media:** S3 `sekar-media-staging-id` via the **EC2 instance role** — no static AWS keys on the host.
 - **Secrets (dotenvx):** the backend's full staging config lives in the committed, **encrypted**
   [`apps/be/.env.staging`](../../apps/be/.env.staging) baked into the image. The only thing the box needs
   at runtime is the private key to decrypt it — `DOTENV_PRIVATE_KEY_STAGING`, pulled from SSM
@@ -198,7 +198,7 @@ Required GitHub **Variables**: `AWS_REGION`, `AWS_ROLE_ARN`, `ECR_BACKEND`, `ECR
 # 1. Build + push images. Web decrypts NEXT_PUBLIC_* from the encrypted apps/web/.env.staging
 #    via dotenvx at build time; the private key is a BuildKit secret, never in a layer.
 aws ecr get-login-password --profile sekar --region ap-southeast-3 \
-  | docker login --username AWS --password-stdin 659828096624.dkr.ecr.ap-southeast-3.amazonaws.com
+  | docker login --username AWS --password-stdin 204284492859.dkr.ecr.ap-southeast-3.amazonaws.com
 docker buildx build --platform linux/amd64 -f apps/be/Dockerfile \
   -t .../sekar-backend:staging --push be          # bakes the encrypted apps/be/.env.staging
 docker buildx build --platform linux/amd64 -f apps/web/Dockerfile \
