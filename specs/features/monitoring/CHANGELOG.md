@@ -16,7 +16,10 @@ Newest first. Feature overview + current design live in [README.md](./README.md)
   shared camera bbox), which the backend already served. Retired ratio-bubble code is deleted on
   both platforms, including a second, disagreeing mobile implementation inside `BoundaryOverlay`.
   `specs/features/monitoring/PARITY.md` corrected: its "level-wise node markers" row was true at
-  the symbol level only.
+  the symbol level only. Running the app then surfaced one more gap the zoom fix exposed: node pins
+  were never gated on the per-tier **marker** facet (web filters them in `visibleNodeMarkers`), so
+  with every tier finally drawing, all 952 lokasi pins hit the screen at city zoom with no way to
+  quiet them. `showsNodeMarker` already existed on mobile and simply was not applied.
 
 - **2026-08-30** — **Two real derived-state defects fixed out of the 18 `set-state-in-effect`
   warnings; the rest triaged rather than blanket-silenced.** The export page corrected an invalid
