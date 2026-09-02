@@ -93,7 +93,8 @@
   },
   "connectivity": {
     "noInternet": "Tidak ada koneksi internet",
-    "serverUnreachable": "Server tidak terjangkau, mencoba lagi…"
+    "serverUnreachable": "Server tidak terjangkau, mencoba lagi…",
+    "retry": "Coba hubungkan lagi"
   },
   "sync": {
     "syncing": "Menyinkronkan...",
