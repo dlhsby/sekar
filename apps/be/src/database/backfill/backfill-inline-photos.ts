@@ -143,8 +143,48 @@ async function backfillTarget(
   );
 }
 
+/**
+ * Connect, retrying transient failures with exponential backoff.
+ *
+ * The 2026-09-02 staging run died on `Connection terminated due to connection
+ * timeout` — memory pressure on db.t4g.micro meant Postgres kept serving
+ * EXISTING pooled connections while refusing NEW ones. The condition cleared on
+ * its own, but the script exited non-zero on the first attempt, so every
+ * restart failed at the starting line despite thousands of photos already
+ * being moved.
+ *
+ * Backoff matters as much as the retry: a supervisor relaunching this every
+ * ~10s turned a struggling instance into a connection storm and deepened the
+ * outage. Retrying is safe because the backfill is idempotent and
+ * keyset-paginated — a rewritten row no longer matches the `data:%` predicate.
+ */
+export async function connectWithRetry(
+  ds: { initialize: () => Promise<unknown> },
+  opts: { attempts?: number; baseDelayMs?: number } = {},
+): Promise<void> {
+  const attempts = opts.attempts ?? 5;
+  const baseDelayMs = opts.baseDelayMs ?? 2_000;
+  let lastErr: unknown;
+
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      await ds.initialize();
+      return;
+    } catch (err) {
+      lastErr = err;
+      if (attempt === attempts) break;
+      const delay = baseDelayMs * 2 ** (attempt - 1);
+      console.warn(
+        `connect attempt ${attempt}/${attempts} failed (${(err as Error).message}) — retrying in ${delay}ms`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+  throw lastErr;
+}
+
 async function main(): Promise<void> {
-  await AppDataSource.initialize();
+  await connectWithRetry(AppDataSource);
   const s3 = new S3Service(new ConfigService(process.env as Record<string, unknown>));
   const stats: RewriteStats = { photosMoved: 0, bytesMoved: 0 };
   // sha256(bytes) -> stored URL, shared across every target so a photo that

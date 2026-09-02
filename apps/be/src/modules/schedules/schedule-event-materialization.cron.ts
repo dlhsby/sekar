@@ -86,15 +86,21 @@ export class ScheduleEventMaterializationCron implements OnApplicationBootstrap 
         // operator expects to see.
         shift_definition: { is_active: true },
       },
-      relations: [
-        'shift_definition',
-        'location',
-        'region',
-        'team_category',
-        'pic_user',
-        'user',
-        'members',
-      ],
+      // Only what the materializer actually dereferences. A bare relations array
+      // loads EVERY column of each joined entity — including
+      // locations.boundary_polygon (837 kB across 955 rows), pulled on every
+      // pass to read a single district_id. This is the F10 hazard from the
+      // cutover runbook; /schedules/range was fixed for it, the materializer
+      // was a second instance found on 2026-09-02.
+      //
+      // team_category / pic_user / user are deliberately NOT joined: only
+      // event.team_category_id, event.pic_user_id and event.user_id are read,
+      // and those scalars already live on the event row.
+      relations: ['shift_definition', 'location', 'region', 'members'],
+      select: {
+        location: { id: true, district_id: true },
+        region: { id: true, district_id: true },
+      },
     });
 
     let totalCreated = 0;
