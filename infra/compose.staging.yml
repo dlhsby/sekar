@@ -104,7 +104,7 @@ services:
     image: adminer:4.8.1
     container_name: sekar-adminer
     environment:
-      ADMINER_DEFAULT_SERVER: sekar-staging.c3iiyyyswr0m.ap-southeast-3.rds.amazonaws.com
+      ADMINER_DEFAULT_SERVER: sekar-staging-2.c3iiyyyswr0m.ap-southeast-3.rds.amazonaws.com
       ADMINER_DESIGN: dracula
     expose:
       - "8080" # internal only; reached via Caddy on the edge network
