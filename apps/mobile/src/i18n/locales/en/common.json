@@ -93,7 +93,8 @@
   },
   "connectivity": {
     "noInternet": "No internet connection",
-    "serverUnreachable": "Server unreachable, retrying…"
+    "serverUnreachable": "Server unreachable, retrying…",
+    "retry": "Try connecting again"
   },
   "sync": {
     "syncing": "Syncing...",
