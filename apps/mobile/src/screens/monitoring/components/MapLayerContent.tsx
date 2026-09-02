@@ -53,7 +53,6 @@ interface MapLayerContentProps {
   /** Monitoring mode — `zoom` draws every tier of the subtree at once. */
   mode?: MonitoringMode;
   /** Attendance ratio per rayon/location id, shown on the geographic markers. */
-  rosterById: Record<string, { activeInside: number; scheduled: number }>;
   /** Drill bubbles composed from the aggregate (district → regions ∪ region-less
    *  lokasi; region → the kawasan's lokasi). Replaces the boundary-derived bubbles
    *  so kawasan (no polygon) can render. */
@@ -67,8 +66,6 @@ interface MapLayerContentProps {
   /** Unified drill-down: true → worker markers (location scope). */
   showWorkers: boolean;
   /** Bubble taps — drill into the child level (city→district, district→area). */
-  onDistrictDrill: (district: any) => void;
-  onAreaDrill: (area: any) => void;
   /** Marker taps — open the current node's detail sheet. */
   onDistrictDetail: (district: any) => void;
   onAreaDetail: (area: any) => void;
@@ -91,14 +88,11 @@ export function MapLayerContent({
   areaId,
   regionId = null,
   mode = 'drill',
-  rosterById,
   nodeMarkers,
   onNodeDrill,
   teamGroups,
   onTeamPress,
   showWorkers,
-  onDistrictDrill,
-  onAreaDrill,
   onDistrictDetail,
   onAreaDetail,
   onMarkerPress,
@@ -162,8 +156,6 @@ export function MapLayerContent({
   // the polygons + the current node's DETAIL marker:
   //   • district → the selected district MARKER (detail)
   //   • location  → the selected location MARKER (detail) + worker markers
-  const showDistrictBubbles = false;
-  const showAreaBubbles = false;
   const showDistrictMarker = scope === 'district';
   const showAreaMarker = scope === 'location';
   const showBoundaryLayer =
@@ -253,8 +245,6 @@ export function MapLayerContent({
         <BoundaryOverlay
           key={`boundary-${scope}-${boundaryKey}`}
           districts={scopedDistricts}
-          onDistrictBubblePress={onDistrictDrill}
-          onAreaBubblePress={onAreaDrill}
           onDistrictMarkerPress={onDistrictDetail}
           onAreaMarkerPress={onAreaDetail}
           showDistricts={showDistrictBoundaries}
@@ -269,11 +259,8 @@ export function MapLayerContent({
           areaOutline={showsBoundary(visibleLayers.lokasi)}
           areaFill={showsFill(visibleLayers.lokasi)}
           regionId={regionId}
-          showDistrictBubbles={showDistrictBubbles}
-          showAreaBubbles={showAreaBubbles}
           showDistrictMarker={showDistrictMarker}
           showAreaMarker={showAreaMarker}
-          rosterById={rosterById}
         />
       )}
 

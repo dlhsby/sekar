@@ -16,7 +16,6 @@ import { ROLE_MARKER_ICONS } from '@/lib/constants/monitoring';
 import { presenceTone, type PresenceTone } from '@/lib/presence/tone';
 
 /* eslint-disable sekar-design/no-inline-hex-colors -- SVG icon fills for Google overlays, not rendered style tokens */
-const BLACK = '#1C1917';
 const WHITE = '#FFFFFF';
 
 // Two-activity model colors (kept in sync with mobile markerSpec / tokens).
@@ -464,140 +463,6 @@ export function entityDefaultGlyph(kind: 'district' | 'region' | 'location' | 't
   return 'trees';
 }
 
-export function nodeCountIcon(
-  variant: 'district' | 'location' | 'region' | 'surabaya',
-  active: number,
-  health: HealthLevel,
-  opts?: { icon?: string | null }
-): google.maps.Icon {
-  const color = HEALTH_COLORS[health];
-  const glyph = opts?.icon ? (NODE_GLYPHS[opts.icon] ?? null) : null;
-  // Nothing scheduled + nobody active + no configured icon → a small muted dot
-  // (dense districts stay legible). A configured icon always renders.
-  if (health === 'empty' && active <= 0 && !glyph) {
-    const s = 12;
-    const svg =
-      `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}">` +
-      `<circle cx="${s / 2}" cy="${s / 2}" r="${s / 2 - 1}" fill="${WHITE}" stroke="${color}" stroke-width="2"/>` +
-      `</svg>`;
-    return {
-      url: svgUrl(svg),
-      scaledSize: new google.maps.Size(s, s),
-      anchor: new google.maps.Point(s / 2, s / 2),
-      labelOrigin: new google.maps.Point(s / 2, s + 8),
-    };
-  }
-  // Kawasan/district a touch larger than lokasi so tiers read at a glance.
-  const big = variant === 'district' || variant === 'region';
-  const d = big ? 40 : 30;
-  const r = d / 2 - 2;
-  const fs = big ? 16 : 13;
-  // Configured marker: the glyph fills the pin; the active count rides a small
-  // health-colored badge at the top-right so status still reads at a glance.
-  const center = glyph
-    ? `<g transform="translate(${d / 2} ${d / 2}) scale(${(d * 0.55) / 24}) translate(-12 -12)" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${glyph}</g>` +
-      (active > 0
-        ? `<circle cx="${d - 8}" cy="8" r="8" fill="${color}"/>` +
-          `<text x="${d - 8}" y="${8 + fs / 3}" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="11" font-weight="800" fill="${WHITE}">${active}</text>`
-        : '')
-    : `<text x="${d / 2}" y="${d / 2 + fs / 3}" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="${fs}" font-weight="800" fill="${color}">${active}</text>`;
-  const svg =
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${d}" height="${d}" viewBox="0 0 ${d} ${d}">` +
-    `<circle cx="${d / 2}" cy="${d / 2}" r="${r}" fill="${WHITE}" stroke="${color}" stroke-width="3"/>` +
-    center +
-    `</svg>`;
-  return {
-    url: svgUrl(svg),
-    scaledSize: new google.maps.Size(d, d),
-    anchor: new google.maps.Point(d / 2, d / 2),
-    labelOrigin: new google.maps.Point(d / 2, d + 9),
-  };
-}
-
-/**
- * A node marker showing the attendance ratio `hadir/terjadwal`, colored by
- * staffing health — a white rounded bubble with a health-colored border, exactly
- * matching the mobile node bubbles. Surabaya is a wider bubble with a label.
- * Region markers use the same 76×44 size as district/area.
- */
-export function nodeRatioIcon(
-  variant: 'district' | 'location' | 'region' | 'surabaya',
-  scheduled: number,
-  clockedIn: number
-): google.maps.Icon {
-  const color = HEALTH_COLORS[rosterHealth(scheduled, clockedIn)];
-  const ratio = `${clockedIn}/${scheduled}`;
-
-  if (variant === 'surabaya') {
-    const w = 152;
-    const h = 72;
-    const svg =
-      `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">` +
-      `<rect x="3" y="3" width="${w - 6}" height="${h - 6}" rx="16" fill="${WHITE}" stroke="${color}" stroke-width="3"/>` +
-      `<text x="${w / 2}" y="30" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="800" fill="${BLACK}" letter-spacing="1">SURABAYA</text>` +
-      `<text x="${w / 2}" y="56" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="24" font-weight="800" fill="${color}">${ratio}</text>` +
-      `</svg>`;
-    return {
-      url: svgUrl(svg),
-      scaledSize: new google.maps.Size(w, h),
-      anchor: new google.maps.Point(w / 2, h / 2),
-    };
-  }
-
-  // district + area — one consistent rounded ratio bubble (matches mobile).
-  const w = 76;
-  const h = 44;
-  const svg =
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">` +
-    `<rect x="2" y="2" width="${w - 4}" height="${h - 4}" rx="12" fill="${WHITE}" stroke="${color}" stroke-width="3"/>` +
-    `<text x="${w / 2}" y="${h / 2 + 6}" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="800" fill="${color}">${ratio}</text>` +
-    `</svg>`;
-  return {
-    url: svgUrl(svg),
-    scaledSize: new google.maps.Size(w, h),
-    anchor: new google.maps.Point(w / 2, h / 2),
-  };
-}
-
-/* eslint-disable sekar-design/no-inline-hex-colors -- SVG icon fills for Google overlays */
-// The CURRENT-node icon markers (mirrors mobile's district office / location pin). These
-// are the detail-openers for the node you're inside — icon only, no ratio (the
-// ratio lives on the child bubbles). Distinct from the drill bubbles above.
-const NODE_DETAIL: Record<'district' | 'location', { color: string; glyph: string }> = {
-  district: {
-    color: '#2563EB',
-    glyph:
-      '<path d="M3 21h18"/><path d="M5 21V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v16"/>' +
-      '<path d="M14 21V9h4a1 1 0 0 1 1 1v11"/><path d="M8 7h2M8 11h2M8 15h2"/>',
-  },
-  location: {
-    color: '#D97706',
-    glyph: '<path d="M12 22s7-6 7-12a7 7 0 1 0-14 0c0 6 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/>',
-  },
-};
-/* eslint-enable sekar-design/no-inline-hex-colors */
-
-/**
- * The current node's geographic pin (selected district at district scope, selected location
- * at location scope). A colored circle with a white glyph; clicking it opens the
- * node's detail — it does NOT drill, so it carries no ratio.
- */
-export function nodeDetailIcon(variant: 'district' | 'location'): google.maps.Icon {
-  const { color, glyph } = NODE_DETAIL[variant];
-  const s = 48;
-  const c = s / 2;
-  const svg =
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}">` +
-    `<circle cx="${c}" cy="${c}" r="20" fill="${color}" stroke="${WHITE}" stroke-width="3"/>` +
-    `<g transform="translate(${c} ${c}) scale(0.92) translate(-12 -12)" fill="none" stroke="${WHITE}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${glyph}</g>` +
-    `</svg>`;
-  return {
-    url: svgUrl(svg),
-    scaledSize: new google.maps.Size(s, s),
-    anchor: new google.maps.Point(c, c),
-  };
-}
-
 /**
  * A team bubble — a rounded white bubble with a team-colored border, displaying
  * the member count prominently and the team name as a smaller label.
@@ -625,35 +490,6 @@ export function teamMarkerIcon(
   });
 }
 
-/** @deprecated Use {@link teamMarkerIcon} — teams now render as a glyph pin, not a bubble. */
-export function teamBubbleIcon(
-  teamColor: string | null,
-  memberCount: number,
-  teamName: string,
-  glyph?: string | null
-): google.maps.Icon {
-  const color = teamColor ?? TEAM_DEFAULT;
-  const w = 90;
-  const h = 46;
-  const glyphPath = glyph ? ALL_GLYPHS[glyph] ?? null : null;
-
-  const svg =
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">` +
-    `<rect x="2" y="2" width="${w - 4}" height="${h - 4}" rx="12" fill="${WHITE}" stroke="${color}" stroke-width="3"/>` +
-    // Team glyph (left, in the team color) when configured — identifies the crew type.
-    (glyphPath
-      ? `<g transform="translate(16 16) scale(0.7) translate(-12 -12)" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">${glyphPath}</g>`
-      : '') +
-    `<text x="${glyphPath ? '58%' : '50%'}" y="18" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="20" font-weight="800" fill="${color}" letter-spacing="0.5">${memberCount}</text>` +
-    `<text x="50%" y="40" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="11" font-weight="600" fill="${BLACK}">${teamName}</text>` +
-    `</svg>`;
-
-  return {
-    url: svgUrl(svg),
-    scaledSize: new google.maps.Size(w, h),
-    anchor: new google.maps.Point(w / 2, h / 2),
-  };
-}
  
 
 /**

@@ -87,7 +87,6 @@ export interface MonitoringV2State {
   mode: MonitoringMode;
   selectedUserId: string | null;
   selectedAreaId: string | null;
-  clusterZoomThreshold: number;
   loading: boolean;
   error: string | null;
   // Unified drill-down state (Surabaya → district → area → workers).
@@ -131,7 +130,6 @@ const initialState: MonitoringV2State = {
   selectedUserId: null,
   selectedAreaId: null,
   /** lat-delta threshold below which individual markers are shown instead of clusters */
-  clusterZoomThreshold: 0.05,
   loading: false,
   error: null,
   view: { scope: 'city', id: null, districtId: null, regionId: null, name: null },
@@ -273,14 +271,6 @@ const monitoringV2Slice = createSlice({
      */
     setSelectedArea(state, action: PayloadAction<string | null>) {
       state.selectedAreaId = action.payload;
-    },
-
-    /**
-     * Override the lat-delta threshold used to decide between cluster markers
-     * and individual UserMarker components.
-     */
-    setClusterZoomThreshold(state, action: PayloadAction<number>) {
-      state.clusterZoomThreshold = action.payload;
     },
 
     /**
@@ -442,7 +432,6 @@ export const {
   setMode,
   setSelectedUser,
   setSelectedArea,
-  setClusterZoomThreshold,
   initMonitoringView,
   enterCity,
   drillTo,

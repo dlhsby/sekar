@@ -405,17 +405,6 @@ export function MapDashboardScreen(): React.JSX.Element {
     [dispatch],
   );
 
-  // Per-node ratio (active-and-inside-area / terjadwal) keyed by district/area id —
-  // fed to the geographic markers so each carries its count. The numerator is the
-  // hadir workers who are BOTH active (fresh ping) and inside their area.
-  const rosterById = useMemo<Record<string, { activeInside: number; scheduled: number }>>(() => {
-    const map: Record<string, { activeInside: number; scheduled: number }> = {};
-    for (const n of aggregate?.nodes ?? []) {
-      map[n.id] = { activeInside: n.presence?.aktif?.dalam ?? 0, scheduled: n.roster?.scheduled ?? 0 };
-    }
-    return map;
-  }, [aggregate]);
-
   /**
    * Roster lifecycle split for the scope currently on screen — summed over the
    * child nodes the aggregate returned. "Belum hadir" (still inside the arrival
@@ -452,22 +441,7 @@ export function MapDashboardScreen(): React.JSX.Element {
       animateTo(lat, lng, Math.min(currentRegion.latitudeDelta, target)),
     [animateTo, currentRegion.latitudeDelta],
   );
-  const handleDistrictBubblePress = useCallback(
-    (district: DistrictBoundary) => {
-      dispatch(drillTo({ id: district.id, type: 'district', name: district.name, districtId: district.id }));
-      zoomInTo(Number(district.center_lat), Number(district.center_lng), 0.08);
-    },
-    [dispatch, zoomInTo],
-  );
-  const handleAreaBubblePress = useCallback(
-    (area: AreaBoundary) => {
-      dispatch(drillTo({ id: area.id, type: 'location', name: area.name, districtId: view.districtId }));
-      zoomInTo(Number(area.center_lat), Number(area.center_lng), 0.02);
-    },
-    [dispatch, zoomInTo, view.districtId],
-  );
-
-  // Drill bubbles are sourced from the AGGREGATE (not boundary geometry) so kawasan —
+  // Drill nodes are sourced from the AGGREGATE (not boundary geometry) so kawasan —
   // which have no polygon in the boundaries payload — can render: district shows
   // regions ∪ region-less lokasi, region shows the kawasan's lokasi. See composeDrillNodes.
   const nodeMarkers = useMemo<NodeMarker[]>(
@@ -606,14 +580,11 @@ export function MapDashboardScreen(): React.JSX.Element {
                 areaId={scope === 'location' ? view.id : null}
                 regionId={scope === 'region' ? view.id : view.regionId}
                 mode={mode}
-                rosterById={rosterById}
                 nodeMarkers={nodeMarkers}
                 onNodeDrill={handleNodeDrill}
                 teamGroups={teamBubbles}
                 onTeamPress={handleTeamPress}
                 showWorkers={showWorkers}
-                onDistrictDrill={handleDistrictBubblePress}
-                onAreaDrill={handleAreaBubblePress}
                 onDistrictDetail={handleDistrictPress}
                 onAreaDetail={handleAreaPress}
                 onMarkerPress={handleMarkerPress}

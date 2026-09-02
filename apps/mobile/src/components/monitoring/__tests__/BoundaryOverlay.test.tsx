@@ -147,14 +147,10 @@ function buildDistrict(
 describe('BoundaryOverlay', () => {
   const onDistrictMarkerPress = jest.fn();
   const onAreaMarkerPress = jest.fn();
-  const onDistrictBubblePress = jest.fn();
-  const onAreaBubblePress = jest.fn();
 
   const defaultProps = {
     onDistrictMarkerPress,
     onAreaMarkerPress,
-    onDistrictBubblePress,
-    onAreaBubblePress,
   };
 
   beforeEach(() => {
@@ -422,57 +418,6 @@ describe('BoundaryOverlay', () => {
 
   // ── Node bubbles (child aggregate → drill) ────────────────────────────────────
 
-  describe('node bubbles', () => {
-    it('renders a district bubble with the name and ratio when showDistrictBubbles is set', () => {
-      const district = buildDistrict([], { id: 'district-1', name: 'Rayon Selatan' });
-      const { getByText } = render(
-        <BoundaryOverlay
-          districts={[district]}
-          {...defaultProps}
-          showDistrictBubbles
-          rosterById={{ 'district-1': { activeInside: 4, scheduled: 6 } }}
-        />,
-      );
-
-      expect(getByText('Rayon Selatan')).toBeTruthy();
-      expect(getByText('4/6')).toBeTruthy();
-    });
-
-    it('renders an area bubble with the name and ratio when showAreaBubbles is set', () => {
-      const area = buildArea({ id: 'area-1', name: 'Taman Bungkul' });
-      const { getByText } = render(
-        <BoundaryOverlay
-          districts={[buildDistrict([area])]}
-          {...defaultProps}
-          showAreaBubbles
-          rosterById={{ 'area-1': { activeInside: 2, scheduled: 3 } }}
-        />,
-      );
-
-      expect(getByText('Taman Bungkul')).toBeTruthy();
-      expect(getByText('2/3')).toBeTruthy();
-    });
-
-    it('shows an em-dash ratio when the node has no roster entry', () => {
-      const district = buildDistrict([], { id: 'district-1', name: 'Rayon Selatan' });
-      const { getByText } = render(
-        <BoundaryOverlay districts={[district]} {...defaultProps} showDistrictBubbles />,
-      );
-
-      expect(getByText('—')).toBeTruthy();
-    });
-
-    it('does not render a district office icon at bubble (city) scope', () => {
-      const { queryByTestId } = render(
-        <BoundaryOverlay districts={[buildDistrict()]} {...defaultProps} showDistrictBubbles />,
-      );
-
-      expect(queryByTestId('icon-office-building')).toBeNull();
-    });
-  });
-
-  // ── Press callbacks ───────────────────────────────────────────────────────────
-
   describe('press callbacks', () => {
     it('calls onDistrictMarkerPress with the district when its marker is pressed', () => {
       const district = buildDistrict([], { id: 'district-42', name: 'Rayon Utara' });
@@ -499,40 +444,10 @@ describe('BoundaryOverlay', () => {
       expect(onAreaMarkerPress).toHaveBeenCalledWith(area);
     });
 
-    it('calls onDistrictBubblePress when a district bubble is pressed', () => {
-      const district1 = buildDistrict([], { id: 'district-1', name: 'Rayon A' });
-      const district2 = buildDistrict([], { id: 'district-2', name: 'Rayon B' });
-      const { getAllByTestId } = render(
-        <BoundaryOverlay districts={[district1, district2]} {...defaultProps} showDistrictBubbles />,
-      );
-
-      const markers = getAllByTestId('marker');
-      fireEvent(markers[1], 'onTouchEnd');
-
-      expect(onDistrictBubblePress).toHaveBeenCalledWith(district2);
-      expect(onDistrictMarkerPress).not.toHaveBeenCalled();
-    });
-
-    it('calls onAreaBubblePress for the correct area when multiple areas exist', () => {
-      const area1 = buildArea({ id: 'area-1', name: 'Taman A' });
-      const area2 = buildArea({ id: 'area-2', name: 'Taman B', center_lat: -7.300 });
-      const { getAllByTestId } = render(
-        <BoundaryOverlay districts={[buildDistrict([area1, area2])]} {...defaultProps} showAreaBubbles />,
-      );
-
-      const markers = getAllByTestId('marker');
-      fireEvent(markers[1], 'onTouchEnd');
-
-      expect(onAreaBubblePress).toHaveBeenCalledWith(area2);
-      expect(onAreaMarkerPress).not.toHaveBeenCalled();
-    });
-
     it('does not fire any callback when nothing is pressed', () => {
       render(<BoundaryOverlay districts={[buildDistrict()]} {...defaultProps} showDistrictMarker showAreaMarker />);
       expect(onDistrictMarkerPress).not.toHaveBeenCalled();
       expect(onAreaMarkerPress).not.toHaveBeenCalled();
-      expect(onDistrictBubblePress).not.toHaveBeenCalled();
-      expect(onAreaBubblePress).not.toHaveBeenCalled();
     });
   });
 
