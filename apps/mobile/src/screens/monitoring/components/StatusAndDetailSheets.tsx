@@ -9,7 +9,7 @@ import { MonitoringStatusSheet } from '../../../components/monitoring/Monitoring
 import { UserDetailSheet } from '../../../components/monitoring/UserDetailSheet';
 import { LocationTrailModal } from '../../../components/monitoring/LocationTrailModal';
 import type { LiveUser, PresenceActivity, AbsentUser } from '../../../types/models.types';
-import type { NodeMarker } from '../../../components/monitoring/AggregateBubbleLayer';
+import type { NodeMarker } from '../../../components/monitoring/NodeMarkerLayer';
 import type { AttendanceResponse } from '../../../types/api.types';
 
 interface StatusAndDetailSheetsProps {

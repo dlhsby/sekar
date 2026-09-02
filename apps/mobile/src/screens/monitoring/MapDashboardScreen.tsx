@@ -53,7 +53,7 @@ import { composeDrillNodes } from '../../utils/monitoringDrillNodes';
 import { regionToBox, regionWithinBox } from '../../utils/viewportBox';
 import { tiersAtDelta } from '../../utils/zoomTiers';
 import { useHiddenEntities } from '../../utils/hiddenEntities';
-import type { NodeMarker } from '../../components/monitoring/AggregateBubbleLayer';
+import type { NodeMarker } from '../../components/monitoring/NodeMarkerLayer';
 import type { TeamGroup } from '../../utils/teamGrouping';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -134,9 +134,9 @@ export function MapDashboardScreen(): React.JSX.Element {
   const { markerPreview, setMarkerPreview, showMarkerPreview, dismissPreview, setMapLayout } =
     useMarkerPreview(mapRef, currentRegion);
 
-  // Zoom + My-Location are native Google controls now; only heading reset +
-  // cluster tap remain custom.
-  const { resetHeading, handleClusterPress, handleMyLocation, handleZoomIn, handleZoomOut } =
+  // Zoom + My-Location are native Google controls now; only heading reset
+  // remains custom.
+  const { resetHeading, handleMyLocation, handleZoomIn, handleZoomOut } =
     useMapOperations(mapRef, currentRegion);
 
   const { visibleUsers, teamBubbles, labelMode, staffedAreas, totalAreas, lastUpdated } =
@@ -597,7 +597,7 @@ export function MapDashboardScreen(): React.JSX.Element {
                 onDistrictDetail={handleDistrictPress}
                 onAreaDetail={handleAreaPress}
                 onMarkerPress={handleMarkerPress}
-                onClusterPress={handleClusterPress}
+                openNodeId={boundaryDetailData?.id ?? null}
               />
             </MapView>
           </MapErrorBoundary>

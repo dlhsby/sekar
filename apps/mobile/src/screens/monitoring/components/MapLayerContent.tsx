@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { AreaStatusOverlay } from '../../../components/monitoring/AreaStatusOverlay';
 import { PlantOverlayLayer } from '../../../components/monitoring/PlantOverlayLayer';
 import { BoundaryOverlay } from '../../../components/monitoring/BoundaryOverlay';
-import { AggregateBubbleLayer, type NodeMarker } from '../../../components/monitoring/AggregateBubbleLayer';
+import { NodeMarkerLayer, type NodeMarker } from '../../../components/monitoring/NodeMarkerLayer';
 import { TeamMarkerLayer } from '../../../components/monitoring/TeamMarkerLayer';
 import type { TeamGroup } from '../../../utils/teamGrouping';
 import { UserMarker, type LabelMode } from '../../../components/monitoring/UserMarker';
@@ -34,6 +34,9 @@ interface MapLayerContentProps {
   visibleLayers: MonitoringV2VisibleLayers;
   visibleUsers: LiveUser[];
   selectedUser: LiveUser | null;
+  /** The node whose detail sheet is open, exempted from reveal demotion: the
+   *  card would otherwise describe something the map is showing as a dot. */
+  openNodeId: string | null;
   labelMode: LabelMode;
   currentRegion: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number };
   boundaryKey: number;
@@ -70,7 +73,6 @@ interface MapLayerContentProps {
   onDistrictDetail: (district: any) => void;
   onAreaDetail: (area: any) => void;
   onMarkerPress: (user: LiveUser) => void;
-  onClusterPress: (center: { latitude: number; longitude: number }) => void;
 }
 
 export function MapLayerContent({
@@ -79,6 +81,7 @@ export function MapLayerContent({
   visibleLayers,
   visibleUsers,
   selectedUser,
+  openNodeId,
   labelMode,
   currentRegion,
   boundaryKey,
@@ -99,7 +102,6 @@ export function MapLayerContent({
   onDistrictDetail,
   onAreaDetail,
   onMarkerPress,
-  onClusterPress,
 }: MapLayerContentProps): React.JSX.Element {
   const { t } = useTranslation();
 
@@ -155,7 +157,7 @@ export function MapLayerContent({
     showsPolygon(visibleLayers.kawasan) &&
     (isZoom || scope === 'district' || scope === 'region');
 
-  // Drill BUBBLES now come from the aggregate (AggregateBubbleLayer below) so the
+  // Drill BUBBLES now come from the aggregate (NodeMarkerLayer below) so the
   // kawasan tier — which has no boundary polygon — can render. BoundaryOverlay keeps
   // the polygons + the current node's DETAIL marker:
   //   • district → the selected district MARKER (detail)
@@ -230,6 +232,7 @@ export function MapLayerContent({
     // Whatever a sheet is describing stays drawn, or the card documents
     // something the map has left anonymous.
     exemptWorkerIds: [selectedUser?.id ?? null],
+    exemptNodeIds: [openNodeId],
   });
 
   /** Engaging with someone is what makes them familiar — see `affinity.ts`. */
@@ -274,21 +277,24 @@ export function MapLayerContent({
         />
       )}
 
-      {/* Drill bubbles from the aggregate — district nodes (city), regions ∪
-          region-less lokasi (district), a kawasan's lokasi (region). Tap → drill. */}
+      {/* Drill nodes from the aggregate — district nodes (city), regions ∪
+          region-less lokasi (district), a kawasan's lokasi (region); every tier
+          at once in zoom/viewport. Tap → drill. */}
       {mapReady && tierScopedNodes.length > 0 && (
-        <AggregateBubbleLayer
+        <NodeMarkerLayer
           nodes={tierScopedNodes}
           onDrill={onNodeDrill}
-          latitudeDelta={currentRegion.latitudeDelta}
-          onClusterPress={onClusterPress}
           // Labels are their own facet: hiding a dense tier's names keeps the
-          // bubbles, which is the common ask at a wide zoom.
+          // pins, which is the common ask at a wide zoom.
           showLabels={{
             district: showsNodeLabel(visibleLayers.district),
             region: showsNodeLabel(visibleLayers.kawasan),
             location: showsNodeLabel(visibleLayers.lokasi),
           }}
+          // Progressive reveal. Null outside viewport mode, which the layer reads
+          // as "draw everything in full" — so drill and zoom are unchanged.
+          promoted={reveal.promotedNodes}
+          labelled={reveal.labelledNodes}
         />
       )}
 

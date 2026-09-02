@@ -40,11 +40,18 @@ const SLOT_H = 30;
 export function LabeledMarker({
   label,
   placement,
+  color,
   children,
 }: {
   /** Null or empty hides the label (and its spacer) entirely. */
   label?: string | null;
   placement: LabelPlacement;
+  /**
+   * Tint for the name. Node labels pass their staffing-health colour so per-node
+   * status reads from the label too (matching web's health-tinted
+   * `node-marker-label`); worker labels leave it unset and stay neutral ink.
+   */
+  color?: string;
   children: React.ReactNode;
 }): React.JSX.Element {
   if (!label) {
@@ -60,6 +67,7 @@ export function LabeledMarker({
           styles.text,
           placement === 'left' && styles.alignRight,
           placement === 'right' && styles.alignLeft,
+          color ? { color } : null,
         ]}
         numberOfLines={2}
       >
