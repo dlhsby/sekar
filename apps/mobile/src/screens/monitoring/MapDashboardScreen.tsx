@@ -51,6 +51,7 @@ import type {
   MonitoringMode,
 } from '../../store/slices/monitoringV2Slice';
 import { selectDrawnNodes, aggregateRequestsFor } from '../../utils/monitoringDrillNodes';
+import { MAP_CHROME_LAYER } from './mapChromeLayer';
 import { regionToBox, regionWithinBox } from '../../utils/viewportBox';
 import { tiersAtDelta } from '../../utils/zoomTiers';
 import { useHiddenEntities } from '../../utils/hiddenEntities';
@@ -717,12 +718,14 @@ const styles = StyleSheet.create({
     top: nbSpacing.sm,
     left: nbSpacing.sm,
     right: nbSpacing.sm,
+    ...MAP_CHROME_LAYER,
   },
   drillBar: {
     position: 'absolute',
     top: 64,
     left: nbSpacing.sm,
     right: nbSpacing.sm,
+    ...MAP_CHROME_LAYER,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
