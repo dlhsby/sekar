@@ -17,7 +17,7 @@
  *   • location → no child nodes (workers only)
  */
 
-import type { AggregateNode } from '../types/monitoring.types';
+import type { AggregateNode, AggregateScope } from '../types/monitoring.types';
 import { isZoomLike, type MonitoringMode } from '../store/slices/monitoringV2Slice';
 import type { NodeMarker } from '../components/monitoring/NodeMarkerLayer';
 
@@ -140,4 +140,58 @@ export function selectDrawnNodes(input: {
   const cityNodes = view.scope === 'city' ? (aggregate?.nodes ?? []) : [];
   const districtNodes = view.scope !== 'city' ? (aggregate?.nodes ?? []) : [];
   return composeDrillNodes(view.scope, view, cityNodes, districtNodes, aggregateRegion?.nodes ?? []);
+}
+
+/** One `/monitoring/aggregate` request. Mirrors `FetchAggregateParams`. */
+export interface AggregateRequest {
+  scope: AggregateScope;
+  id?: string;
+  bbox?: string;
+}
+
+/**
+ * Which aggregate call(s) the current mode and scope need.
+ *
+ * `null` means DEFER — do not fetch yet. Viewport mode returns it until the
+ * camera box is known, because the alternative is worse than a wasted request:
+ * the first pass would ask for `scope=all` with no bbox, which is every node in
+ * Surabaya (~1k), and the narrowed request would land a frame later. Pulling the
+ * whole city is the exact thing viewport mode exists to avoid, and on a field
+ * phone it is the payload that costs the most.
+ *
+ * Zoom and viewport draw every tier at once, which one `scope=all` call returns.
+ * Drill shows one tier of children and keeps the per-scope calls — a district
+ * view needs BOTH its lokasi rollup and its kawasan rollup to render
+ * regions ∪ region-less lokasi.
+ */
+export function aggregateRequestsFor(input: {
+  mode: MonitoringMode;
+  view: DrillView;
+  /** The padded camera box; only viewport mode has one. */
+  viewportBox: string | undefined;
+}): AggregateRequest[] | null {
+  const { mode, view, viewportBox } = input;
+
+  if (isZoomLike(mode)) {
+    if (mode === 'viewport' && !viewportBox) return null;
+    return [
+      {
+        scope: 'all',
+        id: view.districtId ?? undefined,
+        bbox: mode === 'viewport' ? viewportBox : undefined,
+      },
+    ];
+  }
+
+  if (view.scope === 'city') return [{ scope: 'city' }];
+  if (view.scope === 'district' && view.id) {
+    return [
+      { scope: 'district', id: view.id },
+      { scope: 'region', id: view.id },
+    ];
+  }
+  if ((view.scope === 'region' || view.scope === 'location') && view.districtId) {
+    return [{ scope: 'district', id: view.districtId }];
+  }
+  return [];
 }

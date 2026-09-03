@@ -50,7 +50,7 @@ import type {
   MonitoringScope,
   MonitoringMode,
 } from '../../store/slices/monitoringV2Slice';
-import { selectDrawnNodes } from '../../utils/monitoringDrillNodes';
+import { selectDrawnNodes, aggregateRequestsFor } from '../../utils/monitoringDrillNodes';
 import { regionToBox, regionWithinBox } from '../../utils/viewportBox';
 import { tiersAtDelta } from '../../utils/zoomTiers';
 import { useHiddenEntities } from '../../utils/hiddenEntities';
@@ -210,38 +210,15 @@ export function MapDashboardScreen(): React.JSX.Element {
     void dispatch(fetchBoundaries({ bbox: box }));
   }, [mode, currentRegion, dispatch]);
 
-  // Aggregate fetch.
-  //
-  // Zoom and viewport draw EVERY tier at once, which is exactly what one
-  // `scope=all` call returns — so they make that single request instead of the
-  // per-scope fan-out, and viewport narrows it to the camera with the same
-  // padded box the boundary fetch uses. Drill shows one tier of children at a
-  // time and keeps the per-scope calls: city rollup feeds the district nodes,
-  // district rollup feeds the lokasi nodes, and a district view needs BOTH its
-  // kawasan rollup and its lokasi rollup to render regions ∪ region-less lokasi.
+  // Aggregate fetch — WHICH calls to make is decided by `aggregateRequestsFor`,
+  // so the mode/scope fork is unit-testable without a map. A null plan means
+  // "not yet": viewport defers until the camera box exists, rather than asking
+  // for every node in Surabaya and narrowing a frame later.
   useEffect(() => {
-    if (isZoomLike(mode)) {
-      void dispatch(
-        fetchAggregate({
-          scope: 'all',
-          id: view.districtId ?? undefined,
-          bbox: mode === 'viewport' ? aggregateBox : undefined,
-        }),
-      );
-      return;
-    }
-    if (scope === 'city') {
-      void dispatch(fetchAggregate({ scope: 'city' }));
-    } else if (scope === 'district' && view.id) {
-      // District view renders regions ∪ region-less lokasi, so fetch BOTH the lokasi
-      // rollup (scope=district) and the kawasan rollup (scope=region) for the district.
-      void dispatch(fetchAggregate({ scope: 'district', id: view.id }));
-      void dispatch(fetchAggregate({ scope: 'region', id: view.id }));
-    } else if (scope === 'region' && view.districtId) {
-      // Region view filters the district's lokasi by region_id (no separate fetch).
-      void dispatch(fetchAggregate({ scope: 'district', id: view.districtId }));
-    } else if (scope === 'location' && view.districtId) {
-      void dispatch(fetchAggregate({ scope: 'district', id: view.districtId }));
+    const requests = aggregateRequestsFor({ mode, view, viewportBox: aggregateBox });
+    if (!requests) return;
+    for (const req of requests) {
+      void dispatch(fetchAggregate(req));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scope, view.id, view.districtId, mode, aggregateBox]);

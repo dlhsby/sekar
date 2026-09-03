@@ -8,6 +8,7 @@ import {
   aggregateNodeToNodeMarker,
   composeDrillNodes,
   selectDrawnNodes,
+  aggregateRequestsFor,
   type DrillView,
 } from '../monitoringDrillNodes';
 import type { AggregateNode } from '../../types/monitoring.types';
@@ -227,5 +228,61 @@ describe('selectDrawnNodes', () => {
     expect(
       selectDrawnNodes({ mode: 'zoom', view: view({ scope: 'city' }), aggregate: null, aggregateRegion: null }),
     ).toEqual([]);
+  });
+});
+
+describe('aggregateRequestsFor', () => {
+  const V = (over: Partial<DrillView>) => view(over);
+
+  it('makes one scope=all call in zoom mode, with no bbox', () => {
+    expect(aggregateRequestsFor({ mode: 'zoom', view: V({ scope: 'city' }), viewportBox: undefined })).toEqual([
+      { scope: 'all', id: undefined, bbox: undefined },
+    ]);
+  });
+
+  it('narrows the scope=all call to the camera in viewport mode', () => {
+    expect(
+      aggregateRequestsFor({ mode: 'viewport', view: V({ scope: 'city' }), viewportBox: '112.7,-7.3,112.8,-7.2' }),
+    ).toEqual([{ scope: 'all', id: undefined, bbox: '112.7,-7.3,112.8,-7.2' }]);
+  });
+
+  it('DEFERS the viewport fetch until the camera box is known', () => {
+    // Without this the mode's first pass fires an unbounded city-wide
+    // scope=all (1089 nodes) and the bbox request lands a frame later —
+    // pulling the whole city is the exact thing viewport mode exists to avoid.
+    expect(aggregateRequestsFor({ mode: 'viewport', view: V({ scope: 'city' }), viewportBox: undefined })).toBeNull();
+  });
+
+  it('carries the drilled district id on the zoom-like call', () => {
+    expect(
+      aggregateRequestsFor({ mode: 'zoom', view: V({ scope: 'district', id: 'd1', districtId: 'd1' }), viewportBox: undefined }),
+    ).toEqual([{ scope: 'all', id: 'd1', bbox: undefined }]);
+  });
+
+  it('fetches the city rollup at city scope in drill mode', () => {
+    expect(aggregateRequestsFor({ mode: 'drill', view: V({ scope: 'city' }), viewportBox: undefined })).toEqual([
+      { scope: 'city' },
+    ]);
+  });
+
+  it('fetches BOTH the lokasi and kawasan rollups at district scope', () => {
+    expect(
+      aggregateRequestsFor({ mode: 'drill', view: V({ scope: 'district', id: 'd1', districtId: 'd1' }), viewportBox: undefined }),
+    ).toEqual([
+      { scope: 'district', id: 'd1' },
+      { scope: 'region', id: 'd1' },
+    ]);
+  });
+
+  it('reuses the parent district rollup at region and location scope', () => {
+    for (const scope of ['region', 'location'] as const) {
+      expect(
+        aggregateRequestsFor({ mode: 'drill', view: V({ scope, id: 'x', districtId: 'd1' }), viewportBox: undefined }),
+      ).toEqual([{ scope: 'district', id: 'd1' }]);
+    }
+  });
+
+  it('asks for nothing when a drill scope has no id to ask with', () => {
+    expect(aggregateRequestsFor({ mode: 'drill', view: V({ scope: 'district', id: null }), viewportBox: undefined })).toEqual([]);
   });
 });
