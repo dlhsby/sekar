@@ -28,8 +28,13 @@ die() {
 command -v adb >/dev/null 2>&1 || die "adb not on PATH."
 
 # Serials of devices that are actually ready ('device', not 'offline'/'unauthorized').
+#
+# `tr -d '\r'` is load-bearing: adb terminates every line with CRLF, so without
+# it `$2` is "device\r", matches nothing, and the script reports no devices while
+# `adb devices` plainly lists them. The same CR breaks `logcat --pid` further
+# down, which is why it is stripped there too.
 devices() {
-  adb devices | awk 'NR>1 && $2=="device" {print $1}'
+  adb devices | tr -d '\r' | awk 'NR>1 && $2=="device" {print $1}'
 }
 
 list_devices() {
