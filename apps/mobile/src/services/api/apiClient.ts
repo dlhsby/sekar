@@ -177,6 +177,31 @@ apiClient.interceptors.request.use(
 );
 
 /**
+ * Per-request opt-out from error-level logging.
+ *
+ * Some statuses are a normal outcome the caller already handles — a 404 from the
+ * release registry means "nothing published yet", which is the usual state on a
+ * fresh database. Logging those at error level made LogBox paint a red screen
+ * over a perfectly healthy app and trained everyone to ignore the red screen,
+ * which is worse than the noise.
+ *
+ * This ONLY changes the log level. The request still rejects and the caller
+ * still receives the error, so nothing can be silently swallowed.
+ */
+declare module 'axios' {
+  export interface AxiosRequestConfig {
+    expectedStatuses?: number[];
+  }
+}
+
+/** Whether this failure is one the caller declared it expects. */
+function isExpectedError(error: AxiosError): boolean {
+  const expected = error.config?.expectedStatuses;
+  const status = error.response?.status;
+  return Boolean(expected && status && expected.includes(status));
+}
+
+/**
  * Response interceptor for error handling
  */
 apiClient.interceptors.response.use(
@@ -188,8 +213,10 @@ apiClient.interceptors.response.use(
   },
   async (error: AxiosError<ApiError>) => {
     if (__DEV__) {
-      console.error('❌ API Error:', error.response?.status, error.response?.data);
-      console.error('❌ Error Details:', {
+      // An expected status is not a failure to shout about — see isExpectedError.
+      const log = isExpectedError(error) ? console.debug : console.error;
+      log('❌ API Error:', error.response?.status, error.response?.data);
+      log('❌ Error Details:', {
         message: error.message,
         code: error.code,
         request: error.request ? 'Request made but no response' : 'No request made',
@@ -344,9 +371,15 @@ apiClient.interceptors.response.use(
 export async function get<T>(
   url: string,
   params?: Record<string, any>,
+  /** `expectedStatuses` demotes those failures to a debug log — see the
+   *  declaration above. The error is still returned to the caller. */
+  options?: { expectedStatuses?: number[] },
 ): Promise<ApiResponse<T>> {
   try {
-    const response = await apiClient.get<T>(url, { params });
+    const response = await apiClient.get<T>(url, {
+      params,
+      expectedStatuses: options?.expectedStatuses,
+    });
     return { data: response.data };
   } catch (error) {
     const e = error as ApiError;
