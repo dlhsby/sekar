@@ -25,6 +25,26 @@ import { USER_MANAGERS } from '../users/constants/role-groups';
 export class UserLocationsController {
   constructor(private readonly userLocationsService: UserLocationsService) {}
 
+  /**
+   * The authenticated user's OWN locations (permanent + task-based).
+   *
+   * Self-scoped: no `@Roles`, because every field worker needs this — the mobile
+   * app calls it on login for multi-area geofencing and "Jadwal Saya".
+   *
+   * It MUST stay declared above `users/:userId/areas`. Express matches in
+   * registration order, so with the parameterised route first, `me` bound as
+   * `:userId` and hit that manager-only gate — every satgas got a 403 the moment
+   * they logged in. `UsersController` protects its own literals with the same
+   * rule, but that only orders routes WITHIN a controller; this pair is split
+   * across two, and this controller's module registers first.
+   */
+  @Get('users/me/areas')
+  @ApiOperation({ summary: "Get the authenticated user's own assigned locations" })
+  @ApiResponse({ status: 200, description: "List of the caller's assigned locations" })
+  async getMyLocations(@GetUser() user: User) {
+    return this.userLocationsService.getEffectiveLocations(user.id);
+  }
+
   @Get('users/:userId/areas')
   @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON)
   @ApiOperation({ summary: "Get user's assigned locations" })

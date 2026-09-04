@@ -1,4 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { PATH_METADATA } from '@nestjs/common/constants';
+import { ROLES_KEY } from '../auth/decorators/roles.decorator';
 import { UserLocationsController } from './user-locations.controller';
 import { UserLocationsService } from './user-locations.service';
 import { User, UserRole } from '../users/entities/user.entity';
@@ -101,6 +103,62 @@ describe('UserLocationsController', () => {
 
       expect(result).toEqual(mockUsers);
       expect(mockUserAreasService.getUsersByLocation).toHaveBeenCalledWith('area-uuid-1');
+    });
+  });
+
+  /**
+   * Route ORDER, not just behaviour.
+   *
+   * `users/me/areas` and `users/:userId/areas` are siblings, and Express matches
+   * in registration order — so if the parameterised one is declared first, `me`
+   * binds as `:userId` and the caller hits its manager-only `@Roles` gate. That
+   * is exactly what shipped: every satgas got a 403 on login, because the
+   * self-scoped literal lived in another controller whose module registers
+   * second and could therefore never win.
+   *
+   * These assert the invariant on the declaration itself, since the ordering is
+   * a property of this file and no behavioural test of a single handler can see
+   * it.
+   */
+  describe('users/me/areas route shadowing', () => {
+    const routeOrder = (): string[] =>
+      Object.getOwnPropertyNames(UserLocationsController.prototype)
+        .filter((m) => m !== 'constructor')
+        .map((m) =>
+          Reflect.getMetadata(
+            PATH_METADATA,
+            UserLocationsController.prototype[m as keyof typeof UserLocationsController.prototype],
+          ),
+        )
+        .filter((p): p is string => typeof p === 'string');
+
+    it('declares the me literal BEFORE the :userId route', () => {
+      const order = routeOrder();
+      const literal = order.indexOf('users/me/areas');
+      const param = order.indexOf('users/:userId/areas');
+
+      expect(literal).toBeGreaterThanOrEqual(0);
+      expect(param).toBeGreaterThanOrEqual(0);
+      expect(literal).toBeLessThan(param);
+    });
+
+    it('leaves the me route self-scoped — no role gate', () => {
+      // A @Roles gate here would lock field workers out of their own areas,
+      // which is the whole point of the endpoint.
+      const roles = Reflect.getMetadata(ROLES_KEY, controller.getMyLocations);
+      expect(roles).toBeUndefined();
+    });
+
+    it('keeps the :userId route manager-gated', () => {
+      const roles = Reflect.getMetadata(ROLES_KEY, controller.getUserLocations);
+      expect(Array.isArray(roles)).toBe(true);
+      expect(roles).not.toContain(UserRole.SATGAS);
+    });
+
+    it("returns the caller's own locations, not a path param", async () => {
+      mockUserAreasService.getEffectiveLocations.mockResolvedValue([]);
+      await controller.getMyLocations({ ...mockAdmin, id: 'caller-uuid' } as User);
+      expect(mockUserAreasService.getEffectiveLocations).toHaveBeenCalledWith('caller-uuid');
     });
   });
 });

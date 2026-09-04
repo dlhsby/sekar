@@ -67,20 +67,13 @@ export class UsersController {
     private readonly photos: PhotoStorageService,
   ) {}
 
-  /**
-   * Get the authenticated user's own assigned areas (permanent + task_based).
-   * Self-scoped — any authenticated worker can read their own areas (used by
-   * the mobile app for multi-area geofencing + the "Jadwal Saya" screen).
-   *
-   * @route GET /api/users/me/areas
+  /*
+   * `GET users/me/areas` deliberately lives in UserLocationsController, next to
+   * `users/:userId/areas` it has to out-rank. Declaring it here could never work:
+   * that controller's module registers first, so its parameterised route matched
+   * `me` before this literal was ever reached — the 403-on-login bug. Two
+   * handlers for one path also left it ambiguous which guard applied.
    */
-  @Get('me/areas')
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: "Get the authenticated user's assigned areas" })
-  @ApiResponse({ status: HttpStatus.OK, description: 'List of assigned areas.' })
-  getMyAreas(@GetUser() user: User) {
-    return this.userAreasService.getEffectiveLocations(user.id);
-  }
 
   /**
    * Every user as a bare id/name/role tuple, unpaginated.
