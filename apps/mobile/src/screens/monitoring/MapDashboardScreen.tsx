@@ -43,17 +43,19 @@ import {
   initMonitoringView,
   drillTo,
   drillBack,
+  isZoomLike,
 } from '../../store/slices/monitoringV2Slice';
 import type {
   MonitoringV2VisibleLayers,
   MonitoringScope,
   MonitoringMode,
 } from '../../store/slices/monitoringV2Slice';
-import { composeDrillNodes } from '../../utils/monitoringDrillNodes';
+import { selectDrawnNodes, aggregateRequestsFor } from '../../utils/monitoringDrillNodes';
+import { MAP_CHROME_LAYER } from './mapChromeLayer';
 import { regionToBox, regionWithinBox } from '../../utils/viewportBox';
 import { tiersAtDelta } from '../../utils/zoomTiers';
 import { useHiddenEntities } from '../../utils/hiddenEntities';
-import type { NodeMarker } from '../../components/monitoring/AggregateBubbleLayer';
+import type { NodeMarker } from '../../components/monitoring/NodeMarkerLayer';
 import type { TeamGroup } from '../../utils/teamGrouping';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -134,9 +136,9 @@ export function MapDashboardScreen(): React.JSX.Element {
   const { markerPreview, setMarkerPreview, showMarkerPreview, dismissPreview, setMapLayout } =
     useMarkerPreview(mapRef, currentRegion);
 
-  // Zoom + My-Location are native Google controls now; only heading reset +
-  // cluster tap remain custom.
-  const { resetHeading, handleClusterPress, handleMyLocation, handleZoomIn, handleZoomOut } =
+  // Zoom + My-Location are native Google controls now; only heading reset
+  // remains custom.
+  const { resetHeading, handleMyLocation, handleZoomIn, handleZoomOut } =
     useMapOperations(mapRef, currentRegion);
 
   const { visibleUsers, teamBubbles, labelMode, staffedAreas, totalAreas, lastUpdated } =
@@ -188,41 +190,39 @@ export function MapDashboardScreen(): React.JSX.Element {
   //
   // Boundaries are the payload that matters here: mobile asks for `level='area'`
   // city-wide in every other mode, which is every lokasi polygon in Surabaya.
+  //
+  // The box is held in state, not just a ref, because the AGGREGATE fetch needs
+  // the same one: two independently-derived boxes would have the polygons and
+  // the node pins answering for different rectangles.
+  const [aggregateBox, setAggregateBox] = useState<string | undefined>(undefined);
   const viewportBoxRef = useRef<string | null>(null);
   useEffect(() => {
     if (mode !== 'viewport') {
       // Clear on the way out so re-entering fetches for where the camera is NOW.
       viewportBoxRef.current = null;
+      setAggregateBox(undefined);
       return;
     }
     if (viewportBoxRef.current && regionWithinBox(currentRegion, viewportBoxRef.current)) return;
     const box = regionToBox(currentRegion);
     if (box === viewportBoxRef.current) return;
     viewportBoxRef.current = box;
+    setAggregateBox(box);
     void dispatch(fetchBoundaries({ bbox: box }));
   }, [mode, currentRegion, dispatch]);
 
-  // Aggregate fetch — city rollup feeds the district nodes; district rollup feeds
-  // the lokasi nodes. (The `region`/kawasan aggregate tier + its bubble rendering is
-  // a coupled follow-up — see PR2-visual — because switching the district-scope fetch
-  // to `region` without rendering kawasan bubbles would strip the lokasi bubbles'
-  // ratios. Until then a district drills straight to its lokasi, region-less.)
+  // Aggregate fetch — WHICH calls to make is decided by `aggregateRequestsFor`,
+  // so the mode/scope fork is unit-testable without a map. A null plan means
+  // "not yet": viewport defers until the camera box exists, rather than asking
+  // for every node in Surabaya and narrowing a frame later.
   useEffect(() => {
-    if (scope === 'city') {
-      void dispatch(fetchAggregate({ scope: 'city' }));
-    } else if (scope === 'district' && view.id) {
-      // District view renders regions ∪ region-less lokasi, so fetch BOTH the lokasi
-      // rollup (scope=district) and the kawasan rollup (scope=region) for the district.
-      void dispatch(fetchAggregate({ scope: 'district', id: view.id }));
-      void dispatch(fetchAggregate({ scope: 'region', id: view.id }));
-    } else if (scope === 'region' && view.districtId) {
-      // Region view filters the district's lokasi by region_id (no separate fetch).
-      void dispatch(fetchAggregate({ scope: 'district', id: view.districtId }));
-    } else if (scope === 'location' && view.districtId) {
-      void dispatch(fetchAggregate({ scope: 'district', id: view.districtId }));
+    const requests = aggregateRequestsFor({ mode, view, viewportBox: aggregateBox });
+    if (!requests) return;
+    for (const req of requests) {
+      void dispatch(fetchAggregate(req));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scope, view.id, view.districtId]);
+  }, [scope, view.id, view.districtId, mode, aggregateBox]);
 
   // Fetch the snapshot for the current drill scope (workers carry display_scope so
   // the map renders each at their own tier). Re-fetch on any scope/node change only —
@@ -383,17 +383,6 @@ export function MapDashboardScreen(): React.JSX.Element {
     [dispatch],
   );
 
-  // Per-node ratio (active-and-inside-area / terjadwal) keyed by district/area id —
-  // fed to the geographic markers so each carries its count. The numerator is the
-  // hadir workers who are BOTH active (fresh ping) and inside their area.
-  const rosterById = useMemo<Record<string, { activeInside: number; scheduled: number }>>(() => {
-    const map: Record<string, { activeInside: number; scheduled: number }> = {};
-    for (const n of aggregate?.nodes ?? []) {
-      map[n.id] = { activeInside: n.presence?.aktif?.dalam ?? 0, scheduled: n.roster?.scheduled ?? 0 };
-    }
-    return map;
-  }, [aggregate]);
-
   /**
    * Roster lifecycle split for the scope currently on screen — summed over the
    * child nodes the aggregate returned. "Belum hadir" (still inside the arrival
@@ -430,30 +419,13 @@ export function MapDashboardScreen(): React.JSX.Element {
       animateTo(lat, lng, Math.min(currentRegion.latitudeDelta, target)),
     [animateTo, currentRegion.latitudeDelta],
   );
-  const handleDistrictBubblePress = useCallback(
-    (district: DistrictBoundary) => {
-      dispatch(drillTo({ id: district.id, type: 'district', name: district.name, districtId: district.id }));
-      zoomInTo(Number(district.center_lat), Number(district.center_lng), 0.08);
-    },
-    [dispatch, zoomInTo],
-  );
-  const handleAreaBubblePress = useCallback(
-    (area: AreaBoundary) => {
-      dispatch(drillTo({ id: area.id, type: 'location', name: area.name, districtId: view.districtId }));
-      zoomInTo(Number(area.center_lat), Number(area.center_lng), 0.02);
-    },
-    [dispatch, zoomInTo, view.districtId],
-  );
-
-  // Drill bubbles are sourced from the AGGREGATE (not boundary geometry) so kawasan —
+  // Drill nodes are sourced from the AGGREGATE (not boundary geometry) so kawasan —
   // which have no polygon in the boundaries payload — can render: district shows
   // regions ∪ region-less lokasi, region shows the kawasan's lokasi. See composeDrillNodes.
-  const nodeMarkers = useMemo<NodeMarker[]>(() => {
-    const cityNodes = scope === 'city' ? (aggregate?.nodes ?? []) : [];
-    const districtNodes = scope !== 'city' ? (aggregate?.nodes ?? []) : [];
-    const regionNodes = aggregateRegion?.nodes ?? [];
-    return composeDrillNodes(scope, view, cityNodes, districtNodes, regionNodes);
-  }, [scope, view, aggregate, aggregateRegion]);
+  const nodeMarkers = useMemo<NodeMarker[]>(
+    () => selectDrawnNodes({ mode, view, aggregate, aggregateRegion }),
+    [mode, view, aggregate, aggregateRegion],
+  );
 
   // A bubble tap drills into that node (variant → target scope) and zooms in.
   const handleNodeDrill = useCallback(
@@ -586,18 +558,15 @@ export function MapDashboardScreen(): React.JSX.Element {
                 areaId={scope === 'location' ? view.id : null}
                 regionId={scope === 'region' ? view.id : view.regionId}
                 mode={mode}
-                rosterById={rosterById}
                 nodeMarkers={nodeMarkers}
                 onNodeDrill={handleNodeDrill}
                 teamGroups={teamBubbles}
                 onTeamPress={handleTeamPress}
                 showWorkers={showWorkers}
-                onDistrictDrill={handleDistrictBubblePress}
-                onAreaDrill={handleAreaBubblePress}
                 onDistrictDetail={handleDistrictPress}
                 onAreaDetail={handleAreaPress}
                 onMarkerPress={handleMarkerPress}
-                onClusterPress={handleClusterPress}
+                openNodeId={boundaryDetailData?.id ?? null}
               />
             </MapView>
           </MapErrorBoundary>
@@ -749,12 +718,14 @@ const styles = StyleSheet.create({
     top: nbSpacing.sm,
     left: nbSpacing.sm,
     right: nbSpacing.sm,
+    ...MAP_CHROME_LAYER,
   },
   drillBar: {
     position: 'absolute',
     top: 64,
     left: nbSpacing.sm,
     right: nbSpacing.sm,
+    ...MAP_CHROME_LAYER,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

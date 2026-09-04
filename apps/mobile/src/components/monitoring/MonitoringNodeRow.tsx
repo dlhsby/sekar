@@ -15,7 +15,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { useTranslation } from 'react-i18next';
 import { NBText } from '../nb/NBText';
 import { nbColors, nbSpacing } from '../../constants/nbTokens';
-import type { NodeMarker } from './AggregateBubbleLayer';
+import type { NodeMarker } from './NodeMarkerLayer';
 
 export interface MonitoringNodeRowProps {
   node: NodeMarker;

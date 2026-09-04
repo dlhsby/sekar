@@ -20,7 +20,6 @@ interface UseMapOperationsReturn {
   resetHeading: () => void;
   handleZoomIn: () => void;
   handleZoomOut: () => void;
-  handleClusterPress: (center: { latitude: number; longitude: number }) => void;
 }
 
 export function useMapOperations(
@@ -74,26 +73,10 @@ export function useMapOperations(
     );
   }, [currentRegion, mapRef]);
 
-  const handleClusterPress = useCallback(
-    (center: { latitude: number; longitude: number }) => {
-      mapRef.current?.animateToRegion(
-        {
-          latitude: center.latitude,
-          longitude: center.longitude,
-          latitudeDelta: currentRegion.latitudeDelta / 3,
-          longitudeDelta: currentRegion.longitudeDelta / 3,
-        },
-        300,
-      );
-    },
-    [currentRegion, mapRef],
-  );
-
   return {
     handleMyLocation,
     resetHeading,
     handleZoomIn,
     handleZoomOut,
-    handleClusterPress,
   };
 }

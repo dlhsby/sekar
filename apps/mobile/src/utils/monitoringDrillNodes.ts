@@ -1,8 +1,11 @@
 /**
  * monitoringDrillNodes — pure helpers that turn aggregate responses into the
- * drill-down bubble markers for the current scope (PR2-visual). Mirrors the web
- * canon (monitoring/page.tsx `listNodes`), extended per the user-dictated spec so
- * a district shows its **regions ∪ region-less locations together** (not either/or).
+ * drill-down node markers for the current scope. Mirrors the web canon
+ * (monitoring/page.tsx `listNodes`), extended per the user-dictated spec so a
+ * district shows its **regions ∪ region-less locations together** (not either/or).
+ *
+ * This is the DRILL-mode composer. Zoom and viewport fetch `scope=all`, which
+ * already returns every tier mixed, and use those nodes directly.
  *
  * Node sources (all from `/monitoring/aggregate`, never boundary geometry, since
  * kawasan have no polygon in the boundaries payload):
@@ -14,8 +17,9 @@
  *   • location → no child nodes (workers only)
  */
 
-import type { AggregateNode } from '../types/monitoring.types';
-import type { NodeMarker } from '../components/monitoring/AggregateBubbleLayer';
+import type { AggregateNode, AggregateScope } from '../types/monitoring.types';
+import { isZoomLike, type MonitoringMode } from '../store/slices/monitoringV2Slice';
+import type { NodeMarker } from '../components/monitoring/NodeMarkerLayer';
 
 export type DrillScope = 'city' | 'district' | 'region' | 'location';
 
@@ -48,6 +52,14 @@ export function aggregateNodeToNodeMarker(node: AggregateNode): NodeMarker | nul
     // within their grace window, and the sum discards that.
     belum_hadir: node.roster?.belum_hadir ?? 0,
     tidak_hadir: node.roster?.tidak_hadir ?? 0,
+    // The number the pin's badge shows: workers active in this node's scope.
+    active: node.counts_by_status?.active ?? 0,
+    marker_icon: node.marker_icon ?? null,
+    // Carried so a drill from the MAP knows where the node sits — zoom and
+    // viewport draw every tier at once, so a kawasan or lokasi pin is tappable
+    // at city scope, where the view itself has no parent id to fall back on.
+    district_id: node.district_id ?? null,
+    region_id: node.region_id ?? null,
   };
 }
 
@@ -55,84 +67,8 @@ function toMarkers(nodes: AggregateNode[]): NodeMarker[] {
   return nodes.map(aggregateNodeToNodeMarker).filter((n): n is NodeMarker => n !== null);
 }
 
-/** A group of nearby node markers, collapsed at the current zoom to cut overlap. */
-export interface NodeCluster {
-  id: string;
-  lat: number;
-  lng: number;
-  count: number;
-  nodes: NodeMarker[];
-}
-
-/** Either a single drill node or a proximity cluster of them (a tap zooms in). */
-export type ClusterOrNode =
-  | { kind: 'node'; node: NodeMarker }
-  | { kind: 'cluster'; cluster: NodeCluster };
-
-/** Order-independent short id for a set of node ids (stable React key for a cluster). */
-function clusterId(ids: string[]): string {
-  const s = ids.slice().sort().join('|');
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
-  return `cluster-${(h >>> 0).toString(36)}`;
-}
-
 /**
- * Distance-clustering of drill-node markers so a dense tier (a district's 100+
- * lokasi, or its kawasan) doesn't stack into an unreadable pile. Groups are
- * connected components under a proximity relation (transitive — a node close to
- * ANY group member joins it, not just the seed), so nothing that visually sits
- * inside a cluster renders separately on top of it. The merge radius scales with
- * `latitudeDelta` (zoom): zoomed out → aggressive grouping; zoom in → clusters
- * break apart. Pure + O(n²), fine for the ≤~200 nodes a single scope returns.
- * The cluster id hashes its (sorted) member ids, so it is stable regardless of the
- * input order — no React-key thrash / marker remount when the node array reorders.
- */
-export function clusterNodes(
-  nodes: NodeMarker[],
-  latitudeDelta: number,
-  thresholdFactor = 0.06,
-): ClusterOrNode[] {
-  const threshold = Math.max(latitudeDelta * thresholdFactor, 0.00015);
-  const near = (a: NodeMarker, b: NodeMarker) =>
-    Math.abs(a.lat - b.lat) < threshold && Math.abs(a.lng - b.lng) < threshold;
-
-  const used = new Array<boolean>(nodes.length).fill(false);
-  const out: ClusterOrNode[] = [];
-
-  for (let i = 0; i < nodes.length; i++) {
-    if (used[i]) continue;
-    // BFS the connected component: a candidate joins if it's near ANY member.
-    const group: NodeMarker[] = [nodes[i]];
-    used[i] = true;
-    const queue = [i];
-    while (queue.length > 0) {
-      const k = queue.shift() as number;
-      for (let j = 0; j < nodes.length; j++) {
-        if (used[j]) continue;
-        if (near(nodes[k], nodes[j])) {
-          used[j] = true;
-          group.push(nodes[j]);
-          queue.push(j);
-        }
-      }
-    }
-    if (group.length === 1) {
-      out.push({ kind: 'node', node: group[0] });
-    } else {
-      const lat = group.reduce((s, n) => s + n.lat, 0) / group.length;
-      const lng = group.reduce((s, n) => s + n.lng, 0) / group.length;
-      out.push({
-        kind: 'cluster',
-        cluster: { id: clusterId(group.map(n => n.id)), lat, lng, count: group.length, nodes: group },
-      });
-    }
-  }
-  return out;
-}
-
-/**
- * Compose the child bubble markers to render at the current drill scope from the
+ * Compose the child node markers to render at the current drill scope from the
  * three aggregate slices the screen holds (city rollup, the district's lokasi, the
  * district's kawasan). Pure — pass `[]` for a slice that hasn't loaded yet.
  *
@@ -173,5 +109,89 @@ export function composeDrillNodes(
     return toMarkers(inRegion);
   }
   // location scope → workers only, no child nodes
+  return [];
+}
+
+/**
+ * The node markers to DRAW, for the current mode and scope.
+ *
+ * The three modes differ in what is drawn or fetched, never in what is counted
+ * (ADR-060). Drill shows one tier of children at a time and composes it from the
+ * per-scope aggregate slices. Zoom and viewport show every tier at once, which is
+ * what a single `scope=all` fetch returns — so they use those nodes directly
+ * instead of composing, and the mode's own label ("Zoom (semua)") finally holds.
+ *
+ * The node currently drilled into is dropped: it cannot be drilled from itself,
+ * and it is already on screen as its own highlighted boundary polygon.
+ */
+export function selectDrawnNodes(input: {
+  mode: MonitoringMode;
+  view: DrillView;
+  aggregate: { nodes: AggregateNode[] } | null;
+  aggregateRegion: { nodes: AggregateNode[] } | null;
+}): NodeMarker[] {
+  const { mode, view, aggregate, aggregateRegion } = input;
+
+  if (isZoomLike(mode)) {
+    const nodes = (aggregate?.nodes ?? []).filter(n => n.id !== view.id);
+    return toMarkers(nodes);
+  }
+
+  const cityNodes = view.scope === 'city' ? (aggregate?.nodes ?? []) : [];
+  const districtNodes = view.scope !== 'city' ? (aggregate?.nodes ?? []) : [];
+  return composeDrillNodes(view.scope, view, cityNodes, districtNodes, aggregateRegion?.nodes ?? []);
+}
+
+/** One `/monitoring/aggregate` request. Mirrors `FetchAggregateParams`. */
+export interface AggregateRequest {
+  scope: AggregateScope;
+  id?: string;
+  bbox?: string;
+}
+
+/**
+ * Which aggregate call(s) the current mode and scope need.
+ *
+ * `null` means DEFER — do not fetch yet. Viewport mode returns it until the
+ * camera box is known, because the alternative is worse than a wasted request:
+ * the first pass would ask for `scope=all` with no bbox, which is every node in
+ * Surabaya (~1k), and the narrowed request would land a frame later. Pulling the
+ * whole city is the exact thing viewport mode exists to avoid, and on a field
+ * phone it is the payload that costs the most.
+ *
+ * Zoom and viewport draw every tier at once, which one `scope=all` call returns.
+ * Drill shows one tier of children and keeps the per-scope calls — a district
+ * view needs BOTH its lokasi rollup and its kawasan rollup to render
+ * regions ∪ region-less lokasi.
+ */
+export function aggregateRequestsFor(input: {
+  mode: MonitoringMode;
+  view: DrillView;
+  /** The padded camera box; only viewport mode has one. */
+  viewportBox: string | undefined;
+}): AggregateRequest[] | null {
+  const { mode, view, viewportBox } = input;
+
+  if (isZoomLike(mode)) {
+    if (mode === 'viewport' && !viewportBox) return null;
+    return [
+      {
+        scope: 'all',
+        id: view.districtId ?? undefined,
+        bbox: mode === 'viewport' ? viewportBox : undefined,
+      },
+    ];
+  }
+
+  if (view.scope === 'city') return [{ scope: 'city' }];
+  if (view.scope === 'district' && view.id) {
+    return [
+      { scope: 'district', id: view.id },
+      { scope: 'region', id: view.id },
+    ];
+  }
+  if ((view.scope === 'region' || view.scope === 'location') && view.districtId) {
+    return [{ scope: 'district', id: view.districtId }];
+  }
   return [];
 }

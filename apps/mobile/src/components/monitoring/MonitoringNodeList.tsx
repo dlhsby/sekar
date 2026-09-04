@@ -17,7 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { NBText } from '../nb/NBText';
 import { nbColors, nbSpacing } from '../../constants/nbTokens';
 import { MonitoringNodeRow } from './MonitoringNodeRow';
-import type { NodeMarker } from './AggregateBubbleLayer';
+import type { NodeMarker } from './NodeMarkerLayer';
 
 export interface MonitoringNodeListProps {
   nodes: NodeMarker[];
