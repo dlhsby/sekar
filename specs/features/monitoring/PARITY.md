@@ -19,11 +19,11 @@ places and would waste the most time.
 
 | Capability | Status |
 |---|---|
-| **Three map modes** (`drill` / `zoom` / `viewport`) | **Both.** Mobile has `MonitoringMode`, `isZoomLike`, and renders all three from `MODE_OPTIONS` in `ToolsOverlay`. The modes are *present and selectable on mobile today*. |
+| **Three map modes** (`drill` / `zoom` / `viewport`) | **Both.** Mobile has `MonitoringMode`, `isZoomLike`, and renders all three from `MODE_OPTIONS` in `ToolsOverlay`. The modes are *present and selectable on mobile today*. Corrected 2026-09-02: mobile's zoom mode only switched the worker predicate and the polygons — its node markers still came from the per-scope drill composition, so "Zoom (semua)" drew rayon alone at city scope. Both zoom-like modes now fetch `scope=all` like web. |
 | Geo layer facets (`boundary` / `fill` / `marker` / `label`) | Both, same four facets |
 | Personnel facets (`petugas` / `tim`) | Both |
 | Worker scoping by mode (`scopeMatches` / `subtreeMatches`) | Both — mobile has `utils/monitoringScope.ts` |
-| Level-wise node markers | Both — mobile `AggregateBubbleLayer`, web `NodeMarkerLayer` |
+| Level-wise node markers | Both — `NodeMarkerLayer` on both platforms. **This row was true at the symbol level only until 2026-09-02**: mobile's layer existed and was wired, but drew the *retired* `hadir/terjadwal` ratio bubble rather than the ADR-051 glyph pin, clustered nodes (which ADR-060 §4 forbids), and dropped the `promotedNodes`/`labelledNodes` its own reveal pass computed. See §Method — a symbol existing is not a feature existing. |
 | Drill hierarchy carrying parent ids | Both — mobile `monitoringDrillNodes.ts` carries `districtId` |
 | Viewport bbox fetching | Both — mobile `utils/viewportBox.ts` |
 | Tier thresholds by zoom | Both — mobile `zoomTiers` on `latitudeDelta`, web on zoom level |

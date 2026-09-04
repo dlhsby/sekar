@@ -11,7 +11,7 @@ import { PersonnelGroupCard, type PersonnelGroup } from './PersonnelGroupCard';
 import { AttendanceDetailModal } from './AttendanceDetailModal';
 import { NBTab } from '../nb/NBTab';
 import { MonitoringNodeList } from './MonitoringNodeList';
-import type { NodeMarker } from './AggregateBubbleLayer';
+import type { NodeMarker } from './NodeMarkerLayer';
 import { ROLE_LABELS } from '../../constants/roles';
 import { leaveReasonPill } from '../../utils/statusHelpers';
 import {

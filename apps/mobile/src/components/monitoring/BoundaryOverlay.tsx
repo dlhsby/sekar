@@ -37,8 +37,6 @@ interface BoundaryOverlayProps {
   onDistrictMarkerPress: (district: DistrictBoundary) => void;
   onAreaMarkerPress: (area: AreaBoundary) => void;
   /** Drill (bubble) taps — enter the child level + zoom in. */
-  onDistrictBubblePress: (district: DistrictBoundary) => void;
-  onAreaBubblePress: (area: AreaBoundary) => void;
   /**
    * Phase 3 sub-phase 3-5: layer-toggle gating. When `false`, the matching
    * boundary polygon layer is skipped entirely so the "Pengaturan" toggles
@@ -67,22 +65,14 @@ interface BoundaryOverlayProps {
    * at city scope, area bubbles at district scope). Each carries `hadir/terjadwal`
    * and drills deeper on tap. Distinct from the current-node icon markers below.
    */
-  showDistrictBubbles?: boolean;
-  showAreaBubbles?: boolean;
   /**
    * Icon **markers** — the CURRENT node's geographic pin (selected district at
    * district scope, selected area at area scope). Opens the detail sheet on tap.
    */
   showDistrictMarker?: boolean;
   showAreaMarker?: boolean;
-  /**
-   * Ratio per rayon/area id (`active-and-inside-area / terjadwal`), shown on the
-   * child bubbles so each drill target carries its count.
-   */
-  rosterById?: Record<string, { activeInside: number; scheduled: number }>;
 }
 
-type MarkerRoster = { activeInside: number; scheduled: number };
 
 // ─── Marker pin (current node → detail) ─────────────────────────────────────────
 //
@@ -117,68 +107,12 @@ function MarkerPin({
   );
 }
 
-// ─── Node bubble (child aggregate → drill) ──────────────────────────────────────
-//
-// A ratio bubble for a CHILD node (a district at city scope, an area at district
-// scope). Shows the node name + `hadir/terjadwal`, health-colored, and drills
-// one level deeper on tap. Keeps tracksViewChanges on briefly whenever the ratio
-// changes so react-native-maps captures the count into the native bitmap once
-// the aggregate loads (a plain tracksViewChanges={false} freezes it before the
-// async count arrives).
-
-function NodeBubble({
-  coordinate,
-  roster,
-  label,
-  onPress,
-  zIndex,
-  testID,
-}: {
-  coordinate: LatLng;
-  roster?: MarkerRoster;
-  label: string;
-  onPress: MapMarkerProps['onPress'];
-  zIndex: number;
-  testID?: string;
-}): React.JSX.Element {
-  const [tracks, setTracks] = useState(true);
-  const activeInside = roster?.activeInside;
-  const scheduled = roster?.scheduled;
-  useEffect(() => {
-    setTracks(true);
-    const id = setTimeout(() => setTracks(false), 600);
-    return () => clearTimeout(id);
-  }, [activeInside, scheduled]);
-  const color = roster ? healthColor(rosterHealth(roster.scheduled, roster.activeInside)) : nbColors.black;
-  return (
-    <Marker
-      coordinate={coordinate}
-      onPress={onPress}
-      tracksViewChanges={tracks}
-      zIndex={zIndex}
-      anchor={{ x: 0.5, y: 0.5 }}
-      testID={testID}
-    >
-      <View style={[styles.bubble, { borderColor: color }]}>
-        <NBText variant="caption" numberOfLines={1} style={styles.bubbleLabel}>
-          {label}
-        </NBText>
-        <NBText variant="caption" style={[styles.bubbleRatio, { color }]}>
-          {roster ? `${roster.activeInside}/${roster.scheduled}` : '—'}
-        </NBText>
-      </View>
-    </Marker>
-  );
-}
-
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export const BoundaryOverlay = React.memo(function BoundaryOverlay({
   districts,
   onDistrictMarkerPress,
   onAreaMarkerPress,
-  onDistrictBubblePress,
-  onAreaBubblePress,
   showDistricts = true,
   showAreas = true,
   showRegions = false,
@@ -189,11 +123,8 @@ export const BoundaryOverlay = React.memo(function BoundaryOverlay({
   areaOutline = true,
   areaFill = true,
   regionId = null,
-  showDistrictBubbles = false,
-  showAreaBubbles = false,
   showDistrictMarker = false,
   showAreaMarker = false,
-  rosterById,
 }: BoundaryOverlayProps): React.JSX.Element {
   // Stable per-district colors (sorted-id → fixed palette), built once per rayon set.
   const districtColors = useMemo(
@@ -275,21 +206,6 @@ export const BoundaryOverlay = React.memo(function BoundaryOverlay({
         }),
       )}
 
-      {/* Layer 3a: Area BUBBLES — a district's areas as ratio drill targets (district
-          scope). Tap → drill into the area (its workers). */}
-      {showAreaBubbles && districts.flatMap(district =>
-        district.areas.map(area => (
-          <NodeBubble
-            key={`area-bubble-${area.id}`}
-            coordinate={{ latitude: Number(area.center_lat), longitude: Number(area.center_lng) }}
-            roster={rosterById?.[area.id]}
-            label={area.name}
-            onPress={(e) => { e?.stopPropagation?.(); onAreaBubblePress(area); }}
-            zIndex={20}
-          />
-        )),
-      )}
-
       {/* Layer 3b: Area MARKER — the current (selected) area's icon pin (area
           scope). Tap → open its detail modal. */}
       {showAreaMarker && districts.flatMap(district =>
@@ -309,19 +225,6 @@ export const BoundaryOverlay = React.memo(function BoundaryOverlay({
           </MarkerPin>
         )),
       )}
-
-      {/* Layer 4a: District BUBBLES — the 7 districts as ratio drill targets (city
-          scope). Tap → drill into the district (its areas). */}
-      {showDistrictBubbles && districts.map(district => (
-        <NodeBubble
-          key={`district-bubble-${district.id}`}
-          coordinate={{ latitude: Number(district.center_lat), longitude: Number(district.center_lng) }}
-          roster={rosterById?.[district.id]}
-          label={district.name}
-          onPress={(e) => { e?.stopPropagation?.(); onDistrictBubblePress(district); }}
-          zIndex={10}
-        />
-      ))}
 
       {/* Layer 4b: District MARKER — the current (selected) district's office pin
           (district scope). Tap → open its detail modal. */}

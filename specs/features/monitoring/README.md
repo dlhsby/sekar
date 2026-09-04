@@ -14,7 +14,7 @@ Real-time supervisor dashboard: live worker positions, five-status tracking, and
 - **Event-sourced status via Redis Streams** (ADR-029, supersedes ADR-011) — status is derived from a location/event stream, not a materialized column; `monitoring/cron` recomputes aggregates.
 - **Redis for WebSocket scaling** (ADR-016) — Socket.IO adapter + notification retry.
 - **Location log partitioning** (ADR-006) — monthly partitions for query performance.
-- **Aggregate-first drill-down** — bubbles show active-inside-location / scheduled ratios; markers standardized web + mobile.
+- **Aggregate-first drill-down** — each node draws one unified glyph pin carrying its active-worker count and a staffing-health ring (ADR-051); markers standardized web + mobile. The attendance *ratio* on the marker was retired — it lives in the roster panel.
 - ⚠️ The legacy `supervisor` module is **deprecated** — superseded by this feature; do not extend it.
 
 ## Revamp notes (post-UAT) — target model (ADR-046)

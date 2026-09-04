@@ -7,11 +7,12 @@
 import {
   aggregateNodeToNodeMarker,
   composeDrillNodes,
-  clusterNodes,
+  selectDrawnNodes,
+  aggregateRequestsFor,
   type DrillView,
 } from '../monitoringDrillNodes';
 import type { AggregateNode } from '../../types/monitoring.types';
-import type { NodeMarker } from '../../components/monitoring/AggregateBubbleLayer';
+import type { NodeMarker } from '../../components/monitoring/NodeMarkerLayer';
 
 function agg(over: Partial<AggregateNode>): AggregateNode {
   return {
@@ -41,7 +42,7 @@ const view = (over: Partial<DrillView>): DrillView => ({
 });
 
 describe('aggregateNodeToNodeMarker', () => {
-  it('maps center_lat/lng → lat/lng, type → variant, roster → ratio fields', () => {
+  it('maps center_lat/lng → lat/lng, type → variant, roster + active count + parents', () => {
     const m = aggregateNodeToNodeMarker(agg({ id: 'r1', name: 'Kawasan Darmo', type: 'region' }));
     expect(m).toEqual({
       id: 'r1',
@@ -56,6 +57,12 @@ describe('aggregateNodeToNodeMarker', () => {
       // still inside their grace window, and `not_clocked_in` discards that.
       belum_hadir: 1,
       tidak_hadir: 1,
+      // The pin's badge number, plus the glyph and the parent ids a map drill
+      // needs when every tier is drawn at once.
+      active: 0,
+      marker_icon: null,
+      district_id: null,
+      region_id: null,
     });
   });
 
@@ -164,84 +171,118 @@ describe('composeDrillNodes', () => {
   });
 });
 
-describe('clusterNodes', () => {
-  const nm = (id: string, lat: number, lng: number): NodeMarker => ({
-    id,
-    name: id,
-    variant: 'location',
-    lat,
-    lng,
-    scheduled: 0,
-    clocked_in: 0,
-    not_clocked_in: 0,
-    belum_hadir: 0,
-    tidak_hadir: 0,
+describe('selectDrawnNodes', () => {
+  const cityAgg = (nodes: AggregateNode[]) =>
+    ({ scope: 'city', scope_id: null, nodes }) as never;
+  const allAgg = (nodes: AggregateNode[]) => ({ scope: 'all', scope_id: null, nodes }) as never;
+
+  it('composes one tier of children in drill mode', () => {
+    const drawn = selectDrawnNodes({
+      mode: 'drill',
+      view: view({ scope: 'city' }),
+      aggregate: cityAgg([
+        agg({ id: 'd1', type: 'district' }),
+        agg({ id: 'd2', type: 'district' }),
+      ]),
+      aggregateRegion: null,
+    });
+    expect(drawn.map(n => n.id)).toEqual(['d1', 'd2']);
   });
 
-  it('collapses coincident/near nodes into one cluster with the members', () => {
-    const out = clusterNodes(
-      [nm('a', -7.25, 112.75), nm('b', -7.2501, 112.7501), nm('c', -7.2502, 112.7499)],
-      0.1, // zoomed out → ~0.006° radius, all three merge
-    );
-    expect(out).toHaveLength(1);
-    expect(out[0].kind).toBe('cluster');
-    if (out[0].kind === 'cluster') {
-      expect(out[0].cluster.count).toBe(3);
-      expect(out[0].cluster.nodes.map(n => n.id).sort()).toEqual(['a', 'b', 'c']);
+  it('draws EVERY tier at once in zoom mode, not just the current level', () => {
+    // What `scope=all` returns: rayon, kawasan and lokasi mixed in one payload.
+    const drawn = selectDrawnNodes({
+      mode: 'zoom',
+      view: view({ scope: 'city' }),
+      aggregate: allAgg([
+        agg({ id: 'd1', type: 'district' }),
+        agg({ id: 'k1', type: 'region' }),
+        agg({ id: 'l1', type: 'location' }),
+      ]),
+      aggregateRegion: null,
+    });
+    expect(drawn.map(n => n.id).sort()).toEqual(['d1', 'k1', 'l1']);
+  });
+
+  it('draws every tier in viewport mode too — the modes differ in FETCH, not in what is drawn', () => {
+    const drawn = selectDrawnNodes({
+      mode: 'viewport',
+      view: view({ scope: 'city' }),
+      aggregate: allAgg([agg({ id: 'd1', type: 'district' }), agg({ id: 'l1', type: 'location' })]),
+      aggregateRegion: null,
+    });
+    expect(drawn).toHaveLength(2);
+  });
+
+  it('drops the node currently drilled into, which cannot be drilled from itself', () => {
+    const drawn = selectDrawnNodes({
+      mode: 'zoom',
+      view: view({ scope: 'district', id: 'd1', districtId: 'd1' }),
+      aggregate: allAgg([agg({ id: 'd1', type: 'district' }), agg({ id: 'l1', type: 'location' })]),
+      aggregateRegion: null,
+    });
+    expect(drawn.map(n => n.id)).toEqual(['l1']);
+  });
+
+  it('returns nothing when the aggregate has not loaded', () => {
+    expect(
+      selectDrawnNodes({ mode: 'zoom', view: view({ scope: 'city' }), aggregate: null, aggregateRegion: null }),
+    ).toEqual([]);
+  });
+});
+
+describe('aggregateRequestsFor', () => {
+  const V = (over: Partial<DrillView>) => view(over);
+
+  it('makes one scope=all call in zoom mode, with no bbox', () => {
+    expect(aggregateRequestsFor({ mode: 'zoom', view: V({ scope: 'city' }), viewportBox: undefined })).toEqual([
+      { scope: 'all', id: undefined, bbox: undefined },
+    ]);
+  });
+
+  it('narrows the scope=all call to the camera in viewport mode', () => {
+    expect(
+      aggregateRequestsFor({ mode: 'viewport', view: V({ scope: 'city' }), viewportBox: '112.7,-7.3,112.8,-7.2' }),
+    ).toEqual([{ scope: 'all', id: undefined, bbox: '112.7,-7.3,112.8,-7.2' }]);
+  });
+
+  it('DEFERS the viewport fetch until the camera box is known', () => {
+    // Without this the mode's first pass fires an unbounded city-wide
+    // scope=all (1089 nodes) and the bbox request lands a frame later —
+    // pulling the whole city is the exact thing viewport mode exists to avoid.
+    expect(aggregateRequestsFor({ mode: 'viewport', view: V({ scope: 'city' }), viewportBox: undefined })).toBeNull();
+  });
+
+  it('carries the drilled district id on the zoom-like call', () => {
+    expect(
+      aggregateRequestsFor({ mode: 'zoom', view: V({ scope: 'district', id: 'd1', districtId: 'd1' }), viewportBox: undefined }),
+    ).toEqual([{ scope: 'all', id: 'd1', bbox: undefined }]);
+  });
+
+  it('fetches the city rollup at city scope in drill mode', () => {
+    expect(aggregateRequestsFor({ mode: 'drill', view: V({ scope: 'city' }), viewportBox: undefined })).toEqual([
+      { scope: 'city' },
+    ]);
+  });
+
+  it('fetches BOTH the lokasi and kawasan rollups at district scope', () => {
+    expect(
+      aggregateRequestsFor({ mode: 'drill', view: V({ scope: 'district', id: 'd1', districtId: 'd1' }), viewportBox: undefined }),
+    ).toEqual([
+      { scope: 'district', id: 'd1' },
+      { scope: 'region', id: 'd1' },
+    ]);
+  });
+
+  it('reuses the parent district rollup at region and location scope', () => {
+    for (const scope of ['region', 'location'] as const) {
+      expect(
+        aggregateRequestsFor({ mode: 'drill', view: V({ scope, id: 'x', districtId: 'd1' }), viewportBox: undefined }),
+      ).toEqual([{ scope: 'district', id: 'd1' }]);
     }
   });
 
-  it('keeps far-apart nodes as individual nodes', () => {
-    const out = clusterNodes([nm('a', -7.2, 112.7), nm('b', -7.4, 112.9)], 0.1);
-    expect(out).toHaveLength(2);
-    expect(out.every(o => o.kind === 'node')).toBe(true);
-  });
-
-  it('breaks a cluster apart as you zoom in (smaller latitudeDelta)', () => {
-    const nodes = [nm('a', -7.25, 112.75), nm('b', -7.2508, 112.7508)];
-    // zoomed out → merged
-    expect(clusterNodes(nodes, 0.2)).toHaveLength(1);
-    // zoomed way in → separate
-    const zoomed = clusterNodes(nodes, 0.002);
-    expect(zoomed).toHaveLength(2);
-    expect(zoomed.every(o => o.kind === 'node')).toBe(true);
-  });
-
-  it('centres a cluster on its members’ centroid', () => {
-    const out = clusterNodes([nm('a', -7.2, 112.7), nm('b', -7.4, 112.9)], 4); // huge delta → 0.24° radius → merge
-    expect(out).toHaveLength(1);
-    if (out[0].kind === 'cluster') {
-      expect(out[0].cluster.lat).toBeCloseTo(-7.3, 5);
-      expect(out[0].cluster.lng).toBeCloseTo(112.8, 5);
-    }
-  });
-
-  it('chains transitively: a node near a member (not the seed) still joins the cluster', () => {
-    // a—b—c strung 0.009° apart; threshold ≈ 0.01 (delta 0.166). c is 0.018 from
-    // the seed a (> threshold) but 0.009 from b, so it must still cluster, not float.
-    const out = clusterNodes(
-      [nm('a', -7.25, 112.75), nm('b', -7.259, 112.75), nm('c', -7.268, 112.75)],
-      0.1667,
-    );
-    expect(out).toHaveLength(1);
-    if (out[0].kind === 'cluster') {
-      expect(out[0].cluster.count).toBe(3);
-    }
-  });
-
-  it('gives a cluster the same id regardless of input order (stable React key)', () => {
-    const a = nm('a', -7.25, 112.75);
-    const b = nm('b', -7.2504, 112.7504);
-    const id1 = clusterNodes([a, b], 0.1)[0];
-    const id2 = clusterNodes([b, a], 0.1)[0];
-    expect(id1.kind).toBe('cluster');
-    expect(id2.kind).toBe('cluster');
-    if (id1.kind === 'cluster' && id2.kind === 'cluster') {
-      expect(id1.cluster.id).toBe(id2.cluster.id);
-    }
-  });
-
-  it('returns [] for no nodes', () => {
-    expect(clusterNodes([], 0.1)).toEqual([]);
+  it('asks for nothing when a drill scope has no id to ask with', () => {
+    expect(aggregateRequestsFor({ mode: 'drill', view: V({ scope: 'district', id: null }), viewportBox: undefined })).toEqual([]);
   });
 });

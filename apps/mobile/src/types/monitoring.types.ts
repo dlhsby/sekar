@@ -419,6 +419,14 @@ export interface PresenceBreakdown {
   tidak_aktif: PresenceLocationCounts;
 }
 
+/**
+ * Aggregate rollup scope. `all` returns every tier mixed in one payload — what
+ * zoom and viewport modes draw, since they show all tiers at once rather than
+ * one level of children. Mirrors the backend `AggregateScope`
+ * (apps/be/src/modules/monitoring/dto/aggregate.dto.ts).
+ */
+export type AggregateScope = 'city' | 'district' | 'region' | 'all';
+
 export interface AggregateNode {
   id: string;
   name: string;
@@ -439,11 +447,14 @@ export interface AggregateNode {
   district_id?: string | null;
   /** Region (Kawasan) id — present on region nodes + on lokasi within a kawasan. */
   region_id?: string | null;
+  /** Configured marker glyph (e.g. "trees"); null → the tier's system default. */
+  marker_icon?: string | null;
 }
 
 export interface MonitoringAggregateResponse {
-  /** `region` = one node per kawasan in a district (id = districtId). */
-  scope: 'city' | 'district' | 'region';
+  /** `region` = one node per kawasan in a district (id = districtId).
+   *  `all` = every tier mixed in one payload, for zoom and viewport modes. */
+  scope: AggregateScope;
   scope_id: string | null;
   nodes: AggregateNode[];
   totals: AggregateStatusCounts;

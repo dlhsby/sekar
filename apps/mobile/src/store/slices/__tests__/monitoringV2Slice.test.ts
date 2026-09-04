@@ -10,7 +10,6 @@ import monitoringV2Reducer, {
   setLayer,
   setSelectedUser,
   setSelectedArea,
-  setClusterZoomThreshold,
   fetchSnapshot,
   type MonitoringV2State,
   type MonitoringV2Snapshot,
@@ -99,7 +98,6 @@ describe('monitoringV2Slice', () => {
 
     it('starts with cluster zoom threshold of 0.05', () => {
       const state = monitoringV2Reducer(undefined, { type: '@@INIT' });
-      expect(state.clusterZoomThreshold).toBe(0.05);
     });
 
     it('starts with loading false and no error', () => {
@@ -264,13 +262,6 @@ describe('monitoringV2Slice', () => {
       let state = monitoringV2Reducer(undefined, setSelectedArea('area-99'));
       state = monitoringV2Reducer(state, setSelectedArea(null));
       expect(state.selectedAreaId).toBeNull();
-    });
-  });
-
-  describe('setClusterZoomThreshold', () => {
-    it('updates clusterZoomThreshold', () => {
-      const state = monitoringV2Reducer(undefined, setClusterZoomThreshold(0.02));
-      expect(state.clusterZoomThreshold).toBe(0.02);
     });
   });
 

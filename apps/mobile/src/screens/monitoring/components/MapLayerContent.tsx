@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { AreaStatusOverlay } from '../../../components/monitoring/AreaStatusOverlay';
 import { PlantOverlayLayer } from '../../../components/monitoring/PlantOverlayLayer';
 import { BoundaryOverlay } from '../../../components/monitoring/BoundaryOverlay';
-import { AggregateBubbleLayer, type NodeMarker } from '../../../components/monitoring/AggregateBubbleLayer';
+import { NodeMarkerLayer, type NodeMarker } from '../../../components/monitoring/NodeMarkerLayer';
 import { TeamMarkerLayer } from '../../../components/monitoring/TeamMarkerLayer';
 import type { TeamGroup } from '../../../utils/teamGrouping';
 import { UserMarker, type LabelMode } from '../../../components/monitoring/UserMarker';
@@ -24,6 +24,7 @@ import {
   showsBoundary,
   showsFill,
   showsNodeLabel,
+  showsNodeMarker,
   showsPolygon,
   type MonitoringV2VisibleLayers,
 } from '../../../utils/layerVisibility';
@@ -34,6 +35,9 @@ interface MapLayerContentProps {
   visibleLayers: MonitoringV2VisibleLayers;
   visibleUsers: LiveUser[];
   selectedUser: LiveUser | null;
+  /** The node whose detail sheet is open, exempted from reveal demotion: the
+   *  card would otherwise describe something the map is showing as a dot. */
+  openNodeId: string | null;
   labelMode: LabelMode;
   currentRegion: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number };
   boundaryKey: number;
@@ -50,7 +54,6 @@ interface MapLayerContentProps {
   /** Monitoring mode — `zoom` draws every tier of the subtree at once. */
   mode?: MonitoringMode;
   /** Attendance ratio per rayon/location id, shown on the geographic markers. */
-  rosterById: Record<string, { activeInside: number; scheduled: number }>;
   /** Drill bubbles composed from the aggregate (district → regions ∪ region-less
    *  lokasi; region → the kawasan's lokasi). Replaces the boundary-derived bubbles
    *  so kawasan (no polygon) can render. */
@@ -64,13 +67,10 @@ interface MapLayerContentProps {
   /** Unified drill-down: true → worker markers (location scope). */
   showWorkers: boolean;
   /** Bubble taps — drill into the child level (city→district, district→area). */
-  onDistrictDrill: (district: any) => void;
-  onAreaDrill: (area: any) => void;
   /** Marker taps — open the current node's detail sheet. */
   onDistrictDetail: (district: any) => void;
   onAreaDetail: (area: any) => void;
   onMarkerPress: (user: LiveUser) => void;
-  onClusterPress: (center: { latitude: number; longitude: number }) => void;
 }
 
 export function MapLayerContent({
@@ -79,6 +79,7 @@ export function MapLayerContent({
   visibleLayers,
   visibleUsers,
   selectedUser,
+  openNodeId,
   labelMode,
   currentRegion,
   boundaryKey,
@@ -88,18 +89,14 @@ export function MapLayerContent({
   areaId,
   regionId = null,
   mode = 'drill',
-  rosterById,
   nodeMarkers,
   onNodeDrill,
   teamGroups,
   onTeamPress,
   showWorkers,
-  onDistrictDrill,
-  onAreaDrill,
   onDistrictDetail,
   onAreaDetail,
   onMarkerPress,
-  onClusterPress,
 }: MapLayerContentProps): React.JSX.Element {
   const { t } = useTranslation();
 
@@ -155,31 +152,36 @@ export function MapLayerContent({
     showsPolygon(visibleLayers.kawasan) &&
     (isZoom || scope === 'district' || scope === 'region');
 
-  // Drill BUBBLES now come from the aggregate (AggregateBubbleLayer below) so the
+  // Drill BUBBLES now come from the aggregate (NodeMarkerLayer below) so the
   // kawasan tier — which has no boundary polygon — can render. BoundaryOverlay keeps
   // the polygons + the current node's DETAIL marker:
   //   • district → the selected district MARKER (detail)
   //   • location  → the selected location MARKER (detail) + worker markers
-  const showDistrictBubbles = false;
-  const showAreaBubbles = false;
   const showDistrictMarker = scope === 'district';
   const showAreaMarker = scope === 'location';
   const showBoundaryLayer =
     showDistrictBoundaries || showAreaBoundaries || showRegionBoundaries ||
     showDistrictMarker || showAreaMarker;
 
-  // Bubbles obey the same depth gate as the polygons, or a tier would draw its
-  // pins with no shape (and, at city height, hundreds of them at once).
+  // Two gates, both of which must pass — the same pair web applies in
+  // `visibleNodeMarkers`:
+  //
+  //  * the operator's per-tier MARKER facet. Without it the operator had no way
+  //    to quiet a tier: zoom mode draws every lokasi in the city at once, and on
+  //    web that is tamed by switching the tier's marker off. Mobile drew them
+  //    unconditionally, so the facet row was there but did nothing for pins.
+  //  * the depth gate, or a tier would draw its pins with no shape (and, at city
+  //    height, hundreds of them at once).
   const tierScopedNodes = useMemo(
     () =>
       nodeMarkers.filter(n =>
         n.variant === 'district'
-          ? tiers.district
+          ? showsNodeMarker(visibleLayers.district) && tiers.district
           : n.variant === 'region'
-            ? tiers.region
-            : tiers.location,
+            ? showsNodeMarker(visibleLayers.kawasan) && tiers.region
+            : showsNodeMarker(visibleLayers.lokasi) && tiers.location,
       ),
-    [nodeMarkers, tiers],
+    [nodeMarkers, tiers, visibleLayers.district, visibleLayers.kawasan, visibleLayers.lokasi],
   );
 
   // ── Progressive reveal ─────────────────────────────────────────────────────
@@ -230,6 +232,7 @@ export function MapLayerContent({
     // Whatever a sheet is describing stays drawn, or the card documents
     // something the map has left anonymous.
     exemptWorkerIds: [selectedUser?.id ?? null],
+    exemptNodeIds: [openNodeId],
   });
 
   /** Engaging with someone is what makes them familiar — see `affinity.ts`. */
@@ -250,8 +253,6 @@ export function MapLayerContent({
         <BoundaryOverlay
           key={`boundary-${scope}-${boundaryKey}`}
           districts={scopedDistricts}
-          onDistrictBubblePress={onDistrictDrill}
-          onAreaBubblePress={onAreaDrill}
           onDistrictMarkerPress={onDistrictDetail}
           onAreaMarkerPress={onAreaDetail}
           showDistricts={showDistrictBoundaries}
@@ -266,29 +267,29 @@ export function MapLayerContent({
           areaOutline={showsBoundary(visibleLayers.lokasi)}
           areaFill={showsFill(visibleLayers.lokasi)}
           regionId={regionId}
-          showDistrictBubbles={showDistrictBubbles}
-          showAreaBubbles={showAreaBubbles}
           showDistrictMarker={showDistrictMarker}
           showAreaMarker={showAreaMarker}
-          rosterById={rosterById}
         />
       )}
 
-      {/* Drill bubbles from the aggregate — district nodes (city), regions ∪
-          region-less lokasi (district), a kawasan's lokasi (region). Tap → drill. */}
+      {/* Drill nodes from the aggregate — district nodes (city), regions ∪
+          region-less lokasi (district), a kawasan's lokasi (region); every tier
+          at once in zoom/viewport. Tap → drill. */}
       {mapReady && tierScopedNodes.length > 0 && (
-        <AggregateBubbleLayer
+        <NodeMarkerLayer
           nodes={tierScopedNodes}
           onDrill={onNodeDrill}
-          latitudeDelta={currentRegion.latitudeDelta}
-          onClusterPress={onClusterPress}
           // Labels are their own facet: hiding a dense tier's names keeps the
-          // bubbles, which is the common ask at a wide zoom.
+          // pins, which is the common ask at a wide zoom.
           showLabels={{
             district: showsNodeLabel(visibleLayers.district),
             region: showsNodeLabel(visibleLayers.kawasan),
             location: showsNodeLabel(visibleLayers.lokasi),
           }}
+          // Progressive reveal. Null outside viewport mode, which the layer reads
+          // as "draw everything in full" — so drill and zoom are unchanged.
+          promoted={reveal.promotedNodes}
+          labelled={reveal.labelledNodes}
         />
       )}
 

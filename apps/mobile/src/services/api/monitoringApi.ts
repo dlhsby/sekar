@@ -24,6 +24,7 @@ import type {
   UserDaySummary,
   LocationHistory,
   BoundariesResponse,
+  AggregateScope,
   MonitoringAggregateResponse,
   ReassignWorkerPayload,
   ReassignWorkerResponse,
@@ -175,15 +176,22 @@ export async function getBoundaries(
 }
 
 // Aggregate ("Ringkasan") rollup — district nodes (scope=city), kawasan nodes
-// (scope=region, id=districtId) or lokasi nodes (scope=district) with grouped
-// status/role counts and centers, no worker coords.
+// (scope=region, id=districtId), lokasi nodes (scope=district), or EVERY tier
+// mixed (scope=all) with grouped status/role counts and centers, no worker
+// coords. `scope=all` is what zoom and viewport draw, since they show all tiers
+// at once rather than one level of children; `bbox` narrows which nodes the
+// server builds to the camera (viewport mode) and leaves the totals scope-wide.
 export async function getMonitoringAggregate(
-  scope: 'city' | 'district' | 'region' = 'city',
+  scope: AggregateScope = 'city',
   id?: string,
+  bbox?: string,
 ): Promise<ApiResponse<MonitoringAggregateResponse>> {
   const params: Record<string, string> = { scope };
   if (id) {
     params.id = id;
+  }
+  if (bbox) {
+    params.bbox = bbox;
   }
   return get<MonitoringAggregateResponse>('/monitoring/aggregate', params);
 }

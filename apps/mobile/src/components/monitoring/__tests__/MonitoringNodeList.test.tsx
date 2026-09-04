@@ -8,7 +8,7 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 import { MonitoringNodeList } from '../MonitoringNodeList';
-import type { NodeMarker } from '../AggregateBubbleLayer';
+import type { NodeMarker } from '../NodeMarkerLayer';
 
 jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => {
   const { Text } = require('react-native');
@@ -24,6 +24,7 @@ const node = (over: Partial<NodeMarker> = {}): NodeMarker => ({
   scheduled: 6,
   clocked_in: 4,
   not_clocked_in: 2,
+  active: 3,
   belum_hadir: 1,
   tidak_hadir: 1,
   ...over,

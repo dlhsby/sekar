@@ -9,6 +9,7 @@ import { View, Pressable, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { MapFab } from '../../../components/monitoring/MapFab';
 import { ToolsOverlay } from './ToolsOverlay';
+import { MAP_CHROME_LAYER } from '../mapChromeLayer';
 import { nbSpacing } from '../../../constants/nbTokens';
 import type { MonitoringV2VisibleLayers, MonitoringMode } from '../../../store/slices/monitoringV2Slice';
 
@@ -108,6 +109,9 @@ const styles = StyleSheet.create({
     bottom: nbSpacing.md,
     gap: nbSpacing.sm,
     pointerEvents: 'box-none',
+    // Always above the markers — a dense tier must never bury the control that
+    // thins it out. See MAP_CHROME_LAYER.
+    ...MAP_CHROME_LAYER,
   },
   // Invisible full-bleed catcher for outside-taps while the tools overlay is open.
   toolsScrim: {

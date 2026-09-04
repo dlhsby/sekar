@@ -316,4 +316,76 @@ describe('API Client - Interceptors Coverage', () => {
       expect(response.status).toBe(204);
     });
   });
+
+  /**
+   * Expected errors — statuses a caller knows how to handle.
+   *
+   * The dev-only interceptor logs every failure at error level, which LogBox
+   * renders as a red screen. For a status the caller treats as a normal outcome
+   * (a 404 from the release registry means "nothing published yet") that turns a
+   * working app into what looks like a crash. Marking a status expected demotes
+   * the log; it never changes what the caller receives.
+   */
+  describe('Expected error statuses', () => {
+    const realDev = (global as { __DEV__?: boolean }).__DEV__;
+    let errorSpy: jest.SpyInstance;
+    let debugSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      (global as { __DEV__?: boolean }).__DEV__ = true;
+      errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      debugSpy = jest.spyOn(console, 'debug').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      (global as { __DEV__?: boolean }).__DEV__ = realDev;
+      errorSpy.mockRestore();
+      debugSpy.mockRestore();
+    });
+
+    it('does not log an expected status at error level', async () => {
+      mock.onGet('/app-releases/latest').reply(404, {
+        statusCode: 404,
+        code: 'NOT_FOUND',
+        message: 'No published android release available',
+      });
+
+      await expect(
+        apiClient.get('/app-releases/latest', { expectedStatuses: [404] }),
+      ).rejects.toBeDefined();
+
+      expect(errorSpy).not.toHaveBeenCalled();
+      expect(debugSpy).toHaveBeenCalled();
+    });
+
+    it('still logs an UNexpected status at error level', async () => {
+      mock.onGet('/app-releases/latest').reply(500, { message: 'boom' });
+
+      await expect(
+        apiClient.get('/app-releases/latest', { expectedStatuses: [404] }),
+      ).rejects.toBeDefined();
+
+      expect(errorSpy).toHaveBeenCalled();
+    });
+
+    it('logs at error level when no statuses are marked expected', async () => {
+      mock.onGet('/whatever').reply(404, { message: 'nope' });
+
+      await expect(apiClient.get('/whatever')).rejects.toBeDefined();
+
+      expect(errorSpy).toHaveBeenCalled();
+    });
+
+    it('still rejects, so the caller keeps handling the error itself', async () => {
+      mock.onGet('/app-releases/latest').reply(404, {
+        statusCode: 404,
+        code: 'NOT_FOUND',
+        message: 'No published android release available',
+      });
+
+      await expect(
+        apiClient.get('/app-releases/latest', { expectedStatuses: [404] }),
+      ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    });
+  });
 });

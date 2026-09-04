@@ -179,7 +179,6 @@ jest.mock('react-redux', () => ({
         visibleLayers: { ...mockDefaultVisibleLayers },
         selectedUserId: null,
         selectedAreaId: null,
-        clusterZoomThreshold: 0.05,
         loading: false,
         error: null,
         snapshot: { scope: 'city', scope_id: null, workers: [], generated_at: null },
