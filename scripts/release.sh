@@ -90,6 +90,27 @@ gh pr create --base main --head "$REL_BRANCH" \
   --body "Automated release PR for \`$TAG\`. Merging bumps the version on \`main\`; the \`$TAG\` tag is pushed after the merge to trigger the build/publish workflow."
 
 echo "▸ Waiting for the CI gate to pass …"
+
+# `gh pr checks --watch` exits NON-ZERO immediately when the PR was created a
+# moment ago and GitHub has not registered its workflow runs yet ("no checks
+# reported on the … branch"). That is indistinguishable from a real failure to
+# the caller, so a perfectly good release aborted here and had to be finished by
+# hand — the CI it was waiting for then passed seconds later.
+#
+# Wait for at least one check to exist before watching. Counting them is
+# unambiguous, unlike the exit code, which is also non-zero for a FAILING check.
+checks_registered() {
+  [ "$(gh pr checks "$REL_BRANCH" --json name --jq 'length' 2>/dev/null || echo 0)" -gt 0 ]
+}
+
+for _ in $(seq 1 30); do
+  checks_registered && break
+  sleep 5
+done
+checks_registered ||
+  die "no CI checks appeared within 150s — check the PR, then merge it and push the tag manually:
+       git checkout main && git pull --ff-only && git tag -a $TAG -m $TAG && git push origin $TAG"
+
 gh pr checks "$REL_BRANCH" --watch --interval 20 ||
   die "CI gate failed — fix it, then merge the PR and push the tag manually:
        git checkout main && git pull --ff-only && git tag -a $TAG -m $TAG && git push origin $TAG"
