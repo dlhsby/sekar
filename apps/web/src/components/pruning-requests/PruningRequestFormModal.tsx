@@ -13,7 +13,7 @@ import {
   type SubmitPruningRequestPayload,
   type PruningRequest,
 } from '@/lib/api/pruning-requests';
-import { getErrorMessage } from '@/lib/api/client';
+import { getErrorMessage, getFormErrorMessage } from '@/lib/api/client';
 
 interface PruningRequestFormModalProps {
   open: boolean;
@@ -88,10 +88,7 @@ export function PruningRequestFormModal({
 
   const failedMutation = isEdit ? updateMutation : createMutation;
   const errorMessage =
-    !!failedMutation.isError &&
-    (failedMutation.error instanceof Error
-      ? failedMutation.error.message
-      : isEdit
+    !!failedMutation.isError && getFormErrorMessage(failedMutation.error, isEdit
         ? t('pruning:form.updateErrorMessage')
         : t('pruning:form.createErrorMessage'));
   const isPending = failedMutation.isPending;

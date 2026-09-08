@@ -7,7 +7,7 @@ import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTi
 import { LocationForm } from '@/components/forms/LocationForm';
 import { FormActions } from '@/components/forms/FormActions';
 import { useCreateLocation, useUpdateLocation, useUpdateLocationBoundary } from '@/lib/api/locations';
-import { getErrorMessage } from '@/lib/api/client';
+import { getErrorMessage, getFormErrorMessage } from '@/lib/api/client';
 import type { Location, CreateLocationDto, UpdateLocationDto } from '@/types/models';
 
 interface LocationFormModalProps {
@@ -92,11 +92,7 @@ export function LocationFormModal({ open, onOpenChange, area, onSuccess, readOnl
       : null;
   const errorMessage =
     !!failedMutation &&
-    (failedMutation.error instanceof Error
-      ? failedMutation.error.message
-      : isEdit
-        ? t('admin:locations.updateErrorMessage')
-        : t('admin:locations.createErrorMessage'));
+    getFormErrorMessage(failedMutation.error, isEdit ? t('admin:locations.updateErrorMessage') : t('admin:locations.createErrorMessage'));
   const isPending = scalarMutation.isPending || boundaryMutation.isPending;
 
   return (

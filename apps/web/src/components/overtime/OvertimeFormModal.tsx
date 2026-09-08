@@ -7,7 +7,7 @@ import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTi
 import { OvertimeForm } from '@/components/forms/OvertimeForm';
 import { FormActions } from '@/components/forms/FormActions';
 import { useCreateOvertime, useUpdateOvertime } from '@/lib/api/overtime';
-import { getErrorMessage } from '@/lib/api/client';
+import { getErrorMessage, getFormErrorMessage } from '@/lib/api/client';
 import type { Overtime } from '@/types/models';
 
 interface OvertimeFormModalProps {
@@ -55,10 +55,7 @@ export function OvertimeFormModal({
   };
 
   const errorMessage =
-    scalarMutation.isError &&
-    (scalarMutation.error instanceof Error
-      ? scalarMutation.error.message
-      : isEdit
+    scalarMutation.isError && getFormErrorMessage(scalarMutation.error, isEdit
         ? t('overtime:form.updateErrorMessage')
         : t('overtime:form.createErrorMessage'));
   const isPending = scalarMutation.isPending;
