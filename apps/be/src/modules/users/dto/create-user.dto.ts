@@ -126,11 +126,24 @@ export class CreateUserDto {
   region_id?: string;
 
   @ApiPropertyOptional({
-    description: 'Permanent area assignments (multi). The first becomes the primary area.',
+    description:
+      'Permanent location assignments (multi). The first becomes the primary location. ' +
+      'Canonical name (ADR-052); `area_ids` is the accepted legacy alias.',
     type: [String],
   })
   @IsArray()
   // Location ids are deterministic UUID v5 — accept any version ('v4' rejects them).
+  @IsUUID('all', { each: true })
+  @IsOptional()
+  location_ids?: string[];
+
+  /** Legacy alias for {@link location_ids} — see the note on UpdateUserDto. */
+  @ApiPropertyOptional({
+    description: 'Deprecated alias for `location_ids`.',
+    type: [String],
+    deprecated: true,
+  })
+  @IsArray()
   @IsUUID('all', { each: true })
   @IsOptional()
   area_ids?: string[];

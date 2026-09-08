@@ -78,11 +78,32 @@ export class UpdateUserDto {
   region_id?: string;
 
   @ApiPropertyOptional({
-    description: 'Permanent area assignments (multi). The first becomes the primary area.',
+    description:
+      'Permanent location assignments (multi). The first becomes the primary location. ' +
+      'Canonical name (ADR-052); `area_ids` is the accepted legacy alias.',
     type: [String],
   })
   @IsArray()
   // Location ids are deterministic UUID v5 — accept any version ('v4' rejects them).
+  @IsUUID('all', { each: true })
+  @IsOptional()
+  location_ids?: string[];
+
+  /**
+   * Legacy alias for {@link location_ids}, kept so existing clients keep working.
+   *
+   * The rename to `location` (ADR-052) reached the web form before it reached
+   * this DTO, and the global pipe runs `forbidNonWhitelisted: true` — so the
+   * undeclared `location_ids` made every user create and edit from the web fail
+   * with a 400. Accepting both names is what stops a partly-applied rename from
+   * breaking a client again; the service reads `location_ids ?? area_ids`.
+   */
+  @ApiPropertyOptional({
+    description: 'Deprecated alias for `location_ids`.',
+    type: [String],
+    deprecated: true,
+  })
+  @IsArray()
   @IsUUID('all', { each: true })
   @IsOptional()
   area_ids?: string[];

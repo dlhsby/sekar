@@ -232,6 +232,22 @@ export const getErrorMessage = (error: unknown): string => {
 };
 
 /**
+ * Message for a form's inline error banner.
+ *
+ * Modals used to render `error instanceof Error ? error.message : <fallback>`.
+ * An AxiosError IS an Error, so that branch always won and the banner showed
+ * axios's own "Request failed with status code 400" — burying the reason the
+ * API had actually given. Operators got a failure with no stated cause on a
+ * form where every field looked valid.
+ *
+ * API failures go through {@link getErrorMessage} (localized by `code`, falling
+ * back to the backend message); anything else keeps the caller's own copy,
+ * which is friendlier than leaking an internal JS error string into the UI.
+ */
+export const getFormErrorMessage = (error: unknown, fallback: string): string =>
+  axios.isAxiosError(error) ? getErrorMessage(error) : fallback;
+
+/**
  * API Response Types
  */
 export interface ApiResponse<T> {

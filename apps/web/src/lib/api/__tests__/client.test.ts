@@ -5,7 +5,13 @@
 
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import MockAdapter from 'axios-mock-adapter';
-import { apiClient, getErrorMessage, isApiError, ApiError } from '../client';
+import {
+  apiClient,
+  getErrorMessage,
+  getFormErrorMessage,
+  isApiError,
+  ApiError,
+} from '../client';
 import * as cookieUtils from '@/lib/utils/cookies';
 
 // Mock the cookies module
@@ -173,6 +179,44 @@ describe('API Client', () => {
       const error = new Error('Generic error');
 
       expect(isApiError(error)).toBe(false);
+    });
+  });
+
+  /**
+   * The inline banner on every form modal used to render
+   * `error instanceof Error ? error.message : <fallback>`. An AxiosError IS an
+   * Error, so that branch always won and the banner showed axios's own string —
+   * "Request failed with status code 400" — while the API had actually replied
+   * "property location_ids should not exist". Operators saw a failure with no
+   * stated reason, on a form where nothing looked wrong.
+   */
+  describe('getFormErrorMessage', () => {
+    const fallback = 'Gagal menyimpan';
+
+    it('surfaces the API reason instead of the axios string', () => {
+      const error = {
+        isAxiosError: true,
+        message: 'Request failed with status code 400',
+        response: { status: 400, data: { message: ['property location_ids should not exist'] } },
+      };
+      const shown = getFormErrorMessage(error, fallback);
+      expect(shown).toBe('property location_ids should not exist');
+      expect(shown).not.toContain('status code');
+    });
+
+    it('prefers the localized code over the raw backend message', () => {
+      const error = {
+        isAxiosError: true,
+        message: 'Request failed with status code 409',
+        response: { status: 409, data: { code: 'PHONE_ALREADY_EXISTS', message: 'Phone taken' } },
+      };
+      // localizeApiError resolves known codes; unknown ones fall through to raw.
+      expect(getFormErrorMessage(error, fallback)).not.toBe('Request failed with status code 409');
+    });
+
+    it('falls back to the caller copy for a non-API failure', () => {
+      expect(getFormErrorMessage(new Error('boom'), fallback)).toBe(fallback);
+      expect(getFormErrorMessage(undefined, fallback)).toBe(fallback);
     });
   });
 });

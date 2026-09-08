@@ -7,7 +7,7 @@ import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTi
 import { DistrictForm } from '@/components/forms/DistrictForm';
 import { FormActions } from '@/components/forms/FormActions';
 import { useCreateDistrict, useUpdateDistrict, type CreateDistrictDto, type UpdateDistrictDto } from '@/lib/api/districts';
-import { getErrorMessage } from '@/lib/api/client';
+import { getErrorMessage, getFormErrorMessage } from '@/lib/api/client';
 import type { District } from '@/types/models';
 
 interface DistrictFormModalProps {
@@ -70,11 +70,7 @@ export function DistrictFormModal({ open, onOpenChange, district, onSuccess, rea
       : null;
   const errorMessage =
     !!failedMutation &&
-    (failedMutation.error instanceof Error
-      ? failedMutation.error.message
-      : isEdit
-        ? t('admin:districts.updateErrorMessage')
-        : t('admin:districts.createErrorMessage'));
+    getFormErrorMessage(failedMutation.error, isEdit ? t('admin:districts.updateErrorMessage') : t('admin:districts.createErrorMessage'));
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (

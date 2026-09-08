@@ -7,7 +7,7 @@ import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTi
 import { UserForm } from '@/components/forms/UserForm';
 import { FormActions } from '@/components/forms/FormActions';
 import { useCreateUser, useUpdateUser } from '@/lib/api/users';
-import { getErrorMessage } from '@/lib/api/client';
+import { getErrorMessage, getFormErrorMessage } from '@/lib/api/client';
 import type { CreateUserDto, UpdateUserDto, User, CreatedUser } from '@/types/models';
 
 interface UserFormModalProps {
@@ -66,10 +66,7 @@ export function UserFormModal({
   };
 
   const errorMessage =
-    mutation.isError &&
-    (mutation.error instanceof Error
-      ? mutation.error.message
-      : t(`admin:users.${isEdit ? 'updateErrorMessage' : 'createErrorMessage'}`));
+    mutation.isError && getFormErrorMessage(mutation.error, t(`admin:users.${isEdit ? 'updateErrorMessage' : 'createErrorMessage'}`));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
