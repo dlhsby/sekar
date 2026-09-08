@@ -7,7 +7,7 @@ import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTi
 import { ActivityForm } from '@/components/forms/ActivityForm';
 import { FormActions } from '@/components/forms/FormActions';
 import { useCreateActivity, useUpdateActivity } from '@/lib/api/activities';
-import { getErrorMessage } from '@/lib/api/client';
+import { getErrorMessage, getFormErrorMessage } from '@/lib/api/client';
 import type { Activity, CreateActivityDto, UpdateActivityDto } from '@/types/models';
 
 interface ActivityFormModalProps {
@@ -57,10 +57,7 @@ export function ActivityFormModal({
   };
 
   const errorMessage =
-    activeMutation.isError &&
-    (activeMutation.error instanceof Error
-      ? activeMutation.error.message
-      : isEdit
+    activeMutation.isError && getFormErrorMessage(activeMutation.error, isEdit
         ? t('activities:updateErrorMessage')
         : t('activities:createErrorMessage'));
 

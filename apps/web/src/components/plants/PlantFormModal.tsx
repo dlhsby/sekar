@@ -13,7 +13,7 @@ import {
   type UpdatePlantSpeciesDto,
   type PlantSpeciesRow,
 } from '@/lib/api/plants';
-import { getErrorMessage } from '@/lib/api/client';
+import { getErrorMessage, getFormErrorMessage } from '@/lib/api/client';
 
 interface PlantFormModalProps {
   open: boolean;
@@ -72,11 +72,7 @@ export function PlantFormModal({
       : null;
   const errorMessage =
     !!failedMutation &&
-    (failedMutation.error instanceof Error
-      ? failedMutation.error.message
-      : isEdit
-        ? t('plants:updateErrorMessage')
-        : t('plants:createErrorMessage'));
+    getFormErrorMessage(failedMutation.error, isEdit ? t('plants:updateErrorMessage') : t('plants:createErrorMessage'));
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (

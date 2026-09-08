@@ -128,7 +128,10 @@ export class UsersService {
       region_id,
       shift_definition_id,
     } = createUserDto;
-    const locationIds = [...new Set(createUserDto.area_ids ?? [])];
+    // `location_ids` is canonical (ADR-052); `area_ids` is the legacy alias that
+    // older clients still send. Read both so a half-applied rename cannot drop
+    // assignments silently.
+    const locationIds = [...new Set(createUserDto.location_ids ?? createUserDto.area_ids ?? [])];
 
     this.logger.log(`Creating new user: ${username}`);
 
@@ -497,8 +500,12 @@ export class UsersService {
     const previous = { full_name: user.full_name, role: user.role, is_active: user.is_active };
 
     // Admins cannot set passwords here — use resetPassword (generate + force change).
-    // `area_ids` is a junction-table relation (not a column) — handle separately.
-    const { phone_number, area_ids, ...updateData } = updateUserDto;
+    // Location assignment is a junction-table relation (not a column) — handled
+    // separately below. Both the canonical `location_ids` and its legacy
+    // `area_ids` alias are destructured off so neither leaks into `updateData`
+    // and gets written as a column.
+    const { phone_number, location_ids, area_ids, ...updateData } = updateUserDto;
+    const assignedLocationIds = location_ids ?? area_ids;
 
     if (phone_number) {
       await this.userValidation.assertPhoneAvailable(phone_number, id);
@@ -538,8 +545,8 @@ export class UsersService {
     // history are immutable; today/future use the new set.
     let areaChange: { added: string[]; removed: string[] } | undefined;
     let primaryAreaId: string | undefined;
-    if (area_ids) {
-      const desired = [...new Set(area_ids)];
+    if (assignedLocationIds) {
+      const desired = [...new Set(assignedLocationIds)];
       const before = await this.userAreasService.getPermanentLocationIds(id);
       areaChange = await this.userAreasService.reconcilePermanentLocations(
         id,

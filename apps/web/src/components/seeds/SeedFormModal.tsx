@@ -7,7 +7,7 @@ import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTi
 import { SeedForm } from '@/components/forms/SeedForm';
 import { FormActions } from '@/components/forms/FormActions';
 import { useCreateSeed, useUpdateSeed, type CreateSeedInput, type UpdateSeedInput } from '@/lib/api/seeds';
-import { getErrorMessage } from '@/lib/api/client';
+import { getErrorMessage, getFormErrorMessage } from '@/lib/api/client';
 import type { PlantSeedRow } from '@/lib/api/seeds';
 
 interface SeedFormModalProps {
@@ -58,11 +58,7 @@ export function SeedFormModal({ open, onOpenChange, seed, onSuccess }: SeedFormM
       : null;
   const errorMessage =
     !!failedMutation &&
-    (failedMutation.error instanceof Error
-      ? failedMutation.error.message
-      : isEdit
-        ? t('seeds:form.updateErrorMessage')
-        : t('seeds:form.createErrorMessage'));
+    getFormErrorMessage(failedMutation.error, isEdit ? t('seeds:form.updateErrorMessage') : t('seeds:form.createErrorMessage'));
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
