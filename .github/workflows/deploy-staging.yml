@@ -41,6 +41,10 @@ jobs:
   # release commit before building/deploying.
   quality-be:
     uses: ./.github/workflows/backend-quality.yml
+    # E2E already ran on this commit's PR; re-running a seeded-database suite
+    # here would lengthen every deploy without covering anything new.
+    with:
+      run_e2e: false
 
   quality-web:
     uses: ./.github/workflows/web-quality.yml
