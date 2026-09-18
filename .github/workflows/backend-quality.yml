@@ -1,10 +1,21 @@
 name: Backend Quality Gate
 
-# Lint + type-check + unit tests for the NestJS backend. **Reusable** — invoked by
+# Lint + type-check + unit tests + e2e for the NestJS backend. **Reusable** — invoked by
 # `pr-gate.yml` (the single required merge check) when `apps/be/**` changes on a PR, and re-run
 # as the `quality-be` job inside `deploy-staging.yml` on a release.
 on:
-  workflow_call: {}
+  workflow_call:
+    inputs:
+      run_e2e:
+        description: >-
+          Run the e2e suite (boots the real app against a Postgres service).
+          On by default for the PR gate, where catching a broken contract before
+          merge is the point. `deploy-staging` passes false: the same commit was
+          already gated on its PR, and re-running a seeded database suite would
+          add minutes to a deploy without testing anything new.
+        type: boolean
+        required: false
+        default: true
 
 jobs:
   lint-typecheck-test:
@@ -29,3 +40,66 @@ jobs:
         run: npx tsc --noEmit -p tsconfig.json
       - name: Unit tests
         run: npm test
+
+  # E2E — boots the REAL AppModule against a real database.
+  #
+  # A separate job so a slow suite never delays the lint/type/unit feedback, and
+  # so its Postgres service only spins up for backend PRs (pr-gate path-filters
+  # this whole workflow).
+  #
+  # Why it earns its ~2 minutes: unit tests cannot see the assembled app. Two
+  # bugs reached staging and were reported by users in one week — a route
+  # shadowed across two controllers (403 for every satgas on login) and a DTO
+  # rejecting the only field name the web sends (400 on every user create and
+  # edit). Both are trivially caught here and invisible to every other suite.
+  e2e:
+    name: E2E (real app + database)
+    if: ${{ inputs.run_e2e }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/be
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sekar_test
+        ports:
+          - 5432:5432
+        # Without a health gate the first migration races the server's startup.
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      # `setup-e2e.ts` loads `.env.test` / `.env.local` / `.env` with
+      # `override: false`, so these exported values win — no env file needed here.
+      NODE_ENV: test
+      DATABASE_HOST: localhost
+      DATABASE_PORT: '5432'
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: sekar_test
+      JWT_SECRET: e2e-test-secret-not-used-anywhere-else
+      JWT_EXPIRATION: 7d
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: apps/be/package-lock.json
+      - name: Install deps
+        run: npm ci
+      - name: Run migrations
+        run: npm run migration:run
+      - name: Seed
+        # The specs authenticate as seeded accounts (admin_system_1,
+        # satgas_shift_1), so the demo profile is part of the fixture.
+        run: npm run db:seed
+      - name: E2E tests
+        run: npm run test:e2e

@@ -185,15 +185,22 @@ async function openMonitoring(page: Page, role: 'admin' | 'korlap' = 'admin') {
 }
 
 test.describe('Monitoring page', () => {
+  // The sidebar toggle was "Daftar petugas" until the drill-down redesign gave
+  // the panel both tiers; it is now "Daftar Area dan Petugas". The old locator
+  // matched on `/daftar petugas/i`, which those inserted words break — so these
+  // two specs failed on a LABEL rename, with the feature working the whole time.
+  // Anchored loosely on purpose: it should survive the count suffix ("… 0").
+  const listToggle = /daftar area dan petugas/i;
+
   test('renders search, status pills and worker count', async ({ page }) => {
     await openMonitoring(page);
     await expect(page.getByText(/^Aktif/).first()).toBeVisible();
-    await expect(page.getByRole('button', { name: /daftar petugas/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: listToggle })).toBeVisible();
   });
 
   test('lists workers and opens the sidebar', async ({ page }) => {
     await openMonitoring(page);
-    await page.getByRole('button', { name: /daftar petugas/i }).click();
+    await page.getByRole('button', { name: listToggle }).click();
     // Sidebar opens with tabs for Wilayah (regions) and Petugas (workers)
     await expect(page.getByRole('tab', { name: /petugas/i })).toBeVisible();
     await expect(page.getByRole('tab', { name: /wilayah/i })).toBeVisible();
