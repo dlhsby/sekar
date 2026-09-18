@@ -1,11 +1,21 @@
 name: Web Quality Gate
 
-# Lint + type-check + unit (Jest) tests for the Next.js web dashboard. **Reusable** —
-# invoked by `pr-gate.yml` (the single required merge check) when `apps/web/**` changes on a
-# PR, and re-run as the `quality-web` job inside `deploy-staging.yml` on a release.
-# (Playwright E2E is a separate, manual workflow: web-e2e.yml.)
+# Lint + type-check + unit (Jest) + Playwright E2E for the Next.js web dashboard.
+# **Reusable** — invoked by `pr-gate.yml` (the single required merge check) when
+# `apps/web/**` changes on a PR, and re-run as the `quality-web` job inside
+# `deploy-staging.yml` on a release.
 on:
-  workflow_call: {}
+  workflow_call:
+    inputs:
+      run_e2e:
+        description: >-
+          Run the Playwright suite against the mocked API. On by default for the
+          PR gate. `deploy-staging` passes false: the same commit was already
+          gated on its PR, and a browser suite would lengthen every deploy
+          without covering anything new.
+        type: boolean
+        required: false
+        default: true
 
 jobs:
   lint-typecheck-test:
@@ -35,3 +45,46 @@ jobs:
       - name: Unit tests (Jest)
         run: npm test -- --ci
         working-directory: apps/web
+
+  # Playwright against the MOCKED API — no backend needed (route mocks), so this
+  # is a pure browser suite.
+  #
+  # Why it is worth ~2 minutes: two specs sat red from late June until September
+  # because the sidebar toggle was renamed ("Daftar petugas" → "Daftar Area dan
+  # Petugas") and nothing ran them. The suite itself was healthy the whole time —
+  # 73 passing — so the only thing missing was something to notice.
+  #
+  # `12-security` and `16-monitoring-live` self-skip without a reachable API;
+  # the live one runs post-deploy in `deploy-staging.yml` instead.
+  e2e:
+    name: Playwright (chromium, mocked API)
+    if: ${{ inputs.run_e2e }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            apps/web/package-lock.json
+      - name: Install root tooling (eslint-plugin-sekar-design)
+        run: npm ci
+      - name: Install web deps
+        run: npm ci
+        working-directory: apps/web
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+        working-directory: apps/web
+      - name: Playwright
+        run: npm run test:e2e
+        working-directory: apps/web
+      - name: Upload report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report/
+          retention-days: 7

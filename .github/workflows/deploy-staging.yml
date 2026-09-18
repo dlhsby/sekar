@@ -48,6 +48,10 @@ jobs:
 
   quality-web:
     uses: ./.github/workflows/web-quality.yml
+    # Playwright already ran on this commit's PR; a browser suite here would
+    # lengthen every deploy without covering anything new.
+    with:
+      run_e2e: false
 
   build-push:
     needs: [quality-be, quality-web]
@@ -322,3 +326,71 @@ jobs:
           # Docs site — public, no auth. Retry covers first-time Let's Encrypt issuance
           # for the new docs.sekar.wahyutrip.com host.
           curl -fsSI --retry 5 --retry-delay 6 https://docs.sekar.wahyutrip.com | head -1
+
+  # Live monitoring smoke — the only suite that exercises the map against a REAL
+  # hierarchy (9 rayon / 129 kawasan / 952 lokasi), which is the whole point of
+  # zoom and viewport mode. Every other monitoring spec mocks the API, and a
+  # mocked payload of three areas cannot tell you whether a mode does anything.
+  #
+  # It runs HERE rather than on a PR for two reasons: it needs a deployed stack,
+  # and staging is only powered on 05:00-01:00 WIB, so a PR-time run would fail
+  # on schedule rather than on merit. Post-deploy the stack is definitionally up.
+  #
+  # Read-only: it logs in, navigates, opens settings, clicks markers and
+  # searches. No writes, so it is safe against the staging data.
+  #
+  # Skips itself (rather than failing the deploy) when the credentials are
+  # absent, so a fork or a secret-less repo still deploys.
+  live-smoke:
+    name: Live monitoring smoke (staging)
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check credentials are configured
+        id: creds
+        env:
+          LIVE_USER: ${{ secrets.STAGING_E2E_USER }}
+          LIVE_PASS: ${{ secrets.STAGING_E2E_PASS }}
+        run: |
+          if [ -z "$LIVE_USER" ] || [ -z "$LIVE_PASS" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::STAGING_E2E_USER/STAGING_E2E_PASS not set — skipping the live monitoring smoke."
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-node@v4
+        if: steps.creds.outputs.run == 'true'
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - name: Install web deps
+        if: steps.creds.outputs.run == 'true'
+        run: npm ci
+        working-directory: apps/web
+      - name: Install Playwright browser
+        if: steps.creds.outputs.run == 'true'
+        run: npx playwright install --with-deps chromium
+        working-directory: apps/web
+      - name: Run the live spec against deployed staging
+        if: steps.creds.outputs.run == 'true'
+        # SKIP_SERVER stops Playwright starting a local Next dev server: the
+        # target is the deployed web, which already points at the staging API.
+        env:
+          LIVE_API: '1'
+          SKIP_SERVER: '1'
+          BASE_URL: https://sekar.wahyutrip.com
+          LIVE_USER: ${{ secrets.STAGING_E2E_USER }}
+          LIVE_PASS: ${{ secrets.STAGING_E2E_PASS }}
+        run: npx playwright test 16-monitoring-live --project=chromium
+        working-directory: apps/web
+      - name: Upload report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-smoke-report
+          path: apps/web/playwright-report/
+          retention-days: 7
+
