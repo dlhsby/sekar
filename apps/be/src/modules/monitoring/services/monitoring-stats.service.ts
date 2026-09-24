@@ -2137,6 +2137,8 @@ export class MonitoringStatsService {
             center_lng: parseFloat(area.gps_lng.toString()),
             district_id: district.id,
             district_name: district.name,
+            // Explicit null (not an absent key) for a lokasi outside any kawasan.
+            region_id: area.region_id ?? null,
             assigned_count: assigned,
             is_understaffed: assigned < required,
             staffing_summary: staffingByArea.get(area.id) || [],
