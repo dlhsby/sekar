@@ -7,27 +7,104 @@
  * clone). A mocked payload of three areas cannot tell you whether the mode does
  * anything.
  *
- * Opt-in, because CI has no backend:
+ * Opt-in (LIVE_API=1). It needs a deployed stack, so the PR gate skips it; it
+ * runs after every staging deploy (the `live-smoke` job in deploy-staging.yml)
+ * against https://sekar.wahyutrip.com. Locally:
  *
  *   LIVE_API=1 SKIP_SERVER=1 BASE_URL=http://localhost:4125 \
- *     npx playwright test 16-monitoring-live --project=chromium
+ *     npx playwright test 16-monitoring-live --project=chromium --workers=1
  *
  * The web instance it points at must itself be pointed at the target API.
+ *
+ * Credentials: the CI secrets STAGING_E2E_USER / STAGING_E2E_PASS are a copy of
+ * staging's superadmin, whose source of truth is SEED_SUPERADMIN_PASSWORD in the
+ * encrypted apps/be/.env.staging. ROTATE BOTH TOGETHER, or this job starts
+ * failing at sign-in. Keep --workers low: sign-in is throttled at 5/min, and
+ * each worker signs in once.
  */
-import { test, expect, type Page } from '@playwright/test';
+import { test as base, expect, type Browser, type Page } from '@playwright/test';
+import { mkdtempSync, rmSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
 
 const LIVE = process.env.LIVE_API === '1';
 const USER = process.env.LIVE_USER ?? 'superadmin';
 const PASS = process.env.LIVE_PASS ?? '12345678';
+// Worker fixtures cannot read the test-scoped `baseURL` option, so resolve it
+// the same way playwright.config.ts does.
+const BASE_URL = process.env.BASE_URL ?? 'http://localhost:3001';
+
+/** Sign in through the real form, retrying if the login throttle bites. */
+async function signIn(browser: Browser, statePath: string): Promise<void> {
+  // A throttled attempt leaves the form on screen; the limit is per minute, so
+  // one wait of a little over that is enough for the next attempt to succeed.
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const page = await browser.newPage({ baseURL: BASE_URL });
+    try {
+      await page.goto('/login');
+      await page.locator('input[name="identifier"]').fill(USER);
+      await page.locator('input[name="password"]').fill(PASS);
+      await page.getByRole('button', { name: /masuk/i }).click();
+      await expect(page).not.toHaveURL(/\/login/, { timeout: 30_000 });
+      await page.context().storageState({ path: statePath });
+      return;
+    } catch (err) {
+      if (attempt === 3) {
+        // Rethrow a message of our own: the original assertion error can carry
+        // page state, and this runs on shared CI.
+        throw new Error(`live spec: sign-in failed after ${attempt} attempts`, { cause: err });
+      }
+      await new Promise((resolve) => setTimeout(resolve, 65_000));
+    } finally {
+      await page.close();
+    }
+  }
+}
+
+/**
+ * One sign-in per WORKER, reused by every test in it via `storageState`.
+ *
+ * Every test used to log in through the form itself. Two things went wrong:
+ *
+ *  - The login endpoint is throttled at 5 requests a minute. Fourteen tests
+ *    signing in in parallel got throttled after the first few, so against
+ *    staging 9 of them "failed" while still sitting on the login page — the
+ *    features under test were never reached.
+ *  - On failure Playwright writes an accessibility snapshot of the page to
+ *    `error-context.md`, and that snapshot includes a password field's VALUE,
+ *    `type="password"` or not. A test failing mid-login therefore wrote the
+ *    staging superadmin password into a plain-text file — and CI bundles those
+ *    into the uploaded report, which on a public repo is not masked the way
+ *    logs are.
+ *
+ * Signing in here, outside any test body, fixes both: a handful of logins at
+ * most, and no test's failure snapshot is ever taken on a page holding the
+ * password. The saved state holds a session token, not the password, and is
+ * deleted when the worker exits.
+ */
+const test = base.extend<object, { authState: string }>({
+  authState: [
+    // Playwright passes the fixture callback positionally; it is named `provide`
+    // rather than the documented `use` because React 19's rules-of-hooks lint
+    // reads any call to `use(...)` as React's `use` hook.
+    async ({ browser }, provide) => {
+      const dir = mkdtempSync(join(tmpdir(), 'sekar-live-'));
+      const statePath = join(dir, 'state.json');
+      try {
+        await signIn(browser, statePath);
+        await provide(statePath);
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    },
+    { scope: 'worker' },
+  ],
+  storageState: ({ authState }, provide) => provide(authState),
+});
 
 test.skip(!LIVE, 'live-backend spec — set LIVE_API=1 with a running API');
 
-async function loginAndOpenMonitoring(page: Page): Promise<void> {
-  await page.goto('/login');
-  await page.locator('input[name="identifier"]').fill(USER);
-  await page.locator('input[name="password"]').fill(PASS);
-  await page.getByRole('button', { name: /masuk/i }).click();
-  await expect(page).not.toHaveURL(/\/login/, { timeout: 30_000 });
+async function openMonitoring(page: Page): Promise<void> {
   await page.goto('/monitoring');
   // The floating search is the last thing to mount, so it is the readiness signal.
   await expect(page.getByPlaceholder(/cari petugas/i)).toBeVisible({ timeout: 30_000 });
@@ -41,7 +118,7 @@ async function openSettings(page: Page): Promise<void> {
 
 test.describe('Monitoring — live backend', () => {
   test('settings expose the mode control and a facet group per geo tier', async ({ page }) => {
-    await loginAndOpenMonitoring(page);
+    await openMonitoring(page);
     await openSettings(page);
 
     // Drill is the default: nobody's map gets heavier without asking.
@@ -68,7 +145,7 @@ test.describe('Monitoring — live backend', () => {
     // select sitting directly above them, which read as two different things.
     //
     // Measured rather than eyeballed: both are layout facts jsdom cannot see.
-    await loginAndOpenMonitoring(page);
+    await openMonitoring(page);
     await openSettings(page);
 
     const m = await page.evaluate(() => {
@@ -89,7 +166,10 @@ test.describe('Monitoring — live backend', () => {
     // Nothing spills out of the panel.
     expect(m.overflowX).toBeLessThanOrEqual(0);
     // Every layer control is the same height as the mode select above them.
-    expect(m.heights).toHaveLength(4);
+    // A floor, not an exact count: this is a SIZING test. Pinning the number of
+    // facet selects meant adding a facet (there are now five) failed a check
+    // about whether controls line up, while every one of them measured 48px.
+    expect(m.heights.length).toBeGreaterThanOrEqual(4);
     for (const h of m.heights) expect(h).toBe(m.modeHeight);
     // And they form a column: one left edge, one right edge.
     expect(new Set(m.lefts).size).toBe(1);
@@ -97,7 +177,7 @@ test.describe('Monitoring — live backend', () => {
   });
 
   test('zoom mode draws more of the hierarchy than drill at city scope', async ({ page }) => {
-    await loginAndOpenMonitoring(page);
+    await openMonitoring(page);
 
     // Wait for the first aggregate to settle so the counts below are stable.
     await page.waitForTimeout(2500);
@@ -119,7 +199,7 @@ test.describe('Monitoring — live backend', () => {
   });
 
   test('the mode survives a reload', async ({ page }) => {
-    await loginAndOpenMonitoring(page);
+    await openMonitoring(page);
     await openSettings(page);
     await page.getByLabel(/mode monitoring/i).selectOption('zoom');
     await page.reload();
@@ -147,7 +227,7 @@ test.describe('Monitoring — live backend', () => {
       }
     });
 
-    await loginAndOpenMonitoring(page);
+    await openMonitoring(page);
     await page.waitForTimeout(3000);
     await openSettings(page);
     await page.getByLabel(/mode monitoring/i).selectOption('viewport');
@@ -169,7 +249,7 @@ test.describe('Monitoring — live backend', () => {
     // The defect this covers: search read the map's scope-bound boundaries, and
     // at city scope those carry no lokasi and no kawasan — so the default view
     // could find neither.
-    await loginAndOpenMonitoring(page);
+    await openMonitoring(page);
     const box = page.getByPlaceholder(/cari petugas/i);
 
     await box.click();
@@ -186,7 +266,7 @@ test.describe('Monitoring — live backend', () => {
   });
 
   test('unticking Marker keeps a tier\'s outline but drops its pins', async ({ page }) => {
-    await loginAndOpenMonitoring(page);
+    await openMonitoring(page);
     await page.waitForTimeout(2500);
     const before = await page.locator('gmp-advanced-marker, [role="button"][title]').count();
 
@@ -211,7 +291,7 @@ test.describe('Monitoring — live backend', () => {
     // Progressive reveal promotes a bounded number to full pins and demotes the
     // remainder to dots — DEMOTES, never drops, which is what the second half of
     // this test pins down.
-    await loginAndOpenMonitoring(page);
+    await openMonitoring(page);
     await openSettings(page);
     await page.getByLabel(/mode monitoring/i).selectOption('zoom');
     await page.waitForTimeout(3500);
@@ -247,7 +327,7 @@ test.describe('Monitoring — live backend', () => {
     // Drilling is used rather than a wheel gesture because it is deterministic:
     // the map fits the rayon's bounds, which is reliably past the kawasan
     // threshold, and it is the flow an operator actually performs.
-    await loginAndOpenMonitoring(page);
+    await openMonitoring(page);
     await openSettings(page);
     await page.getByLabel(/mode monitoring/i).selectOption('viewport');
     // Close the popover by toggling it: it overlays the map and would swallow
@@ -293,13 +373,23 @@ test.describe('Monitoring — live backend', () => {
     // Drilling in IS the request to see inside, so the subtree now draws at any
     // zoom; progressive reveal is what keeps it readable. No gesture between the
     // drill and the assertion, deliberately — the zoom is the thing on trial.
-    await loginAndOpenMonitoring(page);
+    await openMonitoring(page);
     await openSettings(page);
     await page.getByLabel(/mode monitoring/i).selectOption('viewport');
     await page.getByRole('button', { name: /pengaturan/i }).click();
     await page.waitForTimeout(3500);
 
-    await page.locator('gmp-advanced-marker[title="Rayon Taman Aktif"]').first().click();
+    // This needs a rayon that spans the WHOLE city — that is the defect. Swapping
+    // in any other rayon would make the test pass without testing it, so when
+    // the target backend has no such rayon (staging does not; the local demo
+    // seed does) it skips and says why, rather than failing or lying.
+    const cityWide = page.locator('gmp-advanced-marker[title="Rayon Taman Aktif"]');
+    await page.locator('gmp-advanced-marker[title^="Rayon"]').first().waitFor();
+    test.skip(
+      (await cityWide.count()) === 0,
+      'needs the city-spanning "Rayon Taman Aktif" (local demo seed); absent on this backend',
+    );
+    await cityWide.first().click();
     await page.waitForTimeout(6000);
 
     const pins = await page.locator('gmp-advanced-marker svg').count();
@@ -321,7 +411,7 @@ test.describe('Monitoring — live backend', () => {
     //
     // Drill mode still draws every marker, every count and every gesture — only
     // the label pass applies here. Pins are presence; labels are detail.
-    await loginAndOpenMonitoring(page);
+    await openMonitoring(page);
     await page.waitForTimeout(3000);
     await page.locator('gmp-advanced-marker[title^="Rayon"]').first().click();
     await page.waitForTimeout(5000);
@@ -363,7 +453,7 @@ test.describe('Monitoring — live backend', () => {
     // pin is ~40px and its name ~150, so decluttering runs twice — pins at 56px,
     // then names at 150x96 over the survivors. This asserts the outcome of that
     // second pass directly, by reading the rendered boxes.
-    await loginAndOpenMonitoring(page);
+    await openMonitoring(page);
     await openSettings(page);
     await page.getByLabel(/mode monitoring/i).selectOption('viewport');
     await page.getByRole('button', { name: /pengaturan/i }).click();
@@ -405,7 +495,7 @@ test.describe('Monitoring — live backend', () => {
     //
     // Measured in a real browser because jsdom does no layout: the unit test can
     // only assert the classes are present, not that they work.
-    await loginAndOpenMonitoring(page);
+    await openMonitoring(page);
     await page.waitForTimeout(3000);
     await page.getByRole('button', { name: /daftar area dan petugas/i }).click();
     await page.waitForTimeout(2000);
@@ -439,7 +529,7 @@ test.describe('Monitoring — live backend', () => {
   test('viewport mode tells the operator what the dots are', async ({ page }) => {
     // A field of unexplained dots reads as broken data. The hint is what makes
     // it read as "more detail is waiting".
-    await loginAndOpenMonitoring(page);
+    await openMonitoring(page);
     await openSettings(page);
     await page.getByLabel(/mode monitoring/i).selectOption('viewport');
     await page.keyboard.press('Escape');
