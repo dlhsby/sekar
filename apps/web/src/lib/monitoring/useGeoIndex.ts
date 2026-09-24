@@ -38,6 +38,32 @@ export interface GeoIndexEntry {
   regionId?: string | null;
 }
 
+type LocatedArea = { center_lat?: unknown; center_lng?: unknown; region_id?: string | null };
+
+/**
+ * The middle of each kawasan's own lokasi, keyed by kawasan id.
+ *
+ * Kawasan often have no stored centre — every one on staging (131 of 131)
+ * arrives with `center_lat: null` and no polygon — so the index skipped them
+ * all and search could not find a single kawasan from anywhere. Their lokasi do
+ * carry centres and name their kawasan through `region_id`, which places the
+ * kawasan where its sites actually are. Lokasi without a centre are ignored
+ * rather than counted, so one unplaced site cannot drag the result toward 0,0.
+ */
+function kawasanCentroids(areas: readonly LocatedArea[]): Map<string, { lat: number; lng: number }> {
+  const sums = new Map<string, { lat: number; lng: number; n: number }>();
+  for (const a of areas) {
+    if (!a.region_id || a.center_lat == null || a.center_lng == null) continue;
+    const prev = sums.get(a.region_id) ?? { lat: 0, lng: 0, n: 0 };
+    sums.set(a.region_id, {
+      lat: prev.lat + Number(a.center_lat),
+      lng: prev.lng + Number(a.center_lng),
+      n: prev.n + 1,
+    });
+  }
+  return new Map([...sums].map(([id, s]) => [id, { lat: s.lat / s.n, lng: s.lng / s.n }]));
+}
+
 /** Flat, searchable list of every geography the user may drill to. */
 export function useGeoIndex(enabled = true): GeoIndexEntry[] {
   const { data } = useBoundaries(enabled, 'area');
@@ -56,14 +82,23 @@ export function useGeoIndex(enabled = true): GeoIndexEntry[] {
           districtId: d.id,
         });
       }
+      const derived = kawasanCentroids((d.areas ?? []) as readonly LocatedArea[]);
       for (const r of d.regions ?? []) {
-        if (r.center_lat == null || r.center_lng == null) continue;
+        // A stored centre wins; otherwise place the kawasan among its lokasi.
+        // Still skipped if neither exists — a result you cannot fly to is not a
+        // result.
+        const stored =
+          r.center_lat != null && r.center_lng != null
+            ? { lat: Number(r.center_lat), lng: Number(r.center_lng) }
+            : null;
+        const centre = stored ?? derived.get(r.id);
+        if (!centre) continue;
         out.push({
           id: r.id,
           name: r.name,
           tier: 'region',
-          latitude: Number(r.center_lat),
-          longitude: Number(r.center_lng),
+          latitude: centre.lat,
+          longitude: centre.lng,
           parentName: d.name,
           districtId: d.id,
         });
