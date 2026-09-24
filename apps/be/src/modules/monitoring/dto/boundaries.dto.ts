@@ -47,6 +47,16 @@ export class AreaBoundaryDto {
   @ApiProperty({ example: 'Rayon Selatan' })
   district_name: string;
 
+  /**
+   * The kawasan this lokasi belongs to, or null for one directly under the rayon.
+   *
+   * Kawasan carry no stored centre, so clients place each one at the middle of
+   * its lokasi — found through this field. Without it no kawasan could be placed
+   * and web search could not find a single one.
+   */
+  @ApiProperty({ example: 'region-uuid', nullable: true, type: String })
+  region_id: string | null;
+
   @ApiProperty({ example: 6 })
   assigned_count: number;
 

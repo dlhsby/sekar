@@ -2,6 +2,7 @@
 
 Newest first. Feature overview + current design live in [README.md](./README.md).
 
+- **2026-09-24** — **Kawasan search fixed at the source: `/monitoring/boundaries` areas now carry `region_id`** (explicit `null` outside a kawasan). #517 placed centreless kawasan at the mean of their lokasi via `region_id`, but the endpoint never sent it (0/1002 on staging) — the unit fixture invented the field. New backend e2e contract `test/monitoring-boundaries-contract.e2e-spec.ts` asserts the key on the real response.
 - **2026-09-02** — **Mobile monitoring markers brought onto the web canon, across all three
   map modes.** The mobile map still drew each aggregate node as a `hadir/terjadwal` ratio bubble —
   the design ADR-051 retired and web migrated off (`nodeRatioIcon` → `nodeCountIcon`) — so it now
