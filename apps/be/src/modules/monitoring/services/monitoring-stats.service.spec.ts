@@ -582,6 +582,46 @@ describe('MonitoringStatsService', () => {
       expect(result.districts).toHaveLength(1);
     });
 
+    /**
+     * Every lokasi must carry the kawasan it belongs to.
+     *
+     * Kawasan have no stored centre (131 of 131 on staging), so the web search
+     * index places each one at the middle of its lokasi — found by `region_id`.
+     * This payload omitted `region_id` entirely (0 of 1002 lokasi on staging), so
+     * no kawasan could be placed and none was searchable. It also left every
+     * lokasi search result without its parent kawasan.
+     */
+    it('includes each lokasi region_id, and null for one outside any kawasan', async () => {
+      districtRepository.find.mockResolvedValue([mockDistrict]);
+      areaRepository.find.mockResolvedValue([
+        { ...mockArea, id: 'in-kawasan', region_id: 'k1' },
+        { ...mockArea, id: 'no-kawasan', region_id: undefined },
+      ]);
+      shiftDefinitionRepository.find.mockResolvedValue([mockShiftDef]);
+      const mockQueryBuilder = {
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        innerJoin: jest.fn().mockReturnThis(),
+        leftJoin: jest.fn().mockReturnThis(),
+        groupBy: jest.fn().mockReturnThis(),
+        addGroupBy: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([]),
+        getMany: jest.fn().mockResolvedValue([]),
+      };
+      trackingRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
+      staffRequirementRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
+
+      const result = await service.getBoundaries({ level: 'area' });
+
+      const byId = new Map(result.districts[0].areas.map((a) => [a.id, a]));
+      expect(byId.get('in-kawasan')?.region_id).toBe('k1');
+      // Explicit null, not a missing key: the client distinguishes "no kawasan"
+      // from "field not sent", which is exactly the bug.
+      expect(byId.get('no-kawasan')).toHaveProperty('region_id', null);
+    });
+
     it('should filter by district ID', async () => {
       districtRepository.find.mockResolvedValue([mockDistrict]);
       areaRepository.find.mockResolvedValue([mockArea]);
