@@ -384,13 +384,14 @@ jobs:
           BASE_URL: https://sekar.wahyutrip.com
           LIVE_USER: ${{ secrets.STAGING_E2E_USER }}
           LIVE_PASS: ${{ secrets.STAGING_E2E_PASS }}
-        run: npx playwright test 16-monitoring-live --project=chromium
+        # `list`, not the config's default `html`, and deliberately NO report
+        # artifact. This repo is public, so an uploaded artifact is downloadable
+        # by anyone — and GitHub masks secrets in LOGS, not inside artifact
+        # files. A Playwright report bundles page snapshots of staging, which is
+        # a real-data clone: field workers' names and positions. An earlier
+        # version also captured the superadmin password in those snapshots.
+        # The console output below is the whole record; reproduce a failure
+        # locally against staging if you need the snapshots.
+        run: npx playwright test 16-monitoring-live --project=chromium --reporter=list
         working-directory: apps/web
-      - name: Upload report on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: live-smoke-report
-          path: apps/web/playwright-report/
-          retention-days: 7
 
