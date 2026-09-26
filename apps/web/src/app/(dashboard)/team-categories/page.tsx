@@ -7,22 +7,16 @@ import { Pencil, Trash2, Power } from 'lucide-react';
 import {
   Button,
   DataTable,
-  Dialog,
-  DialogBody,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
   EmptyState,
   StatusPill,
   type ColumnDef,
   type DataTableRowAction,
 } from '@/components/ui';
+import { ForceDeleteDialog } from '@/components/deletion/ForceDeleteDialog';
 import { usePermissions } from '@/lib/auth/usePermissions';
 import { getErrorMessage } from '@/lib/api/client';
 import {
   useTeamCategories,
-  useDeleteTeamCategory,
   useUpdateTeamCategory,
   type TeamCategory,
 } from '@/lib/api/teams';
@@ -35,7 +29,6 @@ export default function TeamsPage() {
   // Catalog management shows deactivated categories too — pickers elsewhere keep
   // the active-only default.
   const { data: teamCategories = [], isLoading, error, refetch } = useTeamCategories(true, true);
-  const deleteTeamCategory = useDeleteTeamCategory();
   const updateTeamCategory = useUpdateTeamCategory();
 
   const [formOpen, setFormOpen] = useState(false);
@@ -141,17 +134,6 @@ export default function TeamsPage() {
     },
   ];
 
-  const handleDelete = async () => {
-    if (!toDelete) return;
-    try {
-      await deleteTeamCategory.mutateAsync(toDelete.id);
-      toast.success(t('admin:teamCategories.successDeleted'));
-      setToDelete(null);
-      refetch();
-    } catch (err) {
-      toast.error(getErrorMessage(err));
-    }
-  };
 
   if (!can('team:read')) {
     return <EmptyState variant="error" title={t('admin:teamCategories.denied')} />;
@@ -192,26 +174,14 @@ export default function TeamsPage() {
         onSuccess={() => refetch()}
       />
 
-      <Dialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
-        <DialogContent size="sm">
-          <DialogHeader>
-            <DialogTitle>{t('admin:teamCategories.deleteTitle')}</DialogTitle>
-          </DialogHeader>
-          <DialogBody>
-            <p className="text-nb-body-sm text-nb-black">
-              {t('admin:teamCategories.deleteMessage', { name: toDelete?.name })}
-            </p>
-          </DialogBody>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setToDelete(null)}>
-              {t('common:actions.cancel')}
-            </Button>
-            <Button variant="destructive" onClick={handleDelete} loading={deleteTeamCategory.isPending}>
-              {t('common:actions.delete')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ForceDeleteDialog
+        open={!!toDelete}
+        onOpenChange={(o) => !o && setToDelete(null)}
+        type="team_category"
+        id={toDelete?.id ?? null}
+        name={toDelete?.name ?? ''}
+        onDeleted={() => refetch()}
+      />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, SelectQueryBuilder } from 'typeorm';
+import { EntityManager, Repository, SelectQueryBuilder } from 'typeorm';
 import { AuditLog, type AuditOutcome } from './entities/audit-log.entity';
 import { AuditFilterDto } from './dto/audit-filter.dto';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
@@ -38,12 +38,16 @@ export class AuditLogService {
    * export…) — ADR-015. Plain CRUD on `@Auditable` entities is captured
    * automatically (ADR-061) and must not be logged here too. Actor role/name,
    * IP, user agent and request id are snapshotted from the request context.
+   *
+   * @param manager pass a transactional EntityManager to make the entry commit
+   *                (or roll back) together with the change it describes.
    */
-  async log(params: LogParams): Promise<AuditLog> {
+  async log(params: LogParams, manager?: EntityManager): Promise<AuditLog> {
+    const repo = manager ? manager.getRepository(AuditLog) : this.auditLogRepo;
     const ctx = auditContext.get();
     const actorId = params.actor_id ?? ctx.userId ?? null;
     const sameActor = actorId !== null && actorId === ctx.userId;
-    const entry = this.auditLogRepo.create({
+    const entry = repo.create({
       entity_type: params.entity_type,
       entity_id: params.entity_id ?? null,
       entity_label: params.entity_label ?? null,
@@ -65,7 +69,7 @@ export class AuditLogService {
       parent_id: ctx.parentId ?? null,
     });
 
-    const saved = await this.auditLogRepo.save(entry);
+    const saved = await repo.save(entry);
     this.logger.debug(`Audit: ${params.entity_type}/${params.entity_id ?? '-'} ${params.action}`);
     return saved;
   }

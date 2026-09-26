@@ -25,11 +25,11 @@ import {
   StatusPill,
   TimePicker,
 } from '@/components/ui';
+import { ForceDeleteDialog } from '@/components/deletion/ForceDeleteDialog';
 import {
   useShiftDefinitions,
   useCreateShiftDefinition,
   useUpdateShiftDefinition,
-  useDeleteShiftDefinition,
   type ShiftDefinitionInput,
 } from '@/lib/api/shift-definitions';
 import { getErrorMessage } from '@/lib/api/client';
@@ -89,12 +89,12 @@ export function ShiftDefinitionsModal({
   const { data: shifts, isLoading } = useShiftDefinitions(true);
   const createMut = useCreateShiftDefinition();
   const updateMut = useUpdateShiftDefinition();
-  const deleteMut = useDeleteShiftDefinition();
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState<ShiftDefinitionInput>(EMPTY_FORM);
   const [errors, setErrors] = useState<FormErrors>({});
+  const [deletingShift, setDeletingShift] = useState<ShiftDefinition | null>(null);
 
   const sorted = useMemo(
     () => [...(shifts ?? [])].sort((a, b) => a.start_time.localeCompare(b.start_time)),
@@ -189,18 +189,11 @@ export function ShiftDefinitionsModal({
     }
   };
 
-  const onDelete = async (s: ShiftDefinition) => {
-    if (!window.confirm(t('schedules:shiftDefs.confirmDelete', { name: s.name }))) return;
-    try {
-      await deleteMut.mutateAsync(s.id);
-      toast.success(t('schedules:shiftDefs.deleted'));
-      if (editingId === s.id) closeForm();
-    } catch (err) {
-      toast.error(getErrorMessage(err));
-    }
+  const onDelete = (s: ShiftDefinition) => {
+    setDeletingShift(s);
   };
 
-  const saving = createMut.isPending || updateMut.isPending;
+  const saving = createMut.isPending || updateMut.isPending || false;
 
   const columns = useMemo<ColumnDef<ShiftDefinition>[]>(
     () => [
@@ -392,6 +385,17 @@ export function ShiftDefinitionsModal({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ForceDeleteDialog
+        open={!!deletingShift}
+        onOpenChange={(o) => !o && setDeletingShift(null)}
+        type="shift_definition"
+        id={deletingShift?.id ?? null}
+        name={deletingShift?.name ?? ''}
+        onDeleted={() => {
+          if (editingId === deletingShift?.id) closeForm();
+        }}
+      />
     </>
   );
 }

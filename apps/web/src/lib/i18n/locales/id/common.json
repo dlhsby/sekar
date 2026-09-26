@@ -294,5 +294,35 @@
     "removed": "Berhasil dihapus dari daftar",
     "markedRead": "Ditandai sudah dibaca",
     "converted": "Berhasil dikonversi"
+  },
+  "forceDelete": {
+    "title": "Hapus {{name}}?",
+    "description": "Data ini masih dipakai. Tinjau dampaknya sebelum menghapus.",
+    "warningTitle": "Tindakan berbahaya dan tidak dapat dibatalkan.",
+    "historyKept": "Riwayat tidak diubah: kehadiran, laporan, dan jadwal hari ini ke belakang tetap tersimpan. Yang dibatalkan hanya jadwal mulai besok.",
+    "impactTitle": "Yang akan terjadi",
+    "noImpact": "Tidak ada data lain yang memakai ini.",
+    "impact": {
+      "future_schedules": "Jadwal mulai besok dibatalkan: {{count}}",
+      "schedule_series": "Jadwal berulang dihentikan hari ini: {{count}}",
+      "users_home": "Pengguna dilepas dari data ini: {{count}}",
+      "user_assignments": "Penugasan lokasi pengguna dihapus: {{count}}",
+      "locations_detached": "Lokasi dikeluarkan dari kawasan (tetap ada): {{count}}",
+      "regions_deleted": "Kawasan ikut dihapus: {{count}}",
+      "locations_deleted": "Lokasi ikut dihapus: {{count}}",
+      "team_memberships": "Keanggotaan tim dilepas: {{count}}",
+      "users_default_shift": "Pengguna kehilangan shift bawaan: {{count}}",
+      "team_series": "Jadwal tim kehilangan kategori (tetap berjalan): {{count}}",
+      "users_moved": "Pengguna dipindah ke peran pengganti: {{count}}",
+      "locations_moved": "Lokasi dipindah ke tipe pengganti: {{count}}"
+    },
+    "replacementLabel": "Pindahkan ke",
+    "replacementHint": "{{count}} data masih memakai ini dan harus dipindahkan.",
+    "replacementPlaceholder": "Pilih pengganti",
+    "confirmLabel": "Ketik \"{{name}}\" untuk konfirmasi",
+    "reasonLabel": "Alasan penghapusan (tercatat di log audit)",
+    "reasonPlaceholder": "mis. Lokasi ditutup permanen sesuai SK Kepala Dinas",
+    "submit": "Hapus permanen",
+    "success": "{{name}} dihapus"
   }
 }

@@ -8,23 +8,17 @@ import {
   Button,
   CoordinateLink,
   DataTable,
-  Dialog,
-  DialogBody,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
   EmptyState,
   StatusPill,
   mapStyleColorColumn,
   type ColumnDef,
   type DataTableRowAction,
 } from '@/components/ui';
+import { ForceDeleteDialog } from '@/components/deletion/ForceDeleteDialog';
 import { usePermissions } from '@/lib/auth/usePermissions';
 import { getErrorMessage } from '@/lib/api/client';
 import {
   useRegions,
-  useDeleteRegion,
   useDeactivateRegion,
   useActivateRegion,
   type Region,
@@ -43,7 +37,6 @@ export default function RegionsPage() {
   // Resolver, not a picker: include deactivated districts or a kawasan under one
   // would show a raw id and lose its staffing level.
   const { data: districts = [] } = useDistricts(true);
-  const deleteRegion = useDeleteRegion();
   const deactivateRegion = useDeactivateRegion();
   const activateRegion = useActivateRegion();
 
@@ -232,17 +225,6 @@ export default function RegionsPage() {
     },
   ];
 
-  const handleDelete = async () => {
-    if (!toDelete) return;
-    try {
-      await deleteRegion.mutateAsync(toDelete.id);
-      toast.success(t('admin:regions.successDeleted'));
-      setToDelete(null);
-      refetch();
-    } catch (err) {
-      toast.error(getErrorMessage(err));
-    }
-  };
 
   if (!can('region:read')) {
     return <EmptyState variant="error" title={t('admin:regions.denied')} />;
@@ -300,26 +282,14 @@ export default function RegionsPage() {
         />
       )}
 
-      <Dialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
-        <DialogContent size="sm">
-          <DialogHeader>
-            <DialogTitle>{t('admin:regions.deleteTitle')}</DialogTitle>
-          </DialogHeader>
-          <DialogBody>
-            <p className="text-nb-body-sm text-nb-black">
-              {t('admin:regions.deleteMessage', { name: toDelete?.name })}
-            </p>
-          </DialogBody>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setToDelete(null)}>
-              {t('common:actions.cancel')}
-            </Button>
-            <Button variant="destructive" onClick={handleDelete} loading={deleteRegion.isPending}>
-              {t('common:actions.delete')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ForceDeleteDialog
+        open={!!toDelete}
+        onOpenChange={(o) => !o && setToDelete(null)}
+        type="region"
+        id={toDelete?.id ?? null}
+        name={toDelete?.name ?? ''}
+        onDeleted={() => refetch()}
+      />
     </div>
   );
 }

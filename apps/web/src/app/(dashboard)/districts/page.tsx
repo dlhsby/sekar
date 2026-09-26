@@ -16,17 +16,16 @@ import {
   PageHeader,
   CoordinateLink,
   StatusPill,
-  ConfirmDialog,
   mapStyleColorColumn,
   type ColumnDef,
   type DataTableRowAction,
 } from '@/components/ui';
 import { DistrictFormModal } from '@/components/districts/DistrictFormModal';
 import { CapacityModal } from '@/components/schedules/CapacityModal';
+import { ForceDeleteDialog } from '@/components/deletion/ForceDeleteDialog';
 import type { StaffSubject } from '@/lib/api/location-staff-requirements';
 import {
   useDistricts,
-  useDeleteDistrict,
   useDeactivateDistrict,
   useActivateDistrict,
 } from '@/lib/api/districts';
@@ -78,16 +77,13 @@ export default function RayonsPage() {
     [t]
   );
 
-  const deleteDistrict = useDeleteDistrict();
   const deactivateDistrict = useDeactivateDistrict();
   const activateDistrict = useActivateDistrict();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingDistrict, setEditingDistrict] = useState<District | null>(null);
   const view = useViewModal<District>();
-  const [deleteOpen, setDeleteOpen] = useState(false);
   const [deletingDistrict, setDeletingDistrict] = useState<District | null>(null);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [capacitySubject, setCapacitySubject] = useState<StaffSubject | null>(null);
 
   const columns = useMemo<ColumnDef<District>[]>(
@@ -329,33 +325,12 @@ export default function RayonsPage() {
         hidden: !canDelete,
         onClick: () => {
           setDeletingDistrict(r);
-          setDeleteOpen(true);
         },
       },
     ],
     [handleToggleActive, canUpdate, canDelete, view, t]
   );
 
-  const handleDelete = async () => {
-    if (!deletingDistrict) return;
-
-    setDeleteError(null);
-    try {
-      await deleteDistrict.mutateAsync(deletingDistrict.id);
-      toast.success(t('admin:districts.successDeleted', { name: deletingDistrict.name }));
-      setDeleteOpen(false);
-      setDeletingDistrict(null);
-      refetch();
-    } catch (err: unknown) {
-      const errorMsg = getErrorMessage(err);
-      // Surface inline (dialog stays open), matching the Area/User delete flows.
-      setDeleteError(
-        errorMsg.includes('masih memiliki') || errorMsg.includes('area')
-          ? t('admin:shared.districtHasAreas', { name: deletingDistrict.name })
-          : errorMsg,
-      );
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -415,32 +390,14 @@ export default function RayonsPage() {
         subject={capacitySubject}
       />
 
-      <ConfirmDialog
-        open={deleteOpen}
-        onOpenChange={(open) => {
-          if (!open) setDeleteError(null);
-          setDeleteOpen(open);
-        }}
-        title={t('admin:shared.deleteDistrict')}
-        description={
-          deletingDistrict && (
-            <>
-              {t('admin:shared.deleteConfirmation', { name: deletingDistrict.name })}
-            </>
-          )
-        }
-        confirmLabel={t('admin:shared.delete')}
-        cancelLabel={t('admin:shared.cancel')}
-        variant="destructive"
-        loading={deleteDistrict.isPending}
-        onConfirm={handleDelete}
-      >
-        {deleteError && (
-          <div className="bg-nb-danger/10 border-2 border-nb-danger px-4 py-3">
-            <p className="text-sm text-nb-danger font-medium">{deleteError}</p>
-          </div>
-        )}
-      </ConfirmDialog>
+      <ForceDeleteDialog
+        open={!!deletingDistrict}
+        onOpenChange={(o) => !o && setDeletingDistrict(null)}
+        type="district"
+        id={deletingDistrict?.id ?? null}
+        name={deletingDistrict?.name ?? ''}
+        onDeleted={() => refetch()}
+      />
     </div>
   );
 }
