@@ -1,11 +1,15 @@
-import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, Optional } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { UserRole } from '../../users/entities/user.entity';
 import { ROLES_KEY } from '../decorators/roles.decorator';
+import { DeniedAccessRecorder } from '../../audit/denied-access.recorder';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+  constructor(
+    private reflector: Reflector,
+    @Optional() private readonly denied?: DeniedAccessRecorder,
+  ) {}
 
   canActivate(context: ExecutionContext): boolean {
     const requiredRoles = this.reflector.getAllAndOverride<UserRole[]>(ROLES_KEY, [
@@ -17,8 +21,10 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
-    const { user } = context.switchToHttp().getRequest();
-    return requiredRoles.some((role) => roleSatisfies(user.role, role));
+    const req = context.switchToHttp().getRequest();
+    const allowed = requiredRoles.some((role) => roleSatisfies(req.user?.role, role));
+    if (!allowed) this.denied?.record(req, requiredRoles);
+    return allowed;
   }
 }
 

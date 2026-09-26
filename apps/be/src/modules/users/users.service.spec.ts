@@ -226,7 +226,7 @@ describe('UsersService', () => {
       await expect(service.create(createUserDto)).rejects.toThrow('Username already exists');
     });
 
-    it('should audit-log the creation with the acting admin as actor (4-4 C2)', async () => {
+    it('does not double-log creation (captured automatically, ADR-061)', async () => {
       mockUserRepository.findOne.mockResolvedValue(null);
       mockUserRepository.create.mockReturnValue(mockUser);
       mockUserRepository.save.mockResolvedValue(mockUser);
@@ -234,19 +234,9 @@ describe('UsersService', () => {
 
       await service.create(createUserDto, actor);
 
-      expect(mockAuditLogService.log).toHaveBeenCalledWith(
-        expect.objectContaining({
-          entity_type: 'user',
-          entity_id: mockUser.id,
-          action: 'create',
-          actor_id: 'admin-actor-uuid',
-          new_value: expect.objectContaining({
-            username: createUserDto.username,
-            full_name: createUserDto.full_name,
-            role: createUserDto.role,
-          }),
-        }),
-      );
+      // CRUD on users is captured by the @Auditable subscriber in the same
+      // transaction (ADR-061); the service must not write a duplicate entry.
+      expect(mockAuditLogService.log).not.toHaveBeenCalled();
     });
 
     it('should not audit-log when the creation fails', async () => {
@@ -318,11 +308,13 @@ describe('UsersService', () => {
 
   describe('updateProfilePicture', () => {
     it('should update profile picture URL', async () => {
-      mockUserRepository.update = jest.fn().mockResolvedValue({ affected: 1 });
+      mockUserRepository.save.mockResolvedValue({ ...mockUser });
 
       await service.updateProfilePicture(mockUser.id, 'https://example.com/avatar.png');
 
-      expect(mockUserRepository.update).toHaveBeenCalledWith(mockUser.id, {
+      // save (not update) so the audit subscriber sees the change (ADR-061).
+      expect(mockUserRepository.save).toHaveBeenCalledWith({
+        id: mockUser.id,
         profile_picture_url: 'https://example.com/avatar.png',
       });
     });
@@ -727,22 +719,16 @@ describe('UsersService', () => {
       expect(mockUserRepository.save).toHaveBeenCalled();
     });
 
-    it('should audit-log the update (4-4 C2)', async () => {
+    it('does not double-log a plain update (captured automatically, ADR-061)', async () => {
       mockUserRepository.findOne.mockResolvedValue({ ...mockUser });
       mockUserRepository.save.mockResolvedValue({ ...mockUser, full_name: 'Updated Name' });
       const actor = { ...mockUser, id: 'admin-actor-uuid' } as User;
 
       await service.update(mockUser.id, { full_name: 'Updated Name' }, actor);
 
-      expect(mockAuditLogService.log).toHaveBeenCalledWith(
-        expect.objectContaining({
-          entity_type: 'user',
-          entity_id: mockUser.id,
-          action: 'update',
-          actor_id: 'admin-actor-uuid',
-          new_value: { full_name: 'Updated Name' },
-        }),
-      );
+      // CRUD on users is captured by the @Auditable subscriber in the same
+      // transaction (ADR-061); the service must not write a duplicate entry.
+      expect(mockAuditLogService.log).not.toHaveBeenCalled();
     });
 
     it('should NOT change the password via the admin update path', async () => {
@@ -950,24 +936,22 @@ describe('UsersService', () => {
       expect(mockUserRepository.softRemove).toHaveBeenCalledWith(mockUser);
     });
 
-    it('should audit-log the delete', async () => {
+    it('soft-removes via softRemove and does not double-log (ADR-061)', async () => {
       mockUserRepository.findOne.mockResolvedValue({ ...mockUser });
       mockUserRepository.softRemove.mockResolvedValue({ ...mockUser });
       const actor = { ...mockUser, id: 'admin-actor-uuid' } as User;
 
       await service.remove(mockUser.id, actor);
 
-      expect(mockAuditLogService.log).toHaveBeenCalledWith({
-        entity_type: 'user',
-        entity_id: mockUser.id,
-        action: 'delete',
-        actor_id: 'admin-actor-uuid',
-      });
+      expect(mockUserRepository.softRemove).toHaveBeenCalled();
+      // CRUD on users is captured by the @Auditable subscriber in the same
+      // transaction (ADR-061); the service must not write a duplicate entry.
+      expect(mockAuditLogService.log).not.toHaveBeenCalled();
     });
   });
 
   describe('deactivate / activate', () => {
-    it('deactivate sets is_active=false and audits', async () => {
+    it('deactivate sets is_active=false (audited as an update diff, ADR-061)', async () => {
       mockUserRepository.findOne.mockResolvedValue({ ...mockUser, is_active: true });
       mockUserRepository.save.mockResolvedValue({ ...mockUser, is_active: false });
       const actor = { ...mockUser, id: 'admin-actor-uuid' } as User;
@@ -977,12 +961,10 @@ describe('UsersService', () => {
       expect(mockUserRepository.save).toHaveBeenCalledWith(
         expect.objectContaining({ is_active: false }),
       );
-      expect(mockAuditLogService.log).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'deactivate', actor_id: 'admin-actor-uuid' }),
-      );
+      expect(mockAuditLogService.log).not.toHaveBeenCalled();
     });
 
-    it('activate sets is_active=true and audits', async () => {
+    it('activate sets is_active=true (audited as an update diff, ADR-061)', async () => {
       mockUserRepository.findOne.mockResolvedValue({ ...mockUser, is_active: false });
       mockUserRepository.save.mockResolvedValue({ ...mockUser, is_active: true });
       const actor = { ...mockUser, id: 'admin-actor-uuid' } as User;
@@ -992,9 +974,7 @@ describe('UsersService', () => {
       expect(mockUserRepository.save).toHaveBeenCalledWith(
         expect.objectContaining({ is_active: true }),
       );
-      expect(mockAuditLogService.log).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'activate', actor_id: 'admin-actor-uuid' }),
-      );
+      expect(mockAuditLogService.log).not.toHaveBeenCalled();
     });
   });
 

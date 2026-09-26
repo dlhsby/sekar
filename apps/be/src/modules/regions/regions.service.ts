@@ -17,6 +17,7 @@ import { UpdateRegionDto } from './dto/update-region.dto';
 import { User, UserRole } from '../users/entities/user.entity';
 import { MONITORING_CITY } from '../users/constants/role-groups';
 import { GeoJsonValidator, GeoJsonPolygon } from '../../common/utils/geojson-validator.util';
+import { AuditLogService } from '../audit/audit.service';
 
 /**
  * Regions (Kawasan) master data (ADR-045). Region delete nulls child areas'
@@ -40,6 +41,7 @@ export class RegionsService {
     private readonly districtRepo: Repository<District>,
     @InjectRepository(Location)
     private readonly locationRepo: Repository<Location>,
+    private readonly auditLog: AuditLogService,
   ) {}
 
   /** List regions; non-city-scope callers (kepala_rayon/admin_rayon/korlap)
@@ -168,16 +170,19 @@ export class RegionsService {
 
   async remove(id: string): Promise<void> {
     const region = await this.findOne(id);
+    const detached = await this.locationIdsIn(id);
     // Detach child areas first — soft-delete does not fire the FK's ON DELETE
     // SET NULL. Use an explicit SET NULL: repo.update() skips `undefined`, so
     // `{ region_id: undefined }` would be a no-op and leave areas orphaned.
     await this.locationRepo
       .createQueryBuilder()
+      // audit: explicit — recorded once as the region's locations_change event
       .update(Location)
       .set({ region_id: () => 'NULL' })
       .where('region_id = :id', { id })
       .execute();
     await this.regionRepo.softRemove(region);
+    await this.recordMembership(region, detached, []);
   }
 
   /** Re-parent areas into this region (all must share the region's district). */
@@ -189,6 +194,7 @@ export class RegionsService {
    */
   async assignLocations(id: string, locationIds: string[]): Promise<{ updated: number }> {
     const region = await this.findOne(id);
+    const before = await this.locationIdsIn(id);
 
     if (locationIds.length > 0) {
       const areas = await this.locationRepo.find({ where: { id: In(locationIds) } });
@@ -207,6 +213,7 @@ export class RegionsService {
     // TypeORM update() skips undefined, so clear via a NULL-setting QueryBuilder.
     const unassign = this.locationRepo
       .createQueryBuilder()
+      // audit: explicit — recorded once as the region's locations_change event
       .update()
       .set({ region_id: () => 'NULL' })
       .where('region_id = :id', { id });
@@ -217,9 +224,38 @@ export class RegionsService {
 
     // Parent the selected areas into the region.
     if (locationIds.length > 0) {
+      // audit: explicit — recorded once as the region's locations_change event
       await this.locationRepo.update({ id: In(locationIds) }, { region_id: id });
     }
+    await this.recordMembership(region, before, locationIds);
     return { updated: locationIds.length };
+  }
+
+  private async locationIdsIn(regionId: string): Promise<string[]> {
+    const rows = await this.locationRepo.find({ select: ['id'], where: { region_id: regionId } });
+    return rows.map((r) => r.id);
+  }
+
+  /**
+   * Bulk re-parenting bypasses entity events (one UPDATE for many lokasi), so it
+   * is recorded as ONE explicit event on the kawasan rather than N row diffs.
+   * Best-effort (ADR-015): a failed audit write never fails the mutation.
+   */
+  private async recordMembership(region: Region, before: string[], after: string[]): Promise<void> {
+    const added = after.filter((x) => !before.includes(x));
+    const removed = before.filter((x) => !after.includes(x));
+    if (added.length === 0 && removed.length === 0) return;
+    try {
+      await this.auditLog.log({
+        entity_type: 'region',
+        entity_id: region.id,
+        entity_label: region.name,
+        action: 'locations_change',
+        metadata: { added_location_ids: added, removed_location_ids: removed },
+      });
+    } catch {
+      // Non-fatal: the mutation already succeeded.
+    }
   }
 
   private async assertDistrictExists(districtId: string): Promise<void> {

@@ -2,7 +2,7 @@
 
 Why the significant technical decisions were made. Each ADR follows **Status · Context · Decision · Consequences**. Statuses: **Active**, **Superseded by ADR-XXX**, **Proposed**. To add one: create `ADR-NNN-title.md` (next free number — 020–023 & 039 were skipped), follow the section structure of a recent ADR, and add a row below.
 
-## Index (all 46)
+## Index (all 47)
 
 | ADR | Title | Status |
 |-----|-------|--------|
@@ -20,7 +20,7 @@ Why the significant technical decisions were made. Each ADR follows **Status · 
 | [012](./ADR-012-phone-number-login.md) | Phone Number Login with Identifier-Based Authentication | Active |
 | [013](./ADR-013-multi-area-assignment.md) | Multi-Area Assignment with Junction Table | Active |
 | [014](./ADR-014-overtime-clock-in-flow.md) | Overtime as Clock-In/Clock-Out Shift Flow | Active |
-| [015](./ADR-015-audit-trail.md) | Generic Audit Trail for Entity Change Tracking | Active |
+| [015](./ADR-015-audit-trail.md) | Generic Audit Trail for Entity Change Tracking | Active · extended by 061 |
 | [016](./ADR-016-redis-websocket-scaling.md) | Redis for WebSocket Scaling, Caching, and Notification Retry | Active |
 | [017](./ADR-017-maestro-mobile-e2e.md) | Maestro for Mobile E2E Testing | Active |
 | [018](./ADR-018-export-format-strategy.md) | Export Format Strategy (CSV + Excel via exceljs) | Active |
@@ -62,6 +62,7 @@ Why the significant technical decisions were made. Each ADR follows **Status · 
 | [058](./ADR-058-no-inline-media-in-postgres.md) | No inline media in Postgres — photos live in object storage (MinIO local/prod, S3 staging) and the column holds a URL; global interceptor converts on write and presigns on read. Was 528 MB of a 658 MB database | Active · **implemented** |
 | [059](./ADR-059-location-integrity.md) | Location integrity (anti-spoofing) — reject missing/forged fixes (null island, mock provider, impossible travel) but NEVER "outside area"; one shared evaluator for punches + pings; timestamps clamped both sides | Active · **implemented** |
 | [060](./ADR-060-monitoring-map-modes.md) | Two monitoring map modes — `drill` (worker at their schedule tier, ADR-046) vs `zoom` (every tier + everyone standing in the subtree); modes change what is DRAWN, never what is COUNTED; `aggregate?scope=all` composed from the drill builders; viewport culling, never clustering | Active · **web implemented** |
+| [061](./ADR-061-audit-trail-v2.md) | Audit trail v2 — automatic `@Auditable` CRUD capture in the same transaction (fail-closed), actor/request snapshots + field diffs, append-only guard trigger, SHA-256 hash chain sealed by cron + verify endpoint; ISO 27001 A.8.15 / COBIT DSS06 mapping | Active · extends 015 |
 
 ## By domain
 

@@ -68,4 +68,37 @@ describe('PermissionsGuard', () => {
     withMeta(['user:read']);
     await expect(guard.canActivate(ctxFor(undefined))).rejects.toBeInstanceOf(ForbiddenException);
   });
+
+  describe('denied-write recording', () => {
+    it('reports a refusal to the DeniedAccessRecorder with the required grants', async () => {
+      const denied = { record: jest.fn() };
+      const g = new PermissionsGuard(
+        reflector,
+        rolePermissions as unknown as RolePermissionsService,
+        denied as never,
+      );
+      withMeta(['district:delete']);
+      rolePermissions.getRolePermissionKeys.mockResolvedValue(['district:read']);
+      await expect(g.canActivate(ctxFor({ role: 'kepala_rayon' }))).rejects.toBeInstanceOf(
+        ForbiddenException,
+      );
+      expect(denied.record).toHaveBeenCalledWith(
+        expect.objectContaining({ user: { role: 'kepala_rayon' } }),
+        ['district:delete'],
+      );
+    });
+
+    it('does not report an allowed request', async () => {
+      const denied = { record: jest.fn() };
+      const g = new PermissionsGuard(
+        reflector,
+        rolePermissions as unknown as RolePermissionsService,
+        denied as never,
+      );
+      withMeta(['district:read']);
+      rolePermissions.getRolePermissionKeys.mockResolvedValue(['*:*']);
+      await expect(g.canActivate(ctxFor({ role: 'admin_system' }))).resolves.toBe(true);
+      expect(denied.record).not.toHaveBeenCalled();
+    });
+  });
 });

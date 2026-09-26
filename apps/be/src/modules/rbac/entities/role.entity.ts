@@ -11,6 +11,7 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { MonitoringScope } from '../enums/monitoring-scope.enum';
 import { Permission } from './permission.entity';
+import { Auditable } from '../../audit/capture/auditable.decorator';
 
 /**
  * Role — a data-driven role (ADR-044). `code` is immutable and referenced by
@@ -19,6 +20,7 @@ import { Permission } from './permission.entity';
  * code-rename. `monitoring_scope` + marker drive visibility and the map pin.
  */
 @Entity('roles')
+@Auditable<Role>({ type: 'role', label: (e) => e.name })
 export class Role {
   @ApiProperty({ example: '22222222-2222-2222-2222-222222222222' })
   @PrimaryGeneratedColumn('uuid')

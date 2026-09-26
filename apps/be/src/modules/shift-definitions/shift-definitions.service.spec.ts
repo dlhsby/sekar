@@ -50,6 +50,7 @@ describe('ShiftDefinitionsService', () => {
     create: jest.fn((x) => x),
     save: jest.fn(async (x) => ({ id: x.id ?? 'new-id', ...x })),
     softDelete: jest.fn().mockResolvedValue({ affected: 1 }),
+    softRemove: jest.fn().mockImplementation(async (e) => e),
   };
 
   beforeEach(async () => {
@@ -310,7 +311,8 @@ describe('ShiftDefinitionsService', () => {
     it('soft-deletes an existing definition', async () => {
       mockShiftDefinitionRepository.findOne.mockResolvedValue(mockShift1);
       await service.remove(mockShift1.id);
-      expect(mockShiftDefinitionRepository.softDelete).toHaveBeenCalledWith(mockShift1.id);
+      expect(mockShiftDefinitionRepository.softRemove).toHaveBeenCalledWith(mockShift1);
+      expect(mockShiftDefinitionRepository.softDelete).not.toHaveBeenCalled();
     });
 
     it('throws NotFound for a missing id', async () => {

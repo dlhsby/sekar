@@ -8,6 +8,7 @@ import {
   Index,
 } from 'typeorm';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Auditable } from '../../audit/capture/auditable.decorator';
 
 /**
  * The tier a district's staffing requirements (and understaffing) attach to.
@@ -30,6 +31,7 @@ export enum StaffingLevel {
  * Phase 2: 7 Districts - Selatan, Utara, Pusat, Timur 1, Timur 2, Barat 1, Barat 2
  */
 @Entity('districts')
+@Auditable<District>({ type: 'district', label: (e) => e.name })
 @Index('uq_districts_name_live', ['name'], { unique: true, where: 'deleted_at IS NULL' })
 export class District {
   @ApiProperty({

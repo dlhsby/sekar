@@ -23,10 +23,11 @@ export class ReassignmentHistoryEntryDto {
   effective_date: string | null;
 
   @ApiProperty({
+    nullable: true,
     example: 'admin-uuid',
     description: 'Actor (person who performed reassignment) ID',
   })
-  actor_id: string;
+  actor_id: string | null;
 
   @ApiProperty({ example: 'Admin User', description: 'Actor full name' })
   actor_name: string;
