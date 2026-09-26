@@ -60,7 +60,11 @@ export const PERMISSION_CATALOG: CatalogCategory[] = [
     label: 'Penjadwalan & Tim',
     resources: [
       { resource: 'schedule', label: 'Jadwal', actions: [READ, CREATE, UPDATE, DELETE] },
-      { resource: 'team', label: 'Tim', actions: [READ, CREATE, UPDATE, DELETE, MANAGE] },
+      { resource: 'team', label: 'Tim', actions: [READ, CREATE, UPDATE, DELETE] },
+      // City-wide scheduling config — separate from `schedule:*` so rayon-scoped
+      // roles that edit rosters cannot change shift windows or holidays for everyone.
+      { resource: 'shift-definition', label: 'Definisi Shift', actions: [CREATE, UPDATE, DELETE] },
+      { resource: 'holiday', label: 'Hari Libur', actions: [CREATE, UPDATE, DELETE] },
     ],
   },
   {

@@ -41,7 +41,24 @@ export class TeamsService {
   async updateType(id: string, dto: UpdateTeamCategoryDto): Promise<TeamCategory> {
     const type = await this.typeRepo.findOne({ where: { id } });
     if (!type) throw new NotFoundException('Team type not found');
-    Object.assign(type, dto);
-    return this.typeRepo.save(type);
+    try {
+      return await this.typeRepo.save({ ...type, ...dto });
+    } catch (err) {
+      if ((err as { code?: string }).code === '23505') {
+        throw new ConflictException(`Team type '${dto.name}' already exists`);
+      }
+      throw err;
+    }
+  }
+
+  /**
+   * Soft delete. Schedule events that reference the category keep their FK
+   * (history stays intact); the category just leaves the catalog and dropdowns.
+   * softRemove (not softDelete) so the audit subscriber stamps deleted_by.
+   */
+  async removeType(id: string): Promise<void> {
+    const type = await this.typeRepo.findOne({ where: { id } });
+    if (!type) throw new NotFoundException('Team type not found');
+    await this.typeRepo.softRemove(type);
   }
 }

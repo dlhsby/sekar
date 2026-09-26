@@ -5,6 +5,7 @@ import { LocationType } from './entities/location-type.entity';
 import { CreateLocationTypeDto } from './dto/create-location-type.dto';
 import { UpdateLocationTypeDto } from './dto/update-location-type.dto';
 import { NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
 
 describe('LocationTypesController', () => {
   let module: TestingModule;
@@ -54,7 +55,10 @@ describe('LocationTypesController', () => {
           useValue: mockAreaTypesService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(PermissionsGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<LocationTypesController>(LocationTypesController);
     service = module.get<LocationTypesService>(LocationTypesService);

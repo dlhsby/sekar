@@ -19,9 +19,12 @@ import {
   useUpdateTeamCategory,
   type TeamCategory,
 } from '@/lib/api/teams';
-import { ColorField } from '@/components/forms/ColorField';
+import { ColorField, HEX_COLOR } from '@/components/forms/ColorField';
 import { MarkerIconPicker } from '@/components/forms/MarkerIconPicker';
 import { OpacityField } from '@/components/forms/MapStyleFields';
+
+/** Mirrors CreateTeamCategoryDto `@MinLength(2)`. */
+const NAME_MIN = 2;
 
 interface TeamCategoryFormModalProps {
   open: boolean;
@@ -58,7 +61,11 @@ export function TeamCategoryFormModal({ open, onOpenChange, teamCategory, onSucc
   }, [open, teamCategory]);
 
   const isPending = createMutation.isPending || updateMutation.isPending;
-  const canSave = name.trim().length >= 1;
+  // Mirrors CreateTeamCategoryDto (@MinLength(2), 6-digit hex) so the user sees
+  // why Save is disabled instead of a server 400.
+  const nameTooShort = name.trim().length > 0 && name.trim().length < NAME_MIN;
+  const colorInvalid = !!markerColor && !HEX_COLOR.test(markerColor);
+  const canSave = name.trim().length >= NAME_MIN && !colorInvalid;
   const isDirty =
     name !== (teamCategory?.name ?? '') ||
     (markerColor ?? null) !== (teamCategory?.marker_color ?? null) ||
@@ -70,7 +77,7 @@ export function TeamCategoryFormModal({ open, onOpenChange, teamCategory, onSucc
     // never sends it — only a new category needs the active default.
     const payload = {
       name: name.trim(),
-      marker_color: markerColor,
+      marker_color: markerColor || null,
       marker_opacity: markerOpacity,
       marker_icon: markerIcon,
     };
@@ -104,6 +111,7 @@ export function TeamCategoryFormModal({ open, onOpenChange, teamCategory, onSucc
             placeholder={t('admin:teamCategories.form.namePlaceholder')}
             value={name}
             onChange={(e) => setName(e.target.value)}
+            error={nameTooShort ? t('validation:nameMin', { count: NAME_MIN }) : undefined}
           />
           {/*
             One colour, one opacity. The geography tiers pair a border with a
@@ -118,6 +126,7 @@ export function TeamCategoryFormModal({ open, onOpenChange, teamCategory, onSucc
               // eslint-disable-next-line sekar-design/no-inline-hex-colors -- fallback is placeholder colour only, not a design token
               fallback="#7FBC8C"
               onChange={setMarkerColor}
+              error={colorInvalid ? t('validation:colorInvalid') : undefined}
             />
             <OpacityField
               label={t('admin:teamCategories.form.markerOpacity')}

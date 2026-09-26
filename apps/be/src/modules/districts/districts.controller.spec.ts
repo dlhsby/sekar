@@ -5,6 +5,7 @@ import { District, StaffingLevel } from './entities/district.entity';
 import { Location } from '../locations/entities/location.entity';
 import { CreateDistrictDto } from './dto/create-district.dto';
 import { UpdateDistrictDto } from './dto/update-district.dto';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
 
 describe('DistrictsController', () => {
   let module: TestingModule;
@@ -48,7 +49,10 @@ describe('DistrictsController', () => {
           useValue: mockDistrictsService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(PermissionsGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<DistrictsController>(DistrictsController);
     districtService = module.get<DistrictsService>(DistrictsService);

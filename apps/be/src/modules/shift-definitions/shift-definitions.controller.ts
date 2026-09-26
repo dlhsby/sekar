@@ -25,9 +25,8 @@ import { ShiftDefinition } from './entities/shift-definition.entity';
 import { CreateShiftDefinitionDto } from './dto/create-shift-definition.dto';
 import { UpdateShiftDefinitionDto } from './dto/update-shift-definition.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { USER_MANAGERS } from '../users/constants/role-groups';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
 
 /**
  * Controller for shift definition operations.
@@ -38,12 +37,12 @@ import { USER_MANAGERS } from '../users/constants/role-groups';
 @ApiTags('shift-definitions')
 @ApiBearerAuth('JWT-auth')
 @Controller('shift-definitions')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class ShiftDefinitionsController {
   constructor(private readonly shiftDefinitionsService: ShiftDefinitionsService) {}
 
   @Post()
-  @Roles(...USER_MANAGERS)
+  @RequirePermissions('shift-definition:create')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Create a shift definition (ADR-055)',
@@ -57,7 +56,7 @@ export class ShiftDefinitionsController {
   }
 
   @Patch(':id')
-  @Roles(...USER_MANAGERS)
+  @RequirePermissions('shift-definition:update')
   @ApiOperation({
     summary: 'Update a shift definition (ADR-055)',
     description: 'Edit times / windows / active flag. System managers only.',
@@ -72,7 +71,7 @@ export class ShiftDefinitionsController {
   }
 
   @Delete(':id')
-  @Roles(...USER_MANAGERS)
+  @RequirePermissions('shift-definition:delete')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Delete (soft) a shift definition (ADR-055)',

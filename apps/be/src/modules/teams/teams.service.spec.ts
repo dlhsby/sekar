@@ -14,6 +14,7 @@ describe('TeamsService', () => {
       findOne: jest.fn(),
       find: jest.fn(),
       save: jest.fn(),
+      softRemove: jest.fn(),
       create: jest.fn((v) => v),
     };
     service = new TeamsService(typeRepo);
@@ -70,6 +71,39 @@ describe('TeamsService', () => {
       typeRepo.save.mockResolvedValue({ ...existing, is_active: false });
       const result = await service.updateType('tt-1', { is_active: false } as any);
       expect(result.is_active).toBe(false);
+    });
+  });
+
+  describe('updateType — conflicts', () => {
+    it('maps a rename onto an existing name to a friendly conflict', async () => {
+      typeRepo.findOne.mockResolvedValue({ id: 'tt-1', name: 'Penyiraman' });
+      typeRepo.save.mockRejectedValue(Object.assign(new Error('dup'), { code: '23505' }));
+      await expect(service.updateType('tt-1', { name: 'Perawatan' } as any)).rejects.toBeInstanceOf(
+        ConflictException,
+      );
+    });
+
+    it('does not mutate the loaded entity', async () => {
+      const existing = { id: 'tt-1', name: 'Penyiraman', is_active: true };
+      typeRepo.findOne.mockResolvedValue(existing);
+      typeRepo.save.mockImplementation(async (v: unknown) => v);
+      await service.updateType('tt-1', { name: 'Penyapuan' } as any);
+      expect(existing.name).toBe('Penyiraman');
+    });
+  });
+
+  describe('removeType', () => {
+    it('throws NotFound for a missing type', async () => {
+      typeRepo.findOne.mockResolvedValue(null);
+      await expect(service.removeType('nope')).rejects.toBeInstanceOf(NotFoundException);
+      expect(typeRepo.softRemove).not.toHaveBeenCalled();
+    });
+
+    it('soft-removes via softRemove so deleted_by is stamped', async () => {
+      const existing = { id: 'tt-1', name: 'Penyiraman' };
+      typeRepo.findOne.mockResolvedValue(existing);
+      await service.removeType('tt-1');
+      expect(typeRepo.softRemove).toHaveBeenCalledWith(existing);
     });
   });
 });

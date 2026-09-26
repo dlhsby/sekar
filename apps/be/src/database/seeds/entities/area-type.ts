@@ -55,7 +55,7 @@ export async function seedAreaTypes(ctx: SeedContext): Promise<void> {
     await ctx.qr.query(
       `INSERT INTO location_types (code, name, description, category)
        VALUES ($1, $2, $3, $4)
-       ON CONFLICT (code) DO UPDATE
+       ON CONFLICT (code) WHERE deleted_at IS NULL DO UPDATE
          SET name = EXCLUDED.name,
              description = EXCLUDED.description,
              category = EXCLUDED.category,

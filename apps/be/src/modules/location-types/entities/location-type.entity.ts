@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   DeleteDateColumn,
+  Index,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -15,6 +16,7 @@ import { ApiProperty } from '@nestjs/swagger';
  * This is a lookup/master data table with predefined values.
  */
 @Entity('location_types')
+@Index('uq_location_types_code_live', ['code'], { unique: true, where: 'deleted_at IS NULL' })
 export class LocationType {
   @ApiProperty({
     description: 'Unique identifier for the area type',
@@ -28,7 +30,7 @@ export class LocationType {
     example: 'park',
     enum: ['park', 'pedestrian', 'mini_garden', 'street'],
   })
-  @Column({ length: 20, unique: true })
+  @Column({ length: 20 })
   code: string;
 
   @ApiProperty({

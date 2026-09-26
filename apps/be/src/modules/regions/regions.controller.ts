@@ -67,7 +67,7 @@ export class RegionsController {
   }
 
   @Patch(':id/deactivate')
-  @RequirePermissions('region:manage')
+  @RequirePermissions('region:update')
   @ApiOperation({
     summary: 'Deactivate region (Kawasan)',
     description:
@@ -81,7 +81,7 @@ export class RegionsController {
   }
 
   @Patch(':id/activate')
-  @RequirePermissions('region:manage')
+  @RequirePermissions('region:update')
   @ApiOperation({ summary: 'Reactivate region (Kawasan)', description: 'Set is_active=true.' })
   @ApiParam({ name: 'id', description: 'Region UUID' })
   @ApiResponse({ status: 200, type: Region })

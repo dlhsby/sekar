@@ -31,17 +31,20 @@ import {
   useActivateDistrict,
 } from '@/lib/api/districts';
 import { useUserLookup } from '@/lib/api/users';
-import { useAuth } from '@/lib/auth/hooks';
-import { ADMIN_ROLES } from '@/lib/constants/roles';
 import { getErrorMessage } from '@/lib/api/client';
 import { useViewModal } from '@/lib/hooks/use-view-modal';
 import { formatDate } from '@/lib/utils/time';
 import type { District } from '@/types/models';
+import { usePermissions } from '@/lib/auth/usePermissions';
 
 export default function RayonsPage() {
   const { t } = useTranslation(['admin', 'common', 'schedules', 'validation']);
-  const { user } = useAuth();
-  const isAdmin = user && ADMIN_ROLES.includes(user.role);
+  // Permission-driven (ADR-044): mirrors the backend @RequirePermissions gates,
+  // so a button is shown exactly when the API will accept the call.
+  const { can } = usePermissions();
+  const canCreate = can('district:create');
+  const canUpdate = can('district:update');
+  const canDelete = can('district:delete');
 
   // Management grid shows deactivated districts too — pickers/filters elsewhere
   // keep the active-only default.
@@ -294,7 +297,7 @@ export default function RayonsPage() {
         key: 'edit',
         label: t('admin:districts.actionEdit'),
         icon: Pencil,
-        disabled: !isAdmin,
+        disabled: !canUpdate,
         onClick: () => {
           setEditingDistrict(r);
           setFormOpen(true);
@@ -306,7 +309,7 @@ export default function RayonsPage() {
         icon: Settings2,
         // Capacity lives on exactly the tier this district nominates; `region` is
         // the column default when unset.
-        hidden: !isAdmin || (r.staffing_level ?? 'region') !== 'district',
+        hidden: !canUpdate || (r.staffing_level ?? 'region') !== 'district',
         onClick: () => setCapacitySubject({ type: 'district', id: r.id, name: r.name }),
       },
       {
@@ -315,7 +318,7 @@ export default function RayonsPage() {
           ? t('admin:shared.actionDeactivate')
           : t('admin:shared.actionActivate'),
         icon: Power,
-        hidden: !isAdmin,
+        hidden: !canUpdate,
         onClick: () => handleToggleActive(r),
       },
       {
@@ -323,14 +326,14 @@ export default function RayonsPage() {
         label: t('admin:districts.actionDelete'),
         icon: Trash2,
         variant: 'danger',
-        hidden: !isAdmin,
+        hidden: !canDelete,
         onClick: () => {
           setDeletingDistrict(r);
           setDeleteOpen(true);
         },
       },
     ],
-    [handleToggleActive, isAdmin, view, t]
+    [handleToggleActive, canUpdate, canDelete, view, t]
   );
 
   const handleDelete = async () => {
@@ -372,7 +375,7 @@ export default function RayonsPage() {
         rowActions={rowActions}
         createAction={{
           label: t('admin:districts.buttonAdd'),
-          hidden: !isAdmin,
+          hidden: !canCreate,
           onClick: () => {
             setEditingDistrict(null);
             setFormOpen(true);
@@ -381,7 +384,7 @@ export default function RayonsPage() {
         emptyTitle={t('admin:districts.emptyTitle')}
         emptyDescription={t('admin:districts.emptyDescription')}
         emptyAction={
-          isAdmin ? (
+          canCreate ? (
             <Button
               onClick={() => {
                 setEditingDistrict(null);
