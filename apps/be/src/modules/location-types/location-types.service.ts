@@ -163,7 +163,7 @@ export class LocationTypesService {
     this.logger.log(`Deleting area type with ID: ${id}`);
 
     // First verify the area type exists
-    await this.findOne(id);
+    const locationType = await this.findOne(id);
 
     // Check if any areas reference this type (including soft-deleted areas)
     const referencingAreasCount = await this.locationRepository.count({
@@ -180,8 +180,9 @@ export class LocationTypesService {
       );
     }
 
-    // Perform soft delete
-    await this.locationTypeRepository.softDelete(id);
+    // softRemove (not softDelete) so deleted_by is stamped and the audit
+    // subscriber records the delete (ADR-061).
+    await this.locationTypeRepository.softRemove(locationType);
     this.logger.log(`Location type soft deleted with ID: ${id}`);
   }
 }

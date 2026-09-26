@@ -5154,6 +5154,10 @@ socket.on('USER_STATUS_CHANGED', (payload) => {
 | POST | `/overtime/:id/end` | End overtime clock-out + activity |
 | GET | `/overtime/active` | Get active overtime for current user |
 | GET | `/audit/:entityType/:entityId` | Get entity audit trail |
+| GET | `/audit` | Search the audit trail — filters `entity_type`, `entity_id`, `action`, `actor_id`, `actor_role`, `outcome`, `from_date`, `to_date`, `q` (label/actor text); paginated · `audit:read` (ADR-061) |
+| GET | `/audit/types` | Entity types captured automatically · `audit:read` |
+| GET | `/audit/verify` | Hash-chain integrity → `{sealed, unsealed, first_broken_seq, last_hash, intact}` · `audit:read` |
+| GET | `/audit/export.csv` | Filtered CSV (≤50 000 rows, `X-Export-Truncated` when capped; the export is itself audited) · `audit:read` |
 
 **Modified Endpoints (5):**
 

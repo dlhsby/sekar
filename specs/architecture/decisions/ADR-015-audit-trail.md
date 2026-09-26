@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted · **extended by [ADR-061](./ADR-061-audit-trail-v2.md)** (automatic CRUD capture, append-only, hash chain). Explicit domain events described here are unchanged.
 
 ## Context
 

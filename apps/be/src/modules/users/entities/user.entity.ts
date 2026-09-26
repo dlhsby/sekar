@@ -12,6 +12,7 @@ import { Exclude } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { Location } from '../../locations/entities/location.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
+import { Auditable } from '../../audit/capture/auditable.decorator';
 
 /**
  * User Role Enum
@@ -39,6 +40,12 @@ export enum UserRole {
 }
 
 @Entity('users')
+@Auditable<User>({
+  type: 'user',
+  label: (e) => `${e.full_name} (@${e.username})`,
+  // Personal UI preferences are not account changes worth an audit row.
+  ignore: ['preferred_language', 'preference_theme'],
+})
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;

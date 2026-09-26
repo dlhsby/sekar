@@ -8,6 +8,7 @@ import {
   Index,
 } from 'typeorm';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Auditable } from '../../audit/capture/auditable.decorator';
 
 /**
  * TeamCategory — the crew-type catalog (ADR-048, Phase 4): perawatan / penyiraman /
@@ -16,6 +17,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
  * only define the type + marker.
  */
 @Entity('team_categories')
+@Auditable<TeamCategory>({ type: 'team_category', label: (e) => e.name })
 // Name is unique among live rows only, so a deleted category's name can be reused.
 @Index('uq_team_categories_name_live', ['name'], { unique: true, where: 'deleted_at IS NULL' })
 export class TeamCategory {

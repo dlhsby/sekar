@@ -64,6 +64,7 @@ describe('LocationTypesService', () => {
     create: jest.fn(),
     save: jest.fn(),
     softDelete: jest.fn(),
+    softRemove: jest.fn(),
   };
 
   const mockAreaRepository = {
@@ -303,7 +304,7 @@ describe('LocationTypesService', () => {
     it('should soft delete an area type', async () => {
       mockRepository.findOne.mockResolvedValue(mockAreaType);
       mockAreaRepository.count.mockResolvedValue(0);
-      mockRepository.softDelete.mockResolvedValue({ affected: 1 });
+      mockRepository.softRemove.mockResolvedValue(mockAreaType);
 
       await service.remove('a1b2c3d4-e5f6-7890-abcd-ef1234567890');
 
@@ -314,9 +315,9 @@ describe('LocationTypesService', () => {
         where: { location_type_id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' },
         withDeleted: true,
       });
-      expect(mockRepository.softDelete).toHaveBeenCalledWith(
-        'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-      );
+      // softRemove (entity) — softDelete(id) would skip deleted_by + the audit row.
+      expect(mockRepository.softRemove).toHaveBeenCalledWith(mockAreaType);
+      expect(mockRepository.softDelete).not.toHaveBeenCalled();
     });
 
     it('should throw NotFoundException if area type not found', async () => {

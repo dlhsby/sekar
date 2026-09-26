@@ -71,6 +71,7 @@ describe('LocationStaffRequirementsService', () => {
     create: jest.fn(),
     save: jest.fn(),
     softDelete: jest.fn(),
+    softRemove: jest.fn(),
   };
 
   const mockAreasService = {
@@ -355,11 +356,12 @@ describe('LocationStaffRequirementsService', () => {
   describe('remove', () => {
     it('should soft delete a staff requirement', async () => {
       mockRequirementRepository.findOne.mockResolvedValue(mockRequirementWorker);
-      mockRequirementRepository.softDelete.mockResolvedValue({ affected: 1 });
+      mockRequirementRepository.softRemove.mockResolvedValue(mockRequirementWorker);
 
       await service.remove(mockRequirementWorker.id);
 
-      expect(mockRequirementRepository.softDelete).toHaveBeenCalledWith(mockRequirementWorker.id);
+      expect(mockRequirementRepository.softRemove).toHaveBeenCalledWith(mockRequirementWorker);
+      expect(mockRequirementRepository.softDelete).not.toHaveBeenCalled();
     });
 
     it('should throw NotFoundException if requirement not found', async () => {
