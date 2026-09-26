@@ -71,6 +71,7 @@ import {
   requirementTotalMap,
   requirementRoleMap,
   type StaffSubject,
+  CAPACITY_RESOURCE,
 } from '@/lib/api/location-staff-requirements';
 import { resolveDayType, useSpecialDayOverrides } from '@/lib/api/special-day-overrides';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
@@ -95,7 +96,7 @@ const wibTodayDate = (): Date => new Date(`${todayJakartaISODate()}T00:00:00`);
 
 export default function SchedulesPage() {
   const { t, i18n } = useTranslation(['schedules', 'common']);
-  const { can } = usePermissions();
+  const { can, canAny } = usePermissions();
   const user = useUser();
 
   // Default to the day view on both web and mobile (manager board + a worker's
@@ -105,16 +106,19 @@ export default function SchedulesPage() {
   const [filters, setFilters] = useState<ScheduleRangeFilters>({});
 
   const lockDistrict = !!user && RAYON_SCOPED_ROLES.includes(user.role);
-  // Only admin_system/superadmin can set capacity (matches the backend gate).
-  const canManageCapacity = !!user && ['admin_system', 'superadmin'].includes(user.role);
+  // Capacity is an attribute of its tier, so it follows that tier's update
+  // permission (area/region/district:update) — same keys the backend checks.
+  const canEditCapacityOf = (subject: StaffSubject) =>
+    can(`${CAPACITY_RESOURCE[subject.type]}:update`);
+  const canManageCapacity = canAny(['area:update', 'region:update', 'district:update']);
   const [capacitySubject, setCapacitySubject] = useState<StaffSubject | null>(null);
   const [holidayOpen, setHolidayOpen] = useState(false);
   const [shiftDefsOpen, setShiftDefsOpen] = useState(false);
-  const currentUser = useUser();
-  // Shift definitions are system config — only system managers may edit (backend
-  // enforces via USER_MANAGERS); others see a read-only list.
-  const canManageShifts =
-    currentUser?.role === 'admin_system' || currentUser?.role === 'superadmin';
+  // Shift definitions and holidays are city-wide config with their own keys
+  // (shift:*, holiday:*), deliberately separate from schedule:* which rayon
+  // roles hold; others see a read-only list.
+  const canManageShifts = canAny(['shift-definition:create', 'shift-definition:update', 'shift-definition:delete']);
+  const canManageHolidays = canAny(['holiday:create', 'holiday:delete']);
   /** "Belum Dijadwalkan" panel (ADR-054) — the complement of the board. */
   const [unscheduledOpen, setUnscheduledOpen] = useState(false);
   const [createUserId, setCreateUserId] = useState<string | undefined>();
@@ -617,7 +621,13 @@ export default function SchedulesPage() {
           onOccurrenceClick={onOccurrenceClick}
           canAssign={can('schedule:create')}
           onAssign={(ctx) => openCreate(isoDate(anchor), ctx)}
-          onEditCapacity={canManageCapacity ? (subject) => setCapacitySubject(subject) : undefined}
+          onEditCapacity={
+            canManageCapacity
+              ? (subject) => {
+                  if (canEditCapacityOf(subject)) setCapacitySubject(subject);
+                }
+              : undefined
+          }
           filters={filters}
           onClearFilters={() => setFilters({})}
           onShowMap={setMapSubject}
@@ -652,7 +662,7 @@ export default function SchedulesPage() {
         open={holidayOpen}
         onOpenChange={setHolidayOpen}
         year={year}
-        canManage={can('schedule:create')}
+        canManage={canManageHolidays}
       />
 
       {/* Staffing capacity editor (admin_system/superadmin) */}

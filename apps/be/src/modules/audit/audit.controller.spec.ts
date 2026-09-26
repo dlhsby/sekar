@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuditController } from './audit.controller';
 import { AuditLogService } from './audit.service';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
 
 describe('AuditController', () => {
   let module: TestingModule;
@@ -20,7 +21,10 @@ describe('AuditController', () => {
           useValue: mockAuditLogService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(PermissionsGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<AuditController>(AuditController);
   });

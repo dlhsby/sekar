@@ -16,13 +16,23 @@ interface ColorFieldProps {
   fallback: string;
   onChange: (v: string) => void;
   disabled?: boolean;
+  /** Validation message shown under the field (e.g. partial hex). */
+  error?: string;
 }
 
 /**
  * A hex-colour input: a native colour swatch paired with a free-text hex field.
  * Reused by the map-style fields (border/fill) and the role editor (accent).
  */
-export function ColorField({ label, ariaLabel, value, fallback, onChange, disabled }: ColorFieldProps) {
+export function ColorField({
+  label,
+  ariaLabel,
+  value,
+  fallback,
+  onChange,
+  disabled,
+  error,
+}: ColorFieldProps) {
   const swatch = HEX_COLOR.test(value) ? value : fallback;
   const a11y = label ?? ariaLabel;
   return (
@@ -43,9 +53,16 @@ export function ColorField({ label, ariaLabel, value, fallback, onChange, disabl
           aria-label={label ? undefined : a11y}
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
+          state={error ? 'error' : undefined}
+          aria-invalid={error ? true : undefined}
           className="font-mono"
         />
       </div>
+      {error && (
+        <p role="alert" aria-live="polite" className="text-nb-body-sm text-nb-danger font-medium">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

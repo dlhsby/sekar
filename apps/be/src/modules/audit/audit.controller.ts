@@ -4,6 +4,8 @@ import { AuditLogService } from './audit.service';
 import { AuditFilterDto } from './dto/audit-filter.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { USER_MANAGERS } from '../users/constants/role-groups';
 import { UserRole } from '../users/entities/user.entity';
@@ -11,12 +13,12 @@ import { UserRole } from '../users/entities/user.entity';
 @ApiTags('audit')
 @ApiBearerAuth()
 @Controller('audit')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
 export class AuditController {
   constructor(private readonly auditLogService: AuditLogService) {}
 
   @Get()
-  @Roles(...USER_MANAGERS)
+  @RequirePermissions('audit:read')
   @ApiOperation({ summary: 'Get all audit logs (admin only)' })
   @ApiResponse({ status: 200, description: 'Paginated audit logs' })
   async findAll(@Query() filters: AuditFilterDto) {
@@ -24,7 +26,13 @@ export class AuditController {
   }
 
   @Get(':entityType/:entityId')
-  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON, UserRole.ADMIN_RAYON)
+  @Roles(
+    ...USER_MANAGERS,
+    UserRole.MANAGEMENT,
+    UserRole.KORLAP,
+    UserRole.KEPALA_RAYON,
+    UserRole.ADMIN_RAYON,
+  )
   @ApiOperation({ summary: 'Get audit trail for a specific entity' })
   @ApiParam({ name: 'entityType', description: 'Entity type (task, activity, overtime, shift)' })
   @ApiParam({ name: 'entityId', description: 'Entity ID (UUID)' })

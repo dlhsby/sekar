@@ -34,6 +34,11 @@ import { UpdateMyProfileDto } from './dto/update-my-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import {
+  RequirePermissions,
+  RequireAnyPermission,
+} from '../auth/decorators/require-permissions.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { UserRole } from './entities/user.entity';
@@ -58,7 +63,7 @@ import { PhotoStorageService } from '../../shared/services/photo-storage.service
 @ApiTags('users')
 @ApiBearerAuth('JWT-auth')
 @Controller('users')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
 export class UsersController {
   constructor(
     private readonly usersService: UsersService,
@@ -85,7 +90,13 @@ export class UsersController {
    * load of a 1 173-person workforce.
    */
   @Get('lookup')
-  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON, UserRole.ADMIN_RAYON)
+  @Roles(
+    ...USER_MANAGERS,
+    UserRole.MANAGEMENT,
+    UserRole.KORLAP,
+    UserRole.KEPALA_RAYON,
+    UserRole.ADMIN_RAYON,
+  )
   @ApiOperation({
     summary: 'Minimal user list for pickers and name labels',
     description:
@@ -104,7 +115,7 @@ export class UsersController {
    * @route GET /api/users/check-username?username=
    */
   @Get('check-username')
-  @Roles(...USER_MANAGERS)
+  @RequireAnyPermission('user:create', 'user:update')
   @ApiOperation({ summary: 'Check whether a username is available' })
   @ApiQuery({ name: 'username', required: true })
   @ApiResponse({ status: HttpStatus.OK, description: '{ available: boolean }' })
@@ -121,7 +132,7 @@ export class UsersController {
    * @route GET /api/users/suggest-username?full_name=
    */
   @Get('suggest-username')
-  @Roles(...USER_MANAGERS)
+  @RequireAnyPermission('user:create', 'user:update')
   @ApiOperation({ summary: 'Suggest a unique username from a full name' })
   @ApiQuery({ name: 'full_name', required: true })
   @ApiResponse({ status: HttpStatus.OK, description: '{ username: string }' })
@@ -136,7 +147,7 @@ export class UsersController {
    * @route GET /api/users/check-phone?phone=&excludeUserId=
    */
   @Get('check-phone')
-  @Roles(...USER_MANAGERS)
+  @RequireAnyPermission('user:create', 'user:update')
   @ApiOperation({ summary: 'Check whether a phone number is available' })
   @ApiQuery({ name: 'phone', required: true })
   @ApiQuery({ name: 'excludeUserId', required: false })
@@ -165,7 +176,7 @@ export class UsersController {
    * @throws UnauthorizedException if not admin
    */
   @Post()
-  @Roles(...USER_MANAGERS)
+  @RequirePermissions('user:create')
   @ApiOperation({
     summary: 'Create new user',
     description:
@@ -218,7 +229,13 @@ export class UsersController {
    * @returns Paginated users (without passwords)
    */
   @Get()
-  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON, UserRole.ADMIN_RAYON)
+  @Roles(
+    ...USER_MANAGERS,
+    UserRole.MANAGEMENT,
+    UserRole.KORLAP,
+    UserRole.KEPALA_RAYON,
+    UserRole.ADMIN_RAYON,
+  )
   @ApiOperation({
     summary: 'Get all users with pagination',
     description:
@@ -300,7 +317,13 @@ export class UsersController {
    * @route GET /api/users/:id/areas
    */
   @Get(':id/areas')
-  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON, UserRole.ADMIN_RAYON)
+  @Roles(
+    ...USER_MANAGERS,
+    UserRole.MANAGEMENT,
+    UserRole.KORLAP,
+    UserRole.KEPALA_RAYON,
+    UserRole.ADMIN_RAYON,
+  )
   @ApiOperation({ summary: "Get a user's permanent assigned areas" })
   @ApiParam({ name: 'id', description: 'User UUID' })
   @ApiResponse({ status: HttpStatus.OK, description: 'List of assigned areas.' })
@@ -318,7 +341,13 @@ export class UsersController {
    * @throws NotFoundException if user not found
    */
   @Get(':id')
-  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON, UserRole.ADMIN_RAYON)
+  @Roles(
+    ...USER_MANAGERS,
+    UserRole.MANAGEMENT,
+    UserRole.KORLAP,
+    UserRole.KEPALA_RAYON,
+    UserRole.ADMIN_RAYON,
+  )
   @ApiOperation({
     summary: 'Get user by ID',
     description:
@@ -437,7 +466,7 @@ export class UsersController {
    * @throws NotFoundException if user not found
    */
   @Patch(':id')
-  @Roles(...USER_MANAGERS)
+  @RequirePermissions('user:update')
   @ApiOperation({
     summary: 'Update user',
     description:
@@ -492,7 +521,7 @@ export class UsersController {
    * @route POST /api/users/:id/reset-password
    */
   @Post(':id/reset-password')
-  @Roles(...USER_MANAGERS)
+  @RequirePermissions('user:update')
   @ApiOperation({
     summary: 'Reset a user password',
     description:
@@ -519,7 +548,7 @@ export class UsersController {
    * @throws NotFoundException if user not found
    */
   @Delete(':id')
-  @Roles(...USER_MANAGERS)
+  @RequirePermissions('user:delete')
   @ApiOperation({
     summary: 'Delete user (soft delete)',
     description:
@@ -553,7 +582,7 @@ export class UsersController {
    * @route PATCH /api/users/:id/deactivate
    */
   @Patch(':id/deactivate')
-  @Roles(...USER_MANAGERS)
+  @RequirePermissions('user:update')
   @ApiOperation({
     summary: 'Deactivate user',
     description: 'Set is_active=false. The account is preserved and can be reactivated.',
@@ -570,7 +599,7 @@ export class UsersController {
    * @route PATCH /api/users/:id/activate
    */
   @Patch(':id/activate')
-  @Roles(...USER_MANAGERS)
+  @RequirePermissions('user:update')
   @ApiOperation({ summary: 'Reactivate user', description: 'Set is_active=true.' })
   @ApiParam({ name: 'id', description: 'User UUID' })
   @ApiResponse({ status: HttpStatus.OK, description: 'User reactivated.' })

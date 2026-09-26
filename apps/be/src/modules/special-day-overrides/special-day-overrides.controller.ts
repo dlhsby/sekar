@@ -17,20 +17,19 @@ import { CreateSpecialDayOverrideDto } from './dto/create-special-day-override.d
 import { UpdateSpecialDayOverrideDto } from './dto/update-special-day-override.dto';
 import { SpecialDayOverride } from './entities/special-day-override.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
 import { UserRole } from '../users/entities/user.entity';
-import { USER_MANAGERS } from '../users/constants/role-groups';
 
 @ApiTags('special-day-overrides')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('special-day-overrides')
 export class SpecialDayOverridesController {
   constructor(private readonly specialDayOverridesService: SpecialDayOverridesService) {}
 
   @Post()
-  @Roles(...USER_MANAGERS)
+  @RequirePermissions('holiday:create')
   @ApiOperation({ summary: 'Create a special day override (Admin only)' })
   @ApiResponse({
     status: 201,
@@ -75,7 +74,7 @@ export class SpecialDayOverridesController {
   }
 
   @Patch(':id')
-  @Roles(...USER_MANAGERS)
+  @RequirePermissions('holiday:update')
   @ApiOperation({ summary: 'Update a special day override (Admin only)' })
   @ApiResponse({
     status: 200,
@@ -94,7 +93,7 @@ export class SpecialDayOverridesController {
   }
 
   @Delete(':id')
-  @Roles(...USER_MANAGERS)
+  @RequirePermissions('holiday:delete')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete a special day override (Admin only)' })
   @ApiResponse({ status: 204, description: 'Special day override deleted successfully' })

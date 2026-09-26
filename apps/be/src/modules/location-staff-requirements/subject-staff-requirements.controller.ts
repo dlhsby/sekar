@@ -4,9 +4,8 @@ import { LocationStaffRequirementsService } from './location-staff-requirements.
 import { LocationStaffRequirement } from './entities/location-staff-requirement.entity';
 import { SetStaffRequirementsDto } from './dto/set-staff-requirements.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { USER_MANAGERS } from '../users/constants/role-groups';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
 
 /**
  * Region (Kawasan)-level staffing requirements. Grouped districts define KEBUTUHAN
@@ -15,7 +14,7 @@ import { USER_MANAGERS } from '../users/constants/role-groups';
 @ApiTags('location-staff-requirements')
 @ApiBearerAuth('JWT-auth')
 @Controller('regions/:regionId/staff-requirements')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class RegionStaffRequirementsController {
   constructor(private readonly service: LocationStaffRequirementsService) {}
 
@@ -28,7 +27,7 @@ export class RegionStaffRequirementsController {
   }
 
   @Put()
-  @Roles(...USER_MANAGERS)
+  @RequirePermissions('region:update')
   @ApiOperation({ summary: "Bulk set a region's (kawasan) staffing requirements" })
   @ApiParam({ name: 'regionId', description: 'Region UUID' })
   @ApiResponse({ status: 200, type: [LocationStaffRequirement] })
@@ -46,7 +45,7 @@ export class RegionStaffRequirementsController {
 @ApiTags('location-staff-requirements')
 @ApiBearerAuth('JWT-auth')
 @Controller('districts/:districtId/staff-requirements')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class DistrictStaffRequirementsController {
   constructor(private readonly service: LocationStaffRequirementsService) {}
 
@@ -59,7 +58,7 @@ export class DistrictStaffRequirementsController {
   }
 
   @Put()
-  @Roles(...USER_MANAGERS)
+  @RequirePermissions('district:update')
   @ApiOperation({ summary: "Bulk set a district's staffing requirements" })
   @ApiParam({ name: 'districtId', description: 'District UUID' })
   @ApiResponse({ status: 200, type: [LocationStaffRequirement] })

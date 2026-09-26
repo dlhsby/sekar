@@ -19,7 +19,7 @@ export async function seedTeams(ctx: SeedContext): Promise<void> {
        ('Penyiraman', '#69D2E7', 0.8,  'droplets'),
        ('Penanaman',  '#15803D', 0.65, 'sprout'),
        ('Penyapuan',  '#E3A018', 0.9,  'flower')
-     ON CONFLICT (name) DO UPDATE SET
+     ON CONFLICT (name) WHERE deleted_at IS NULL DO UPDATE SET
        marker_color = COALESCE(team_categories.marker_color, EXCLUDED.marker_color),
        marker_opacity = COALESCE(team_categories.marker_opacity, EXCLUDED.marker_opacity),
        marker_icon = COALESCE(team_categories.marker_icon, EXCLUDED.marker_icon)`,

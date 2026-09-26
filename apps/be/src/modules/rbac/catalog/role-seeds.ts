@@ -21,15 +21,13 @@ export interface RoleSeed {
 }
 
 // Rayon-scoped base set shared by kepala_rayon and admin_rayon (equalized per UAT).
+// User and Lokasi writes are deliberately NOT granted: the services have no
+// own-district scoping yet, so these would be city-wide writes. Revisit together
+// with district-scoped enforcement (see specs/features/access-control).
 const DISTRICT_ADMIN_PERMISSIONS: string[] = [
   'monitoring:read',
   'user:read',
-  'user:create',
-  'user:update',
   'area:read',
-  'area:create',
-  'area:update',
-  'area:delete',
   'region:read',
   'district:read',
   'schedule:read',
@@ -67,6 +65,8 @@ const MANAGEMENT_PERMISSIONS: string[] = [
   'area:*',
   'schedule:*',
   'team:*',
+  'shift-definition:*',
+  'holiday:*',
   'monitoring:*',
   'task:*',
   'activity:*',

@@ -31,17 +31,20 @@ import { useUserLookup } from '@/lib/api/users';
 import { useDistricts } from '@/lib/api/districts';
 import { useRegions } from '@/lib/api/regions';
 import { useLocationTypes } from '@/lib/api/location-types';
-import { useAuth } from '@/lib/auth/hooks';
 import { useViewModal } from '@/lib/hooks/use-view-modal';
 import { formatArea } from '@/lib/utils/geo';
 import { formatDate } from '@/lib/utils/time';
 import type { Location } from '@/types/models';
+import { usePermissions } from '@/lib/auth/usePermissions';
 
 export default function LocationsPage() {
   const { t } = useTranslation(['admin', 'common', 'schedules', 'validation']);
-  const { user } = useAuth();
-  const isAdmin =
-    user?.role === 'admin_system' || user?.role === 'superadmin' || user?.role === 'management';
+  // Permission-driven (ADR-044): mirrors the backend @RequirePermissions gates,
+  // so a button is shown exactly when the API will accept the call.
+  const { can } = usePermissions();
+  const canCreate = can('area:create');
+  const canUpdate = can('area:update');
+  const canDelete = can('area:delete');
 
   // include_inactive: the admin grid must show deactivated areas too (and
   // let them be reactivated) — otherwise deactivating one makes it vanish
@@ -360,7 +363,7 @@ export default function LocationsPage() {
         key: 'edit',
         label: t('admin:locations.actionEdit'),
         icon: Pencil,
-        disabled: !isAdmin,
+        disabled: !canUpdate,
         onClick: () => {
           setEditingArea(a);
           setFormOpen(true);
@@ -372,14 +375,14 @@ export default function LocationsPage() {
         icon: Settings2,
         // Capacity belongs to whichever tier the parent RAYON nominates — a
         // lokasi only owns it when that district is lokasi-scoped.
-        hidden: !isAdmin || districtLevel.get(a.district_id ?? '') !== 'location',
+        hidden: !canUpdate || districtLevel.get(a.district_id ?? '') !== 'location',
         onClick: () => setCapacitySubject({ type: 'location', id: a.id, name: a.name }),
       },
       {
         key: 'toggle-active',
         label: a.is_active === false ? t('admin:locations.actionActivate') : t('admin:locations.actionDeactivate'),
         icon: Power,
-        hidden: !isAdmin,
+        hidden: !canUpdate,
         // `mutate` (fire-and-forget) gave no pending state and swallowed both
         // outcomes — a deactivation that the server refused looked identical to
         // one that worked. Mirrors the districts/regions toggle.
@@ -390,11 +393,11 @@ export default function LocationsPage() {
         label: t('admin:locations.actionDelete'),
         icon: Trash2,
         variant: 'danger',
-        hidden: !isAdmin,
+        hidden: !canDelete,
         onClick: () => setDeleteModal({ isOpen: true, area: a }),
       },
     ],
-    [isAdmin, handleToggleActive, districtLevel, view, t]
+    [canUpdate, canDelete, handleToggleActive, districtLevel, view, t]
   );
 
   return (
@@ -419,7 +422,7 @@ export default function LocationsPage() {
         rowActions={rowActions}
         createAction={{
           label: t('admin:locations.buttonAdd'),
-          hidden: !isAdmin,
+          hidden: !canCreate,
           onClick: () => {
             setEditingArea(null);
             setFormOpen(true);
@@ -428,7 +431,7 @@ export default function LocationsPage() {
         emptyTitle={t('admin:locations.emptyTitle')}
         emptyDescription={t('admin:locations.emptyDescription')}
         emptyAction={
-          isAdmin ? (
+          canCreate ? (
             <Button
               onClick={() => {
                 setEditingArea(null);

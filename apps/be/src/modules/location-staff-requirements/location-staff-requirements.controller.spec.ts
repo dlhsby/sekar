@@ -8,6 +8,7 @@ import {
 } from './entities/location-staff-requirement.entity';
 import { CreateLocationStaffRequirementDto } from './dto/create-location-staff-requirement.dto';
 import { UpdateLocationStaffRequirementDto } from './dto/update-location-staff-requirement.dto';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
 
 describe('LocationStaffRequirementsController', () => {
   let module: TestingModule;
@@ -71,7 +72,10 @@ describe('LocationStaffRequirementsController', () => {
           useValue: mockStaffRequirementsService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(PermissionsGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<LocationStaffRequirementsController>(
       LocationStaffRequirementsController,
