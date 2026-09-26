@@ -20,9 +20,9 @@ import {
   type ColumnDef,
   type DataTableRowAction,
 } from '@/components/ui';
-import { DeleteLocationModal } from '@/components/locations/DeleteLocationModal';
 import { LocationFormModal } from '@/components/locations/LocationFormModal';
 import { CapacityModal } from '@/components/schedules/CapacityModal';
+import { ForceDeleteDialog } from '@/components/deletion/ForceDeleteDialog';
 import type { StaffSubject } from '@/lib/api/location-staff-requirements';
 import { useLocations, useDeactivateLocation, useActivateLocation } from '@/lib/api/locations';
 import { toast } from 'sonner';
@@ -107,10 +107,7 @@ export default function LocationsPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingArea, setEditingArea] = useState<Location | null>(null);
   const view = useViewModal<Location>();
-  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; area: Location | null }>({
-    isOpen: false,
-    area: null,
-  });
+  const [deletingArea, setDeletingArea] = useState<Location | null>(null);
   const [capacitySubject, setCapacitySubject] = useState<StaffSubject | null>(null);
 
   const columns = useMemo<ColumnDef<Location>[]>(
@@ -394,7 +391,7 @@ export default function LocationsPage() {
         icon: Trash2,
         variant: 'danger',
         hidden: !canDelete,
-        onClick: () => setDeleteModal({ isOpen: true, area: a }),
+        onClick: () => setDeletingArea(a),
       },
     ],
     [canUpdate, canDelete, handleToggleActive, districtLevel, view, t]
@@ -458,11 +455,13 @@ export default function LocationsPage() {
         onSuccess={() => refetch()}
       />
 
-      <DeleteLocationModal
-        area={deleteModal.area}
-        isOpen={deleteModal.isOpen}
-        onClose={() => setDeleteModal({ isOpen: false, area: null })}
-        onSuccess={() => setDeleteModal({ isOpen: false, area: null })}
+      <ForceDeleteDialog
+        open={!!deletingArea}
+        onOpenChange={(o) => !o && setDeletingArea(null)}
+        type="location"
+        id={deletingArea?.id ?? null}
+        name={deletingArea?.name ?? ''}
+        onDeleted={() => refetch()}
       />
 
       {/* Detail = the edit form, read-only (shows the map + boundary + pin). */}

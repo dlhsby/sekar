@@ -95,6 +95,14 @@ export enum ApiErrorCode {
   /** Capacity written at a tier other than the parent district's `staffing_level` */
   CAPACITY_WRONG_LEVEL = 'CAPACITY_WRONG_LEVEL',
 
+  // ==================== Deletion Errors (force delete) ====================
+  /** Typed confirmation does not match the record's name */
+  DELETE_CONFIRMATION_MISMATCH = 'DELETE_CONFIRMATION_MISMATCH',
+  /** Records still use this role/type — pick a replacement to move them to */
+  DELETE_REPLACEMENT_REQUIRED = 'DELETE_REPLACEMENT_REQUIRED',
+  /** This record can never be deleted (system role, your own account) */
+  DELETE_NOT_ALLOWED = 'DELETE_NOT_ALLOWED',
+
   // ==================== General Errors ====================
   VALIDATION_ERROR = 'VALIDATION_ERROR',
   NOT_FOUND = 'NOT_FOUND',

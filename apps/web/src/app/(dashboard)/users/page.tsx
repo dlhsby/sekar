@@ -23,15 +23,15 @@ import {
   type DataTableRowAction,
 } from '@/components/ui';
 import { RolePill } from '@/components/users/RolePill';
-import { DeleteUserModal } from '@/components/users/DeleteUserModal';
 import { UserFormModal } from '@/components/users/UserFormModal';
 import { TempPasswordDialog } from '@/components/users/TempPasswordDialog';
+import { ForceDeleteDialog } from '@/components/deletion/ForceDeleteDialog';
 import {
   useUsers,
   useDeactivateUser,
   useActivateUser,
   useResetUserPassword,
-} from '@/lib/api/users';
+} from '@/lib/api/users'; // keep useResetUserPassword for password reset flow
 import { useDistricts } from '@/lib/api/districts';
 import { useRegions } from '@/lib/api/regions';
 import { useRoles } from '@/lib/api/roles';
@@ -484,11 +484,13 @@ export default function UsersPage() {
 
       <UserFormModal open={viewOpen} onOpenChange={setViewOpen} user={viewingUser} readOnly />
 
-      <DeleteUserModal
-        user={userToDelete}
-        isOpen={!!userToDelete}
-        onClose={() => setUserToDelete(null)}
-        onSuccess={() => setUserToDelete(null)}
+      <ForceDeleteDialog
+        open={!!userToDelete}
+        onOpenChange={(o) => !o && setUserToDelete(null)}
+        type="user"
+        id={userToDelete?.id ?? null}
+        name={userToDelete?.username ?? ''}
+        onDeleted={() => refetch()}
       />
 
       <ConfirmDialog

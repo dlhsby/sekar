@@ -2,7 +2,7 @@
 
 Why the significant technical decisions were made. Each ADR follows **Status · Context · Decision · Consequences**. Statuses: **Active**, **Superseded by ADR-XXX**, **Proposed**. To add one: create `ADR-NNN-title.md` (next free number — 020–023 & 039 were skipped), follow the section structure of a recent ADR, and add a row below.
 
-## Index (all 47)
+## Index (all 48)
 
 | ADR | Title | Status |
 |-----|-------|--------|
@@ -63,6 +63,7 @@ Why the significant technical decisions were made. Each ADR follows **Status · 
 | [059](./ADR-059-location-integrity.md) | Location integrity (anti-spoofing) — reject missing/forged fixes (null island, mock provider, impossible travel) but NEVER "outside area"; one shared evaluator for punches + pings; timestamps clamped both sides | Active · **implemented** |
 | [060](./ADR-060-monitoring-map-modes.md) | Two monitoring map modes — `drill` (worker at their schedule tier, ADR-046) vs `zoom` (every tier + everyone standing in the subtree); modes change what is DRAWN, never what is COUNTED; `aggregate?scope=all` composed from the drill builders; viewport culling, never clustering | Active · **web implemented** |
 | [061](./ADR-061-audit-trail-v2.md) | Audit trail v2 — automatic `@Auditable` CRUD capture in the same transaction (fail-closed), actor/request snapshots + field diffs, append-only guard trigger, SHA-256 hash chain sealed by cron + verify endpoint; ISO 27001 A.8.15 / COBIT DSS06 mapping | Active · extends 015 |
+| [062](./ADR-062-force-delete.md) | Force delete of in-use records — one `/deletions` engine, impact preview + typed-name + reason, soft delete, cancels only the FUTURE (series ended at today), Rayon cascades to Kawasan/Lokasi, role/type need a replacement; one audit tree per delete | Active |
 
 ## By domain
 
