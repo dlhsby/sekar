@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from './client';
 
 export type MonitoringScope = 'city' | 'district' | 'region' | 'location' | 'none';
+/** Whether users of a role must have a home rayon (the user form asks for one). */
+export type HomeScope = 'none' | 'district';
 
 export interface Role {
   id: string;
@@ -10,6 +12,11 @@ export interface Role {
   description?: string;
   is_system: boolean;
   monitoring_scope: MonitoringScope;
+  home_scope: HomeScope;
+  /** Max individual places one person may hold per shift (null = unlimited). */
+  max_places_per_shift: number | null;
+  /** Max team memberships one person may hold per shift (null = unlimited). */
+  max_teams_per_shift: number | null;
   marker_icon?: string;
   /** Role accent colour (hex #RRGGBB) — tints the user pill/avatar. */
   marker_color?: string | null;
@@ -41,6 +48,9 @@ export interface RolePayload {
   name?: string;
   description?: string;
   monitoring_scope?: MonitoringScope;
+  home_scope?: HomeScope;
+  max_places_per_shift?: number | null;
+  max_teams_per_shift?: number | null;
   marker_icon?: string;
   marker_color?: string;
   permissionKeys?: string[];

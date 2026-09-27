@@ -33,15 +33,17 @@ jest.mock('@/lib/api/user-locations', () => ({
 jest.mock('@/lib/api/roles', () => ({
   useRoles: jest.fn(() => ({
     data: [
-      { code: 'satgas', name: 'Satgas', monitoring_scope: 'none' },
-      { code: 'linmas', name: 'Linmas', monitoring_scope: 'none' },
-      { code: 'korlap', name: 'Korlap', monitoring_scope: 'region' },
-      { code: 'kepala_rayon', name: 'Kepala Rayon', monitoring_scope: 'district' },
-      { code: 'admin_rayon', name: 'Admin Rayon', monitoring_scope: 'district' },
-      { code: 'management', name: 'Management', monitoring_scope: 'city' },
-      { code: 'admin_system', name: 'Admin Sistem', monitoring_scope: 'city' },
-      { code: 'superadmin', name: 'Superadmin', monitoring_scope: 'city' },
-      { code: 'staff_kecamatan', name: 'Staff Kecamatan', monitoring_scope: 'none' },
+      { code: 'satgas', name: 'Satgas', monitoring_scope: 'none', home_scope: 'none' },
+      { code: 'linmas', name: 'Linmas', monitoring_scope: 'none', home_scope: 'none' },
+      { code: 'korlap', name: 'Korlap', monitoring_scope: 'region', home_scope: 'none' },
+      { code: 'kepala_rayon', name: 'Kepala Rayon', monitoring_scope: 'district', home_scope: 'district' },
+      { code: 'admin_rayon', name: 'Admin Rayon', monitoring_scope: 'district', home_scope: 'district' },
+      { code: 'management', name: 'Management', monitoring_scope: 'city', home_scope: 'none' },
+      { code: 'admin_system', name: 'Admin Sistem', monitoring_scope: 'city', home_scope: 'none' },
+      { code: 'superadmin', name: 'Superadmin', monitoring_scope: 'city', home_scope: 'none' },
+      { code: 'staff_kecamatan', name: 'Staff Kecamatan', monitoring_scope: 'none', home_scope: 'none' },
+      // Custom role that opted into a home rayon from the Hak Akses page.
+      { code: 'pengawas', name: 'Pengawas', monitoring_scope: 'none', home_scope: 'district' },
     ],
   })),
 }));
@@ -504,6 +506,31 @@ describe('UserForm', () => {
           district_id: 'district-1',
         });
       });
+    });
+  });
+
+  describe('Rayon field follows roles.home_scope', () => {
+    const userWith = (role: string): User => ({
+      id: '1',
+      username: 'u',
+      full_name: 'U',
+      role,
+      created_at: '2026-01-01',
+      updated_at: '2026-01-01',
+    });
+
+    it('does not ask a korlap for a rayon (UAT: korlap needs no rayon)', () => {
+      render(<UserForm {...defaultProps} initialData={userWith('korlap')} />, {
+        wrapper: createWrapper(),
+      });
+      expect(screen.queryByLabelText(/rayon/i)).not.toBeInTheDocument();
+    });
+
+    it('asks a custom role with home_scope = district for a rayon', () => {
+      render(<UserForm {...defaultProps} initialData={userWith('pengawas')} />, {
+        wrapper: createWrapper(),
+      });
+      expect(screen.getByLabelText(/rayon/i)).toBeInTheDocument();
     });
   });
 

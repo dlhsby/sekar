@@ -11,7 +11,9 @@
   },
   "validation": {
     "nameRequired": "Role name is required",
-    "colorInvalid": "Colour must be a hex code like #7FBC8C"
+    "colorInvalid": "Colour must be a hex code like #7FBC8C",
+    "homeScopeForDistrict": "A role that monitors a Rayon must belong to one",
+    "limitInvalid": "Enter a whole number (locations ≥ 1, teams ≥ 0) or leave empty"
   },
   "counts": {
     "permissions": "{{count}} permissions",
@@ -31,7 +33,12 @@
     "markerIcon": "Marker Icon",
     "markerIconPlaceholder": "e.g. shield",
     "markerColor": "Marker Color",
-    "markerIconHint": "The glyph shown inside the worker pin (its color follows live status)."
+    "markerIconHint": "The glyph shown inside the worker pin (its color follows live status).",
+    "homeScope": "Requires a Rayon",
+    "homeScopeHint": "If \"Yes\", users with this role must be given a Rayon in the user form.",
+    "maxPlaces": "Max locations per shift",
+    "maxTeams": "Max teams per shift",
+    "limitHint": "Leave empty for no limit."
   },
   "scope": {
     "city": "Whole City (Surabaya)",
@@ -71,5 +78,9 @@
     "nameDesc": "Name Z–A",
     "users": "Most users",
     "permissions": "Most permissions"
+  },
+  "homeScope": {
+    "none": "No",
+    "district": "Yes — requires a Rayon"
   }
 }

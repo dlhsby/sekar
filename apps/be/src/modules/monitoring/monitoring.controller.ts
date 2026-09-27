@@ -403,7 +403,7 @@ export class MonitoringController {
     // this, zoom mode would be a way around the scope enforcement.
     if (scope === 'all') {
       const isCityRole = MONITORING_CITY.includes(user.role as UserRole);
-      districtId = isCityRole ? id : (user.district_id ?? undefined);
+      districtId = isCityRole ? id : await this.homeDistrictOf(user);
       if (!isCityRole && !districtId) {
         throw new ForbiddenException('District-scoped role has no district to aggregate');
       }
@@ -413,7 +413,7 @@ export class MonitoringController {
     // identically to `district`: a district role only ever sees its own district.
     if (scope === 'district' || scope === 'region') {
       const isCityRole = MONITORING_CITY.includes(user.role as UserRole);
-      districtId = isCityRole ? id : (user.district_id ?? undefined);
+      districtId = isCityRole ? id : await this.homeDistrictOf(user);
       if (districtId) this.enforceScopeDistrict(user, districtId);
     }
     // Only `scope=all` draws a whole subtree at once, so it is the only scope a
@@ -480,6 +480,16 @@ export class MonitoringController {
    * kawasan-scoped occurrence, and member lokasi of any rayon-scoped occurrence.
    * Static assignment is the fallback when there is no occurrence that day.
    */
+  /**
+   * The district a non-city viewer is pinned to: their home rayon, or — for a
+   * korlap without one (home_scope = none) — the rayon of today's coverage.
+   */
+  private async homeDistrictOf(user: User): Promise<string | undefined> {
+    if (user.district_id) return user.district_id;
+    if (user.role !== UserRole.KORLAP) return undefined;
+    return this.statsService.dominantDistrictOf(await this.resolveKorlapCoverage(user));
+  }
+
   private async resolveKorlapCoverage(user: User): Promise<string[]> {
     const shift = await this.statsService.getCurrentShiftDefinition();
     const [permanent, occ] = await Promise.all([
@@ -531,9 +541,11 @@ export class MonitoringController {
       // Anchor to the korlap's district so endpoints that honor only `district_id`
       // (e.g. boundaries) never leak other-district data. (Cross-district coverage
       // via an occurrence in another rayon is out of scope; the common case is
-      // kawasan/lokasi within the korlap's own district.)
-      if (user.district_id) {
-        filters.district_id = user.district_id;
+      // kawasan/lokasi within the korlap's own district.) A korlap needs no home
+      // rayon (home_scope = none), so fall back to where their schedule is.
+      const anchor = user.district_id ?? (await this.statsService.dominantDistrictOf(coverage));
+      if (anchor) {
+        filters.district_id = anchor;
       }
     } else if (
       (user.role === UserRole.ADMIN_RAYON || user.role === UserRole.KEPALA_RAYON) &&

@@ -13,7 +13,7 @@ import { useLocationLookup } from '@/lib/api/locations';
 import { useRegions } from '@/lib/api/regions';
 import { useUserAreas } from '@/lib/api/user-locations';
 import { checkUsername, suggestUsername, checkPhone } from '@/lib/api/users';
-import { useRoles, type MonitoringScope } from '@/lib/api/roles';
+import { useRoles, type MonitoringScope, type Role } from '@/lib/api/roles';
 import { ROLE_HIERARCHY_ORDER } from '@/lib/constants/roles';
 import { useAvailabilityCheck } from '@/lib/hooks/useAvailabilityCheck';
 import { normalizePhone, INDO_MOBILE_REGEX } from '@/lib/utils/phone';
@@ -48,7 +48,8 @@ function createUserSchema(t: TFn) {
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
- * Which scope inputs a role uses.
+ * Which scope inputs a role uses (the rayon input follows `roles.home_scope`,
+ * so custom roles opt in from the Hak Akses page — no code change).
  *
  * ADR-053 made the SCHEDULE the single answer to "where does this person work
  * today", so a permanent lokasi (and kawasan) on the user record is a second,
@@ -56,19 +57,17 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  * no longer asks for either.
  *
  * What remains is the **home rayon**, which is an org fact rather than a
- * placement: it decides who a district-scoped manager may see and manage. Only
- * the two roles whose authority is defined by a rayon — `kepala_rayon` and
- * `admin_rayon` — are asked for it.
+ * placement: it decides who a district-scoped manager may see and manage. Roles
+ * with `home_scope = 'district'` (seeded: `kepala_rayon`, `admin_rayon`) are
+ * asked for it; everyone else — satgas, linmas, korlap, admin, management — is not.
  */
-const ROLES_WITH_DISTRICT_INPUT = ['kepala_rayon', 'admin_rayon'];
-
-function scopeForRole(role: string): {
+function scopeForRole(role: Role | undefined): {
   district: boolean;
   region: boolean;
   location: boolean;
 } {
   return {
-    district: ROLES_WITH_DISTRICT_INPUT.includes(role),
+    district: role?.home_scope === 'district',
     region: false,
     location: false,
   };
@@ -123,7 +122,7 @@ export function UserForm({
       .sort((a, b) => rank(a.code) - rank(b.code) || a.name.localeCompare(b.name))
       .map((r) => ({ value: r.code, label: r.name }));
   }, [roles]);
-  const scopeFor = (code: string) => scopeForRole(code);
+  const scopeFor = (code: string) => scopeForRole(rolesByCode.get(code));
   const { data: assignedAreas } = useUserAreas(isEditMode ? initialData?.id : undefined);
 
   const [locationIds, setAreaIds] = useState<string[]>([]);

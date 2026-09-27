@@ -1342,6 +1342,22 @@ export class MonitoringStatsService {
     };
   }
 
+  /**
+   * The rayon most of the given lokasi belong to (ties → lowest id, so the
+   * answer is stable). Anchors a korlap who has no home rayon (home_scope =
+   * none) to the district their schedule actually puts them in.
+   */
+  async dominantDistrictOf(locationIds: string[]): Promise<string | undefined> {
+    if (!locationIds.length) return undefined;
+    const rows = (await this.areaRepository.query(
+      `SELECT district_id FROM locations
+        WHERE id = ANY($1::uuid[]) AND district_id IS NOT NULL
+        GROUP BY district_id ORDER BY COUNT(*) DESC, district_id ASC LIMIT 1`,
+      [locationIds],
+    )) as Array<{ district_id: string }>;
+    return rows[0]?.district_id;
+  }
+
   /** Member lokasi ids of the given kawasan (region) ids — expands a region-scope */
   /* coverage entry into the concrete lokasi it authorizes. Active lokasi only. */
   async locationIdsForRegions(regionIds: string[]): Promise<string[]> {

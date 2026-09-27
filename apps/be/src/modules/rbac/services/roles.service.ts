@@ -14,6 +14,7 @@ import { RoleView } from '../dto/role-view.dto';
 import { MonitoringScope } from '../enums/monitoring-scope.enum';
 import { RolePermissionsService } from './role-permissions.service';
 import { AuditLogService } from '../../audit/audit.service';
+import { HomeScope } from '../enums/home-scope.enum';
 
 /**
  * CRUD for data-driven roles (ADR-044). System roles (`is_system`) may have
@@ -51,6 +52,10 @@ export class RolesService {
   async create(dto: CreateRoleDto, actorId?: string): Promise<RoleView> {
     const code = await this.generateUniqueCode(dto.name);
     const permissions = await this.resolvePermissions(dto.permissionKeys);
+    assertScopesCoherent(
+      dto.monitoring_scope ?? MonitoringScope.NONE,
+      dto.home_scope ?? HomeScope.NONE,
+    );
 
     const role = this.roleRepo.create({
       code,
@@ -58,6 +63,9 @@ export class RolesService {
       description: dto.description,
       is_system: false,
       monitoring_scope: dto.monitoring_scope ?? MonitoringScope.NONE,
+      home_scope: dto.home_scope ?? HomeScope.NONE,
+      max_places_per_shift: dto.max_places_per_shift ?? null,
+      max_teams_per_shift: dto.max_teams_per_shift ?? null,
       marker_icon: dto.marker_icon,
       marker_color: dto.marker_color,
       permissions,
@@ -100,6 +108,11 @@ export class RolesService {
     if (dto.name !== undefined) role.name = dto.name.trim();
     if (dto.description !== undefined) role.description = dto.description;
     if (dto.monitoring_scope !== undefined) role.monitoring_scope = dto.monitoring_scope;
+    if (dto.home_scope !== undefined) role.home_scope = dto.home_scope;
+    if (dto.max_places_per_shift !== undefined)
+      role.max_places_per_shift = dto.max_places_per_shift;
+    if (dto.max_teams_per_shift !== undefined) role.max_teams_per_shift = dto.max_teams_per_shift;
+    assertScopesCoherent(role.monitoring_scope, role.home_scope);
     if (dto.marker_icon !== undefined) role.marker_icon = dto.marker_icon;
     if (dto.marker_color !== undefined) role.marker_color = dto.marker_color;
     if (dto.permissionKeys !== undefined) {
@@ -216,6 +229,9 @@ export class RolesService {
       description: role.description,
       is_system: role.is_system,
       monitoring_scope: role.monitoring_scope,
+      home_scope: role.home_scope,
+      max_places_per_shift: role.max_places_per_shift ?? null,
+      max_teams_per_shift: role.max_teams_per_shift ?? null,
       marker_icon: role.marker_icon,
       marker_color: role.marker_color,
       permissionKeys,
@@ -224,5 +240,18 @@ export class RolesService {
       created_at: role.created_at,
       updated_at: role.updated_at,
     };
+  }
+}
+
+/**
+ * A role that monitors a district must belong to one: district-scoped
+ * monitoring is filtered by the viewer's home rayon, so a district-monitoring
+ * role without a home rayon would see nothing.
+ */
+export function assertScopesCoherent(monitoring: MonitoringScope, home: HomeScope): void {
+  if (monitoring === MonitoringScope.DISTRICT && home !== HomeScope.DISTRICT) {
+    throw new BadRequestException(
+      'A role with district monitoring must also require a home rayon (home_scope = district)',
+    );
   }
 }

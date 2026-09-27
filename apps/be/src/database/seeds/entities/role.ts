@@ -16,8 +16,9 @@ export async function seedRoles(ctx: SeedContext): Promise<void> {
 
   for (const r of ROLE_SEEDS) {
     await ctx.qr.query(
-      `INSERT INTO roles (code, name, description, is_system, monitoring_scope, marker_icon, marker_color)
-       VALUES ($1, $2, $3, TRUE, $4, $5, $6)
+      `INSERT INTO roles (code, name, description, is_system, monitoring_scope, marker_icon, marker_color,
+                          home_scope, max_places_per_shift, max_teams_per_shift)
+       VALUES ($1, $2, $3, TRUE, $4, $5, $6, $7, $8, $9)
        ON CONFLICT (code) DO UPDATE SET
          name = EXCLUDED.name,
          description = EXCLUDED.description,
@@ -27,7 +28,18 @@ export async function seedRoles(ctx: SeedContext): Promise<void> {
          -- Backfill the accent colour once (existing rows are NULL) but never
          -- clobber an operator's picked colour on re-seed.
          marker_color = COALESCE(roles.marker_color, EXCLUDED.marker_color)`,
-      [r.code, r.name, r.description, r.monitoring_scope, r.marker_icon, r.marker_color],
+      // home_scope and the assignment limits are set on insert only — operator-owned after.
+      [
+        r.code,
+        r.name,
+        r.description,
+        r.monitoring_scope,
+        r.marker_icon,
+        r.marker_color,
+        r.home_scope,
+        r.max_places_per_shift,
+        r.max_teams_per_shift,
+      ],
     );
 
     const roleRows = (await ctx.qr.query(`SELECT id FROM roles WHERE code = $1`, [

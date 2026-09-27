@@ -19,6 +19,7 @@ import { UserValidationService } from './services/user-validation.service';
 import { AuditLogService } from '../audit/audit.service';
 import { UserLocationsService } from '../../modules/user-locations/user-locations.service';
 import { generateTempPassword } from '../../common/utils/password.util';
+import { HomeScope } from '../rbac/enums/home-scope.enum';
 
 /** A user plus a one-time plaintext password (only present on create/reset). */
 export type UserWithTempPassword = User & { temp_password?: string };
@@ -82,7 +83,10 @@ export class UsersService {
       const roleRow = await this.roleRepository.findOne({ where: { code: effective.role } });
       if (!roleRow) throw new BadRequestException(`Unknown role: ${effective.role}`);
       scope = roleRow.monitoring_scope;
-      if ((scope === 'district' || scope === 'region') && !effective.district_id) {
+      // The role says whether its users BELONG to a rayon (home_scope) — not its
+      // monitoring reach. Deriving it from monitoring_scope made korlap
+      // (reach = region) require a rayon the web form never asks for.
+      if (roleRow.home_scope === HomeScope.DISTRICT && !effective.district_id) {
         throw new BadRequestException(`Role '${effective.role}' requires a district assignment`);
       }
       if (effective.region_id && scope !== 'region' && scope !== 'location') {

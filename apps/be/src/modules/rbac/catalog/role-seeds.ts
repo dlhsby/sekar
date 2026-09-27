@@ -1,4 +1,5 @@
 import { MonitoringScope } from '../enums/monitoring-scope.enum';
+import { HomeScope } from '../enums/home-scope.enum';
 
 /**
  * System-role seed definitions (ADR-044). Codes are immutable and match the
@@ -12,6 +13,11 @@ export interface RoleSeed {
   name: string;
   description: string;
   monitoring_scope: MonitoringScope;
+  /** Whether users of this role must have a home rayon. Seeded once; operator-owned after. */
+  home_scope: HomeScope;
+  /** Assignment limits per shift (null = unlimited). Seeded once; operator-owned after. */
+  max_places_per_shift: number | null;
+  max_teams_per_shift: number | null;
   marker_icon: string;
   /** Role accent colour (hex #RRGGBB) — the default pill/avatar tint. Mirrors the
    *  `--color-role-*` design tokens so seeded roles match the existing UI exactly. */
@@ -82,6 +88,9 @@ export const ROLE_SEEDS: RoleSeed[] = [
     name: 'Superadmin',
     description: 'Akses penuh ke seluruh sistem',
     monitoring_scope: MonitoringScope.CITY,
+    home_scope: HomeScope.NONE,
+    max_places_per_shift: null,
+    max_teams_per_shift: null,
     marker_icon: 'star',
     marker_color: '#1C1917',
     permissions: ['*:*'],
@@ -91,6 +100,9 @@ export const ROLE_SEEDS: RoleSeed[] = [
     name: 'Admin Sistem',
     description: 'Administrasi sistem, master data, peran, dan pengaturan',
     monitoring_scope: MonitoringScope.CITY,
+    home_scope: HomeScope.NONE,
+    max_places_per_shift: null,
+    max_teams_per_shift: null,
     marker_icon: 'key',
     marker_color: '#57534E',
     permissions: ['*:*'],
@@ -100,6 +112,9 @@ export const ROLE_SEEDS: RoleSeed[] = [
     name: 'Management',
     description: 'Melihat seluruh data lintas rayon; tidak mengubah pengaturan sistem',
     monitoring_scope: MonitoringScope.CITY,
+    home_scope: HomeScope.NONE,
+    max_places_per_shift: null,
+    max_teams_per_shift: null,
     marker_icon: 'crown',
     marker_color: '#1A4D2E',
     permissions: MANAGEMENT_PERMISSIONS,
@@ -109,6 +124,9 @@ export const ROLE_SEEDS: RoleSeed[] = [
     name: 'Kepala Rayon',
     description: 'Kelola pengguna & wilayah serta monitoring dalam rayonnya',
     monitoring_scope: MonitoringScope.DISTRICT,
+    home_scope: HomeScope.DISTRICT,
+    max_places_per_shift: null,
+    max_teams_per_shift: null,
     marker_icon: 'building',
     marker_color: '#F48572',
     permissions: DISTRICT_ADMIN_PERMISSIONS,
@@ -118,6 +136,9 @@ export const ROLE_SEEDS: RoleSeed[] = [
     name: 'Admin Rayon',
     description: 'Akses setara Kepala Rayon dalam rayonnya',
     monitoring_scope: MonitoringScope.DISTRICT,
+    home_scope: HomeScope.DISTRICT,
+    max_places_per_shift: null,
+    max_teams_per_shift: null,
     marker_icon: 'clipboard',
     marker_color: '#9333EA',
     permissions: DISTRICT_ADMIN_PERMISSIONS,
@@ -127,6 +148,9 @@ export const ROLE_SEEDS: RoleSeed[] = [
     name: 'Korlap',
     description: 'Koordinator lapangan; monitoring kawasannya, tanpa kelola data',
     monitoring_scope: MonitoringScope.REGION,
+    home_scope: HomeScope.NONE,
+    max_places_per_shift: null,
+    max_teams_per_shift: null,
     marker_icon: 'briefcase',
     marker_color: '#E3A018',
     permissions: [
@@ -147,6 +171,9 @@ export const ROLE_SEEDS: RoleSeed[] = [
     name: 'Satgas',
     description: 'Petugas lapangan; clock-in, aktivitas, tugas, lembur',
     monitoring_scope: MonitoringScope.NONE,
+    home_scope: HomeScope.NONE,
+    max_places_per_shift: 1,
+    max_teams_per_shift: 1,
     // Field worker → hard-hat, distinct from linmas' shield (both were 'shield').
     marker_icon: 'hard-hat',
     marker_color: '#7FBC8C',
@@ -157,6 +184,9 @@ export const ROLE_SEEDS: RoleSeed[] = [
     name: 'Linmas',
     description: 'Petugas keamanan; clock-in, aktivitas, tugas, lembur',
     monitoring_scope: MonitoringScope.NONE,
+    home_scope: HomeScope.NONE,
+    max_places_per_shift: 1,
+    max_teams_per_shift: 1,
     marker_icon: 'shield',
     marker_color: '#2563EB',
     permissions: ['activity:create', 'task:read', 'overtime:submit', 'schedule:read'],
@@ -166,6 +196,9 @@ export const ROLE_SEEDS: RoleSeed[] = [
     name: 'Staff Kecamatan',
     description: 'Eksternal; mengajukan permohonan pemangkasan',
     monitoring_scope: MonitoringScope.NONE,
+    home_scope: HomeScope.NONE,
+    max_places_per_shift: null,
+    max_teams_per_shift: null,
     marker_icon: 'user',
     marker_color: '#FDFD96',
     permissions: ['pruning-request:submit', 'pruning-request:read'],

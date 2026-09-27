@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { MonitoringScope } from '../enums/monitoring-scope.enum';
+import { HomeScope } from '../enums/home-scope.enum';
 import { Permission } from './permission.entity';
 import { Auditable } from '../../audit/capture/auditable.decorator';
 
@@ -45,6 +46,27 @@ export class Role {
   @ApiProperty({ enum: MonitoringScope, example: MonitoringScope.DISTRICT })
   @Column({ type: 'varchar', length: 20, default: MonitoringScope.NONE })
   monitoring_scope: MonitoringScope;
+
+  @ApiProperty({
+    enum: HomeScope,
+    description: 'Whether users of this role must have a home rayon (district)',
+  })
+  @Column({ type: 'varchar', length: 10, default: HomeScope.NONE })
+  home_scope: HomeScope;
+
+  @ApiPropertyOptional({
+    description: 'Max individual places per shift for one person (null = unlimited)',
+    example: 1,
+  })
+  @Column({ type: 'integer', nullable: true })
+  max_places_per_shift?: number | null;
+
+  @ApiPropertyOptional({
+    description: 'Max team memberships per shift for one person (null = unlimited)',
+    example: 1,
+  })
+  @Column({ type: 'integer', nullable: true })
+  max_teams_per_shift?: number | null;
 
   @ApiPropertyOptional({ description: 'Map marker icon (curated set)', example: 'building' })
   @Column({ length: 50, nullable: true })
