@@ -6,6 +6,8 @@ import { ScheduleEvent } from './entities/schedule-event.entity';
 import { User } from '../users/entities/user.entity';
 import { BUSY_STATUSES, LEAVE_STATUS_BY_TYPE, schedulePlaceKey } from './schedules.support';
 import { canEditTargetRole } from './schedule-edit.policy';
+import type { AssignmentPolicyService } from './policy/assignment-policy.service';
+import type { Intent } from './policy/assignment-policy';
 
 /** What the roster writes need from `SchedulesService`. */
 export interface MutationDeps {
@@ -24,6 +26,19 @@ export interface MutationDeps {
   findByUserAndDate(userId: string, date: string): Promise<Schedule | null>;
   findAllByUserAndDate(userId: string, date: string): Promise<Schedule[]>;
   setPlace(rosterId: string, locationId: string | null): Promise<void>;
+  /** The assignment rule (ADR-063). */
+  policy: AssignmentPolicyService;
+}
+
+/** The kind + place a row occupies, for re-checking it after an in-place edit. */
+function intentOf(row: Schedule, place: string): Intent {
+  return row.team_category_id
+    ? {
+        kind: 'team',
+        place,
+        eventId: row.schedule_event_id ?? `manual-team:${row.team_category_id}`,
+      }
+    : { kind: 'individual', place };
 }
 
 /**
@@ -201,6 +216,22 @@ export async function updateAreas(
     );
   }
 
+  // Moving the row must not make it a duplicate or exceed the role's limit.
+  await svc.policy.assert({
+    userIds: [row.user_id],
+    dates: [row.schedule_date],
+    shiftDefinitionId: row.shift_definition_id,
+    intent: intentOf(
+      row,
+      schedulePlaceKey({
+        location_id: nextLocationId,
+        region_id: nextLocationId ? null : nextRegionId,
+        district_id: districtId !== undefined ? districtId : row.district_id,
+      }),
+    ),
+    excludeRowId: row.id,
+  });
+
   const before = row.location_id ? [row.location_id] : [];
   // ONE raw column UPDATE, not `save(row)` — `row` holds relation objects loaded
   // by `findOne()` above, and entity save would reconcile FK columns back from
@@ -227,6 +258,14 @@ export async function updateShift(
   const row = await svc.findOne(id);
   await svc.assertCanEdit(actor, row);
   const before = row.shift_definition_id;
+  // Moving the row into another shift must respect that shift's limits.
+  await svc.policy.assert({
+    userIds: [row.user_id],
+    dates: [row.schedule_date],
+    shiftDefinitionId: shiftDefinitionId,
+    intent: intentOf(row, schedulePlaceKey(row)),
+    excludeRowId: row.id,
+  });
   // Re-derive status only for the default planned/off pair; leave/replaced stay.
   let status = row.status;
   if (status === ScheduleStatus.PLANNED || status === ScheduleStatus.OFF) {

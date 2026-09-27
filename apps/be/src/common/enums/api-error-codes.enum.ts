@@ -95,6 +95,14 @@ export enum ApiErrorCode {
   /** Capacity written at a tier other than the parent district's `staffing_level` */
   CAPACITY_WRONG_LEVEL = 'CAPACITY_WRONG_LEVEL',
 
+  // ==================== Assignment Policy (ADR-063) ====================
+  /** Same person, shift and place (or the same team) is already assigned */
+  SCHEDULE_DUPLICATE = 'SCHEDULE_DUPLICATE',
+  /** The person's role allows no more individual places in this shift */
+  SCHEDULE_PLACE_LIMIT = 'SCHEDULE_PLACE_LIMIT',
+  /** The person's role allows no more team memberships in this shift */
+  SCHEDULE_TEAM_LIMIT = 'SCHEDULE_TEAM_LIMIT',
+
   // ==================== Deletion Errors (force delete) ====================
   /** Typed confirmation does not match the record's name */
   DELETE_CONFIRMATION_MISMATCH = 'DELETE_CONFIRMATION_MISMATCH',

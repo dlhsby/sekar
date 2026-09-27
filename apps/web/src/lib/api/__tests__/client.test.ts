@@ -125,6 +125,34 @@ describe('API Client', () => {
       expect(getErrorMessage(error)).toBe('Invalid credentials');
     });
 
+    it('names who and when for an assignment-policy refusal (ADR-063)', () => {
+      const error = new AxiosError('Request failed', 'ERR_BAD_REQUEST', undefined, undefined, {
+        status: 409,
+        statusText: 'Conflict',
+        data: {
+          code: 'SCHEDULE_PLACE_LIMIT',
+          message: 'x',
+          details: {
+            total: 5,
+            violations: [
+              { full_name: 'Budi', date: '2026-10-01' },
+              { full_name: 'Budi', date: '2026-10-02' },
+              { full_name: 'Sari', date: '2026-10-01' },
+              { full_name: 'Sari', date: '2026-10-02' },
+            ],
+          },
+        },
+        headers: {},
+        config: {} as InternalAxiosRequestConfig,
+      });
+
+      const msg = getErrorMessage(error);
+      expect(msg).toContain('batas lokasi individu per shift');
+      expect(msg).toContain(
+        'Terdampak: Budi (2026-10-01), Budi (2026-10-02), Sari (2026-10-01) dan 2 lainnya.',
+      );
+    });
+
     it('should return timeout message for ECONNABORTED', () => {
       const error = new AxiosError('timeout of 1000ms exceeded', 'ECONNABORTED');
 

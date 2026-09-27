@@ -16,9 +16,11 @@ import { AuditLogService } from '../../audit/audit.service';
 import { ScheduleScope } from '../enums/schedule-scope.enum';
 import { RecurrenceType } from '../enums/recurrence-type.enum';
 import { EditScope } from '../enums/edit-scope.enum';
+import { AssignmentPolicyService } from '../policy/assignment-policy.service';
 
 describe('ScheduleEventsService', () => {
   let service: ScheduleEventsService;
+  let policy: { assert: jest.Mock; check: jest.Mock };
   let eventRepo: Record<string, jest.Mock>;
   let memberRepo: Record<string, jest.Mock>;
   let scheduleRepo: Record<string, jest.Mock>;
@@ -121,6 +123,10 @@ describe('ScheduleEventsService', () => {
       log: jest.fn(),
     };
 
+    policy = {
+      assert: jest.fn().mockResolvedValue(undefined),
+      check: jest.fn().mockResolvedValue([]),
+    };
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ScheduleEventsService,
@@ -135,6 +141,7 @@ describe('ScheduleEventsService', () => {
         { provide: getRepositoryToken(TeamCategory), useValue: teamCategoryRepo },
         { provide: ScheduleMaterializerService, useValue: materializer },
         { provide: AuditLogService, useValue: auditLog },
+        { provide: AssignmentPolicyService, useValue: policy },
       ],
     }).compile();
 
@@ -217,6 +224,75 @@ describe('ScheduleEventsService', () => {
           expect.objectContaining({ user_id: 'member-2' }),
         ]),
       );
+    });
+  });
+
+  describe('assignment policy (ADR-063)', () => {
+    const teamEvent = () => ({
+      id: 'event-1',
+      title: 'Team Event',
+      start_date: '2026-07-10',
+      end_date: null,
+      shift_definition_id: mockShift.id,
+      scope: ScheduleScope.STATIC,
+      location_id: mockLocation.id,
+      region_id: null,
+      recurrence_type: RecurrenceType.NONE,
+      recurrence_config: null,
+      is_team: true,
+      user_id: null,
+      team_category_id: 'team-1',
+      pic_user_id: 'pic-1',
+      members: [{ user_id: 'member-1' }],
+      created_by: 'admin',
+    });
+
+    beforeEach(() => {
+      shiftRepo.findOne.mockResolvedValue(mockShift);
+      locationRepo.findOne.mockResolvedValue(mockLocation);
+      userRepo.find.mockResolvedValue([{ id: 'member-2', role: 'satgas', is_active: true }]);
+      scheduleRepo.createQueryBuilder.mockReturnValue({
+        delete: jest.fn().mockReturnThis(),
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue(undefined),
+      });
+    });
+
+    it('checks a split-off team as a NEW team, ignoring the old series', async () => {
+      const event = teamEvent();
+      eventRepo.findOne.mockResolvedValue(event);
+      eventRepo.save.mockResolvedValue(event);
+      jest.spyOn(service as any, 'assertAssignable');
+
+      await service.update(
+        'event-1',
+        { member_ids: ['member-2'] },
+        EditScope.THIS_AND_FUTURE,
+        '2026-07-20',
+        ADMIN,
+      );
+
+      expect((service as any).assertAssignable).toHaveBeenCalledWith(
+        ['pic-1', 'member-2'],
+        expect.objectContaining({ is_team: true, shift_definition_id: mockShift.id }),
+        'new-event',
+        { excludeEventId: 'event-1', from: '2026-07-20' },
+      );
+    });
+
+    it('a policy refusal on a series edit saves nothing', async () => {
+      const event = teamEvent();
+      eventRepo.findOne.mockResolvedValue(event);
+      jest
+        .spyOn(service as any, 'assertAssignable')
+        .mockRejectedValueOnce(new Error('SCHEDULE_TEAM_LIMIT'));
+
+      await expect(
+        service.update('event-1', { member_ids: ['member-2'] }, EditScope.SERIES, undefined, ADMIN),
+      ).rejects.toThrow('SCHEDULE_TEAM_LIMIT');
+      expect(eventRepo.save).not.toHaveBeenCalled();
+      expect(memberRepo.delete).not.toHaveBeenCalled();
     });
   });
 

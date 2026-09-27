@@ -26,6 +26,11 @@ import { AuditLogService } from '../../audit/audit.service';
 import { TimezoneUtil } from '../../../common/utils/timezone.util';
 import { ScheduleRecurrenceUtil } from '../utils/schedule-recurrence.util';
 import { MONITORING_CITY } from '../../users/constants/role-groups';
+import { AssignmentPolicyService } from '../policy/assignment-policy.service';
+import { eventPlace, schedulePlaceKey } from '../schedules.support';
+
+/** Stand-in id for a team event that does not exist yet (create / split). */
+const NEW_EVENT_ID = 'new-event';
 
 /**
  * Service for ScheduleEvent CRUD and materialization orchestration.
@@ -56,6 +61,8 @@ export class ScheduleEventsService {
     private readonly teamCategoryRepo: Repository<TeamCategory>,
     private readonly materializer: ScheduleMaterializerService,
     private readonly auditLog: AuditLogService,
+    // The assignment rule (ADR-063) — required, never optional.
+    private readonly policy: AssignmentPolicyService,
   ) {}
 
   /**
@@ -249,22 +256,28 @@ export class ScheduleEventsService {
       await this.validateUserRoles([dto.user_id]);
     }
 
-    // An EXACT duplicate — the same person, the same day, the same shift — is
-    // never a real assignment: `UQ_schedules_user_date_shift` makes the second
-    // occurrence impossible to materialize, so it would linger as an
-    // undeletable projected ghost. Reject it up front. A *different* shift that
+    // The assignment rule (ADR-063), checked up front for every occurrence in
+    // the materialization window: duplicates and role limits (satgas/linmas:
+    // one individual place + one team per shift; korlap: unlimited) are refused
+    // here instead of being silently skipped later. A *different* shift that
     // merely overlaps in time stays a warning (ADR-047, calendar-style).
-    await this.assertNoDuplicateOccurrence(
+    await this.assertAssignable(
       dto.is_team
         ? [dto.pic_user_id as string, ...(dto.member_ids || [])]
         : [dto.user_id as string],
-      dto.shift_definition_id,
       {
         recurrence_type: dto.recurrence_type,
         start_date: dto.start_date,
         end_date: dto.end_date ?? null,
         recurrence_config: dto.recurrence_config ?? null,
+        shift_definition_id: dto.shift_definition_id,
+        scope: dto.scope,
+        location_id: dto.location_id ?? null,
+        region_id: dto.region_id ?? null,
+        district_id: dto.district_id ?? null,
+        is_team: dto.is_team,
       } as ScheduleEvent,
+      NEW_EVENT_ID,
     );
 
     // Create event
@@ -371,6 +384,13 @@ export class ScheduleEventsService {
         recurrence_config: dto.recurrence_config || event.recurrence_config,
       };
       await this.validateEventShape(effective, actor);
+      await this.assertAssignable(
+        event.is_team ? this.teamMemberIds(event, dto.member_ids) : [event.user_id as string],
+        { ...effective, is_team: event.is_team } as ScheduleEvent,
+        NEW_EVENT_ID,
+        // The old series' rows from `fromDate` are about to be replaced.
+        { excludeEventId: event.id, from: fromDate },
+      );
 
       // Set original event end_date to fromDate-1
       event.end_date = this.addDays(fromDate, -1);
@@ -467,6 +487,14 @@ export class ScheduleEventsService {
           recurrence_config: event.recurrence_config,
         },
         actor,
+      );
+      // The series' own future rows are about to be re-materialized — check the
+      // edited shape against everyone else's rows, not against itself.
+      await this.assertAssignable(
+        event.is_team ? this.teamMemberIds(event, dto.member_ids) : [event.user_id as string],
+        event,
+        event.id,
+        { excludeEventId: event.id },
       );
 
       await this.eventRepo.save(event);
@@ -728,58 +756,47 @@ export class ScheduleEventsService {
   }
 
   /**
-   * Reject an assignment that would duplicate an existing occurrence exactly —
-   * same user, same date, same shift.
-   *
-   * The DB already refuses it (`UQ_schedules_user_date_shift`), so the row could
-   * only ever exist as a *projected* ghost: greyed on the board, impossible to
-   * delete (its id is `projected:…`, not a row), and counted in the role tally.
-   * Better to say so at assignment time than to create something that can never
-   * become real. Overlaps against a DIFFERENT shift are still allowed with a
-   * warning (ADR-047, calendar-style).
+   * The assignment rule (ADR-063) for every occurrence of `event` inside the
+   * materialization window — the same AssignmentPolicyService the materializer
+   * and the manual roster paths use, so the calendar can never promise an
+   * assignment the roster then refuses. Throws SCHEDULE_DUPLICATE /
+   * SCHEDULE_PLACE_LIMIT / SCHEDULE_TEAM_LIMIT (409) naming who and when.
    */
-  private async assertNoDuplicateOccurrence(
+  private async assertAssignable(
     userIds: string[],
-    shiftDefinitionId: string,
-    recurrence: ScheduleEvent,
-    excludeEventId?: string,
+    event: ScheduleEvent,
+    eventId: string,
+    opts: { excludeEventId?: string; from?: string } = {},
   ): Promise<void> {
     const members = userIds.filter(Boolean);
-    if (!members.length || !shiftDefinitionId) return;
+    if (!members.length || !event.shift_definition_id) return;
 
     const today = TimezoneUtil.jakartaDateString();
-    const from = recurrence.start_date > today ? recurrence.start_date : today;
+    const floor = opts.from && opts.from > today ? opts.from : today;
+    const from = event.start_date > floor ? event.start_date : floor;
     // Bounded window: an open-ended recurrence would otherwise expand forever.
-    // The horizon only has to reach far enough to catch a duplicate that would
-    // actually materialize.
+    // It only has to reach as far as occurrences actually materialize.
     const horizon =
       typeof this.materializer.horizonDays === 'function' ? this.materializer.horizonDays() : 30;
-    const to = recurrence.end_date ?? this.addDays(from, horizon);
-    const dates = ScheduleRecurrenceUtil.expandOccurrenceDates(recurrence, from, to);
+    const to = event.end_date ?? this.addDays(from, horizon);
+    const dates = ScheduleRecurrenceUtil.expandOccurrenceDates(event, from, to);
     if (!dates.length) return;
 
-    const clash = await this.scheduleRepo.findOne({
-      where: {
-        user_id: In(members),
-        schedule_date: In(dates),
-        shift_definition_id: shiftDefinitionId,
-      },
-      relations: ['user', 'shift_definition'],
+    const place = schedulePlaceKey(eventPlace(event));
+    await this.policy.assert({
+      userIds: members,
+      dates,
+      shiftDefinitionId: event.shift_definition_id,
+      intent: event.is_team ? { kind: 'team', place, eventId } : { kind: 'individual', place },
+      excludeEventId: opts.excludeEventId,
     });
-    if (clash && clash.schedule_event_id !== excludeEventId) {
-      // Verbose on purpose: the operator needs to know WHO clashes, on WHICH
-      // shift and date, and what to do instead — a second occurrence on the same
-      // shift is impossible (one clock-in per shift), but WIDENING the existing
-      // one is exactly what they want when the worker covers more ground.
-      const who = clash.user?.full_name ?? 'Petugas ini';
-      const shiftName = clash.shift_definition?.name ?? 'shift ini';
-      throw new BadRequestException(
-        `${who} sudah punya jadwal ${shiftName} pada ${clash.schedule_date}. ` +
-          'Satu petugas hanya bisa punya satu jadwal per shift per hari (satu shift = satu kehadiran). ' +
-          'Untuk menambah cakupan, ubah jadwal yang sudah ada dan tambahkan lokasi/kawasannya ' +
-          '— jangan membuat jadwal kedua.',
-      );
-    }
+  }
+
+  /** PIC + members after an edit (dto overrides when given, as the save does). */
+  private teamMemberIds(event: ScheduleEvent, memberIds?: string[]): string[] {
+    const members =
+      memberIds !== undefined ? memberIds : (event.members ?? []).map((m) => m.user_id);
+    return [event.pic_user_id as string, ...members];
   }
 
   private async assertTeamCategoryExists(id: string): Promise<void> {

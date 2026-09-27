@@ -58,5 +58,12 @@
   "GPS_IMPOSSIBLE_TRAVEL": "Implausible movement detected. Make sure GPS is on and not being manipulated.",
   "DELETE_CONFIRMATION_MISMATCH": "The typed name does not match the record. Type it exactly to confirm the deletion.",
   "DELETE_REPLACEMENT_REQUIRED": "This record is still in use. Choose a replacement to move its users to before deleting.",
-  "DELETE_NOT_ALLOWED": "This record cannot be deleted."
+  "DELETE_NOT_ALLOWED": "This record cannot be deleted.",
+  "SCHEDULE_DUPLICATE": "This person is already scheduled at the same place (or in the same team) in this shift.",
+  "SCHEDULE_PLACE_LIMIT": "This person has reached their role's limit of individual places per shift. Satgas/linmas may hold only one place per shift — add them through a team instead.",
+  "SCHEDULE_TEAM_LIMIT": "This person has reached their role's limit of teams per shift.",
+  "details": {
+    "affected": "Affected: {{list}}.",
+    "more": " and {{count}} more"
+  }
 }

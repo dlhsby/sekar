@@ -122,6 +122,7 @@ import {
   updateShift,
   type MutationDeps,
 } from './schedules.mutations';
+import { AssignmentPolicyService } from './policy/assignment-policy.service';
 
 /** The arguments of a `schedules.mutations.ts` function minus its leading deps. */
 type TailArgs<F> = F extends (deps: MutationDeps, ...rest: infer R) => unknown ? R : never;
@@ -151,6 +152,9 @@ export class SchedulesService {
     private readonly auditLogService: AuditLogService,
     private readonly materializer: ScheduleMaterializerService,
     private readonly overlapService: ScheduleOverlapService,
+    // The assignment rule (ADR-063). Required: an absent policy would silently
+    // disable duplicate + role-limit checks.
+    private readonly policy: AssignmentPolicyService,
     // Optional so the many existing unit specs that construct this service by
     // hand keep working; absent, the sweep falls back to its documented default.
     @Optional()
@@ -278,13 +282,14 @@ export class SchedulesService {
       // intended case (ADR-053), not a duplicate. Matching on the shift alone
       // rejected exactly that: "Worker already has this exact shift that day"
       // on a second lokasi, which is the one thing the model exists to allow.
-      const sameDay = await this.findAllByUserAndDate(dto.user_id, dto.date);
-      const exactMatch = sameDay.find(
-        (r) => r.shift_definition_id === shiftId && schedulePlaceKey(r) === placeId,
-      );
-      if (exactMatch) {
-        throw new BadRequestException('Worker already has this shift at this place that day');
-      }
+      // The assignment rule (ADR-063): duplicate place, or over the role's
+      // per-shift limit of individual places (satgas/linmas: 1; korlap: none).
+      await this.policy.assert({
+        userIds: [dto.user_id],
+        dates: [dto.date],
+        shiftDefinitionId: shiftId,
+        intent: { kind: 'individual', place: placeId },
+      });
 
       // Check for overlap and log warning if found (but don't reject)
       const conflict = await this.overlapService.findConflict(dto.user_id, dto.date, shift);
@@ -687,6 +692,7 @@ export class SchedulesService {
       findByUserAndDate: (u, d) => this.findByUserAndDate(u, d),
       findAllByUserAndDate: (u, d) => this.findAllByUserAndDate(u, d),
       setPlace: (id, locationId) => this.setPlace(id, locationId),
+      policy: this.policy,
     };
   }
 
