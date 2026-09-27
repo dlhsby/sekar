@@ -474,10 +474,27 @@ describe('SchedulesService — roster reads', () => {
           // ONE place per row (ADR-053) — several lokasi means several rows.
           location_id: 'area1',
           location: { id: 'area1' },
+          status: 'planned',
         },
       ]);
       const areas = await t.service.getActiveAreasForDay('A', '2026-06-30');
       expect(areas.map((a) => a.id)).toEqual(['area1']);
+    });
+
+    it('unions EVERY live row of the day — individual A + team B (ADR-063/064)', async () => {
+      t.rosterRepo.find.mockResolvedValue([
+        { id: 'd1', location_id: 'A', location: { id: 'A' }, status: 'planned' },
+        {
+          id: 'd2',
+          location_id: 'B',
+          location: { id: 'B' },
+          status: 'planned',
+          team_category_id: 'cat',
+        },
+        { id: 'd3', location_id: 'C', location: { id: 'C' }, status: 'leave_sick' },
+      ]);
+      const areas = await t.service.getActiveAreasForDay('A', '2026-06-30');
+      expect(areas.map((a) => a.id).sort()).toEqual(['A', 'B']);
     });
 
     it('returns empty when there is no roster row', async () => {

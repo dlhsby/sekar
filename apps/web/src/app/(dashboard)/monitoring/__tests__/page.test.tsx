@@ -34,8 +34,11 @@ jest.mock('@/lib/api/monitoring-v2', () => ({
 }));
 
 const mockBoundaries = jest.fn();
+const mockHome = jest.fn(() => ({ data: undefined as unknown }));
 jest.mock('@/lib/api/monitoring', () => ({
   useBoundaries: () => mockBoundaries(),
+  // Landing view (ADR-064) — only fetched for korlap.
+  useMonitoringHome: () => mockHome(),
   // The worker trail query — the page reads `.data?.points`; no trail in tests.
   useLocationHistory: () => ({ data: undefined, isLoading: false }),
   // Worker-detail reads, both lazy on the selection. Undefined data exercises
@@ -183,6 +186,30 @@ describe('MonitoringPage', () => {
     expect(screen.getByRole('button', { name: /segarkan/i })).toBeInTheDocument();
     expect(screen.getByText('Aktif')).toBeInTheDocument();
     expect(screen.getByText('Tidak hadir')).toBeInTheDocument();
+  });
+
+  describe('korlap landing (ADR-064)', () => {
+    const korlap = { id: 'k1', full_name: 'Korlap', role: 'korlap', location_id: null };
+
+    it('shows an explicit empty state when nothing is covered today — never the city view', () => {
+      mockUseAuth.mockReturnValue({ user: korlap, loading: false });
+      mockHome.mockReturnValue({
+        data: { scope: 'none', id: null, district_id: null, floor: 'none' },
+      });
+      render(<MonitoringPage />, { wrapper: createWrapper() });
+      expect(screen.getByText(/Belum ada lokasi yang Anda awasi hari ini/)).toBeInTheDocument();
+      expect(screen.queryByTestId('map')).not.toBeInTheDocument();
+    });
+
+    it('opens on the lokasi from today\'s schedule when the korlap has no permanent lokasi', () => {
+      mockUseAuth.mockReturnValue({ user: korlap, loading: false });
+      mockHome.mockReturnValue({
+        data: { scope: 'location', id: 'loc-1', district_id: 'd1', floor: 'location' },
+      });
+      render(<MonitoringPage />, { wrapper: createWrapper() });
+      expect(screen.getByTestId('map')).toBeInTheDocument();
+      expect(screen.queryByText(/Belum ada lokasi/)).not.toBeInTheDocument();
+    });
   });
 
   it('passes all snapshot workers to the map by default', () => {

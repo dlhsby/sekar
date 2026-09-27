@@ -52,6 +52,7 @@ import { DayTypeService } from './day-type.service';
 import { simplifyGeometry } from '../../../common/utils/geojson-simplify.util';
 import { visibleIn, pointInBBox, type BBox } from '../../../common/utils/geo-bbox.util';
 import { MonitoringCacheService } from './monitoring-cache.service';
+import type { ScopeCandidate } from './display-scope';
 
 /**
  * A `user_tracking_status` row that still represents a LIVE session.
@@ -1193,17 +1194,16 @@ export class MonitoringStatsService {
   }
 
   /**
-   * The SCOPE of each user's current-shift schedule, so the map/list can show a
-   * worker only at their matching drill level. A schedule with a `location_id` is
-   * `location`; else `region_id` → `region`;
-   * else `district_id` → `district`; else `city` (city-wide / unassigned). Most
-   * specific wins if a schedule somehow carries several. Returns user_id →
-   * `{ scope, scope_id }`.
+   * Every current-shift assignment of each rostered worker, as map scopes —
+   * NOT collapsed. A worker may hold several (an individual place plus a team,
+   * or a korlap's many places, ADR-063); `pickDisplayScope` chooses the one
+   * they are actually at (ADR-064). Collapsing here used to keep whichever row
+   * the query returned first.
    */
-  async scheduleScopesForCurrentShift(
+  async scheduleScopeCandidatesForCurrentShift(
     shiftDefinitionId: string | undefined,
-  ): Promise<Map<string, DisplayScope>> {
-    const map = new Map<string, DisplayScope>();
+  ): Promise<Map<string, ScopeCandidate[]>> {
+    const map = new Map<string, ScopeCandidate[]>();
     if (!shiftDefinitionId) return map;
     const today = TimezoneUtil.jakartaDateString();
     const rows = (await this.scheduleRepository
@@ -1212,6 +1212,7 @@ export class MonitoringStatsService {
       .addSelect('s.district_id', 'district_id')
       .addSelect('s.region_id', 'region_id')
       .addSelect('s.location_id', 'location_id')
+      .addSelect('s.team_category_id', 'team_category_id')
       .where('s.schedule_date = :today', { today })
       .andWhere('s.status IN (:...statuses)', {
         statuses: [ScheduleStatus.PLANNED, ScheduleStatus.PRESENT],
@@ -1223,31 +1224,17 @@ export class MonitoringStatsService {
       district_id: string | null;
       region_id: string | null;
       location_id: string | null;
+      team_category_id: string | null;
     }>;
-    // Deterministic when a user holds several rows at
-    // the same depth; ASSIGNMENT_SCOPE_RANK picks the deepest across rows.
     for (const r of rows) {
-      const resolved: DisplayScope = r.location_id
+      const scope: DisplayScope = r.location_id
         ? { scope: 'location', scope_id: r.location_id }
         : r.region_id
           ? { scope: 'region', scope_id: r.region_id }
           : r.district_id
             ? { scope: 'district', scope_id: r.district_id }
             : { scope: 'city', scope_id: null };
-      const prev = map.get(r.user_id);
-      if (!prev || ASSIGNMENT_SCOPE_RANK[resolved.scope] > ASSIGNMENT_SCOPE_RANK[prev.scope]) {
-        if (
-          prev &&
-          ASSIGNMENT_SCOPE_RANK[resolved.scope] === ASSIGNMENT_SCOPE_RANK[prev.scope] &&
-          prev.scope_id !== resolved.scope_id
-        ) {
-          this.logger.warn(
-            `User ${r.user_id} has multiple locations at same depth (${resolved.scope}). ` +
-              `Keeping first seen: ${prev.scope_id}, discarding: ${resolved.scope_id}`,
-          );
-        }
-        map.set(r.user_id, resolved);
-      }
+      map.set(r.user_id, [...(map.get(r.user_id) ?? []), { ...scope, team: !!r.team_category_id }]);
     }
     return map;
   }

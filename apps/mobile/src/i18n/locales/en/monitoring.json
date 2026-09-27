@@ -33,7 +33,8 @@
   "mapDashboard": {
     "filterTitle": "Filter Area",
     "filterPrompt": "Select area to display",
-    "allAreas": "All Areas"
+    "allAreas": "All Areas",
+    "korlapNoCoverage": "No locations to monitor today. A korlap's locations come from today's schedule."
   },
   "layers": {
     "plants": "Plants",

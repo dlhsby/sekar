@@ -72,6 +72,7 @@ import {
   StatusAndDetailSheets,
   FilterAndSearchModals,
 } from './components';
+import { getMonitoringHome } from '../../services/api/monitoringApi';
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -145,10 +146,45 @@ export function MapDashboardScreen(): React.JSX.Element {
     useLiveUsersFiltering(liveUsers, activityFilter, scheduledFilter, filters, visibleLayers, currentRegion, boundaries, scope, view.id, selectedTeamId, mode);
 
 
+  // A korlap with no permanent lokasi (no longer set by the user form) lands on
+  // a lokasi from today's schedule (ADR-064); none covered → explicit message,
+  // never the city view (403 for korlap).
+  const [korlapNoCoverage, setKorlapNoCoverage] = useState(false);
+  useEffect(() => {
+    if (currentUser?.role !== 'korlap' || currentUser.location_id) return;
+    let cancelled = false;
+    getMonitoringHome().then((res) => {
+      if (cancelled) return;
+      const home = res.data;
+      if (home?.scope === 'location' && home.id) {
+        dispatch(
+          initMonitoringView({
+            view: {
+              scope: 'location',
+              id: home.id,
+              districtId: home.district_id,
+              regionId: null,
+              name: null,
+            },
+            floor: 'location',
+          }),
+        );
+      } else {
+        setKorlapNoCoverage(true);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser?.id]);
+
   // Initialise the unified drill view + floor from the viewer's role.
   useEffect(() => {
     if (!currentUser) return;
     const role = currentUser.role;
+    // Resolved asynchronously by the effect above.
+    if (role === 'korlap' && !currentUser.location_id) return;
     let payload: { view: typeof view; floor: MonitoringScope };
     if (role === 'korlap' && currentUser.location_id) {
       payload = {
@@ -507,6 +543,16 @@ export function MapDashboardScreen(): React.JSX.Element {
           </TouchableOpacity>
         </View>
       </NBBackgroundPattern>
+    );
+  }
+
+  if (korlapNoCoverage) {
+    return (
+      <View style={styles.centerContainer}>
+        <NBText variant="body" color="gray500">
+          {t('monitoring:mapDashboard.korlapNoCoverage')}
+        </NBText>
+      </View>
     );
   }
 

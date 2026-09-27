@@ -21,7 +21,8 @@
     "listLabel": "Daftar Area dan Petugas",
     "closeListLabel": "Tutup daftar",
     "backLabel": "Kembali",
-    "resizeLabel": "Ubah lebar panel"
+    "resizeLabel": "Ubah lebar panel",
+    "korlapNoCoverage": "Belum ada lokasi yang Anda awasi hari ini. Lokasi korlap diambil dari jadwal hari ini."
   },
   "aggregate": {
     "understaffed": "Kekurangan personel",

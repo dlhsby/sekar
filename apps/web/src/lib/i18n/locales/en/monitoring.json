@@ -21,7 +21,8 @@
     "listLabel": "Areas & Workers",
     "closeListLabel": "Close list",
     "backLabel": "Back",
-    "resizeLabel": "Resize panel"
+    "resizeLabel": "Resize panel",
+    "korlapNoCoverage": "No locations to monitor today. A korlap's locations come from today's schedule."
   },
   "aggregate": {
     "understaffed": "Understaffed",

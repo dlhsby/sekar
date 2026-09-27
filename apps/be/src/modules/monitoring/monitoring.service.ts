@@ -28,6 +28,7 @@ import { UserRole } from '../users/entities/user.entity';
 import { STAFFING_COUNTED_ROLES } from '../users/constants/role-groups';
 import { DayTypeService } from './services/day-type.service';
 import { MonitoringCacheService } from './services/monitoring-cache.service';
+import { pickDisplayScope, presenceLokasi } from './services/display-scope';
 
 // Snapshot DTOs for web frontend contract (apps/web/src/lib/api/monitoring-v2.ts)
 export interface SnapshotWorker {
@@ -221,7 +222,9 @@ export class MonitoringService {
     // Each worker's drill level = the SCOPE of their current-shift schedule, so a
     // lokasi-scheduled worker shows only at that lokasi, a district-scheduled worker
     // only at that district, and a city-wide/unassigned worker only at the city view.
-    const scheduleScopes = await this.statsService.scheduleScopesForCurrentShift(currentShift?.id);
+    const scheduleScopes = await this.statsService.scheduleScopeCandidatesForCurrentShift(
+      currentShift?.id,
+    );
     // A worker who has STARTED a task is monitored wherever that task is scoped,
     // extending (or, for the unscheduled, providing) their map placement (ADR-046).
     const taskScopes = await this.statsService.inProgressTaskScopesForUsers(
@@ -237,7 +240,12 @@ export class MonitoringService {
       // (was: fall back to the deepest static assignment). This keeps unscheduled
       // workers easy to identify and avoids scattering them across tiers where
       // their static assignment may not reflect where they actually are.
-      const sched = scheduleScopes.get(u.id);
+      // Several current-shift assignments → the one the worker is at (ADR-064).
+      const sched = pickDisplayScope(scheduleScopes.get(u.id) ?? [], {
+        location_id: u.location_id ?? null,
+        region_id: u.region_id ?? null,
+        district_id: u.district_id ?? null,
+      });
       const task = taskScopes.get(u.id);
       // Deepest-wins across the schedule occurrence and any in-progress task; a
       // worker with neither is an ad-hoc clock-in placed flat at city scope.
@@ -411,18 +419,22 @@ export class MonitoringService {
       const clockedIn =
         w.status === TrackingStatus.ACTIVE || w.status === TrackingStatus.OFFLINE ? 1 : 0;
 
-      // Credit EVERY lokasi this worker is rostered to, not just the one their
-      // GPS lands in. One worker still counts once per lokasi, and never twice
-      // in the same one.
+      // Every lokasi this worker is rostered to stays listed (it expects them),
+      // but PRESENCE counts once — at the lokasi they are attributed to (ADR-064,
+      // superseding ADR-053's credit-every-lokasi). Someone alone at A and with
+      // the team at B, standing at B, is present at B only; A shows them as
+      // expected-but-elsewhere instead of present twice.
       const credited = assignedByUser.get(w.user_id) ?? (w.location_id ? [w.location_id] : []);
+      const presentAt = presenceLokasi(credited, w.location_id ?? null);
       for (const locationId of credited) {
         const meta = areaMeta.get(locationId);
         if (!meta) continue; // out of scope, deactivated, or deleted
+        const add = locationId === presentAt ? clockedIn : 0;
         const existing = areaMap.get(locationId);
         if (existing) {
-          existing.activeCount += clockedIn;
+          existing.activeCount += add;
         } else {
-          areaMap.set(locationId, { ...meta, activeCount: clockedIn });
+          areaMap.set(locationId, { ...meta, activeCount: add });
         }
       }
     }

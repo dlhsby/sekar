@@ -54,7 +54,7 @@ jest.mock('../../../store/slices/monitoringSlice', () => ({
 }));
 
 import React from 'react';
-import { render, act } from '@testing-library/react-native';
+import { render, act, waitFor } from '@testing-library/react-native';
 // Aliased to a `mock`-prefixed name: `jest.mock` factories are HOISTED above
 // the imports, so babel-plugin-jest-hoist rejects any out-of-scope reference
 // it cannot prove is lazy. The prefix is the sanctioned way to assert that it
@@ -163,6 +163,8 @@ let mockMonitoringState: MonitoringState = {
 };
 
 const mockDispatch = jest.fn();
+const mockKorlapWithLokasi = { id: 'u-1', role: 'korlap', location_id: 'area-1' };
+let mockAuthUser: Record<string, unknown> = mockKorlapWithLokasi;
 
 jest.mock('react-redux', () => ({
   ...jest.requireActual('react-redux'),
@@ -170,7 +172,7 @@ jest.mock('react-redux', () => ({
   useSelector: (selector: any) =>
     selector({
       monitoring: mockMonitoringState,
-      auth: { user: { id: 'u-1', role: 'korlap', location_id: 'area-1' } },
+      auth: { user: mockAuthUser },
       // Phase 3 sub-phase 3-5: monitoringV2 slice default state
       monitoringV2: {
         // The real default shape. This fixture used to carry the pre-v5 keys
@@ -230,6 +232,7 @@ const mockLiveUser2: LiveUser = {
 describe('MapDashboardScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockAuthUser = mockKorlapWithLokasi;
     mockMonitoringState = {
       liveUsers: [mockLiveUser1, mockLiveUser2],
       statusCounts: { active: 1, inactive: 1, outside_area: 0, missing: 0, offline: 0 },
@@ -317,6 +320,41 @@ describe('MapDashboardScreen', () => {
       const { queryByText } = render(<MapDashboardScreen />);
       expect(queryByText('Memuat peta...')).toBeNull();
       expect(queryByText('Coba Lagi')).toBeNull();
+    });
+  });
+
+  describe('korlap landing without a permanent lokasi (ADR-064)', () => {
+    const { getMonitoringHome } = jest.requireMock('../../../services/api/monitoringApi');
+    const { initMonitoringView } = jest.requireMock('../../../store/slices/monitoringV2Slice');
+
+    it("opens on the lokasi from today's schedule", async () => {
+      mockAuthUser = { id: 'u-9', role: 'korlap', location_id: null };
+      getMonitoringHome.mockResolvedValue({
+        data: { scope: 'location', id: 'loc-9', district_id: 'd-9', floor: 'location' },
+      });
+
+      render(<MapDashboardScreen />);
+
+      await waitFor(() =>
+        expect(initMonitoringView).toHaveBeenCalledWith({
+          view: { scope: 'location', id: 'loc-9', districtId: 'd-9', regionId: null, name: null },
+          floor: 'location',
+        }),
+      );
+    });
+
+    it('says so when nothing is covered today, instead of opening the city view', async () => {
+      mockAuthUser = { id: 'u-9', role: 'korlap', location_id: null };
+      getMonitoringHome.mockResolvedValue({
+        data: { scope: 'none', id: null, district_id: null, floor: 'none' },
+      });
+
+      const { findByText } = render(<MapDashboardScreen />);
+
+      expect(await findByText(/Belum ada lokasi yang Anda awasi hari ini/)).toBeTruthy();
+      expect(initMonitoringView).not.toHaveBeenCalledWith(
+        expect.objectContaining({ floor: 'city' }),
+      );
     });
   });
 });

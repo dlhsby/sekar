@@ -481,6 +481,99 @@ describe('StatusCalculatorService', () => {
       expect(eventsGateway.emitUserLeftArea).not.toHaveBeenCalled();
     });
 
+    describe('live place re-attribution (ADR-064)', () => {
+      const AREA2_BOX = [
+        [
+          [112.89, -7.49],
+          [112.91, -7.49],
+          [112.91, -7.51],
+          [112.89, -7.51],
+          [112.89, -7.49],
+        ],
+      ];
+      const AREA1_BOX = [
+        [
+          [112.73, -7.28],
+          [112.735, -7.28],
+          [112.735, -7.285],
+          [112.73, -7.285],
+          [112.73, -7.28],
+        ],
+      ];
+      const tracking = (extra: Record<string, unknown> = {}) => ({
+        user_id: 'user-1',
+        shift_id: 'shift-1',
+        location_id: 'area-1',
+        district_id: 'r1',
+        status: TrackingStatus.ACTIVE,
+        is_within_area: true,
+        last_location_at: new Date(),
+        updated_at: new Date(),
+        pending_location_id: null,
+        pending_since: null,
+        ...extra,
+      });
+
+      beforeEach(() => {
+        // Individual at area-1, with the team at area-2, same shift.
+        (service as unknown as { dailySchedulesService: unknown }).dailySchedulesService = {
+          getActiveAreasForDay: jest.fn().mockResolvedValue([{ id: 'area-1' }, { id: 'area-2' }]),
+        };
+        cacheService.getAreaBoundary.mockImplementation((id: string) =>
+          Promise.resolve(id === 'area-2' ? AREA2_BOX : AREA1_BOX),
+        );
+        userRepository.findOne.mockResolvedValue({ id: 'user-1', full_name: 'T', role: 'satgas' });
+        areaRepository.findOne.mockImplementation(({ where }: { where: { id: string } }) =>
+          Promise.resolve({
+            id: where.id,
+            name: where.id,
+            district_id: where.id === 'area-2' ? 'r2' : 'r1',
+          }),
+        );
+      });
+
+      it('first sight of the team place only starts a pending switch', async () => {
+        trackingRepository.findOne.mockResolvedValue(tracking());
+        const at = new Date('2026-10-01T02:00:00Z');
+
+        await service.onLocationPing('user-1', -7.5, 112.9, 10, 80, at);
+
+        expect(trackingRepository.save).toHaveBeenCalledWith(
+          expect.objectContaining({
+            location_id: 'area-1',
+            pending_location_id: 'area-2',
+            pending_since: at,
+            is_within_area: true,
+          }),
+        );
+      });
+
+      it('after staying there, attribution moves to the team place (counted once, where they are)', async () => {
+        const since = new Date('2026-10-01T02:00:00Z');
+        trackingRepository.findOne.mockResolvedValue(
+          tracking({ pending_location_id: 'area-2', pending_since: since }),
+        );
+
+        await service.onLocationPing(
+          'user-1',
+          -7.5,
+          112.9,
+          10,
+          80,
+          new Date(since.getTime() + 3 * 60_000),
+        );
+
+        expect(trackingRepository.save).toHaveBeenCalledWith(
+          expect.objectContaining({
+            location_id: 'area-2',
+            district_id: 'r2',
+            pending_location_id: null,
+            pending_since: null,
+          }),
+        );
+      });
+    });
+
     it('a MOBILE crew outside its clock-in lokasi but inside its kawasan stays within-area (5.4e)', async () => {
       // No lokasi assignment (empty roster + no user_areas); the occurrence is
       // region-scoped, so the geofence is the KAWASAN polygon, not the lokasi.
