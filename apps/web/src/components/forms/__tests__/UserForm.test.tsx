@@ -510,11 +510,12 @@ describe('UserForm', () => {
   });
 
   describe('Rayon field follows roles.home_scope', () => {
+    // Custom role codes (e.g. 'pengawas') are data-driven, outside the UserRole union.
     const userWith = (role: string): User => ({
       id: '1',
       username: 'u',
       full_name: 'U',
-      role,
+      role: role as User['role'],
       created_at: '2026-01-01',
       updated_at: '2026-01-01',
     });
