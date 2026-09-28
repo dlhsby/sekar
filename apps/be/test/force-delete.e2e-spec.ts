@@ -239,4 +239,37 @@ describe('Force delete (e2e)', () => {
 
     await db.query(`UPDATE users SET deleted_at = now() WHERE id = $1`, [userId]);
   });
+
+  it('a soft-deleted replacement role is refused cleanly (409), never a crash', async () => {
+    const code = `uji_${stamp()}`;
+    const roleName = `Peran Uji ${stamp()}`;
+    const roleId = (
+      await one<{ id: string }>(
+        `INSERT INTO roles (code, name, is_system) VALUES ($1, $2, false) RETURNING id`,
+        [code, roleName],
+      )
+    ).id;
+    const userId = (
+      await one<{ id: string }>(
+        `INSERT INTO users (username, password_hash, full_name, role) VALUES ($1, 'x', 'Uji Peran', $2) RETURNING id`,
+        [`uji_${stamp()}`, code],
+      )
+    ).id;
+    const goneRole = (
+      await one<{ id: string }>(
+        `INSERT INTO roles (code, name, is_system, deleted_at) VALUES ($1, $2, false, now()) RETURNING id`,
+        [`gone_${stamp()}`, `Peran Hilang ${stamp()}`],
+      )
+    ).id;
+
+    const res = await http()
+      .post(`/api/v1/deletions/role/${roleId}`)
+      .set('Authorization', `Bearer ${admin}`)
+      .send({ confirm_name: roleName, reason: 'Peran tidak dipakai', replacement_id: goneRole });
+
+    expect(res.status).toBe(409);
+    expect(res.body.error?.code ?? res.body.code).toBe('DELETE_REPLACEMENT_REQUIRED');
+    expect(await isDeleted('roles', roleId)).toBe(false);
+    await db.query(`UPDATE users SET deleted_at = now() WHERE id = $1`, [userId]);
+  });
 });
