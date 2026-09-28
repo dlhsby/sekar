@@ -201,16 +201,34 @@ apiClient.interceptors.response.use(
  * API Error Handler
  * Extracts error message from API response
  */
+/**
+ * "Who and when" for assignment-policy refusals (ADR-063): the API lists the
+ * affected people in `details.violations`, which the code alone can't say.
+ */
+const VIOLATIONS_SHOWN = 3;
+function describeViolations(details: unknown): string | null {
+  const list = (details as { violations?: unknown } | null | undefined)?.violations;
+  if (!Array.isArray(list) || list.length === 0) return null;
+  const total = (details as { total?: number }).total ?? list.length;
+  const shown = list
+    .slice(0, VIOLATIONS_SHOWN)
+    .map((v: { full_name?: string; date?: string }) => `${v.full_name ?? '?'} (${v.date ?? '?'})`)
+    .join(', ');
+  const more = total > VIOLATIONS_SHOWN ? i18n.t('errors:details.more', { count: total - VIOLATIONS_SHOWN }) : '';
+  return i18n.t('errors:details.affected', { list: `${shown}${more}` });
+}
+
 export const getErrorMessage = (error: unknown): string => {
   if (axios.isAxiosError(error)) {
     // API error response → localize by `code` (Indonesian), falling back to the
     // backend message. `message` may be a string or a class-validator array.
     const data = error.response?.data as
-      | { code?: string; message?: string | string[] }
+      | { code?: string; message?: string | string[]; details?: unknown }
       | undefined;
     if (data && (data.code || data.message)) {
       const raw = Array.isArray(data.message) ? data.message[0] : data.message;
-      return localizeApiError(data.code, raw);
+      const who = describeViolations(data.details);
+      return who ? `${localizeApiError(data.code, raw)} ${who}` : localizeApiError(data.code, raw);
     }
 
     if (error.code === 'ECONNABORTED') {

@@ -11,6 +11,7 @@ import { UserLocationsService } from '../../../modules/user-locations/user-locat
 import { AuditLogService } from '../../audit/audit.service';
 import { ScheduleMaterializerService } from '../services/schedule-materializer.service';
 import { ScheduleOverlapService } from '../services/schedule-overlap.service';
+import { AssignmentPolicyService } from '../policy/assignment-policy.service';
 
 /**
  * Shared testbed for the `SchedulesService` specs.
@@ -85,6 +86,7 @@ export interface SchedulesTestbed {
   audit: { log: jest.Mock };
   materializer: { materializeEvent: jest.Mock };
   overlapService: { findConflict: jest.Mock };
+  policy: { assert: jest.Mock; check: jest.Mock };
 }
 
 export function setupSchedulesTestbed(): SchedulesTestbed {
@@ -102,6 +104,7 @@ export function setupSchedulesTestbed(): SchedulesTestbed {
     let audit: SchedulesTestbed['audit'];
     let materializer: SchedulesTestbed['materializer'];
     let overlapService: SchedulesTestbed['overlapService'];
+    let policy: SchedulesTestbed['policy'];
 
     rosterRepo = makeRosterRepo();
     eventRepo = { find: jest.fn().mockResolvedValue([]) };
@@ -131,6 +134,10 @@ export function setupSchedulesTestbed(): SchedulesTestbed {
     overlapService = {
       findConflict: jest.fn(),
     };
+    policy = {
+      assert: jest.fn().mockResolvedValue(undefined),
+      check: jest.fn().mockResolvedValue([]),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -145,11 +152,13 @@ export function setupSchedulesTestbed(): SchedulesTestbed {
         { provide: AuditLogService, useValue: audit },
         { provide: ScheduleMaterializerService, useValue: materializer },
         { provide: ScheduleOverlapService, useValue: overlapService },
+        { provide: AssignmentPolicyService, useValue: policy },
       ],
     }).compile();
 
     Object.assign(t, {
       service: module.get(SchedulesService),
+      policy,
       rosterRepo,
       eventRepo,
       locationRepo,

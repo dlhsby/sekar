@@ -363,11 +363,11 @@ describe('SchedulesService — roster writes', () => {
       expect(t.rosterRepo.save).toHaveBeenCalled();
     });
 
-    // The uniqueness key is (user, date, shift, PLACE) — migration 17517. One
-    // worker covering two lokasi during the SAME shift is the intended case
-    // (ADR-053), so only a repeat of the same shift AT THE SAME PLACE is a
-    // duplicate. Matching on the shift alone rejected the legitimate one.
-    describe('duplicate detection is keyed on (shift, place)', () => {
+    // Whether a second place / a repeat is allowed is the assignment policy's
+    // call (ADR-063: role limits — satgas/linmas one individual place per shift,
+    // korlap unlimited). addForDay must ask it with the resolved place, and must
+    // not write when it refuses.
+    describe('delegates the duplicate + role-limit decision to the assignment policy', () => {
       const worker = { id: 'W', is_active: true, role: UserRole.SATGAS, district_id: 'r1' };
       const shift3 = { id: 's3', name: 'Shift 3', start_time: '14:00:00', end_time: '22:00:00' };
 
@@ -379,41 +379,34 @@ describe('SchedulesService — roster writes', () => {
         t.rosterRepo.findOne.mockResolvedValue({ id: 'new', user_id: 'W', location_id: null });
       });
 
-      it('rejects the same shift at the SAME place', async () => {
-        t.rosterRepo.find.mockResolvedValue([
-          {
-            user_id: 'W',
-            schedule_date: '2026-07-04',
-            shift_definition_id: 's3',
-            location_id: 'locA',
-          },
-        ]);
-
-        await expect(
-          t.service.addForDay(
-            { user_id: 'W', date: '2026-07-04', shift_definition_id: 's3', area_ids: ['locA'] },
-            ADMIN,
-          ),
-        ).rejects.toThrow(/already has this shift at this place/i);
-        expect(t.rosterRepo.save).not.toHaveBeenCalled();
-      });
-
-      it('ALLOWS the same shift at a different lokasi — the point of ADR-053', async () => {
-        t.rosterRepo.find.mockResolvedValue([
-          {
-            user_id: 'W',
-            schedule_date: '2026-07-04',
-            shift_definition_id: 's3',
-            location_id: 'locA',
-          },
-        ]);
+      it('asks the policy for an INDIVIDUAL assignment at the resolved place', async () => {
+        t.rosterRepo.find.mockResolvedValue([]);
 
         await t.service.addForDay(
           { user_id: 'W', date: '2026-07-04', shift_definition_id: 's3', area_ids: ['locB'] },
           ADMIN,
         );
 
+        expect(t.policy.assert).toHaveBeenCalledWith({
+          userIds: ['W'],
+          dates: ['2026-07-04'],
+          shiftDefinitionId: 's3',
+          intent: { kind: 'individual', place: 'locB' },
+        });
         expect(t.rosterRepo.save).toHaveBeenCalled();
+      });
+
+      it('writes nothing when the policy refuses', async () => {
+        t.rosterRepo.find.mockResolvedValue([]);
+        t.policy.assert.mockRejectedValueOnce(new Error('SCHEDULE_PLACE_LIMIT'));
+
+        await expect(
+          t.service.addForDay(
+            { user_id: 'W', date: '2026-07-04', shift_definition_id: 's3', area_ids: ['locB'] },
+            ADMIN,
+          ),
+        ).rejects.toThrow('SCHEDULE_PLACE_LIMIT');
+        expect(t.rosterRepo.save).not.toHaveBeenCalled();
       });
 
       it('writes nothing when several lokasi are named', async () => {

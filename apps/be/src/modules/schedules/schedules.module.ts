@@ -23,6 +23,7 @@ import { ScheduleAbsenceCron } from './schedule-absence.cron';
 import { UserLocationsModule } from '../user-locations/user-locations.module';
 import { AuditModule } from '../audit/audit.module';
 import { SettingsModule } from '../settings/settings.module';
+import { AssignmentPolicyService } from './policy/assignment-policy.service';
 
 /**
  * Schedule events module (ADR-013, ADR-047).
@@ -60,6 +61,7 @@ import { SettingsModule } from '../settings/settings.module';
     ScheduleEventsService,
     ScheduleOverlapService,
     ScheduleMaterializerService,
+    AssignmentPolicyService,
     RosterPresenceService,
     ScheduleEventMaterializationCron,
     ScheduleAbsenceCron,

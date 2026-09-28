@@ -66,5 +66,8 @@
   "GPS_IMPOSSIBLE_TRAVEL": "Perpindahan lokasi tidak wajar terdeteksi. Pastikan GPS aktif dan tidak dimanipulasi.",
   "DELETE_CONFIRMATION_MISMATCH": "Nama yang diketik tidak sama dengan nama data. Ketik ulang persis untuk mengonfirmasi penghapusan.",
   "DELETE_REPLACEMENT_REQUIRED": "Data ini masih dipakai. Pilih pengganti agar data yang memakainya dipindahkan sebelum dihapus.",
-  "DELETE_NOT_ALLOWED": "Data ini tidak dapat dihapus."
+  "DELETE_NOT_ALLOWED": "Data ini tidak dapat dihapus.",
+  "SCHEDULE_DUPLICATE": "Petugas sudah dijadwalkan di tempat (atau tim) yang sama pada shift ini.",
+  "SCHEDULE_PLACE_LIMIT": "Petugas sudah mencapai batas lokasi individu per shift untuk perannya. Satgas/linmas hanya boleh satu lokasi per shift — tambahkan lewat tim bila perlu.",
+  "SCHEDULE_TEAM_LIMIT": "Petugas sudah mencapai batas tim per shift untuk perannya."
 }

@@ -8,13 +8,17 @@ import { ScheduleOverlapService } from './schedule-overlap.service';
 import { SystemConfigService } from '../../settings/services/system-config.service';
 import { TimezoneUtil } from '../../../common/utils/timezone.util';
 import { User } from '../../users/entities/user.entity';
+import { AssignmentPolicyService } from '../policy/assignment-policy.service';
+import { eventPlace, schedulePlaceKey } from '../schedules.support';
 
 export interface MaterializationResult {
   created: number;
   skipped: Array<{
     user_id: string;
     date: string;
-    reason: 'exists' | 'duplicate';
+    /** exists: row already there (or tombstoned) · duplicate: lost an insert race ·
+     *  policy: the person's role limit for this shift is reached (ADR-063). */
+    reason: 'exists' | 'duplicate' | 'policy';
   }>;
   conflicts: Array<{
     user_id: string;
@@ -40,6 +44,8 @@ export class ScheduleMaterializerService {
     private readonly userRepo: Repository<User>,
     private readonly overlapService: ScheduleOverlapService,
     private readonly configService: SystemConfigService,
+    // The assignment rule (ADR-063) — required, never optional.
+    private readonly policy: AssignmentPolicyService,
   ) {}
 
   /**
@@ -92,24 +98,22 @@ export class ScheduleMaterializerService {
           });
     const occupied = new Set(existingRows.map((r) => `${r.user_id}:${r.schedule_date}`));
 
-    // A row for the same (user, date, shift) owned by ANOTHER event (or added
-    // manually) makes this occurrence impossible — `UQ_schedules_user_date_shift`
-    // is a partial unique index. Without this the insert threw on every cron run
-    // and boot self-heal, logging a constraint violation for a row that can never
-    // exist. Duplicates are now rejected at assignment time; this covers events
-    // created before that guard.
-    const takenRows =
-      dates.length === 0 || memberIds.length === 0 || !event.shift_definition_id
-        ? []
-        : ((await this.scheduleRepo.find({
-            where: {
-              user_id: In(memberIds),
-              schedule_date: In(dates),
-              shift_definition_id: event.shift_definition_id,
-            },
-            select: ['user_id', 'schedule_date'],
-          })) ?? []);
-    const takenTriples = new Set(takenRows.map((r) => `${r.user_id}:${r.schedule_date}`));
+    // The assignment rule (ADR-063): other rows this person holds in the SAME
+    // shift — individual places and team memberships, capped by their role —
+    // decide whether this occurrence may exist. It used to skip on ANY other
+    // row in the shift, which silently dropped the "alone at A + with the team
+    // at B" assignments the rule exists to allow.
+    const place = schedulePlaceKey(eventPlace(event));
+    const violations = await this.policy.check({
+      userIds: memberIds,
+      dates,
+      shiftDefinitionId: event.shift_definition_id,
+      intent: event.is_team
+        ? { kind: 'team', place, eventId: event.id }
+        : { kind: 'individual', place },
+      excludeEventId: event.id,
+    });
+    const blocked = new Map(violations.map((v) => [`${v.user_id}:${v.date}`, v.rule]));
 
     // Every overlap answer for the whole fan-out, in ONE query.
     //
@@ -137,10 +141,18 @@ export class ScheduleMaterializerService {
     const pending: Array<{ row: Schedule; memberId: string; dateStr: string }> = [];
     for (const memberId of memberIds) {
       for (const dateStr of dates) {
-        if (occupied.has(`${memberId}:${dateStr}`) || takenTriples.has(`${memberId}:${dateStr}`)) {
-          // Tombstone, detached override, already-materialized occurrence, or the
-          // same shift already owned by another event / a manual row.
+        if (occupied.has(`${memberId}:${dateStr}`)) {
+          // Tombstone, detached override or already-materialized occurrence.
           skipped.push({ user_id: memberId, date: dateStr, reason: 'exists' });
+          continue;
+        }
+        const rule = blocked.get(`${memberId}:${dateStr}`);
+        if (rule) {
+          skipped.push({
+            user_id: memberId,
+            date: dateStr,
+            reason: rule === 'duplicate' ? 'exists' : 'policy',
+          });
           continue;
         }
 

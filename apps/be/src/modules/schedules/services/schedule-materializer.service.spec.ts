@@ -9,9 +9,11 @@ import { SystemConfigService } from '../../settings/services/system-config.servi
 import { User } from '../../users/entities/user.entity';
 import { RecurrenceType } from '../enums/recurrence-type.enum';
 import { ScheduleScope } from '../enums/schedule-scope.enum';
+import { AssignmentPolicyService } from '../policy/assignment-policy.service';
 
 describe('ScheduleMaterializerService', () => {
   let service: ScheduleMaterializerService;
+  let policy: { assert: jest.Mock; check: jest.Mock };
   let scheduleRepo: Repository<Schedule>;
   let eventRepo: Repository<ScheduleEvent>;
   let userRepo: Repository<User>;
@@ -40,9 +42,14 @@ describe('ScheduleMaterializerService', () => {
   };
 
   beforeEach(async () => {
+    policy = {
+      assert: jest.fn().mockResolvedValue(undefined),
+      check: jest.fn().mockResolvedValue([]),
+    };
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ScheduleMaterializerService,
+        { provide: AssignmentPolicyService, useValue: policy },
         {
           provide: getRepositoryToken(Schedule),
           useValue: {
@@ -133,6 +140,84 @@ describe('ScheduleMaterializerService', () => {
           select: ['user_id', 'schedule_date'],
         }),
       );
+    });
+
+    describe('assignment policy (ADR-063)', () => {
+      const teamEvent = (): Partial<ScheduleEvent> => ({
+        id: 'team-1',
+        recurrence_type: RecurrenceType.NONE,
+        start_date: '2026-07-15',
+        end_date: null,
+        recurrence_config: null,
+        shift_definition: mockShiftDef as any,
+        shift_definition_id: mockShiftDef.id,
+        is_team: true,
+        team_category_id: 'cat-1',
+        pic_user_id: 'user-1',
+        scope: ScheduleScope.STATIC,
+        location_id: mockLocation.id,
+        location: mockLocation as any,
+        members: [{ user_id: 'user-2' } as any],
+        created_by: 'admin-1',
+      });
+
+      it('asks the policy for a TEAM membership of this event, ignoring its own rows', async () => {
+        jest.spyOn(scheduleRepo, 'find').mockResolvedValueOnce([]);
+        jest.spyOn(overlapService, 'findConflicts').mockResolvedValueOnce(new Map());
+        jest.spyOn(scheduleRepo, 'create').mockImplementation((v) => v as Schedule);
+        jest.spyOn(scheduleRepo, 'save').mockImplementation(async (v) => v as never);
+
+        await service.materializeEvent(teamEvent() as ScheduleEvent, '2026-07-15', '2026-07-15');
+
+        expect(policy.check).toHaveBeenCalledWith({
+          userIds: ['user-1', 'user-2'],
+          dates: ['2026-07-15'],
+          shiftDefinitionId: mockShiftDef.id,
+          intent: { kind: 'team', place: mockLocation.id, eventId: 'team-1' },
+          excludeEventId: 'team-1',
+        });
+      });
+
+      it('skips (reason policy) only the member over their role limit', async () => {
+        jest.spyOn(scheduleRepo, 'find').mockResolvedValueOnce([]);
+        jest.spyOn(overlapService, 'findConflicts').mockResolvedValueOnce(new Map());
+        jest.spyOn(scheduleRepo, 'create').mockImplementation((v) => v as Schedule);
+        jest.spyOn(scheduleRepo, 'save').mockImplementation(async (v) => v as never);
+        policy.check.mockResolvedValueOnce([
+          { user_id: 'user-2', full_name: 'B', date: '2026-07-15', rule: 'team_limit', limit: 1 },
+        ]);
+
+        const result = await service.materializeEvent(
+          teamEvent() as ScheduleEvent,
+          '2026-07-15',
+          '2026-07-15',
+        );
+
+        expect(result.created).toBe(1);
+        expect(result.skipped).toEqual([
+          { user_id: 'user-2', date: '2026-07-15', reason: 'policy' },
+        ]);
+      });
+
+      it('reports a policy duplicate as an existing occurrence', async () => {
+        jest.spyOn(scheduleRepo, 'find').mockResolvedValueOnce([]);
+        jest.spyOn(overlapService, 'findConflicts').mockResolvedValueOnce(new Map());
+        jest.spyOn(scheduleRepo, 'create').mockImplementation((v) => v as Schedule);
+        jest.spyOn(scheduleRepo, 'save').mockImplementation(async (v) => v as never);
+        policy.check.mockResolvedValueOnce([
+          { user_id: 'user-1', full_name: 'A', date: '2026-07-15', rule: 'duplicate' },
+        ]);
+
+        const result = await service.materializeEvent(
+          teamEvent() as ScheduleEvent,
+          '2026-07-15',
+          '2026-07-15',
+        );
+
+        expect(result.skipped).toEqual([
+          { user_id: 'user-1', date: '2026-07-15', reason: 'exists' },
+        ]);
+      });
     });
 
     it('should skip row with tombstone (existing soft-deleted row)', async () => {
