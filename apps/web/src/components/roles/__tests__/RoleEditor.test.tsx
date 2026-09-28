@@ -12,6 +12,12 @@ import { useUpdateRole, type Role } from '@/lib/api/roles';
 jest.mock('@/lib/api/roles', () => ({
   useUpdateRole: jest.fn(),
 }));
+jest.mock('@/lib/auth/usePermissions', () => ({
+  usePermissions: jest.fn(() => ({ can: jest.fn(() => false) })),
+}));
+jest.mock('@/components/audit/EntityHistoryDialog', () => ({
+  EntityHistoryDialog: jest.fn(() => null),
+}));
 jest.mock('sonner', () => ({ toast: { success: jest.fn(), error: jest.fn() } }));
 
 const baseRole: Role = {

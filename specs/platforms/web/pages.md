@@ -2352,6 +2352,17 @@ POST /api/settings/clear-cache
 
 ---
 
+## 9b. Audit Log (`/audit-log`) — ADR-061
+
+**Access:** `audit:read` (sidebar: Pengguna & Hak Akses → Log Audit; seeded for management + admins via `*:*`).
+
+- **Filters (server-side):** date range (inclusive local days), data type (auto-captured types + auth/access/export/domain events), action, outcome (Berhasil/Ditolak/Gagal), actor role, free text on record + actor name. Any filter change returns to page 1.
+- **Table:** time (with seconds), actor (name + role snapshot, or *Sistem*), action, record (type + name snapshot), "N kolom berubah", outcome badge. 50 per page, server-paginated (`GET /audit?page&limit`).
+- **Detail sheet** (row click): before → after per field; full snapshot for create / last state for delete; reason (force delete); metadata; request context (IP, device, request id, hash, cascade parent). Secrets render "(disembunyikan)", oversized values "(terlalu besar, N byte)".
+- **Ekspor CSV:** the filtered trail (≤50 000 rows; a toast warns when capped); the export itself is audited.
+- **Periksa integritas:** runs `GET /audit/verify` — green "Utuh" with the sealed count, or a red "RUSAK — rantai hash putus di catatan #N"; notes entries not yet sealed.
+- **Riwayat** (row action / Hak Akses button) on Rayon, Kawasan, Lokasi, Kategori Tim, Pengguna and Peran opens the same detail as a per-record timeline (`GET /audit/:type/:id`, needs `audit:read`).
+
 ## 10. Authentication Pages
 
 ### 10.1 Login Page

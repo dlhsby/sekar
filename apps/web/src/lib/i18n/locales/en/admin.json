@@ -505,5 +505,114 @@
       "markerIcon": "Marker Icon",
       "markerOpacity": "Color Opacity"
     }
+  },
+  "audit": {
+    "pageTitle": "Audit Log",
+    "description": "A trail of who did what, when, and what changed. Entries cannot be edited or deleted.",
+    "denied": "You do not have permission to view the audit log.",
+    "filters": {
+      "dateRange": "Date range",
+      "entityType": "Data type",
+      "action": "Action",
+      "outcome": "Outcome",
+      "actorRole": "Actor role",
+      "search": "Search record or actor name…",
+      "all": "All",
+      "reset": "Reset filters",
+      "searchLabel": "Search"
+    },
+    "columns": {
+      "time": "Time",
+      "actor": "Actor",
+      "action": "Action",
+      "entity": "Record",
+      "changes": "Changes",
+      "outcome": "Outcome"
+    },
+    "outcome": {
+      "success": "Success",
+      "denied": "Denied",
+      "failed": "Failed"
+    },
+    "system": "System",
+    "noLabel": "(unnamed)",
+    "changedFields": "{{count}} field(s) changed",
+    "actions": {
+      "create": "Created",
+      "update": "Updated",
+      "delete": "Deleted",
+      "restore": "Restored",
+      "purge": "Permanently deleted",
+      "force_delete": "Force delete",
+      "permissions_change": "Permissions changed",
+      "locations_change": "Area locations changed",
+      "login": "Signed in",
+      "login_failed": "Failed sign-in",
+      "logout": "Signed out",
+      "denied_write": "Action denied",
+      "export": "Export",
+      "reassign": "Reassigned",
+      "reset_password": "Password reset"
+    },
+    "entities": {
+      "district": "Rayon",
+      "region": "Area (kawasan)",
+      "location": "Location",
+      "location_type": "Location type",
+      "team_category": "Team category",
+      "user": "User",
+      "role": "Role",
+      "shift_definition": "Shift definition",
+      "special_day_override": "Holiday",
+      "staff_requirement": "Capacity",
+      "auth": "Authentication",
+      "http": "Access",
+      "audit_log": "Audit log",
+      "schedule_event": "Schedule",
+      "task": "Task",
+      "activity": "Activity",
+      "overtime": "Overtime",
+      "shift": "Attendance"
+    },
+    "export": "Export CSV",
+    "exporting": "Exporting…",
+    "exportTruncated": "Export capped at 50,000 rows — narrow the filters for the full data.",
+    "verify": {
+      "button": "Check integrity",
+      "checking": "Checking…",
+      "intact": "Intact — {{sealed}} sealed entries, hash chain valid",
+      "broken": "BROKEN — the hash chain breaks at entry #{{seq}}. The log may have been tampered with.",
+      "unsealed": "{{count}} latest entries not sealed yet (sealed every minute)."
+    },
+    "pager": {
+      "summary": "Showing {{from}}–{{to}} of {{total}}",
+      "prev": "Previous",
+      "next": "Next"
+    },
+    "detail": {
+      "title": "Audit detail",
+      "field": "Field",
+      "before": "Before",
+      "after": "After",
+      "snapshotCreated": "Record as created",
+      "snapshotDeleted": "Last state before deletion",
+      "metadata": "Additional details",
+      "reason": "Reason",
+      "request": "Request context",
+      "ip": "IP address",
+      "userAgent": "Device",
+      "requestId": "Request ID",
+      "hash": "Hash",
+      "parent": "Part of a parent action",
+      "empty": "(empty)",
+      "redacted": "(hidden)",
+      "omitted": "(too large, {{bytes}} bytes)"
+    },
+    "history": {
+      "action": "History",
+      "title": "History: {{name}}",
+      "empty": "No change history yet.",
+      "loadError": "Could not load history."
+    }
   }
 }

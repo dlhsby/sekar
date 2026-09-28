@@ -140,6 +140,8 @@ async function bootstrap() {
           callback(null, false);
         },
     credentials: true,
+    // Let a cross-origin web client read that a CSV export was capped (ADR-061).
+    exposedHeaders: ['X-Export-Truncated', 'Content-Disposition'],
   });
 
   // Global exception filter for standardized error responses

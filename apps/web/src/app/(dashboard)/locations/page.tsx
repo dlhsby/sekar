@@ -8,7 +8,7 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Eye, Pencil, Trash2, Power, Settings2 } from 'lucide-react';
+import { Plus, Eye, Pencil, Trash2, Power, Settings2, History } from 'lucide-react';
 import {
   Badge,
   Button,
@@ -23,6 +23,7 @@ import {
 import { LocationFormModal } from '@/components/locations/LocationFormModal';
 import { CapacityModal } from '@/components/schedules/CapacityModal';
 import { ForceDeleteDialog } from '@/components/deletion/ForceDeleteDialog';
+import { EntityHistoryDialog } from '@/components/audit/EntityHistoryDialog';
 import type { StaffSubject } from '@/lib/api/location-staff-requirements';
 import { useLocations, useDeactivateLocation, useActivateLocation } from '@/lib/api/locations';
 import { toast } from 'sonner';
@@ -109,6 +110,7 @@ export default function LocationsPage() {
   const view = useViewModal<Location>();
   const [deletingArea, setDeletingArea] = useState<Location | null>(null);
   const [capacitySubject, setCapacitySubject] = useState<StaffSubject | null>(null);
+  const [historyTarget, setHistoryTarget] = useState<{ id: string; name: string } | null>(null);
 
   const columns = useMemo<ColumnDef<Location>[]>(
     () => [
@@ -386,6 +388,13 @@ export default function LocationsPage() {
         onClick: () => void handleToggleActive(a),
       },
       {
+        key: 'history',
+        label: t('admin:audit.history.action'),
+        icon: History,
+        hidden: !can('audit:read'),
+        onClick: () => setHistoryTarget({ id: a.id, name: a.name }),
+      },
+      {
         key: 'delete',
         label: t('admin:locations.actionDelete'),
         icon: Trash2,
@@ -394,7 +403,7 @@ export default function LocationsPage() {
         onClick: () => setDeletingArea(a),
       },
     ],
-    [canUpdate, canDelete, handleToggleActive, districtLevel, view, t]
+    [canUpdate, canDelete, can, handleToggleActive, districtLevel, view, t]
   );
 
   return (
@@ -466,6 +475,16 @@ export default function LocationsPage() {
 
       {/* Detail = the edit form, read-only (shows the map + boundary + pin). */}
       <LocationFormModal open={view.open} onOpenChange={view.onOpenChange} area={view.item} readOnly />
+
+      <EntityHistoryDialog
+        open={!!historyTarget}
+        onOpenChange={(o) => {
+          if (!o) setHistoryTarget(null);
+        }}
+        entityType="location"
+        entityId={historyTarget?.id ?? null}
+        name={historyTarget?.name ?? ''}
+      />
     </div>
   );
 }

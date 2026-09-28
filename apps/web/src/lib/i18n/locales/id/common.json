@@ -194,7 +194,8 @@
     "districtNav": "Navigasi kecamatan",
     "mainNav": "Navigasi utama",
     "breadcrumbAria": "Navigasi breadcrumb",
-    "teams": "Kategori Tim"
+    "teams": "Kategori Tim",
+    "auditLog": "Log Audit"
   },
   "pagination": {
     "previous": "Sebelumnya",
