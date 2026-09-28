@@ -5,6 +5,8 @@ import { DataSource } from 'typeorm';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { TimezoneUtil } from '../src/common/utils/timezone.util';
+import { ScheduleEvent } from '../src/modules/schedules/entities/schedule-event.entity';
+import { ScheduleMaterializerService } from '../src/modules/schedules/services/schedule-materializer.service';
 
 /**
  * Force delete (ADR-062) end to end on a real database. The invariants the
@@ -119,16 +121,38 @@ describe('Force delete (e2e)', () => {
         today: await makeRow(day(0), locationId, districtId, eventId),
         future: await makeRow(day(2), locationId, districtId, eventId),
       };
+      // Any app booted by a parallel suite runs the materialization cron, which
+      // fills this open-ended series up to the horizon. Do it here first so the
+      // row set is fixed before the assertions (later runs skip existing dates).
+      const event = await db.getRepository(ScheduleEvent).findOneOrFail({
+        where: { id: eventId },
+        relations: ['shift_definition', 'location', 'region', 'members'],
+      });
+      await app.get(ScheduleMaterializerService).materializeEvent(event, day(0));
     });
 
+    const liveRows = async (op: '>' | '<=') =>
+      Number(
+        (
+          await one<{ n: string }>(
+            `SELECT count(*) AS n FROM schedules
+              WHERE location_id = $1 AND deleted_at IS NULL AND schedule_date ${op} $2`,
+            [locationId, day(0)],
+          )
+        ).n,
+      );
+
     it('previews the impact counting only the future', async () => {
+      const future = await liveRows('>');
+      expect(future).toBeGreaterThanOrEqual(1);
+
       const res = await http()
         .get(`/api/v1/deletions/location/${locationId}/impact`)
         .set('Authorization', `Bearer ${admin}`)
         .expect(200);
       expect(res.body).toMatchObject({
         confirm_label: name,
-        impact: { future_schedules: 1, schedule_series: 1 },
+        impact: { future_schedules: future, schedule_series: 1 },
         replacement_required: 0,
       });
     });
@@ -162,6 +186,8 @@ describe('Force delete (e2e)', () => {
       expect(await isDeleted('schedules', rows.past)).toBe(false);
       expect(await isDeleted('schedules', rows.today)).toBe(false);
       expect(await isDeleted('schedules', rows.future)).toBe(true);
+      expect(await liveRows('>')).toBe(0);
+      expect(await liveRows('<=')).toBeGreaterThanOrEqual(2);
       // The series is ended at today, not deleted — its past occurrences stay linked.
       const ev = await one<{ end_date: string; deleted: boolean }>(
         `SELECT to_char(end_date, 'YYYY-MM-DD') AS end_date, deleted_at IS NOT NULL AS deleted
