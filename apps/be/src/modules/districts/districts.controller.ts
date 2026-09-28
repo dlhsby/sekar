@@ -26,9 +26,11 @@ import { Location } from '../locations/entities/location.entity';
 import { CreateDistrictDto } from './dto/create-district.dto';
 import { UpdateDistrictDto } from './dto/update-district.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { USER_MANAGERS } from '../users/constants/role-groups';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import {
+  RequirePermissions,
+  RequireAnyPermission,
+} from '../auth/decorators/require-permissions.decorator';
 
 /**
  * Controller for district operations
@@ -40,7 +42,7 @@ import { USER_MANAGERS } from '../users/constants/role-groups';
 @ApiTags('districts')
 @ApiBearerAuth('JWT-auth')
 @Controller('districts')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class DistrictsController {
   constructor(private readonly districtService: DistrictsService) {}
 
@@ -85,7 +87,7 @@ export class DistrictsController {
    * @route PATCH /api/districts/:id/deactivate
    */
   @Patch(':id/deactivate')
-  @Roles(...USER_MANAGERS)
+  @RequirePermissions('district:update')
   @ApiOperation({
     summary: 'Deactivate district',
     description:
@@ -104,7 +106,7 @@ export class DistrictsController {
    * @route PATCH /api/districts/:id/activate
    */
   @Patch(':id/activate')
-  @Roles(...USER_MANAGERS)
+  @RequirePermissions('district:update')
   @ApiOperation({ summary: 'Reactivate district', description: 'Set is_active=true.' })
   @ApiParam({ name: 'id', description: 'District UUID' })
   @ApiResponse({ status: 200, description: 'District reactivated.', type: District })
@@ -138,7 +140,7 @@ export class DistrictsController {
   }
 
   @Get('check-name')
-  @Roles(...USER_MANAGERS)
+  @RequireAnyPermission('district:create', 'district:update')
   @ApiOperation({ summary: 'Check whether a district name is available' })
   @ApiQuery({ name: 'name', required: true })
   @ApiQuery({ name: 'excludeId', required: false })
@@ -268,7 +270,7 @@ export class DistrictsController {
    * @returns The created district
    */
   @Post()
-  @Roles(...USER_MANAGERS)
+  @RequirePermissions('district:create')
   @ApiOperation({
     summary: 'Create new district',
     description: 'Create a new district with unique code and name. Admin only.',
@@ -308,7 +310,7 @@ export class DistrictsController {
    * @returns The updated district
    */
   @Patch(':id')
-  @Roles(...USER_MANAGERS)
+  @RequirePermissions('district:update')
   @ApiOperation({
     summary: 'Update district',
     description: 'Update an existing district. Admin only.',
@@ -356,7 +358,7 @@ export class DistrictsController {
    * @param id - District ID (UUID)
    */
   @Delete(':id')
-  @Roles(...USER_MANAGERS)
+  @RequirePermissions('district:delete')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Delete district',

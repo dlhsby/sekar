@@ -16,10 +16,9 @@ import { LocationType } from './entities/location-type.entity';
 import { CreateLocationTypeDto } from './dto/create-location-type.dto';
 import { UpdateLocationTypeDto } from './dto/update-location-type.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
 import { UserRole } from '../users/entities/user.entity';
-import { USER_MANAGERS } from '../users/constants/role-groups';
 
 /**
  * Controller for location type operations
@@ -31,7 +30,7 @@ import { USER_MANAGERS } from '../users/constants/role-groups';
 @ApiTags('location-types')
 @ApiBearerAuth('JWT-auth')
 @Controller(['location-types', 'area-types'])
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class LocationTypesController {
   constructor(private readonly locationTypesService: LocationTypesService) {}
 
@@ -105,7 +104,7 @@ export class LocationTypesController {
    * @returns The created area type
    */
   @Post()
-  @Roles(...USER_MANAGERS)
+  @RequirePermissions('area:create')
   @ApiOperation({
     summary: 'Create new area type',
     description: 'Create a new area type with unique code. Admin only.',
@@ -145,7 +144,7 @@ export class LocationTypesController {
    * @returns The updated area type
    */
   @Patch(':id')
-  @Roles(...USER_MANAGERS)
+  @RequirePermissions('area:update')
   @ApiOperation({
     summary: 'Update area type',
     description: 'Update an existing area type. Admin only.',
@@ -196,7 +195,7 @@ export class LocationTypesController {
    * @param id - Location type ID (UUID)
    */
   @Delete(':id')
-  @Roles(...USER_MANAGERS)
+  @RequirePermissions('area:delete')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Delete area type',

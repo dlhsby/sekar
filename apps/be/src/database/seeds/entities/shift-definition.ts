@@ -14,7 +14,7 @@ export async function seedShiftDefinitions(ctx: SeedContext): Promise<void> {
       ($1, 'Shift 1', '06:00:00', '15:00:00', FALSE, TRUE),
       ($2, 'Shift 2', '15:00:00', '23:00:00', FALSE, TRUE),
       ($3, 'Shift 3', '21:00:00', '05:00:00', TRUE, TRUE)
-    ON CONFLICT (name) DO NOTHING;
+    ON CONFLICT (name) WHERE deleted_at IS NULL DO NOTHING;
   `,
     [SHIFT_1_ID, SHIFT_2_ID, SHIFT_3_ID],
   );

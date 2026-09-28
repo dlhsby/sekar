@@ -3,6 +3,9 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
+  HttpCode,
+  HttpStatus,
   Param,
   Query,
   Body,
@@ -42,7 +45,7 @@ export class TeamsController {
   }
 
   @Post()
-  @RequirePermissions('team:manage')
+  @RequirePermissions('team:create')
   @ApiOperation({ summary: 'Add a team category' })
   @ApiResponse({ status: 201, type: TeamCategory })
   createType(@Body() dto: CreateTeamCategoryDto): Promise<TeamCategory> {
@@ -50,7 +53,7 @@ export class TeamsController {
   }
 
   @Patch(':id')
-  @RequirePermissions('team:manage')
+  @RequirePermissions('team:update')
   @ApiOperation({ summary: 'Update a team category' })
   @ApiResponse({ status: 200, type: TeamCategory })
   updateType(
@@ -58,5 +61,15 @@ export class TeamsController {
     @Body() dto: UpdateTeamCategoryDto,
   ): Promise<TeamCategory> {
     return this.teamsService.updateType(id, dto);
+  }
+
+  @Delete(':id')
+  @RequirePermissions('team:delete')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete a team category (soft delete; history kept)' })
+  @ApiResponse({ status: 204 })
+  @ApiResponse({ status: 404, description: 'Team category not found' })
+  removeType(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
+    return this.teamsService.removeType(id);
   }
 }

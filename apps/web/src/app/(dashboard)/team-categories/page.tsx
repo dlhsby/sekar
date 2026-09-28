@@ -116,7 +116,7 @@ export default function TeamsPage() {
       key: 'edit',
       label: t('common:actions.edit'),
       icon: Pencil,
-      hidden: !can('team:manage'),
+      hidden: !can('team:update'),
       onClick: () => {
         setEditing(r);
         setFormOpen(true);
@@ -128,7 +128,7 @@ export default function TeamsPage() {
         ? t('admin:teamCategories.actionDeactivate')
         : t('admin:teamCategories.actionActivate'),
       icon: Power,
-      hidden: !can('team:manage'),
+      hidden: !can('team:update'),
       onClick: () => handleToggleActive(r),
     },
     {
@@ -136,7 +136,7 @@ export default function TeamsPage() {
       label: t('common:actions.delete'),
       icon: Trash2,
       variant: 'danger',
-      hidden: !can('team:manage'),
+      hidden: !can('team:delete'),
       onClick: () => setToDelete(r),
     },
   ];
@@ -176,7 +176,7 @@ export default function TeamsPage() {
         rowActions={rowActions}
         createAction={{
           label: t('admin:teamCategories.buttonAdd'),
-          hidden: !can('team:manage'),
+          hidden: !can('team:create'),
           onClick: () => {
             setEditing(null);
             setFormOpen(true);

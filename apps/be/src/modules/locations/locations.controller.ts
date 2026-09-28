@@ -29,10 +29,12 @@ import {
 } from '../monitoring/dto/area-boundary.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User, UserRole } from '../users/entities/user.entity';
-import { USER_MANAGERS, MONITORING_AREA } from '../users/constants/role-groups';
+import { MONITORING_AREA } from '../users/constants/role-groups';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 
 /**
@@ -45,7 +47,7 @@ import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 @ApiTags('locations')
 @ApiBearerAuth('JWT-auth')
 @Controller(['locations', 'areas'])
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
 export class LocationsController {
   constructor(private readonly locationsService: LocationsService) {}
 
@@ -58,7 +60,7 @@ export class LocationsController {
    * @returns The created area
    */
   @Post()
-  @Roles(...USER_MANAGERS)
+  @RequirePermissions('area:create')
   @ApiOperation({
     summary: 'Create new area',
     description:
@@ -238,7 +240,7 @@ export class LocationsController {
    * @returns The updated area
    */
   @Patch(':id')
-  @Roles(...USER_MANAGERS)
+  @RequirePermissions('area:update')
   @ApiOperation({
     summary: 'Update area',
     description: 'Update area details. Admin only. Cannot change area type (excluded from update).',
@@ -282,7 +284,7 @@ export class LocationsController {
    * @param id - Location UUID
    */
   @Delete(':id')
-  @Roles(...USER_MANAGERS)
+  @RequirePermissions('area:delete')
   @ApiOperation({
     summary: 'Delete area',
     description:
@@ -323,7 +325,7 @@ export class LocationsController {
    * @route PATCH /api/areas/:id/deactivate
    */
   @Patch(':id/deactivate')
-  @Roles(...USER_MANAGERS)
+  @RequirePermissions('area:update')
   @ApiOperation({
     summary: 'Deactivate area',
     description: 'Set is_active=false. The area is preserved and can be reactivated.',
@@ -339,7 +341,7 @@ export class LocationsController {
    * @route PATCH /api/areas/:id/activate
    */
   @Patch(':id/activate')
-  @Roles(...USER_MANAGERS)
+  @RequirePermissions('area:update')
   @ApiOperation({ summary: 'Reactivate area', description: 'Set is_active=true.' })
   @ApiParam({ name: 'id', description: 'Location UUID' })
   @ApiResponse({ status: 200, description: 'Location reactivated.' })
@@ -358,7 +360,7 @@ export class LocationsController {
   }
 
   @Put(':id/boundary')
-  @Roles(...USER_MANAGERS)
+  @RequirePermissions('area:update')
   @ApiOperation({ summary: 'Update area boundary polygon' })
   @ApiParam({ name: 'id', description: 'Location UUID' })
   @ApiResponse({ status: 200, type: AreaBoundaryResponseDto })

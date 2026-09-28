@@ -8,6 +8,7 @@ import { User } from '../users/entities/user.entity';
 import { CreateLocationDto } from './dto/create-location.dto';
 import { UpdateLocationDto } from './dto/update-location.dto';
 import { NotFoundException } from '@nestjs/common';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
 
 describe('LocationsController', () => {
   let module: TestingModule;
@@ -78,7 +79,10 @@ describe('LocationsController', () => {
           useValue: mockAreasService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(PermissionsGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<LocationsController>(LocationsController);
     service = module.get<LocationsService>(LocationsService);

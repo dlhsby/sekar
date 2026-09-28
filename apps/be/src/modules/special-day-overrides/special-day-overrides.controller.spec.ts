@@ -5,6 +5,7 @@ import { SpecialDayOverride, SpecialDayType } from './entities/special-day-overr
 import { CreateSpecialDayOverrideDto } from './dto/create-special-day-override.dto';
 import { UpdateSpecialDayOverrideDto } from './dto/update-special-day-override.dto';
 import { ConflictException, NotFoundException } from '@nestjs/common';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
 
 describe('SpecialDayOverridesController', () => {
   let controller: SpecialDayOverridesController;
@@ -35,7 +36,10 @@ describe('SpecialDayOverridesController', () => {
           useValue: mockService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(PermissionsGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<SpecialDayOverridesController>(SpecialDayOverridesController);
     service = module.get<SpecialDayOverridesService>(SpecialDayOverridesService);

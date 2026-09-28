@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   DeleteDateColumn,
+  Index,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -18,6 +19,7 @@ import { ApiProperty } from '@nestjs/swagger';
  * the app assumes exactly three.
  */
 @Entity('shift_definitions')
+@Index('uq_shift_definitions_name_live', ['name'], { unique: true, where: 'deleted_at IS NULL' })
 export class ShiftDefinition {
   @ApiProperty({
     description: 'Unique identifier for the shift definition',
@@ -30,7 +32,7 @@ export class ShiftDefinition {
     description: 'Display name for the shift',
     example: 'Shift 1',
   })
-  @Column({ length: 50, unique: true })
+  @Column({ length: 50 })
   name: string;
 
   @ApiProperty({

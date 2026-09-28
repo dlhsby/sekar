@@ -36,18 +36,22 @@ import { useDistricts } from '@/lib/api/districts';
 import { useRegions } from '@/lib/api/regions';
 import { useRoles } from '@/lib/api/roles';
 import { useLocationLookup } from '@/lib/api/locations';
-import { useUser } from '@/lib/auth/hooks';
-import { ADMIN_ROLES, roleLabel } from '@/lib/constants/roles';
+import { roleLabel } from '@/lib/constants/roles';
 import { formatDate } from '@/lib/utils/time';
 import { getErrorMessage } from '@/lib/api/client';
 import type { User } from '@/types/models';
+import { usePermissions } from '@/lib/auth/usePermissions';
 
 export default function UsersPage() {
   const { t } = useTranslation();
-  const currentUser = useUser();
-  // Full management (create/edit/delete) is admin-only; other roles that can
-  // reach this page (admin_rayon) get a view-only kebab.
-  const canManage = !!currentUser && ADMIN_ROLES.includes(currentUser.role);
+  // Actions follow the viewer's user:* permissions; roles without them (e.g.
+  // admin_rayon) get a view-only kebab.
+  // Permission-driven (ADR-044): mirrors the backend @RequirePermissions gates,
+  // so a button is shown exactly when the API will accept the call.
+  const { can } = usePermissions();
+  const canCreate = can('user:create');
+  const canUpdate = can('user:update');
+  const canDelete = can('user:delete');
 
   const { data, isLoading, error, refetch } = useUsers({ limit: 1000 });
   const users = useMemo(() => data?.data ?? [], [data]);
@@ -403,7 +407,7 @@ export default function UsersPage() {
         key: 'edit',
         label: t('admin:users.actionEdit'),
         icon: Pencil,
-        disabled: !canManage,
+        disabled: !canUpdate,
         onClick: () => {
           setEditingUser(u);
           setFormOpen(true);
@@ -413,14 +417,14 @@ export default function UsersPage() {
         key: 'reset-password',
         label: t('admin:users.actionResetPassword'),
         icon: KeyRound,
-        hidden: !canManage,
+        hidden: !canUpdate,
         onClick: () => setResetConfirmUser(u),
       },
       {
         key: 'toggle-active',
         label: u.is_active ? t('admin:users.actionDeactivate') : t('admin:users.actionActivate'),
         icon: Power,
-        hidden: !canManage,
+        hidden: !canUpdate,
         // Same reasoning as the districts/lokasi toggle: `mutate` reported
         // neither success nor refusal, so the row just sat there.
         onClick: () => void handleToggleActive(u),
@@ -430,11 +434,11 @@ export default function UsersPage() {
         label: t('admin:users.actionDelete'),
         icon: Trash2,
         variant: 'danger',
-        hidden: !canManage,
+        hidden: !canDelete,
         onClick: () => setUserToDelete(u),
       },
     ],
-    [canManage, handleToggleActive, t]
+    [canUpdate, canDelete, handleToggleActive, t]
   );
 
   return (
@@ -453,7 +457,7 @@ export default function UsersPage() {
         rowActions={rowActions}
         createAction={{
           label: t('admin:users.buttonAdd'),
-          hidden: !canManage,
+          hidden: !canCreate,
           onClick: () => {
             setEditingUser(null);
             setFormOpen(true);
@@ -461,7 +465,7 @@ export default function UsersPage() {
         }}
         emptyTitle={t('admin:users.emptyTitle')}
         emptyDescription={
-          canManage ? t('admin:users.emptyDescription') : undefined
+          canCreate ? t('admin:users.emptyDescription') : undefined
         }
       />
 

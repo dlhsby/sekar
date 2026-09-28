@@ -26,10 +26,9 @@ import { CreateLocationStaffRequirementDto } from './dto/create-location-staff-r
 import { UpdateLocationStaffRequirementDto } from './dto/update-location-staff-requirement.dto';
 import { SetStaffRequirementsDto } from './dto/set-staff-requirements.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
 import { UserRole } from '../users/entities/user.entity';
-import { USER_MANAGERS } from '../users/constants/role-groups';
 
 /**
  * Controller for location staff requirement operations
@@ -41,7 +40,7 @@ import { USER_MANAGERS } from '../users/constants/role-groups';
 @ApiTags('location-staff-requirements')
 @ApiBearerAuth('JWT-auth')
 @Controller('areas/:locationId/staff-requirements')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class LocationStaffRequirementsController {
   constructor(private readonly staffRequirementsService: LocationStaffRequirementsService) {}
 
@@ -80,7 +79,7 @@ export class LocationStaffRequirementsController {
   }
 
   @Put()
-  @Roles(...USER_MANAGERS)
+  @RequirePermissions('area:update')
   @ApiOperation({
     summary: 'Bulk set a location’s staffing requirements (per shift/role/day-type)',
   })
@@ -193,7 +192,7 @@ export class LocationStaffRequirementsController {
    * @returns The created staff requirement
    */
   @Post()
-  @Roles(...USER_MANAGERS)
+  @RequirePermissions('area:update')
   @ApiOperation({
     summary: 'Create staff requirement',
     description: 'Create a new staff requirement for an area. Admin only.',
@@ -247,7 +246,7 @@ export class LocationStaffRequirementsController {
    * @returns The updated staff requirement
    */
   @Patch(':id')
-  @Roles(...USER_MANAGERS)
+  @RequirePermissions('area:update')
   @ApiOperation({
     summary: 'Update staff requirement',
     description: 'Update an existing staff requirement. Admin only.',
@@ -304,7 +303,7 @@ export class LocationStaffRequirementsController {
    * @param id - Requirement ID (UUID)
    */
   @Delete(':id')
-  @Roles(...USER_MANAGERS)
+  @RequirePermissions('area:update')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Delete staff requirement',

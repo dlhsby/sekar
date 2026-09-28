@@ -18,6 +18,13 @@ export interface StaffRequirement {
 
 /** The subject a requirement attaches to (drives the editor's endpoint). */
 export type StaffSubjectType = 'location' | 'region' | 'district';
+
+/** Permission resource whose `:update` key gates a tier's capacity (mirrors the backend). */
+export const CAPACITY_RESOURCE: Record<StaffSubjectType, 'area' | 'region' | 'district'> = {
+  location: 'area',
+  region: 'region',
+  district: 'district',
+};
 export interface StaffSubject {
   type: StaffSubjectType;
   id: string;

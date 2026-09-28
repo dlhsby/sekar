@@ -1,6 +1,6 @@
 # Access Control (Roles & Permissions)
 
-**Status:** ✅ Phase 1 landed (dynamic roles/permissions, role management, settings gating) · guard→permission endpoint migration **deferred** (see below) · **Backend:** `rbac`, `auth` · **Key ADRs:** ADR-044 (dynamic RBAC), ADR-009 (original roles)
+**Status:** ✅ Phase 1 landed (dynamic roles/permissions, role management, settings gating) · guard→permission endpoint migration **partially done** — master data (users, districts, regions, locations, location types, team categories, shift definitions, holidays, capacity) migrated 2026-09-24; the rest **deferred** (see below) · **Backend:** `rbac`, `auth` · **Key ADRs:** ADR-044 (dynamic RBAC), ADR-009 (original roles)
 
 ## Overview
 Data-driven RBAC: roles and permissions are database rows managed at runtime from a **role-management page**. Permissions are flat **`resource:action`** keys (grouping is presentation-layer via a code-side catalog); each role also has a **monitoring scope** (`city|district|region|location|none`) and a map **marker** (icon + color). Replaces the static `UserRole` enum + hand-maintained role-group arrays. `users.role` stays a string code referencing `roles.code`; JWT is unchanged.
@@ -21,7 +21,16 @@ Data-driven RBAC: roles and permissions are database rows managed at runtime fro
 ## Related features
 - [auth](../auth/README.md) · [users](../users/README.md) · [monitoring](../monitoring/README.md) · [settings](../settings/README.md)
 
-## Guard → permission migration (Phase 5.5 — DEFERRED, revisit during development)
+## Guard → permission migration (Phase 5.5 — master data DONE, rest DEFERRED)
+
+**Done (2026-09-24, fix/master-data-crud):** every master-data *write* route uses
+`@RequirePermissions` and the matching web page uses `can()`; pinned by
+`apps/be/src/modules/rbac/master-data-permissions.spec.ts`. Deliberate deviation from the
+parity contract below: **management gains** the writes its seeds always granted, and
+**rayon roles lose `user:create|update` + `area:create|update|delete`** until the services
+enforce own-district scope (otherwise they'd be city-wide). New resources:
+`shift-definition:*`, `holiday:*` (the reserved `shift:*` below stays for clock-in/out).
+`team:manage` retired in favour of `team:create|update|delete`.
 
 The permission engine works, but only the **rbac + settings** endpoints are gated by
 `@RequirePermissions`/`PermissionsGuard`. **~29 controllers / ~155 endpoints still use

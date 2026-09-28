@@ -50,11 +50,14 @@ export class CreateTeamCategoryDto {
   @IsString()
   @MaxLength(50)
   marker_icon?: string;
-}
 
-export class UpdateTeamCategoryDto extends PartialType(CreateTeamCategoryDto) {
-  @ApiPropertyOptional()
+  // Accepted on create too: the web form sends it, and the global
+  // ValidationPipe (forbidNonWhitelisted) rejected the whole request when only
+  // the update DTO declared it — the "cannot add Kategori Tim" bug.
+  @ApiPropertyOptional({ default: true })
   @IsOptional()
   @IsBoolean()
   is_active?: boolean;
 }
+
+export class UpdateTeamCategoryDto extends PartialType(CreateTeamCategoryDto) {}

@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ShiftDefinitionsController } from './shift-definitions.controller';
 import { ShiftDefinitionsService } from './shift-definitions.service';
 import { ShiftDefinition } from './entities/shift-definition.entity';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
 
 describe('ShiftDefinitionsController', () => {
   let module: TestingModule;
@@ -60,7 +61,10 @@ describe('ShiftDefinitionsController', () => {
           useValue: mockShiftDefinitionsService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(PermissionsGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<ShiftDefinitionsController>(ShiftDefinitionsController);
     shiftDefinitionsService = module.get<ShiftDefinitionsService>(ShiftDefinitionsService);

@@ -4,23 +4,27 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  DeleteDateColumn,
+  Index,
 } from 'typeorm';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
  * TeamCategory — the crew-type catalog (ADR-048, Phase 4): perawatan / penyiraman /
- * penanaman / penyapuan, extensible at runtime. Managed with `team:manage`.
+ * penanaman / penyapuan, extensible at runtime. Managed with `team:create|update|delete`.
  * Concrete team (name, PIC, members, when) live on schedule_events; team_categories
  * only define the type + marker.
  */
 @Entity('team_categories')
+// Name is unique among live rows only, so a deleted category's name can be reused.
+@Index('uq_team_categories_name_live', ['name'], { unique: true, where: 'deleted_at IS NULL' })
 export class TeamCategory {
   @ApiProperty()
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @ApiProperty({ example: 'Penyiraman' })
-  @Column({ length: 60, unique: true })
+  @Column({ length: 60 })
   name: string;
 
   @ApiPropertyOptional({
@@ -61,4 +65,16 @@ export class TeamCategory {
 
   @UpdateDateColumn({ type: 'timestamptz' })
   updated_at: Date;
+
+  @DeleteDateColumn({ type: 'timestamptz', nullable: true })
+  deleted_at?: Date | null;
+
+  @Column({ name: 'created_by', type: 'uuid', nullable: true })
+  created_by?: string;
+
+  @Column({ name: 'updated_by', type: 'uuid', nullable: true })
+  updated_by?: string;
+
+  @Column({ name: 'deleted_by', type: 'uuid', nullable: true })
+  deleted_by?: string;
 }

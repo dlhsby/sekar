@@ -9,6 +9,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ForbiddenException, BadRequestException } from '@nestjs/common';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
 
 describe('UsersController', () => {
   let module: TestingModule;
@@ -77,7 +78,10 @@ describe('UsersController', () => {
           useValue: mockPhotoStorage,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(PermissionsGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<UsersController>(UsersController);
     usersService = module.get<UsersService>(UsersService);
