@@ -112,6 +112,14 @@ describe('DeletionService', () => {
       },
     );
 
+    // A soft-deleted replacement is invisible to findOne → refused, not a crash.
+    manager.findOne
+      .mockResolvedValueOnce({ id: 'r-1', name: 'Peran Uji', is_system: false })
+      .mockResolvedValueOnce(null);
+    await expect(
+      service.forceDelete('role', 'r-1', { ...dto('Peran Uji'), replacement_id: 'r-gone' }, admin),
+    ).rejects.toMatchObject({ code: 'DELETE_REPLACEMENT_REQUIRED' });
+
     // Replacing a role with itself is not a replacement.
     manager.findOne.mockResolvedValue({ id: 'r-1', name: 'Peran Uji', is_system: false });
     await expect(

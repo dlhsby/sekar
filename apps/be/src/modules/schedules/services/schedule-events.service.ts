@@ -501,6 +501,8 @@ export class ScheduleEventsService {
 
       // Update members if team
       if (event.is_team && dto.member_ids !== undefined) {
+        // audit: explicit — ScheduleEvent is not @Auditable (ADR-061); the member
+        // change is part of the series edit recorded by recordAudit('update').
         await this.memberRepo.delete({ schedule_event_id: event.id });
         if (dto.member_ids.length > 0) {
           const members = dto.member_ids.map((userId) =>
