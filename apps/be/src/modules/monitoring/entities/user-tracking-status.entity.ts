@@ -137,6 +137,14 @@ export class UserTrackingStatus {
   @JoinColumn({ name: 'location_id' })
   area: Location;
 
+  /** Another assigned lokasi the worker was seen inside, awaiting confirmation (ADR-064). */
+  @Column({ type: 'uuid', nullable: true })
+  pending_location_id: string | null;
+
+  /** When the worker was first seen inside `pending_location_id`. */
+  @Column({ type: 'timestamptz', nullable: true })
+  pending_since: Date | null;
+
   @ApiProperty({ description: 'District ID for admin_rayon/kepala_rayon tracking', nullable: true })
   @Column({ name: 'district_id', type: 'uuid', nullable: true })
   district_id: string | null;

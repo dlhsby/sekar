@@ -707,6 +707,58 @@ describe('MonitoringController', () => {
     });
   });
 
+  describe('getHome (ADR-064 landing view)', () => {
+    let statsService: any;
+    let userAreasService: any;
+
+    beforeEach(() => {
+      statsService = controller['statsService'];
+      userAreasService = controller['userAreasService'];
+      statsService.dominantDistrictOf.mockResolvedValue('district-9');
+    });
+
+    it('city roles land on the city', async () => {
+      await expect(controller.getHome(mockSuperadmin)).resolves.toEqual({
+        scope: 'city',
+        id: null,
+        district_id: null,
+        floor: 'city',
+      });
+    });
+
+    it('rayon roles land on their rayon', async () => {
+      await expect(controller.getHome(mockAdminData)).resolves.toMatchObject({
+        scope: 'district',
+        id: 'district-1',
+      });
+    });
+
+    it("a korlap WITHOUT a permanent lokasi lands on a lokasi from today's schedule", async () => {
+      userAreasService.getPermanentLocationIds.mockResolvedValue([]);
+      statsService.occurrenceCoverageForCurrentShift.mockResolvedValue({
+        locationIds: ['loc-b', 'loc-a'],
+        regionIds: [],
+        districtIds: [],
+      });
+
+      await expect(
+        controller.getHome({ ...mockKorlap, location_id: null, district_id: null } as never),
+      ).resolves.toEqual({
+        scope: 'location',
+        id: 'loc-a',
+        district_id: 'district-9',
+        floor: 'location',
+      });
+    });
+
+    it('a korlap with nothing covered today gets an explicit empty home, not a 403 city view', async () => {
+      userAreasService.getPermanentLocationIds.mockResolvedValue([]);
+      await expect(
+        controller.getHome({ ...mockKorlap, location_id: null } as never),
+      ).resolves.toMatchObject({ scope: 'none', floor: 'none' });
+    });
+  });
+
   describe('korlap without a home rayon (home_scope = none)', () => {
     let statsService: any;
 

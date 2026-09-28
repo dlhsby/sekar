@@ -81,6 +81,31 @@ export const monitoringKeys = {
 };
 
 // ---------------------------------------------------------------------------
+// Landing view (ADR-064)
+// ---------------------------------------------------------------------------
+
+/** Where the viewer's map opens and the highest tier they may drill up to. */
+export interface MonitoringHome {
+  scope: 'city' | 'district' | 'location' | 'none';
+  id: string | null;
+  district_id: string | null;
+  floor: 'city' | 'district' | 'location' | 'none';
+}
+
+/**
+ * A korlap's landing lokasi comes from today's schedule coverage, not a
+ * permanent lokasi on the user (no longer set by the user form).
+ */
+export function useMonitoringHome(enabled = true) {
+  return useQuery({
+    queryKey: [...monitoringKeys.all, 'home'] as const,
+    queryFn: async () => (await apiClient.get<MonitoringHome>('/monitoring/home')).data,
+    staleTime: 5 * 60 * 1000,
+    enabled,
+  });
+}
+
+// ---------------------------------------------------------------------------
 // City / District / Area Hooks (Phase 2C - unchanged)
 // ---------------------------------------------------------------------------
 

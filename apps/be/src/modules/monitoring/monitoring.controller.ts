@@ -59,6 +59,7 @@ import {
   MONITORING_AREA,
   USER_MANAGERS,
 } from '../users/constants/role-groups';
+import { MonitoringHomeDto } from './dto/monitoring-home.dto';
 
 @ApiTags('Monitoring')
 @ApiBearerAuth()
@@ -355,6 +356,34 @@ export class MonitoringController {
     const filters: StaffingSummaryQueryDto & { area_ids?: string[] } = { ...query };
     await this.applyScopeFilters(user, filters);
     return this.monitoringService.getStaffingSummary(filters);
+  }
+
+  @Get('home')
+  @Roles(...MONITORING_CITY, ...MONITORING_DISTRICT, ...MONITORING_AREA)
+  @ApiOperation({
+    summary:
+      "Where this viewer's map opens and the highest tier they may drill to (ADR-064). " +
+      "A korlap without a home rayon lands on the rayon of today's schedule coverage.",
+  })
+  @ApiResponse({ status: 200, type: MonitoringHomeDto })
+  async getHome(@GetUser() user: User): Promise<MonitoringHomeDto> {
+    if (MONITORING_CITY.includes(user.role as UserRole)) {
+      return { scope: 'city', id: null, district_id: null, floor: 'city' };
+    }
+    if (user.role === UserRole.KORLAP) {
+      // A korlap monitors the lokasi they cover today (schedule ∪ static). The
+      // legacy primary lokasi wins while it is still covered; otherwise the first
+      // covered lokasi — `users.location_id` is no longer set by the user form.
+      const coverage = [...(await this.resolveKorlapCoverage(user))].sort();
+      const locationId =
+        user.location_id && coverage.includes(user.location_id) ? user.location_id : coverage[0];
+      if (!locationId) return { scope: 'none', id: null, district_id: null, floor: 'none' };
+      const districtId = (await this.statsService.dominantDistrictOf([locationId])) ?? null;
+      return { scope: 'location', id: locationId, district_id: districtId, floor: 'location' };
+    }
+    const districtId = user.district_id ?? null;
+    if (!districtId) return { scope: 'none', id: null, district_id: null, floor: 'none' };
+    return { scope: 'district', id: districtId, district_id: districtId, floor: 'district' };
   }
 
   @Get('aggregate')

@@ -541,6 +541,8 @@ describe('MonitoringService', () => {
       last_battery_level: 85,
       last_location_at: new Date(),
       is_within_area: true,
+      pending_location_id: null,
+      pending_since: null,
       updated_at: new Date(),
     };
 
@@ -1576,7 +1578,7 @@ describe('MonitoringService', () => {
    * of them, so keying staffing off live position reported every other lokasi
    * they cover as understaffed while their satgas was legitimately at the first.
    */
-  describe('getSnapshot — staffing credits the ROSTER, not live position (ADR-053)', () => {
+  describe('getSnapshot — every rostered lokasi listed, presence counted ONCE (ADR-053 → ADR-064)', () => {
     const AREA_A = {
       ...mockArea,
       id: 'area-a',
@@ -1628,7 +1630,8 @@ describe('MonitoringService', () => {
       staffRequirementRepository.find.mockResolvedValue([]);
     });
 
-    it('staffs EVERY rostered lokasi, each with its own name and rayon', async () => {
+    it('lists EVERY rostered lokasi with its own identity, but counts the worker present ONCE — where they are', async () => {
+      // Alone at A (individual) and with the team at B, attributed to A now.
       jest.spyOn(service['userService'], 'getLiveUsers').mockResolvedValue(liveSatgas() as any);
       jest
         .spyOn(service['statsService'], 'scheduledLocationIdsByUser')
@@ -1640,16 +1643,30 @@ describe('MonitoringService', () => {
       const b = result.data.area_summaries.find((s: any) => s.location_id === 'area-b');
 
       expect(a?.active_count).toBe(1);
-      expect(b?.active_count).toBe(1);
+      // B still expects them (listed), but they are not present at B too.
+      expect(b?.active_count).toBe(0);
       // Taman B must carry ITS OWN identity. Deriving metadata from the worker
       // standing in Taman A labelled B "Taman A" and filed it under A's rayon.
       expect(b?.location_name).toBe('Taman B');
       expect(b?.district_id).toBe('district-1');
     });
 
-    it('still staffs both when the worker is outside every lokasi boundary', async () => {
-      // Walking the road between two taman: `location_id` is null, but the roster
-      // is known independently of GPS, so neither lokasi may report a shortfall.
+    it('moves the single presence to B when the worker is attributed to B', async () => {
+      jest
+        .spyOn(service['userService'], 'getLiveUsers')
+        .mockResolvedValue(liveSatgas({ location_id: 'area-b' }) as any);
+      jest
+        .spyOn(service['statsService'], 'scheduledLocationIdsByUser')
+        .mockResolvedValue(new Map([['u-satgas', ['area-a', 'area-b']]]));
+      areaRepository.find.mockResolvedValue([AREA_A, AREA_B] as any);
+
+      const result = await service.getSnapshot({} as any);
+      const count = (id: string) =>
+        result.data.area_summaries.find((s: any) => s.location_id === id)?.active_count;
+      expect([count('area-a'), count('area-b')]).toEqual([0, 1]);
+    });
+
+    it('between two lokasi (outside every boundary) the worker still counts once, not twice', async () => {
       jest
         .spyOn(service['userService'], 'getLiveUsers')
         .mockResolvedValue(liveSatgas({ location_id: null, is_within_area: false }) as any);
@@ -1659,12 +1676,10 @@ describe('MonitoringService', () => {
       areaRepository.find.mockResolvedValue([AREA_A, AREA_B] as any);
 
       const result = await service.getSnapshot({} as any);
-      expect(
-        result.data.area_summaries.find((s: any) => s.location_id === 'area-a')?.active_count,
-      ).toBe(1);
-      expect(
-        result.data.area_summaries.find((s: any) => s.location_id === 'area-b')?.active_count,
-      ).toBe(1);
+      const total = result.data.area_summaries
+        .filter((s: any) => ['area-a', 'area-b'].includes(s.location_id))
+        .reduce((sum: number, s: any) => sum + s.active_count, 0);
+      expect(total).toBe(1);
     });
 
     it('never credits a lokasi outside the requested scope', async () => {

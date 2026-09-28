@@ -34,6 +34,19 @@ import type {
 import type { LiveUser } from '../../types/monitoring.types';
 import { snapshotWorkerToLiveUser, type SnapshotWorker } from '../../utils/monitoringScope';
 
+/** Where the viewer's map opens and the highest tier they may drill to (ADR-064). */
+export interface MonitoringHome {
+  scope: 'city' | 'district' | 'location' | 'none';
+  id: string | null;
+  district_id: string | null;
+  floor: 'city' | 'district' | 'location' | 'none';
+}
+
+/** A korlap's landing lokasi comes from today's schedule, not users.location_id. */
+export async function getMonitoringHome(): Promise<ApiResponse<MonitoringHome>> {
+  return get<MonitoringHome>('/monitoring/home');
+}
+
 export async function getCityMonitoring(
   filters?: MonitoringFilter,
 ): Promise<ApiResponse<CityMonitoringResponse>> {

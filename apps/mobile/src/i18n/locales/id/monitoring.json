@@ -33,7 +33,8 @@
   "mapDashboard": {
     "filterTitle": "Filter Area",
     "filterPrompt": "Pilih area untuk ditampilkan",
-    "allAreas": "Semua Area"
+    "allAreas": "Semua Area",
+    "korlapNoCoverage": "Belum ada lokasi yang Anda awasi hari ini. Lokasi korlap diambil dari jadwal hari ini."
   },
   "layers": {
     "plants": "Tanaman",

@@ -170,7 +170,17 @@ export class MonitoringUserService {
         this.buildCurrentTaskMap(userIds),
         this.cacheService.getThresholds(),
         this.dailySchedulesService
-          ? this.dailySchedulesService.getTeamMembership(userIds, TimezoneUtil.jakartaDateString())
+          ? this.dailySchedulesService.getTeamMembership(
+              userIds,
+              TimezoneUtil.jakartaDateString(),
+              // The team a worker is on NOW: their clocked-in shift + live lokasi.
+              new Map(
+                trackingRecords.map((r) => [
+                  r.user_id,
+                  { shiftDefinitionId: r.shift_definition_id, locationId: r.location_id },
+                ]),
+              ),
+            )
           : Promise.resolve(new Map()),
         this.buildRoleMarkerMap(),
       ],

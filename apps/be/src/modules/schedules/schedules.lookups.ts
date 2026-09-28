@@ -26,7 +26,12 @@ export async function getActiveAreasForDay(
   userId: string,
   date: string,
 ): Promise<Location[]> {
-  return areasOf(svc, await svc.findByUserAndDate(userId, date));
+  // Every live row of the day, not one: a worker alone at A and with the team
+  // at B (ADR-063) is inside their area at either place.
+  const rows = (await svc.findAllByUserAndDate(userId, date)).filter((r) =>
+    ASSIGNED_STATUSES.includes(r.status),
+  );
+  return areasOfRows(svc, rows);
 }
 
 /**
@@ -34,7 +39,40 @@ export async function getActiveAreasForDay(
  * shift still running from yesterday, which the plain per-day lookup misses.
  */
 export async function getActiveAreasNow(svc: LookupDeps, userId: string): Promise<Location[]> {
-  return areasOf(svc, await svc.findCurrentForUser(userId));
+  return areasOfRows(svc, await rowsInSameShift(svc, await svc.findCurrentForUser(userId)));
+}
+
+/** Rows that still represent an assignment (not off / on leave / replaced). */
+const ASSIGNED_STATUSES: readonly ScheduleStatus[] = [
+  ScheduleStatus.PLANNED,
+  ScheduleStatus.PRESENT,
+];
+
+/**
+ * Every live row the person holds in the SAME shift as `row` (always including
+ * `row`). One shift can carry several places since ADR-053/063 — an individual
+ * place plus a team place, or a korlap's many places — and clock-in / geofence
+ * must consider all of them, not whichever row a single-row lookup returned.
+ */
+export async function rowsInSameShift(svc: LookupDeps, row: Schedule | null): Promise<Schedule[]> {
+  if (!row) return [];
+  if (!row.shift_definition_id) return [row];
+  const siblings = (await svc.findAllByUserAndDate(row.user_id, row.schedule_date)).filter(
+    (r) =>
+      r.id !== row.id &&
+      r.shift_definition_id === row.shift_definition_id &&
+      ASSIGNED_STATUSES.includes(r.status),
+  );
+  return [row, ...siblings];
+}
+
+/** Union of `areasOf` over several rows, de-duplicated by lokasi id. */
+export async function areasOfRows(svc: LookupDeps, rows: Schedule[]): Promise<Location[]> {
+  const byId = new Map<string, Location>();
+  for (const row of rows) {
+    for (const area of await areasOf(svc, row)) byId.set(area.id, area);
+  }
+  return [...byId.values()];
 }
 
 export async function areasOf(svc: LookupDeps, row: Schedule | null): Promise<Location[]> {
@@ -157,10 +195,20 @@ export async function getRosterForMonitoring(
  * If a user has multiple team schedules on the same day, the first one wins.
  * Empty userIds returns an empty Map.
  */
+/**
+ * Per-person context for picking THE team a worker is on right now: the shift
+ * they are clocked into and their live attributed lokasi.
+ */
+export interface TeamContext {
+  shiftDefinitionId?: string | null;
+  locationId?: string | null;
+}
+
 export async function getTeamMembership(
   svc: LookupDeps,
   userIds: string[],
   date: string,
+  context: ReadonlyMap<string, TeamContext> = new Map(),
 ): Promise<
   Map<
     string,
@@ -202,7 +250,7 @@ export async function getTeamMembership(
     .orderBy('ds.created_at', 'ASC')
     .getMany();
 
-  for (const row of rows) {
+  for (const row of pickTeamRows(rows, context)) {
     if (!row.user_id || map.has(row.user_id)) continue;
     if (!row.team_category) continue;
 
@@ -219,4 +267,28 @@ export async function getTeamMembership(
   }
 
   return map;
+}
+
+/**
+ * One team row per worker. A team from ANOTHER shift today is not the team they
+ * are on now (the old lookup took the first team of the whole day); among the
+ * current shift's teams — a korlap may lead several (ADR-063) — the one whose
+ * lokasi the worker is actually attributed to wins, else the earliest.
+ */
+export function pickTeamRows(
+  rows: Schedule[],
+  context: ReadonlyMap<string, TeamContext>,
+): Schedule[] {
+  const byUser = new Map<string, Schedule[]>();
+  for (const row of rows) {
+    const ctx = context.get(row.user_id);
+    if (ctx?.shiftDefinitionId && row.shift_definition_id !== ctx.shiftDefinitionId) continue;
+    byUser.set(row.user_id, [...(byUser.get(row.user_id) ?? []), row]);
+  }
+  const picked: Schedule[] = [];
+  for (const [userId, candidates] of byUser) {
+    const here = context.get(userId)?.locationId;
+    picked.push(candidates.find((r) => here && r.location_id === here) ?? candidates[0]);
+  }
+  return picked;
 }

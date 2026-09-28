@@ -26,8 +26,7 @@ import {
   useBoundaries,
   useLocationHistory,
   useUserDaySummary,
-  useReassignmentHistory,
-} from '@/lib/api/monitoring';
+  useReassignmentHistory, useMonitoringHome } from '@/lib/api/monitoring';
 import { useMonitoringSocket } from '@/lib/monitoring/useMonitoringSocket';
 import { useMonitoringLayers, showsNodeMarker } from '@/lib/monitoring/layers';
 import { useMonitoringMode, isZoomLike } from '@/lib/monitoring/mapMode';
@@ -62,6 +61,7 @@ import { formatTime } from '@/lib/utils/formatters';
 import { cn } from '@/lib/utils/cn';
 import type { TrackingStatus } from '@/lib/api/monitoring-types';
 import type { UserRole } from '@/types/models';
+import { EmptyState } from '@/components/ui';
 
 // Drill: district (top) -> kawasan -> lokasi -> workers. Workers only at location scope.
 type Scope = 'city' | 'district' | 'region' | 'location';
@@ -132,10 +132,20 @@ export default function MonitoringPage() {
 
   const canMonitor = !!user && hasRole(user.role as UserRole, MONITORING_ROLES);
 
+  // A korlap's landing lokasi comes from today's schedule (ADR-064) — the
+  // permanent `users.location_id` is no longer set by the user form.
+  const isKorlap = user?.role === 'korlap';
+  const { data: home } = useMonitoringHome(isKorlap);
+  const korlapLocationId = isKorlap
+    ? home?.scope === 'location'
+      ? home.id
+      : (user?.location_id ?? null)
+    : null;
+
   // Role determines the landing view + the floor the user can never drill above.
   const roleView = useMemo<{ view: MonitoringView; floor: Scope }>(() => {
-    if (user?.role === 'korlap' && user.location_id) {
-      return { view: { scope: 'location', id: user.location_id }, floor: 'location' };
+    if (isKorlap && korlapLocationId) {
+      return { view: { scope: 'location', id: korlapLocationId }, floor: 'location' };
     }
     if ((user?.role === 'kepala_rayon' || user?.role === 'admin_rayon') && user.district_id) {
       return {
@@ -145,7 +155,7 @@ export default function MonitoringPage() {
     }
     // Top level opens directly on the districts (ADR-046: no Surabaya bubble).
     return { view: { scope: 'city' }, floor: 'city' };
-  }, [user]);
+  }, [user, isKorlap, korlapLocationId]);
 
   const [view, setView] = useState<MonitoringView>(roleView.view);
   const [filters, setFilters] = useState<MonitoringFilterState>({
@@ -1385,6 +1395,18 @@ export default function MonitoringPage() {
   }
 
   if (!canMonitor) return null;
+
+  // A korlap with no lokasi resolved yet must never fall through to the city
+  // view (403 for korlap) or an unscoped location query.
+  if (isKorlap && !korlapLocationId) {
+    return home?.scope === 'none' ? (
+      <EmptyState variant="noData" title={t('monitoring:page.korlapNoCoverage')} />
+    ) : (
+      <div className="flex min-h-[400px] items-center justify-center text-nb-gray-600">
+        {t('monitoring:page.loading')}
+      </div>
+    );
+  }
 
   const updatedLabel = isLoading
     ? t('monitoring:page.loading')

@@ -2,7 +2,7 @@
 
 Why the significant technical decisions were made. Each ADR follows **Status · Context · Decision · Consequences**. Statuses: **Active**, **Superseded by ADR-XXX**, **Proposed**. To add one: create `ADR-NNN-title.md` (next free number — 020–023 & 039 were skipped), follow the section structure of a recent ADR, and add a row below.
 
-## Index (all 49)
+## Index (all 50)
 
 | ADR | Title | Status |
 |-----|-------|--------|
@@ -65,6 +65,7 @@ Why the significant technical decisions were made. Each ADR follows **Status · 
 | [061](./ADR-061-audit-trail-v2.md) | Audit trail v2 — automatic `@Auditable` CRUD capture in the same transaction (fail-closed), actor/request snapshots + field diffs, append-only guard trigger, SHA-256 hash chain sealed by cron + verify endpoint; ISO 27001 A.8.15 / COBIT DSS06 mapping | Active · extends 015 |
 | [062](./ADR-062-force-delete.md) | Force delete of in-use records — one `/deletions` engine, impact preview + typed-name + reason, soft delete, cancels only the FUTURE (series ended at today), Rayon cascades to Kawasan/Lokasi, role/type need a replacement; one audit tree per delete | Active |
 | [063](./ADR-063-assignment-policy.md) | Unified assignment policy — per-role `max_places_per_shift` / `max_teams_per_shift` (satgas/linmas 1+1, korlap unlimited), individual + team never block each other, one `AssignmentPolicyService` for manual add, row edits, event create/update and the materializer (409 `SCHEDULE_*` with who/when), DB key gains the team | Active · amends 053 |
+| [064](./ADR-064-effective-placement.md) | Effective placement — clock-in/geofence over every current-shift row, live re-attribution with 2-min hysteresis, draw once at the live place (individual first), team = current shift + live place, presence counted once, `GET /monitoring/home` korlap landing from schedule | Active · supersedes 053 presence rule |
 
 ## By domain
 

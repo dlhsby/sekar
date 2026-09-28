@@ -30,6 +30,7 @@ import { BoundaryCheckService } from '../../../shared/services/boundary-check.se
 import { UserLocationsService } from '../../user-locations/user-locations.service';
 import { SchedulesService } from '../../schedules/schedules.service';
 import { TimezoneUtil } from '../../../common/utils/timezone.util';
+import { decideAttribution } from './place-attribution';
 
 export interface StatusInput {
   hasActiveShift: boolean;
@@ -398,8 +399,36 @@ export class StatusCalculatorService {
     const now = new Date();
 
     let isWithinArea = true;
+    let containing: string | null = null;
     if (existing.location_id) {
-      isWithinArea = await this.checkWithinAnyAssignedArea(userId, existing.location_id, lat, lng);
+      ({ within: isWithinArea, containingId: containing } = await this.locateAmongAssigned(
+        userId,
+        existing.location_id,
+        lat,
+        lng,
+      ));
+    }
+
+    // Follow the worker between the places they hold this shift (ADR-064): the
+    // attribution moves once they have stayed inside another assigned lokasi long
+    // enough, so they are counted once, where they actually are.
+    const attribution = decideAttribution({
+      current: existing.location_id,
+      pendingId: existing.pending_location_id ?? null,
+      pendingSince: existing.pending_since ?? null,
+      containing,
+      at: loggedAt,
+    });
+    existing.pending_location_id = attribution.pendingId;
+    existing.pending_since = attribution.pendingSince;
+    if (attribution.switched && attribution.locationId) {
+      const moved = await this.resolveUserContext(existing.user_id, attribution.locationId);
+      this.logger.log(
+        `User ${userId} re-attributed ${existing.location_id} → ${attribution.locationId}`,
+      );
+      existing.location_id = attribution.locationId;
+      existing.area = (moved?.area ?? null) as never;
+      if (moved?.area?.district_id) existing.district_id = moved.area.district_id;
     }
 
     const thresholds = await this.cacheService.getThresholds();
@@ -704,6 +733,8 @@ export class StatusCalculatorService {
   }
 
   /**
+   * Whether the ping is inside an assigned area, and WHICH assigned lokasi
+   * contains it (the primary one preferred) — the latter drives re-attribution.
    * A worker counts as within-area if they are inside their primary (clocked-in)
    * area OR any other area on **today's generated roster** (the operational
    * source of truth — we check the day's penjadwalan, not the raw user
@@ -711,14 +742,14 @@ export class StatusCalculatorService {
    * available (legacy). The extra lookup only runs when the worker is outside
    * their primary area, keeping the per-ping hot path at one boundary check.
    */
-  private async checkWithinAnyAssignedArea(
+  private async locateAmongAssigned(
     userId: string,
     primaryAreaId: string,
     lat: number,
     lng: number,
-  ): Promise<boolean> {
+  ): Promise<{ within: boolean; containingId: string | null }> {
     if (await this.checkWithinArea(primaryAreaId, lat, lng)) {
-      return true;
+      return { within: true, containingId: primaryAreaId };
     }
     // Union today's + yesterday's roster areas so an overnight (Shift-3) worker
     // whose roster row sits on the clock-in day is still recognized after WIB
@@ -744,7 +775,7 @@ export class StatusCalculatorService {
     for (const area of candidates) {
       if (area.id === primaryAreaId) continue;
       if (await this.checkWithinArea(area.id, lat, lng)) {
-        return true;
+        return { within: true, containingId: area.id };
       }
     }
 
@@ -756,13 +787,17 @@ export class StatusCalculatorService {
     // lokasi-only rule above; district-scoped + supervisor (kepala_rayon/admin_rayon)
     // district-geofencing is a documented follow-up.
     if (candidates.length > 0) {
-      return false;
+      return { within: false, containingId: null };
     }
     const regionId = await this.resolveMobileRegion(userId);
     if (regionId) {
-      return this.checkWithinBoundary('region', regionId, lat, lng);
+      // Inside the kawasan, but no single lokasi to attribute to.
+      return {
+        within: await this.checkWithinBoundary('region', regionId, lat, lng),
+        containingId: null,
+      };
     }
-    return false;
+    return { within: false, containingId: null };
   }
 
   /**

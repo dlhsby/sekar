@@ -106,6 +106,7 @@ import {
 import {
   getActiveAreasForDay,
   getActiveAreasNow,
+  type TeamContext,
   getAttributionCandidates,
   getExpectedForDate,
   getRosterForMonitoring,
@@ -723,8 +724,12 @@ export class SchedulesService {
     return getRosterForMonitoring(this.lookupDeps(), date, districtId);
   }
 
-  getTeamMembership(userIds: string[], date: string): ReturnType<typeof getTeamMembership> {
-    return getTeamMembership(this.lookupDeps(), userIds, date);
+  getTeamMembership(
+    userIds: string[],
+    date: string,
+    context?: ReadonlyMap<string, TeamContext>,
+  ): ReturnType<typeof getTeamMembership> {
+    return getTeamMembership(this.lookupDeps(), userIds, date, context);
   }
 
   private lookupDeps(): LookupDeps {
