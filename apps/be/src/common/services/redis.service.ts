@@ -50,6 +50,15 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return this.client;
   }
 
+  /**
+   * True only while the client is connected. ioredis queues commands while
+   * disconnected and rejects them only after its retries (seconds each), so a
+   * cache on a request's hot path checks this first to fail open immediately.
+   */
+  isReady(): boolean {
+    return this.client?.status === 'ready';
+  }
+
   /** Dedicated subscriber connection for Socket.IO Redis adapter. */
   getSubscriber(): Redis {
     return this.subscriber;
