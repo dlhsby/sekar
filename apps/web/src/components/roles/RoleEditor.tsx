@@ -11,6 +11,7 @@ import {
   useUpdateRole,
   type Role,
   type MonitoringScope,
+  type HomeScope,
   type PermissionCatalogCategory,
 } from '@/lib/api/roles';
 import { PermissionAccordion } from './PermissionAccordion';
@@ -18,6 +19,12 @@ import { MarkerIconPicker } from '@/components/forms/MarkerIconPicker';
 import { ColorField, HEX_COLOR } from '@/components/forms/ColorField';
 
 const SCOPES: MonitoringScope[] = ['city', 'district', 'region', 'location', 'none'];
+const HOME_SCOPES: HomeScope[] = ['none', 'district'];
+
+/** '' ↔ null (unlimited); otherwise the integer, or NaN when not a whole number. */
+const limitToText = (v: number | null | undefined) => (v === null || v === undefined ? '' : String(v));
+const textToLimit = (text: string): number | null =>
+  text.trim() === '' ? null : /^\d+$/.test(text.trim()) ? Number(text.trim()) : Number.NaN;
 // Fallback accent for a role that has no colour yet (custom roles pre-pick).
 // eslint-disable-next-line sekar-design/no-inline-hex-colors -- color-input default value
 const DEFAULT_ROLE_COLOR = '#7FBC8C';
@@ -51,6 +58,9 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
   const [name, setName] = useState(role.name);
   const [description, setDescription] = useState(role.description ?? '');
   const [scope, setScope] = useState<MonitoringScope>(role.monitoring_scope);
+  const [homeScope, setHomeScope] = useState<HomeScope>(role.home_scope ?? 'none');
+  const [maxPlaces, setMaxPlaces] = useState(limitToText(role.max_places_per_shift));
+  const [maxTeams, setMaxTeams] = useState(limitToText(role.max_teams_per_shift));
   const initialColor = role.marker_color ?? DEFAULT_ROLE_COLOR;
   const [markerColor, setMarkerColor] = useState<string>(initialColor);
   const initialIcon = role.marker_icon ?? null;
@@ -63,6 +73,9 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
     name !== role.name ||
     description !== (role.description ?? '') ||
     scope !== role.monitoring_scope ||
+    homeScope !== (role.home_scope ?? 'none') ||
+    maxPlaces !== limitToText(role.max_places_per_shift) ||
+    maxTeams !== limitToText(role.max_teams_per_shift) ||
     (markerIcon ?? null) !== initialIcon ||
     markerColor !== initialColor ||
     permsDirty;
@@ -71,6 +84,9 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
     setName(role.name);
     setDescription(role.description ?? '');
     setScope(role.monitoring_scope);
+    setHomeScope(role.home_scope ?? 'none');
+    setMaxPlaces(limitToText(role.max_places_per_shift));
+    setMaxTeams(limitToText(role.max_teams_per_shift));
     setMarkerIcon(initialIcon);
     setMarkerColor(initialColor);
     setChecked(new Set(initialChecked));
@@ -92,16 +108,33 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
     });
 
   const scopeOptions = SCOPES.map((s) => ({ value: s, label: t(`access-control:scope.${s}`) }));
+  const homeScopeOptions = HOME_SCOPES.map((s) => ({
+    value: s,
+    label: t(`access-control:homeScope.${s}`),
+  }));
 
   const trimmedName = name.trim();
   const nameError = !trimmedName ? t('access-control:validation.nameRequired') : undefined;
   const colorError = !HEX_COLOR.test(markerColor)
     ? t('access-control:validation.colorInvalid')
     : undefined;
+  // Mirrors the backend: district monitoring is filtered by the viewer's home rayon.
+  const homeScopeError =
+    scope === 'district' && homeScope !== 'district'
+      ? t('access-control:validation.homeScopeForDistrict')
+      : undefined;
+  const placesValue = textToLimit(maxPlaces);
+  const teamsValue = textToLimit(maxTeams);
+  const placesError =
+    Number.isNaN(placesValue) || (placesValue !== null && placesValue < 1)
+      ? t('access-control:validation.limitInvalid')
+      : undefined;
+  const teamsError = Number.isNaN(teamsValue) ? t('access-control:validation.limitInvalid') : undefined;
+  const formError = nameError ?? colorError ?? homeScopeError ?? placesError ?? teamsError;
 
   const handleSave = async () => {
-    if (nameError || colorError) {
-      toast.error(nameError ?? colorError);
+    if (formError) {
+      toast.error(formError);
       return;
     }
     try {
@@ -111,6 +144,9 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
           name: name.trim(),
           description: description.trim() || undefined,
           monitoring_scope: scope,
+          home_scope: homeScope,
+          max_places_per_shift: placesValue,
+          max_teams_per_shift: teamsValue,
           marker_icon: markerIcon ?? undefined,
           marker_color: markerColor,
           // Preserve the *:* superuser grant instead of materializing it.
@@ -160,7 +196,7 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
             <Button
               onClick={handleSave}
               loading={updateRole.isPending}
-              disabled={!!nameError || !!colorError || !isDirty}
+              disabled={!!formError || !isDirty}
             >
               {updateRole.isPending
                 ? t('access-control:actions.saving')
@@ -186,6 +222,35 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
           onChange={(v) => setScope(v as MonitoringScope)}
           disabled={!canManage}
         />
+        <FormSelect
+          label={t('access-control:fields.homeScope')}
+          helperText={t('access-control:fields.homeScopeHint')}
+          options={homeScopeOptions}
+          value={homeScope}
+          onChange={(v) => setHomeScope(v as HomeScope)}
+          disabled={!canManage}
+          error={canManage ? homeScopeError : undefined}
+        />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <FormInput
+            label={t('access-control:fields.maxPlaces')}
+            inputMode="numeric"
+            value={maxPlaces}
+            onChange={(e) => setMaxPlaces(e.target.value)}
+            helperText={t('access-control:fields.limitHint')}
+            disabled={!canManage}
+            error={canManage ? placesError : undefined}
+          />
+          <FormInput
+            label={t('access-control:fields.maxTeams')}
+            inputMode="numeric"
+            value={maxTeams}
+            onChange={(e) => setMaxTeams(e.target.value)}
+            helperText={t('access-control:fields.limitHint')}
+            disabled={!canManage}
+            error={canManage ? teamsError : undefined}
+          />
+        </div>
         <Textarea
           label={t('access-control:fields.description')}
           value={description}

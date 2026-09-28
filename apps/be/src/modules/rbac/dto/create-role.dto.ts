@@ -2,6 +2,9 @@ import {
   IsString,
   IsOptional,
   IsEnum,
+  IsInt,
+  Min,
+  ValidateIf,
   IsArray,
   Matches,
   MaxLength,
@@ -9,6 +12,7 @@ import {
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { MonitoringScope } from '../enums/monitoring-scope.enum';
+import { HomeScope } from '../enums/home-scope.enum';
 
 export class CreateRoleDto {
   @ApiProperty({ example: 'Pengawas Taman', description: 'Display label' })
@@ -27,6 +31,29 @@ export class CreateRoleDto {
   @IsOptional()
   @IsEnum(MonitoringScope)
   monitoring_scope?: MonitoringScope;
+
+  @ApiPropertyOptional({
+    enum: HomeScope,
+    default: HomeScope.NONE,
+    description: 'district = users of this role must have a home rayon',
+  })
+  @IsOptional()
+  @IsEnum(HomeScope)
+  home_scope?: HomeScope;
+
+  @ApiPropertyOptional({ nullable: true, minimum: 1, description: 'null = unlimited' })
+  @IsOptional()
+  @ValidateIf((_o, v) => v !== null)
+  @IsInt()
+  @Min(1)
+  max_places_per_shift?: number | null;
+
+  @ApiPropertyOptional({ nullable: true, minimum: 0, description: 'null = unlimited' })
+  @IsOptional()
+  @ValidateIf((_o, v) => v !== null)
+  @IsInt()
+  @Min(0)
+  max_teams_per_shift?: number | null;
 
   @ApiPropertyOptional({ example: 'shield' })
   @IsOptional()

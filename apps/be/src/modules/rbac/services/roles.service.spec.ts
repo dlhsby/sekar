@@ -1,5 +1,7 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { RolesService } from './roles.service';
+import { RolesService, assertScopesCoherent } from './roles.service';
+import { MonitoringScope } from '../enums/monitoring-scope.enum';
+import { HomeScope } from '../enums/home-scope.enum';
 import { Role } from '../entities/role.entity';
 import { Permission } from '../entities/permission.entity';
 import { RolePermissionsService } from './role-permissions.service';
@@ -201,5 +203,22 @@ describe('RolesService', () => {
       expect(roleRepo.softRemove).toHaveBeenCalled();
       expect(rolePermissions.invalidateRole).toHaveBeenCalledWith('custom');
     });
+  });
+});
+
+describe('assertScopesCoherent', () => {
+  it('refuses district monitoring without a home rayon', () => {
+    expect(() => assertScopesCoherent(MonitoringScope.DISTRICT, HomeScope.NONE)).toThrow(
+      'home rayon',
+    );
+  });
+
+  it.each([
+    [MonitoringScope.DISTRICT, HomeScope.DISTRICT],
+    [MonitoringScope.REGION, HomeScope.NONE], // korlap
+    [MonitoringScope.CITY, HomeScope.NONE],
+    [MonitoringScope.NONE, HomeScope.DISTRICT],
+  ])('allows %s monitoring with home_scope %s', (monitoring, home) => {
+    expect(() => assertScopesCoherent(monitoring, home)).not.toThrow();
   });
 });

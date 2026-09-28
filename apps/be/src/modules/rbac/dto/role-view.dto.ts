@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { MonitoringScope } from '../enums/monitoring-scope.enum';
+import { HomeScope } from '../enums/home-scope.enum';
 
 /** Shape returned by the roles API — a Role plus its permission keys and counts. */
 export class RoleView {
@@ -9,6 +10,9 @@ export class RoleView {
   @ApiProperty({ nullable: true }) description?: string;
   @ApiProperty() is_system: boolean;
   @ApiProperty({ enum: MonitoringScope }) monitoring_scope: MonitoringScope;
+  @ApiProperty({ enum: HomeScope }) home_scope: HomeScope;
+  @ApiProperty({ nullable: true }) max_places_per_shift: number | null;
+  @ApiProperty({ nullable: true }) max_teams_per_shift: number | null;
   @ApiProperty({ nullable: true }) marker_icon?: string;
   @ApiProperty({ nullable: true }) marker_color?: string;
   @ApiProperty({ type: [String] }) permissionKeys: string[];

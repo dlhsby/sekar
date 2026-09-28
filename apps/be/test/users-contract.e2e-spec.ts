@@ -135,4 +135,44 @@ describe('Users contract (e2e)', () => {
       expect(res.status).toBe(400);
     });
   });
+
+  describe('POST /users — home rayon follows roles.home_scope', () => {
+    const createdIds: string[] = [];
+    const stamp = () => `${Date.now()}${Math.floor(Math.random() * 1000)}`;
+
+    afterAll(async () => {
+      // Soft-delete fixtures so other suites never see extra live users.
+      for (const id of createdIds) {
+        await request(app.getHttpServer())
+          .delete(`/api/v1/users/${id}`)
+          .set('Authorization', `Bearer ${adminToken}`);
+      }
+    });
+
+    it('creates a korlap WITHOUT a rayon — the UAT complaint', async () => {
+      // The web form never shows a rayon for korlap; the backend used to demand
+      // one because it keyed off monitoring_scope = region.
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/users')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          username: `korlap_e2e_${stamp()}`,
+          full_name: 'Korlap E2E',
+          role: 'korlap',
+          district_id: null,
+        });
+
+      expect(res.status).toBe(201);
+      createdIds.push(res.body.id ?? res.body.data?.id);
+    });
+
+    it('still requires a rayon for kepala_rayon (home_scope = district)', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/users')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ username: `kr_e2e_${stamp()}`, full_name: 'KR E2E', role: 'kepala_rayon' });
+
+      expect(res.status).toBe(400);
+    });
+  });
 });

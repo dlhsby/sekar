@@ -73,8 +73,9 @@ describe('UsersService', () => {
   // with unrelated tests; scope-validation tests override per-call.
   const mockRoleRepository = {
     exists: jest.fn().mockResolvedValue(true),
-    findOne: jest.fn(({ where }: { where: { code: string } }) =>
-      Promise.resolve({ code: where.code, monitoring_scope: 'none' }),
+    findOne: jest.fn(
+      ({ where }: { where: { code: string } }): Promise<Record<string, unknown>> =>
+        Promise.resolve({ code: where.code, monitoring_scope: 'none', home_scope: 'none' }),
     ),
   };
 
@@ -621,14 +622,28 @@ describe('UsersService', () => {
   });
 
   describe('role/scope consistency (ADR-044/045)', () => {
-    it('rejects creating a region-scope role without a district', async () => {
+    it('requires a district when the role has home_scope = district', async () => {
+      mockRoleRepository.findOne.mockResolvedValueOnce({
+        code: 'kepala_rayon',
+        monitoring_scope: 'district',
+        home_scope: 'district',
+      });
+      await expect(
+        service.create({ username: 'k1', full_name: 'K', role: 'kepala_rayon' } as never),
+      ).rejects.toThrow('requires a district assignment');
+    });
+
+    it('does NOT require a district for korlap (home_scope = none, UAT)', async () => {
+      // Regression: the rule used to derive from monitoring_scope (korlap = region),
+      // so saving a korlap failed while the web form never shows a rayon field.
       mockRoleRepository.findOne.mockResolvedValueOnce({
         code: 'korlap',
         monitoring_scope: 'region',
+        home_scope: 'none',
       });
       await expect(
         service.create({ username: 'k1', full_name: 'K', role: 'korlap' } as never),
-      ).rejects.toThrow('requires a district assignment');
+      ).resolves.toBeDefined();
     });
 
     it('rejects a region assignment on a role without region scope', async () => {

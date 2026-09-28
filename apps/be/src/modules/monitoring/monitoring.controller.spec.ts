@@ -283,6 +283,7 @@ describe('MonitoringController', () => {
               .mockResolvedValue({ locationIds: [], regionIds: [], districtIds: [] }),
             locationIdsForRegions: jest.fn().mockResolvedValue([]),
             locationIdsForDistricts: jest.fn().mockResolvedValue([]),
+            dominantDistrictOf: jest.fn().mockResolvedValue(undefined),
           },
         },
         {
@@ -703,6 +704,36 @@ describe('MonitoringController', () => {
 
       expect(service.getUserDaySummary).toHaveBeenCalledWith('user-1');
       expect(result).toEqual(mockSummary);
+    });
+  });
+
+  describe('korlap without a home rayon (home_scope = none)', () => {
+    let statsService: any;
+
+    beforeEach(() => {
+      statsService = controller['statsService'];
+    });
+
+    it("anchors the aggregate to the rayon of today's coverage", async () => {
+      statsService.dominantDistrictOf.mockResolvedValue('district-sched');
+      statsService.getAggregate.mockResolvedValue({ nodes: [] });
+
+      await controller.getAggregate({ ...mockKorlap, district_id: null } as never, 'all');
+
+      expect(statsService.dominantDistrictOf).toHaveBeenCalledWith(['area-1']);
+      expect(statsService.getAggregate).toHaveBeenCalledWith('all', 'district-sched', undefined);
+    });
+
+    it('still prefers the home rayon when one is set', async () => {
+      statsService.getAggregate.mockResolvedValue({ nodes: [] });
+
+      await controller.getAggregate(
+        { ...mockKorlap, district_id: 'district-home' } as never,
+        'all',
+      );
+
+      expect(statsService.dominantDistrictOf).not.toHaveBeenCalled();
+      expect(statsService.getAggregate).toHaveBeenCalledWith('all', 'district-home', undefined);
     });
   });
 

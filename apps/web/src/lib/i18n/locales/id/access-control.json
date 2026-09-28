@@ -11,7 +11,9 @@
   },
   "validation": {
     "nameRequired": "Nama peran wajib diisi",
-    "colorInvalid": "Warna harus berupa kode heksadesimal seperti #7FBC8C"
+    "colorInvalid": "Warna harus berupa kode heksadesimal seperti #7FBC8C",
+    "homeScopeForDistrict": "Peran dengan monitoring Rayon wajib punya Rayon",
+    "limitInvalid": "Isi bilangan bulat (lokasi ≥ 1, tim ≥ 0) atau kosongkan"
   },
   "counts": {
     "permissions": "{{count}} izin",
@@ -31,7 +33,12 @@
     "markerIcon": "Ikon Penanda",
     "markerIconPlaceholder": "mis. shield",
     "markerColor": "Warna Penanda",
-    "markerIconHint": "Bentuk ikon di dalam penanda petugas (warnanya mengikuti status langsung)."
+    "markerIconHint": "Bentuk ikon di dalam penanda petugas (warnanya mengikuti status langsung).",
+    "homeScope": "Wajib Punya Rayon",
+    "homeScopeHint": "Jika \"Ya\", pengguna dengan peran ini harus dipilihkan Rayon di formulir pengguna.",
+    "maxPlaces": "Maks. lokasi per shift",
+    "maxTeams": "Maks. tim per shift",
+    "limitHint": "Kosongkan untuk tanpa batas."
   },
   "scope": {
     "city": "Seluruh Kota (Surabaya)",
@@ -71,5 +78,9 @@
     "nameDesc": "Nama Z–A",
     "users": "Pengguna terbanyak",
     "permissions": "Izin terbanyak"
+  },
+  "homeScope": {
+    "none": "Tidak",
+    "district": "Ya — wajib punya Rayon"
   }
 }

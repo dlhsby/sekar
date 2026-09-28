@@ -101,6 +101,26 @@ Left rail = role list (name + "N permissions · M users" badge). Right pane = a 
 
 **Scope tiers → assignment fields:** `city` = no binding (sees all); `district` = `rayon_id`; `region` = `rayon_id` + `region_id` (korlap may optionally narrow to a single location `location_id` within that region — location is optional); `location`/`none` per role. `users.region_id` is added (nullable) for `korlap` (see [ADR-045](./ADR-045-four-level-location-hierarchy.md)); korlap's optional single location reuses `location_id` (the legacy multi-location `user_locations` is not used for korlap under the new model).
 
+### Home scope & per-shift assignment limits (amendment, 2026-09-26)
+
+`monitoring_scope` answers *what a role can see*; it was also (wrongly) used to decide
+*whether a user must belong to a rayon*. That made **korlap** (reach = kawasan) require a
+rayon the web form never asks for, so saving a korlap failed. Two facts, two columns:
+
+| Column | Values | Meaning | Seeded |
+|---|---|---|---|
+| `home_scope` | `none` · `district` | Users of the role must have a home rayon (the user form asks, the API requires it) | `district`: kepala_rayon, admin_rayon · `none`: everyone else (incl. korlap, satgas, linmas, management, admins) |
+| `max_places_per_shift` | int ≥ 1 · NULL | Max individual places one person may hold in the same shift (NULL = unlimited) | satgas/linmas 1 · others NULL |
+| `max_teams_per_shift` | int ≥ 0 · NULL | Max team memberships one person may hold in the same shift | satgas/linmas 1 · others NULL |
+
+- Coherence rule: `monitoring_scope = district` ⇒ `home_scope = district` (district monitoring
+  filters by the viewer's home rayon). Enforced in the API and mirrored in the role editor.
+- Seeded on insert only; operator-owned afterwards (edited on the Hak Akses page).
+- Kawasan/lokasi are never a *home* — people get them through schedules (ADR-053).
+- A korlap without a home rayon is anchored for monitoring to the rayon of today's
+  schedule coverage (`MonitoringStatsService.dominantDistrictOf`).
+- The limits are enforced by the unified assignment policy (scheduling, next change).
+
 ### Endpoint-migration matrix test
 
 A living test at `apps/be/src/modules/rbac/__tests__/role-endpoint-matrix.spec.ts` enumerates every guarded endpoint × all 9 system roles and asserts the expected allow/deny, plus whether each endpoint is still on `@Roles` (via compat shim) or migrated to `@RequirePermissions`. It runs in CI before/after each endpoint's migration so a conversion that changes effective access fails loudly; it doubles as the human-readable audit of migration progress.
