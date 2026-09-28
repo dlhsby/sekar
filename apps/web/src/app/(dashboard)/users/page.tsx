@@ -9,7 +9,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import type { FilterFn } from '@tanstack/react-table';
 import { useTranslation } from 'react-i18next';
-import { Eye, Pencil, Trash2, Power, KeyRound, MapPin } from 'lucide-react';
+import { Eye, Pencil, Trash2, Power, KeyRound, MapPin, History } from 'lucide-react';
 import { UserAreasSheet, type UserAreasSheetTarget } from '@/components/users/UserAreasSheet';
 import { toast } from 'sonner';
 import {
@@ -26,6 +26,7 @@ import { RolePill } from '@/components/users/RolePill';
 import { UserFormModal } from '@/components/users/UserFormModal';
 import { TempPasswordDialog } from '@/components/users/TempPasswordDialog';
 import { ForceDeleteDialog } from '@/components/deletion/ForceDeleteDialog';
+import { EntityHistoryDialog } from '@/components/audit/EntityHistoryDialog';
 import {
   useUsers,
   useDeactivateUser,
@@ -117,6 +118,7 @@ export default function UsersPage() {
   // The user pending a force-reset confirmation (shown before generating).
   const [resetConfirmUser, setResetConfirmUser] = useState<User | null>(null);
   const [areasSheetUser, setAreasSheetUser] = useState<UserAreasSheetTarget | null>(null);
+  const [historyTarget, setHistoryTarget] = useState<{ id: string; name: string } | null>(null);
 
   const handleResetPassword = useCallback(
     async (u: User) => {
@@ -430,6 +432,13 @@ export default function UsersPage() {
         onClick: () => void handleToggleActive(u),
       },
       {
+        key: 'history',
+        label: t('admin:audit.history.action'),
+        icon: History,
+        hidden: !can('audit:read'),
+        onClick: () => setHistoryTarget({ id: u.id, name: u.full_name }),
+      },
+      {
         key: 'delete',
         label: t('admin:users.actionDelete'),
         icon: Trash2,
@@ -438,7 +447,7 @@ export default function UsersPage() {
         onClick: () => setUserToDelete(u),
       },
     ],
-    [canUpdate, canDelete, handleToggleActive, t]
+    [canUpdate, canDelete, can, handleToggleActive, t]
   );
 
   return (
@@ -524,6 +533,16 @@ export default function UsersPage() {
       />
 
       <UserAreasSheet user={areasSheetUser} onClose={() => setAreasSheetUser(null)} />
+
+      <EntityHistoryDialog
+        open={!!historyTarget}
+        onOpenChange={(o) => {
+          if (!o) setHistoryTarget(null);
+        }}
+        entityType="user"
+        entityId={historyTarget?.id ?? null}
+        name={historyTarget?.name ?? ''}
+      />
     </div>
   );
 }

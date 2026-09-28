@@ -6,6 +6,7 @@ import {
   BuildingOfficeIcon,
   DocumentTextIcon,
   ClipboardDocumentListIcon,
+  DocumentMagnifyingGlassIcon,
   BriefcaseIcon,
   FolderIcon,
   ClockIcon,
@@ -128,6 +129,14 @@ export const navigationItems: NavItem[] = [
         label: 'common:nav.roles',
         href: '/roles',
         icon: ShieldCheckIcon,
+        roles: [...ADMIN_ROLES],
+      },
+      {
+        // Audit trail (ADR-061). The page itself gates on `audit:read`.
+        id: 'audit-log',
+        label: 'common:nav.auditLog',
+        href: '/audit-log',
+        icon: DocumentMagnifyingGlassIcon,
         roles: [...ADMIN_ROLES],
       },
     ],

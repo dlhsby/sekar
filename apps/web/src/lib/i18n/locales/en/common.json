@@ -194,7 +194,8 @@
     "districtNav": "District navigation",
     "mainNav": "Main navigation",
     "breadcrumbAria": "Breadcrumb navigation",
-    "teams": "Team Categories"
+    "teams": "Team Categories",
+    "auditLog": "Audit Log"
   },
   "pagination": {
     "previous": "Previous",

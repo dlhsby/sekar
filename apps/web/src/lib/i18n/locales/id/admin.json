@@ -505,5 +505,114 @@
       "markerIcon": "Ikon Penanda",
       "markerOpacity": "Opasitas Warna"
     }
+  },
+  "audit": {
+    "pageTitle": "Log Audit",
+    "description": "Jejak siapa melakukan apa, kapan, dan apa yang berubah. Catatan tidak dapat diubah atau dihapus.",
+    "denied": "Anda tidak memiliki izin untuk melihat log audit.",
+    "filters": {
+      "dateRange": "Rentang tanggal",
+      "entityType": "Jenis data",
+      "action": "Aksi",
+      "outcome": "Hasil",
+      "actorRole": "Peran pelaku",
+      "search": "Cari nama data atau pelaku…",
+      "all": "Semua",
+      "reset": "Atur ulang filter",
+      "searchLabel": "Cari"
+    },
+    "columns": {
+      "time": "Waktu",
+      "actor": "Pelaku",
+      "action": "Aksi",
+      "entity": "Data",
+      "changes": "Perubahan",
+      "outcome": "Hasil"
+    },
+    "outcome": {
+      "success": "Berhasil",
+      "denied": "Ditolak",
+      "failed": "Gagal"
+    },
+    "system": "Sistem",
+    "noLabel": "(tanpa nama)",
+    "changedFields": "{{count}} kolom berubah",
+    "actions": {
+      "create": "Dibuat",
+      "update": "Diubah",
+      "delete": "Dihapus",
+      "restore": "Dipulihkan",
+      "purge": "Dihapus permanen",
+      "force_delete": "Hapus paksa",
+      "permissions_change": "Izin diubah",
+      "locations_change": "Lokasi kawasan diubah",
+      "login": "Masuk",
+      "login_failed": "Gagal masuk",
+      "logout": "Keluar",
+      "denied_write": "Aksi ditolak",
+      "export": "Ekspor",
+      "reassign": "Pindah tugas",
+      "reset_password": "Reset kata sandi"
+    },
+    "entities": {
+      "district": "Rayon",
+      "region": "Kawasan",
+      "location": "Lokasi",
+      "location_type": "Tipe lokasi",
+      "team_category": "Kategori tim",
+      "user": "Pengguna",
+      "role": "Peran",
+      "shift_definition": "Definisi shift",
+      "special_day_override": "Hari libur",
+      "staff_requirement": "Kapasitas",
+      "auth": "Autentikasi",
+      "http": "Akses",
+      "audit_log": "Log audit",
+      "schedule_event": "Jadwal",
+      "task": "Tugas",
+      "activity": "Aktivitas",
+      "overtime": "Lembur",
+      "shift": "Absensi"
+    },
+    "export": "Ekspor CSV",
+    "exporting": "Mengekspor…",
+    "exportTruncated": "Ekspor dibatasi 50.000 baris — persempit filter untuk data lengkap.",
+    "verify": {
+      "button": "Periksa integritas",
+      "checking": "Memeriksa…",
+      "intact": "Utuh — {{sealed}} catatan tersegel, rantai hash valid",
+      "broken": "RUSAK — rantai hash putus di catatan #{{seq}}. Log mungkin telah dimanipulasi.",
+      "unsealed": "{{count}} catatan terbaru belum tersegel (disegel tiap menit)."
+    },
+    "pager": {
+      "summary": "Menampilkan {{from}}–{{to}} dari {{total}}",
+      "prev": "Sebelumnya",
+      "next": "Berikutnya"
+    },
+    "detail": {
+      "title": "Detail audit",
+      "field": "Kolom",
+      "before": "Sebelum",
+      "after": "Sesudah",
+      "snapshotCreated": "Data saat dibuat",
+      "snapshotDeleted": "Data terakhir sebelum dihapus",
+      "metadata": "Keterangan tambahan",
+      "reason": "Alasan",
+      "request": "Konteks permintaan",
+      "ip": "Alamat IP",
+      "userAgent": "Perangkat",
+      "requestId": "ID permintaan",
+      "hash": "Hash",
+      "parent": "Bagian dari tindakan induk",
+      "empty": "(kosong)",
+      "redacted": "(disembunyikan)",
+      "omitted": "(terlalu besar, {{bytes}} byte)"
+    },
+    "history": {
+      "action": "Riwayat",
+      "title": "Riwayat: {{name}}",
+      "empty": "Belum ada riwayat perubahan.",
+      "loadError": "Gagal memuat riwayat."
+    }
   }
 }

@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Pencil, Trash2, Power } from 'lucide-react';
+import { Pencil, Trash2, Power, History } from 'lucide-react';
 import {
   Button,
   DataTable,
@@ -13,6 +13,7 @@ import {
   type DataTableRowAction,
 } from '@/components/ui';
 import { ForceDeleteDialog } from '@/components/deletion/ForceDeleteDialog';
+import { EntityHistoryDialog } from '@/components/audit/EntityHistoryDialog';
 import { usePermissions } from '@/lib/auth/usePermissions';
 import { getErrorMessage } from '@/lib/api/client';
 import {
@@ -34,6 +35,7 @@ export default function TeamsPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<TeamCategory | null>(null);
   const [toDelete, setToDelete] = useState<TeamCategory | null>(null);
+  const [historyTarget, setHistoryTarget] = useState<{ id: string; name: string } | null>(null);
 
   const columns = useMemo<ColumnDef<TeamCategory>[]>(
     () => [
@@ -125,6 +127,13 @@ export default function TeamsPage() {
       onClick: () => handleToggleActive(r),
     },
     {
+      key: 'history',
+      label: t('admin:audit.history.action'),
+      icon: History,
+      hidden: !can('audit:read'),
+      onClick: () => setHistoryTarget({ id: r.id, name: r.name }),
+    },
+    {
       key: 'delete',
       label: t('common:actions.delete'),
       icon: Trash2,
@@ -181,6 +190,16 @@ export default function TeamsPage() {
         id={toDelete?.id ?? null}
         name={toDelete?.name ?? ''}
         onDeleted={() => refetch()}
+      />
+
+      <EntityHistoryDialog
+        open={!!historyTarget}
+        onOpenChange={(o) => {
+          if (!o) setHistoryTarget(null);
+        }}
+        entityType="team_category"
+        entityId={historyTarget?.id ?? null}
+        name={historyTarget?.name ?? ''}
       />
     </div>
   );

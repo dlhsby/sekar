@@ -49,9 +49,10 @@ describe('Navigation Utilities', () => {
         'pruning-requests',
       ]);
 
-      // 'Pengguna & Hak Akses' group holds user accounts + role management (ADR-044).
+      // 'Pengguna & Hak Akses' group holds user accounts, role management (ADR-044)
+      // and the audit trail (ADR-061).
       const accessItem = navigationItems.find((item) => item.id === 'access');
-      expect(accessItem?.children?.map((c) => c.id)).toEqual(['users', 'roles']);
+      expect(accessItem?.children?.map((c) => c.id)).toEqual(['users', 'roles', 'audit-log']);
 
       // 'Data Master' group, ordered by the location hierarchy Rayon → Kawasan
       // (regions) → Lokasi (areas) → Kategori Tim (team-categories), then plants

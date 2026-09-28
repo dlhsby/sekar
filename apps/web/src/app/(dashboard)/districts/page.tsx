@@ -8,7 +8,7 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Eye, Pencil, Trash2, Power, Settings2 } from 'lucide-react';
+import { Plus, Eye, Pencil, Trash2, Power, Settings2, History } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Button,
@@ -23,6 +23,7 @@ import {
 import { DistrictFormModal } from '@/components/districts/DistrictFormModal';
 import { CapacityModal } from '@/components/schedules/CapacityModal';
 import { ForceDeleteDialog } from '@/components/deletion/ForceDeleteDialog';
+import { EntityHistoryDialog } from '@/components/audit/EntityHistoryDialog';
 import type { StaffSubject } from '@/lib/api/location-staff-requirements';
 import {
   useDistricts,
@@ -85,6 +86,7 @@ export default function RayonsPage() {
   const view = useViewModal<District>();
   const [deletingDistrict, setDeletingDistrict] = useState<District | null>(null);
   const [capacitySubject, setCapacitySubject] = useState<StaffSubject | null>(null);
+  const [historyTarget, setHistoryTarget] = useState<{ id: string; name: string } | null>(null);
 
   const columns = useMemo<ColumnDef<District>[]>(
     () => [
@@ -318,6 +320,13 @@ export default function RayonsPage() {
         onClick: () => handleToggleActive(r),
       },
       {
+        key: 'history',
+        label: t('admin:audit.history.action'),
+        icon: History,
+        hidden: !can('audit:read'),
+        onClick: () => setHistoryTarget({ id: r.id, name: r.name }),
+      },
+      {
         key: 'delete',
         label: t('admin:districts.actionDelete'),
         icon: Trash2,
@@ -328,7 +337,7 @@ export default function RayonsPage() {
         },
       },
     ],
-    [handleToggleActive, canUpdate, canDelete, view, t]
+    [handleToggleActive, canUpdate, canDelete, can, view, t]
   );
 
 
@@ -397,6 +406,16 @@ export default function RayonsPage() {
         id={deletingDistrict?.id ?? null}
         name={deletingDistrict?.name ?? ''}
         onDeleted={() => refetch()}
+      />
+
+      <EntityHistoryDialog
+        open={!!historyTarget}
+        onOpenChange={(o) => {
+          if (!o) setHistoryTarget(null);
+        }}
+        entityType="district"
+        entityId={historyTarget?.id ?? null}
+        name={historyTarget?.name ?? ''}
       />
     </div>
   );

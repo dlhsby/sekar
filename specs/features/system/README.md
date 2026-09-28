@@ -11,7 +11,7 @@ Cross-cutting platform services: health/build-identity endpoint, generic entity 
   - **Explicit domain events:** approve/verify/reassign, `permissions_change`, `locations_change`, login/logout, `export`, `denied_write`.
   - **Tamper-evident:** append-only (guard trigger), with a SHA-256 hash chain sealed every minute. `GET /audit/verify` re-derives it.
   - **API:** `GET /audit` (filters: type, id, action, actor, role, outcome, date range, text), `GET /audit/export.csv`, `GET /audit/types`, `GET /audit/:type/:id`. All need `audit:read`, except operational timelines.
-  - **Web UI:** planned (PR7).
+  - **Web UI:** `/audit-log` (search, filters, field diff, CSV export, integrity check) + per-record **Riwayat** on master-data pages — see `platforms/web/pages.md` §9b.
 - `GET /health/live` returns `{version,gitSha,builtAt}`; `GET /app-releases/latest` drives the mobile update checker.
 
 ## Implementation

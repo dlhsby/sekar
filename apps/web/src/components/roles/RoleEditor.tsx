@@ -3,10 +3,12 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Trash2, RotateCcw } from 'lucide-react';
+import { Trash2, RotateCcw, History } from 'lucide-react';
 import { Button, Badge, Textarea, FormInput, FormSelect } from '@/components/ui';
+import { EntityHistoryDialog } from '@/components/audit/EntityHistoryDialog';
 import { getErrorMessage } from '@/lib/api/client';
 import { hasPermission } from '@/lib/auth/permissions';
+import { usePermissions } from '@/lib/auth/usePermissions';
 import {
   useUpdateRole,
   type Role,
@@ -39,7 +41,9 @@ interface RoleEditorProps {
 /** Right-pane editor: label/scope/marker + permission accordion + save. */
 export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEditorProps) {
   const { t } = useTranslation();
+  const { can } = usePermissions();
   const updateRole = useUpdateRole();
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const isSuperuser = role.permissionKeys.includes('*:*');
   const allKeys = useMemo(
@@ -171,6 +175,16 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
           )}
         </div>
         <div className="flex items-center gap-2">
+          {can('audit:read') && (
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<History className="size-4" />}
+              onClick={() => setHistoryOpen(true)}
+            >
+              {t('admin:audit.history.action')}
+            </Button>
+          )}
           {canManage && !role.is_system && (
             <Button
               variant="destructive"
@@ -283,6 +297,14 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
           />
         )}
       </div>
+
+      <EntityHistoryDialog
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+        entityType="role"
+        entityId={role.id}
+        name={role.name}
+      />
     </div>
   );
 }
