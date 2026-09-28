@@ -9,6 +9,7 @@ Crews (perawatan, penyiraman, penanaman, penyapuan, …) as first-class, typed e
 - **Teams as master data** (ADR-048) — `teams(name, team_category_id, marker_icon, marker_image_url)` + a `team_categories` catalog table (perawatan/penyiraman/penanaman/penyapuan, seeded, **extensible via a Type-management UI**).
 - **Membership via schedules** (ADR-047) — no permanent member table; **PIC required** (korlap or satgas/linmas) + invited members per team `ScheduleEvent`, fanned out to per-member occurrences. Members are within the PIC's rayon (no cross-rayon teams).
 - **Static or mobile scope** — team members share a `location_id` (static) or `region_id` (mobile, e.g. penyiraman).
+- **Force delete** (ADR-062) — in-use records can be deleted after an impact preview, typed-name confirmation and a required reason. Soft delete + cascade of **future** schedules only (after today; recurring series end today); past attendance, schedules and reports stay as history. One audit tree per delete.
 - **Group bubble** in monitoring (ADR-046) using the team marker; search matches team name/keyword.
 
 ## Implementation

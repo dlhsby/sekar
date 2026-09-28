@@ -10,6 +10,7 @@ The organizational + spatial hierarchy. Being reworked (UAT) from 3 levels to **
 - **Per-level map styling** (ADR-045) — separate `border_color` / `fill_color` / `border_opacity` (0–1) / `fill_opacity` (0–1) + `marker_icon`/`marker_image_url` (image-only markers; configured `marker_color` removed) on all four tiers, each edited in its own master-data surface incl. a **City styling card** for the single Surabaya row (legacy single `color` kept as fallback; colors `^#[0-9A-Fa-f]{6}$`).
 - **Static vs mobile** — a region enables mobile (roaming) subjects geofenced to the region; locations remain static geofences.
 - **Polygon boundaries** (ADR-010) — every level carries editable polygons used for geofencing.
+- **Force delete** (ADR-062) — in-use records can be deleted after an impact preview, typed-name confirmation and a required reason. Soft delete + cascade of **future** schedules only (after today; recurring series end today); past attendance, schedules and reports stay as history. One audit tree per delete.
 - `kecamatans` (read-only reference) and `location-staff-requirements` are **backend-only** (no dedicated UI).
 
 ## Implementation
