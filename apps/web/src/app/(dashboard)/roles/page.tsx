@@ -23,13 +23,13 @@ import {
   EmptyState,
   Skeleton,
 } from '@/components/ui';
+import { ForceDeleteDialog } from '@/components/deletion/ForceDeleteDialog';
 import { getErrorMessage } from '@/lib/api/client';
 import { usePermissions } from '@/lib/auth/usePermissions';
 import {
   useRoles,
   usePermissionCatalog,
   useCreateRole,
-  useDeleteRole,
   type Role,
 } from '@/lib/api/roles';
 import { RoleEditor } from '@/components/roles/RoleEditor';
@@ -72,7 +72,6 @@ export default function RolesPage() {
     isError: catalogError,
   } = usePermissionCatalog();
   const createRole = useCreateRole();
-  const deleteRole = useDeleteRole();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -112,17 +111,6 @@ export default function RolesPage() {
     }
   };
 
-  const handleDelete = async () => {
-    if (!pendingDelete) return;
-    try {
-      await deleteRole.mutateAsync(pendingDelete.id);
-      toast.success(t('access-control:toast.deleted'));
-      if (selected?.id === pendingDelete.id) setSelectedId(null);
-      setPendingDelete(null);
-    } catch (err) {
-      toast.error(getErrorMessage(err));
-    }
-  };
 
   return (
     <div className="space-y-4">
@@ -287,26 +275,23 @@ export default function RolesPage() {
       </Dialog>
 
       {/* Delete confirm */}
-      <Dialog open={!!pendingDelete} onOpenChange={(o) => !o && setPendingDelete(null)}>
-        <DialogContent size="sm">
-          <DialogHeader>
-            <DialogTitle>{t('access-control:dialog.deleteTitle')}</DialogTitle>
-          </DialogHeader>
-          <DialogBody>
-            <p className="text-nb-body-sm text-nb-black">
-              {t('access-control:dialog.deleteMessage', { name: pendingDelete?.name })}
-            </p>
-          </DialogBody>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPendingDelete(null)}>
-              {t('access-control:actions.cancel')}
-            </Button>
-            <Button variant="destructive" onClick={handleDelete} loading={deleteRole.isPending}>
-              {t('access-control:actions.delete')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ForceDeleteDialog
+        open={!!pendingDelete}
+        onOpenChange={(o) => !o && setPendingDelete(null)}
+        type="role"
+        id={pendingDelete?.id ?? null}
+        name={pendingDelete?.name ?? ''}
+        replacementOptions={
+          roles
+            ? roles
+                .filter((r) => r.id !== pendingDelete?.id)
+                .map((r) => ({ value: r.id, label: r.name }))
+            : []
+        }
+        onDeleted={() => {
+          if (selected?.id === pendingDelete?.id) setSelectedId(null);
+        }}
+      />
     </div>
   );
 }

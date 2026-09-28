@@ -63,5 +63,8 @@
   "photoLimitMessage": "Anda hanya dapat menambahkan maksimal {{maxPhotos}} foto.",
   "GPS_MOCKED": "Lokasi palsu terdeteksi. Nonaktifkan aplikasi lokasi palsu (mock location) di Pengaturan, lalu coba lagi.",
   "GPS_MISSING_COORDINATES": "Lokasi GPS belum tersedia. Tunggu hingga perangkat mendapatkan sinyal, lalu coba lagi.",
-  "GPS_IMPOSSIBLE_TRAVEL": "Perpindahan lokasi tidak wajar terdeteksi. Pastikan GPS aktif dan tidak dimanipulasi."
+  "GPS_IMPOSSIBLE_TRAVEL": "Perpindahan lokasi tidak wajar terdeteksi. Pastikan GPS aktif dan tidak dimanipulasi.",
+  "DELETE_CONFIRMATION_MISMATCH": "Nama yang diketik tidak sama dengan nama data. Ketik ulang persis untuk mengonfirmasi penghapusan.",
+  "DELETE_REPLACEMENT_REQUIRED": "Data ini masih dipakai. Pilih pengganti agar data yang memakainya dipindahkan sebelum dihapus.",
+  "DELETE_NOT_ALLOWED": "Data ini tidak dapat dihapus."
 }

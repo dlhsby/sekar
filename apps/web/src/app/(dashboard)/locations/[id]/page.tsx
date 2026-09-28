@@ -11,8 +11,8 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Edit, Trash2, Map as MapIcon } from 'lucide-react';
 import { Button, Badge, Card, CardContent, CardHeader } from '@/components/ui';
 import { GoogleBoundaryEditor } from '@/components/maps/GoogleBoundaryEditor';
-import { DeleteLocationModal } from '@/components/locations/DeleteLocationModal';
 import { LocationFormModal } from '@/components/locations/LocationFormModal';
+import { ForceDeleteDialog } from '@/components/deletion/ForceDeleteDialog';
 import { LocationWorkersCard } from '@/components/locations/LocationWorkersCard';
 import { useLocation, useLocationBoundary, useUpdateLocationBoundary } from '@/lib/api/locations';
 import { useAuth } from '@/lib/auth/hooks';
@@ -24,7 +24,7 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
   const router = useRouter();
   const { user } = useAuth();
   const { data: area, isLoading, error } = useLocation(id);
-  const [deleteModal, setDeleteModal] = useState(false);
+  const [deletingArea, setDeletingArea] = useState(false);
   const [editModal, setEditModal] = useState(false);
   const [editingBoundary, setEditingBoundary] = useState(false);
   const [boundaryDraft, setBoundaryDraft] = useState<GeoJSON.Polygon | null>(null);
@@ -130,7 +130,7 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
               leftIcon={<Edit className="w-4 h-4" />}
             >{t("common:actions.edit")}</Button>
             <Button
-              onClick={() => setDeleteModal(true)}
+              onClick={() => setDeletingArea(true)}
               variant="destructive"
               leftIcon={<Trash2 className="w-4 h-4" />}
             >
@@ -310,12 +310,14 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
         </CardContent>
       </Card>
 
-      {/* Delete Modal */}
-      <DeleteLocationModal
-        area={area}
-        isOpen={deleteModal}
-        onClose={() => setDeleteModal(false)}
-        onSuccess={() => router.push('/locations')}
+      {/* Delete Dialog */}
+      <ForceDeleteDialog
+        open={deletingArea && !!area}
+        onOpenChange={(o) => !o && setDeletingArea(false)}
+        type="location"
+        id={area?.id ?? null}
+        name={area?.name ?? ''}
+        onDeleted={() => router.push('/locations')}
       />
 
       <LocationFormModal open={editModal} onOpenChange={setEditModal} area={area} />

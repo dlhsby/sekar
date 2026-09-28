@@ -55,5 +55,8 @@
   "GENERIC": "Something went wrong. Please try again.",
   "GPS_MOCKED": "Fake location detected. Turn off any mock-location app in Settings, then try again.",
   "GPS_MISSING_COORDINATES": "No GPS location yet. Wait for your device to get a signal, then try again.",
-  "GPS_IMPOSSIBLE_TRAVEL": "Implausible movement detected. Make sure GPS is on and not being manipulated."
+  "GPS_IMPOSSIBLE_TRAVEL": "Implausible movement detected. Make sure GPS is on and not being manipulated.",
+  "DELETE_CONFIRMATION_MISMATCH": "The typed name does not match the record. Type it exactly to confirm the deletion.",
+  "DELETE_REPLACEMENT_REQUIRED": "This record is still in use. Choose a replacement to move its users to before deleting.",
+  "DELETE_NOT_ALLOWED": "This record cannot be deleted."
 }

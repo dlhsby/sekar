@@ -294,5 +294,35 @@
     "removed": "Removed",
     "markedRead": "Marked as read",
     "converted": "Converted"
+  },
+  "forceDelete": {
+    "title": "Delete {{name}}?",
+    "description": "This record is still in use. Review the impact before deleting.",
+    "warningTitle": "Dangerous action. It cannot be undone.",
+    "historyKept": "History is not changed: attendance, reports and schedules up to today are kept. Only schedules from tomorrow onward are cancelled.",
+    "impactTitle": "What will happen",
+    "noImpact": "Nothing else uses this record.",
+    "impact": {
+      "future_schedules": "Schedules from tomorrow cancelled: {{count}}",
+      "schedule_series": "Recurring schedules ended today: {{count}}",
+      "users_home": "Users detached from this record: {{count}}",
+      "user_assignments": "User location assignments removed: {{count}}",
+      "locations_detached": "Locations removed from the area (kept): {{count}}",
+      "regions_deleted": "Areas (kawasan) also deleted: {{count}}",
+      "locations_deleted": "Locations also deleted: {{count}}",
+      "team_memberships": "Team memberships removed: {{count}}",
+      "users_default_shift": "Users losing their default shift: {{count}}",
+      "team_series": "Team schedules losing their category (still running): {{count}}",
+      "users_moved": "Users moved to the replacement role: {{count}}",
+      "locations_moved": "Locations moved to the replacement type: {{count}}"
+    },
+    "replacementLabel": "Move to",
+    "replacementHint": "{{count}} record(s) still use this and must be moved.",
+    "replacementPlaceholder": "Choose a replacement",
+    "confirmLabel": "Type \"{{name}}\" to confirm",
+    "reasonLabel": "Reason for deletion (recorded in the audit log)",
+    "reasonPlaceholder": "e.g. Location permanently closed per the department head's decree",
+    "submit": "Delete permanently",
+    "success": "{{name}} deleted"
   }
 }

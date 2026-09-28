@@ -40,6 +40,7 @@ import { EventsModule } from './gateways/events.module';
 import { OvertimeModule } from './modules/overtime/overtime.module';
 import { UserLocationsModule } from './modules/user-locations/user-locations.module';
 import { AuditModule } from './modules/audit/audit.module';
+import { DeletionModule } from './modules/deletion/deletion.module';
 import { CommonModule } from './common/common.module';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 // Phase 3 entity modules (stub — full controllers/services added in sub-phases 3-6+)
@@ -157,7 +158,8 @@ import { ConfigModule as ClientConfigModule } from './modules/config/config.modu
     EventsModule, // WebSocket real-time events
     OvertimeModule, // Overtime submission and approval
     UserLocationsModule, // User-location assignment management (Phase 2E)
-    AuditModule, // Audit logging (Phase 2E)
+    AuditModule, // Audit logging (Phase 2E; v2 ADR-061)
+    DeletionModule, // Force delete with impact preview (ADR-062)
     // Phase 3 entity registration modules
     PlantsModule,
     PruningRequestsModule,

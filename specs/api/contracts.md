@@ -5158,6 +5158,8 @@ socket.on('USER_STATUS_CHANGED', (payload) => {
 | GET | `/audit/types` | Entity types captured automatically · `audit:read` |
 | GET | `/audit/verify` | Hash-chain integrity → `{sealed, unsealed, first_broken_seq, last_hash, intact}` · `audit:read` |
 | GET | `/audit/export.csv` | Filtered CSV (≤50 000 rows, `X-Export-Truncated` when capped; the export is itself audited) · `audit:read` |
+| GET | `/deletions/:type/:id/impact` | Force-delete dry run → `{confirm_label, impact{…counts}, replacement_required}` · `<resource>:delete` (ADR-062) |
+| POST | `/deletions/:type/:id` | Force delete `{confirm_name, reason, replacement_id?}` → soft delete + future-only cascade, audited · `<resource>:delete` |
 
 **Modified Endpoints (5):**
 
