@@ -15,6 +15,7 @@ Real-time supervisor dashboard: live worker positions, five-status tracking, and
 - **Redis for WebSocket scaling** (ADR-016) — Socket.IO adapter + notification retry.
 - **Location log partitioning** (ADR-006) — monthly partitions for query performance.
 - **Aggregate-first drill-down** — each node draws one unified glyph pin carrying its active-worker count and a staffing-health ring (ADR-051); markers standardized web + mobile. The attendance *ratio* on the marker was retired — it lives in the roster panel.
+- **Effective placement — count once, at the live place** (ADR-064) — a person assigned to several places in one shift (individual rows + team rows) is attributed to the assigned place they are actually at (inside a polygon first, else nearest), switching only after ~2 min in the new place (hysteresis). Each worker is one marker and counted once; drilling into a team shows members at the team's place. `GET /monitoring/home` gives a korlap their landing place.
 - ⚠️ The legacy `supervisor` module is **deprecated** — superseded by this feature; do not extend it.
 
 ## Revamp notes (post-UAT) — target model (ADR-046)

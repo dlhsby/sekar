@@ -1,6 +1,6 @@
 # SEKAR — Status (Source of Truth)
 
-**Last updated:** 2026-09-02 · **Single source of truth** for status & metrics. Specs do not
+**Last updated:** 2026-09-28 · **Single source of truth** for status & metrics. Specs do not
 duplicate these numbers. Build history: [`history/CHANGELOG.md`](history/CHANGELOG.md).
 
 ## Deployment
@@ -20,15 +20,15 @@ duplicate these numbers. Build history: [`history/CHANGELOG.md`](history/CHANGEL
 push to the `staging` branch (merge `main` → `staging`) or a manual dispatch. Merging to `main` does
 **not** deploy; this line previously claimed it did. Versioned releases via `scripts/release.sh`.
 
-> **Staging is currently ~403 commits behind `main`.** Nothing from that backlog is deployed, which is
-> why a monitoring-attendance regression that lived briefly on `main` never reached a running system.
+> **Staging last took `main` on 2026-09-24.** Everything merged since — notably the CRUD / audit /
+> scheduling revamp (#519–#525, 5 new migrations `17543…`–`17547…`) — is on `main` only, not deployed.
 
 ## Ground-truth metrics (from code)
 
-- **Backend:** 38 modules · 44 controllers · ~305 route handlers · 2,858 tests · >80% coverage
-- **Mobile:** 8 roles · 54 screens · 4,585 tests · WCAG 2.1 AA · offline-first
-- **Web:** 8-role dashboard · Next.js 16 · 2,433 tests · realtime · a11y-audited
-- **Architecture:** 55 ADRs ([index](architecture/decisions/README.md)) · **i18n** id/en bilingual
+- **Backend:** 39 modules · 45 controllers · ~300 route handlers · 3,111 unit + 62 e2e tests · >80% coverage
+- **Mobile:** 8 roles · 54 screens · 4,620 tests · WCAG 2.1 AA · offline-first
+- **Web:** 8-role dashboard · Next.js 16 · 2,466 tests · realtime · a11y-audited
+- **Architecture:** 59 ADRs ([index](architecture/decisions/README.md)) · **i18n** id/en bilingual
   (react-i18next), API English-canonical
 - **Quality:** zero `npm audit` vulnerabilities across workspaces · 92 token/ESLint-rule tests
 - **Guardrails:** `i18n:check` verifies keys are *used-and-present*, not just id/en-symmetric;
@@ -62,7 +62,8 @@ Legend: ✅ Active · 🅿️ Parked (built, hidden from web nav, revisit later)
 | [Seeds](features/_archived/README.md) | 🅿️ | hidden | present |
 
 **Backend-only (API implemented, no UI):** `special-day-overrides`, `kecamatans` (read-only),
-`location-staff-requirements`, `audit`. (`service-capacity` has a web UI: rayon capacity grid.)
+`location-staff-requirements`. (`service-capacity` has a web UI: rayon capacity grid; `audit` has
+`/audit-log` + per-record Riwayat since #525.)
 **Deprecated:** `supervisor` module (superseded by `monitoring`; not removed — 21 refs).
 
 ## Next
@@ -75,6 +76,25 @@ bottom-up, web before mobile:
 4. **Scheduling** — calendar + rule-based recurrence + team schedules (ADR-047) — ✅ **Merged to main** (PRs #218–223, Phase 4 engine + UX redesign): `schedule_events` rule layer + materializer engine (rolling horizon), time-based overlap guard (multi-shift days legal), team fan-out with per-member conflict reporting, this/this-and-future/series edit semantics, template→events data migration (template cron retired). **Jadwal UX redesign** on top: single range select (default Hari) with drill-down, Rayon▸Kawasan▸Lokasi day coverage board (per-tier accent), year mini-calendars, per-rayon month + per-shift/role week summaries, hybrid search + filter chips, capacity converged on `location_staff_requirements` (understaffing = satgas+linmas only), mobile day-nav. Verified live against a scratch DB. **P5 rayon-scope schedule model DONE** (ScheduleScope +`rayon`, migration + CHECK widened, materializer/projections/validation/day-board/event-form wired, tests + live-verified). Weekend/holiday capacity + year heatmap + holiday management also landed. **Deferred:** full mobile parity; dark-mode visual sign-off. Not merged/deployed.
 5. **Monitoring (web)** — subject model, drop Surabaya bubble, presence model, static/mobile, search (ADR-046) — ✅ **Merged to main** (PRs #279–#294 backend + #324/#325/#326 web UX): aggregate drill Rayon→Kawasan→Lokasi→workers, 3-axis presence (Aktif/Tidak Aktif/Tidak Hadir + inside/outside + Luar Jadwal), scope-narrowing drill, per-entity glyph markers + boundary border/fill colors (seeded defaults: rayon=building, kawasan=trees, lokasi=leaf, teams=distinct glyphs), team glyph marker with click→member list, worker trail + area-detail on marker click, breadcrumb with inline stats, Individu/Tim filter, attendance split (belum/tidak hadir). **Marker layers migrated to Advanced Markers** (node/worker/team/current-node on `AdvancedMarkerElement`, DOM glyph pins) after a browser profiling pass — reposition-on-patch (memoize content by visual signature, move-only on GPS patch, ~47× cheaper than rebuild); requires a vector `mapId`. Verified end-to-end after a clean reseed (Playwright, all levels + desktop/mobile) incl. live Advanced-Markers smoke; be 371 + web 342 monitoring specs green. **Mobile parity: COMPLETE** (2026-08/09, PRs #463–#486) — all 15 audited rows (M1–M10, W1–W5): progressive reveal + tier rule + label declutter on mobile, geo search index, row-hide, Wilayah/Petugas tabs, plant overlay + photo viewing on both platforms, web attendance drill-down on a new `/monitoring/attendance` (the superseded `/supervisor/*` now has no callers), reassignment made reachable again on both platforms after ~11 weeks dark, and a web hover preview. Seven of the audit's rows were wrong and corrected in place — a symbol existing is not a feature existing. **Remaining:** **cloud-console follow-up** — replicate the #304 base-map declutter in the Map Style bound to the Map ID (vector maps ignore JSON `styles`). Not deployed to staging.
 6. **Mobile parity** — after web design ack — ✅ **Merged to main** (PR0/PR0b/PR0c cross-platform canon + mobile PR1–PR4, #345–#367): contract/type + all-9-role sweep, Surabaya bubble dropped, Rayon→Kawasan→Lokasi drill with the region-less fallback, workers from `/monitoring/snapshot` with `display_scope` tier-matching, team-marker expansion (ADR-048), lifecycle presence pills + shared presence colour standard (ADR-050), WS `subscribe:region` + `user:clock-out` removal + hybrid server search (online, client fallback offline). Post-sweep fixes: residual contract drift, task scope selector + submit-activity-from-task, RBAC menu access, excused pill, WSL2 Android dev-loop repair (#373). **Deliberately deferred (optional, not regressions):** day-view stays the default (no week/month switcher); "Jadwal Petugas" supervisor viewer is a new feature → [`REVAMP-STATUS.md`](REVAMP-STATUS.md). Not deployed to staging.
+
+> **CRUD, audit & scheduling revamp — ✅ merged to `main` 2026-09-28 (#519–#525), not deployed.**
+> UAT feedback: master-data CRUD errors (Kategori Tim could not be added/edited), korlap multi-place +
+> team assignment, delete-anyway, a Rayon-scope flag on roles, and an ISO/COBIT-style audit trail.
+> 1. **CRUD contract + permissions** (#519) — Kategori Tim create/edit/delete fixed; master-data routes
+>    on `@RequirePermissions`, web buttons gated by `can()`; partial unique indexes so names are reusable after delete.
+> 2. **Audit trail v2** (#520, [ADR-061](architecture/decisions/ADR-061-audit-trail-v2.md)) — automatic,
+>    same-transaction capture with field diff; append-only + SHA-256 hash chain; denied writes and auth events recorded.
+> 3. **Force delete** (#521, [ADR-062](architecture/decisions/ADR-062-force-delete.md)) — impact preview,
+>    typed-name confirm, reason; cascades **future** schedules only, history untouched.
+> 4. **Role `home_scope` + per-shift limits** (#522, ADR-044 amendment) — the role decides whether a user needs a Rayon.
+> 5. **Unified assignment policy** (#523, [ADR-063](architecture/decisions/ADR-063-assignment-policy.md)) —
+>    satgas/linmas 1 place + 1 team per shift; korlap unlimited; one rule on every write path.
+> 6. **Effective placement** (#524, [ADR-064](architecture/decisions/ADR-064-effective-placement.md)) —
+>    multi-assigned workers counted once at the live place (2-min hysteresis); `GET /monitoring/home`.
+> 7. **Audit log page** (#525) — `/audit-log` with filters, diff, CSV export, chain check; Riwayat per record.
+>
+> Found while merging: the RBAC permission cache stalled ~9 s per request when Redis was down (fixed —
+> `RedisService.isReady()`); `17-capacity` Playwright spec flaked once in CI (passed on rerun).
 
 > **Staging cutover — 🚧 prep underway (not deployed).** All revamp phases have landed on `main`, which
 > is ~289 commits ahead of `origin/staging`; the cutover runs **38 migrations against a live DB holding

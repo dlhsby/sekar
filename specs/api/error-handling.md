@@ -28,7 +28,7 @@ All API errors follow a consistent JSON structure:
 
 ---
 
-## Standardized Error Codes (53 Total)
+## Standardized Error Codes (57 Total)
 
 The SEKAR API uses standardized error codes defined in `ApiErrorCode` enum for consistent error handling.
 
@@ -136,6 +136,26 @@ rather than vanishing (a dropped ping is indistinguishable from a switched-off p
 | `MONITORING_BOUNDARY_OUTSIDE_BOUNDS` | 400 | Boundary outside Surabaya. Polygon coordinates fall outside Surabaya city bounds |
 | `MONITORING_REASSIGN_SCOPE_DENIED` | 403 | Cannot reassign outside your scope. Supervisor trying to reassign worker outside their rayon/area scope |
 | `MONITORING_REASSIGN_CONFLICT` | 409 | Worker already reassigned. Worker has a pending reassignment that hasn't been processed |
+
+### Assignment Policy Errors (3 codes) — ADR-063
+
+One rule for every schedule write path (manual add, event create/update, materializer). The
+409 body carries `details.violations` (who, which rule, the limit) so the planner can name
+each conflicting person.
+
+| Code | HTTP Status | Description |
+|------|-------------|-------------|
+| `SCHEDULE_DUPLICATE` | 409 | Same person, shift and place — or the same team — is already assigned |
+| `SCHEDULE_PLACE_LIMIT` | 409 | The role's `max_places_per_shift` is reached (satgas/linmas = 1; korlap unlimited) |
+| `SCHEDULE_TEAM_LIMIT` | 409 | The role's `max_teams_per_shift` is reached (satgas/linmas = 1) |
+
+### Deletion Errors (3 codes) — ADR-062
+
+| Code | HTTP Status | Description |
+|------|-------------|-------------|
+| `DELETE_CONFIRMATION_MISMATCH` | 400 | The typed confirmation does not match the record's name |
+| `DELETE_REPLACEMENT_REQUIRED` | 409 | Records still use this role / location type — pick a live replacement to move them to |
+| `DELETE_NOT_ALLOWED` | 403 | Never deletable (system role, your own account) |
 
 ### General Errors (5 codes)
 
