@@ -166,6 +166,8 @@ export class DeletionService {
     replacementId?: string,
   ): Promise<void> {
     if (required === 0) return;
+    // findOne excludes soft-deleted rows (@DeleteDateColumn), so a deleted role /
+    // type is rejected here; execution re-checks it under a lock (liveReplacement).
     const valid =
       !!replacementId &&
       replacementId !== row.id &&
