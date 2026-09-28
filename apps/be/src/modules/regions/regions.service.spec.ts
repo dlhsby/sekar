@@ -7,6 +7,7 @@ describe('RegionsService', () => {
   let regionRepo: any;
   let districtRepo: any;
   let locationRepo: any;
+  let auditLog: { log: jest.Mock };
 
   beforeEach(() => {
     regionRepo = {
@@ -25,13 +26,14 @@ describe('RegionsService', () => {
       execute: jest.fn().mockResolvedValue(undefined),
     };
     locationRepo = {
-      find: jest.fn(),
+      find: jest.fn().mockResolvedValue([]),
       count: jest.fn().mockResolvedValue(0),
       update: jest.fn().mockResolvedValue(undefined),
       createQueryBuilder: jest.fn(() => qb),
       _qb: qb,
     };
-    service = new RegionsService(regionRepo, districtRepo, locationRepo);
+    auditLog = { log: jest.fn().mockResolvedValue(undefined) };
+    service = new RegionsService(regionRepo, districtRepo, locationRepo, auditLog as never);
   });
 
   describe('create', () => {
@@ -183,6 +185,50 @@ describe('RegionsService', () => {
 
       expect(result.is_active).toBe(true);
       expect(locationRepo.count).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('membership audit (bulk re-parenting bypasses entity events)', () => {
+    it('records one locations_change event with added/removed lokasi', async () => {
+      regionRepo.findOne.mockResolvedValue({ id: 'reg-1', name: 'Kawasan A', district_id: 'd-1' });
+      locationRepo.find
+        .mockResolvedValueOnce([{ id: 'a1' }, { id: 'a2' }]) // current members
+        .mockResolvedValueOnce([
+          { id: 'a2', district_id: 'd-1', name: 'L2' },
+          { id: 'a3', district_id: 'd-1', name: 'L3' },
+        ]); // selected lokasi validation
+
+      await service.assignLocations('reg-1', ['a2', 'a3']);
+
+      expect(auditLog.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          entity_type: 'region',
+          entity_id: 'reg-1',
+          action: 'locations_change',
+          metadata: { added_location_ids: ['a3'], removed_location_ids: ['a1'] },
+        }),
+      );
+    });
+
+    it('writes nothing when membership is unchanged', async () => {
+      regionRepo.findOne.mockResolvedValue({ id: 'reg-1', name: 'Kawasan A', district_id: 'd-1' });
+      locationRepo.find
+        .mockResolvedValueOnce([{ id: 'a1' }])
+        .mockResolvedValueOnce([{ id: 'a1', district_id: 'd-1', name: 'L1' }]);
+
+      await service.assignLocations('reg-1', ['a1']);
+
+      expect(auditLog.log).not.toHaveBeenCalled();
+    });
+
+    it('a failing audit write never fails the re-parenting', async () => {
+      regionRepo.findOne.mockResolvedValue({ id: 'reg-1', name: 'Kawasan A', district_id: 'd-1' });
+      locationRepo.find
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([{ id: 'a1', district_id: 'd-1', name: 'L1' }]);
+      auditLog.log.mockRejectedValueOnce(new Error('db down'));
+
+      await expect(service.assignLocations('reg-1', ['a1'])).resolves.toEqual({ updated: 1 });
     });
   });
 });

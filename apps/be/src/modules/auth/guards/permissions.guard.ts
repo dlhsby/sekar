@@ -1,8 +1,15 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Optional,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PERMISSIONS_KEY, ANY_PERMISSIONS_KEY } from '../decorators/require-permissions.decorator';
 import { RolePermissionsService } from '../../rbac/services/role-permissions.service';
 import { hasAllPermissions, hasAnyPermission } from '../../rbac/permission-matcher';
+import { DeniedAccessRecorder } from '../../audit/denied-access.recorder';
 
 /**
  * PermissionsGuard — enforces `@RequirePermissions` / `@RequireAnyPermission`
@@ -16,6 +23,7 @@ export class PermissionsGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly rolePermissions: RolePermissionsService,
+    @Optional() private readonly denied?: DeniedAccessRecorder,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -32,7 +40,8 @@ export class PermissionsGuard implements CanActivate {
       return true;
     }
 
-    const { user } = context.switchToHttp().getRequest();
+    const req = context.switchToHttp().getRequest();
+    const { user } = req;
     if (!user) {
       throw new ForbiddenException('Missing authenticated user');
     }
@@ -43,9 +52,11 @@ export class PermissionsGuard implements CanActivate {
     const granted = await this.rolePermissions.getRolePermissionKeys(user.role);
 
     if (required && required.length > 0 && !hasAllPermissions(granted, required)) {
+      this.denied?.record(req, required);
       throw new ForbiddenException(`Requires permission(s): ${required.join(', ')}`);
     }
     if (requiredAny && requiredAny.length > 0 && !hasAnyPermission(granted, requiredAny)) {
+      this.denied?.record(req, requiredAny);
       throw new ForbiddenException(`Requires any of: ${requiredAny.join(', ')}`);
     }
 

@@ -11,6 +11,7 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { LocationType } from '../../location-types/entities/location-type.entity';
 import { District } from '../../districts/entities/district.entity';
+import { Auditable } from '../../audit/capture/auditable.decorator';
 
 /**
  * Location Entity
@@ -19,6 +20,7 @@ import { District } from '../../districts/entities/district.entity';
  * Each area has a GPS center point and radius defining its boundary.
  */
 @Entity('locations')
+@Auditable<Location>({ type: 'location', label: (e) => e.name })
 export class Location {
   @ApiProperty({
     description: 'Unique identifier for the location',

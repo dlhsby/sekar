@@ -8,6 +8,7 @@ import {
   Index,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
+import { Auditable } from '../../audit/capture/auditable.decorator';
 
 /**
  * LocationType Entity
@@ -16,6 +17,7 @@ import { ApiProperty } from '@nestjs/swagger';
  * This is a lookup/master data table with predefined values.
  */
 @Entity('location_types')
+@Auditable<LocationType>({ type: 'location_type', label: (e) => e.name })
 @Index('uq_location_types_code_live', ['code'], { unique: true, where: 'deleted_at IS NULL' })
 export class LocationType {
   @ApiProperty({

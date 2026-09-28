@@ -69,7 +69,15 @@ export async function truncateAll(ctx: SeedContext): Promise<void> {
     if (rows[0]?.exists) existing.push(table);
   }
   if (existing.length > 0) {
-    await ctx.qr.query(`TRUNCATE TABLE ${existing.map((t) => `"${t}"`).join(', ')} CASCADE`);
+    // audit_logs is append-only (ADR-061): its guard trigger refuses TRUNCATE
+    // unless this session opts into maintenance mode. Seeding is the one
+    // legitimate wipe (dev/test data), so opt in for this statement only.
+    await ctx.qr.query(`SET sekar.audit_maintenance = 'on'`);
+    try {
+      await ctx.qr.query(`TRUNCATE TABLE ${existing.map((t) => `"${t}"`).join(', ')} CASCADE`);
+    } finally {
+      await ctx.qr.query(`RESET sekar.audit_maintenance`);
+    }
     ctx.log(`  ✓ Cleared ${existing.length} tables`);
   }
 }

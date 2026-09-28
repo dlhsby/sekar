@@ -14,6 +14,8 @@ import { ApiException } from '../../common/exceptions/api.exception';
 import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
 import { RedisService } from '../../common/services/redis.service';
 import { normalizePhone } from '../../common/utils/phone.util';
+import { AuditLogService } from '../audit/audit.service';
+import { recordAuthEvent } from '../audit/auth-events';
 
 @Injectable()
 export class AuthService {
@@ -26,6 +28,8 @@ export class AuthService {
     // Phase 4-7 (M2): Optional so existing unit tests (which don't provide
     // Redis) keep working. Prod wires RedisService via CommonModule.
     @Optional() private readonly redis?: RedisService,
+    // Optional for the same reason; AuditModule is global in the app.
+    @Optional() private readonly auditLog?: AuditLogService,
   ) {}
 
   // ─── Phase 4-7 helpers ────────────────────────────────────────────────
@@ -105,6 +109,10 @@ export class AuthService {
 
     if (!user) {
       this.logger.warn(`Login failed: User not found - ${identifier}`);
+      await recordAuthEvent(this.auditLog, 'login_failed', null, {
+        identifier,
+        reason: 'unknown_account',
+      });
       throw new ApiException(
         HttpStatus.UNAUTHORIZED,
         ApiErrorCode.AUTH_INVALID_CREDENTIALS,
@@ -114,6 +122,10 @@ export class AuthService {
 
     if (!user.is_active) {
       this.logger.warn(`Login failed: Inactive account - ${identifier}`);
+      await recordAuthEvent(this.auditLog, 'login_failed', user, {
+        identifier,
+        reason: 'inactive_account',
+      });
       throw new ApiException(
         HttpStatus.UNAUTHORIZED,
         ApiErrorCode.AUTH_ACCOUNT_INACTIVE,
@@ -124,6 +136,10 @@ export class AuthService {
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
     if (!isPasswordValid) {
       this.logger.warn(`Login failed: Invalid password - ${identifier}`);
+      await recordAuthEvent(this.auditLog, 'login_failed', user, {
+        identifier,
+        reason: 'invalid_password',
+      });
       throw new ApiException(
         HttpStatus.UNAUTHORIZED,
         ApiErrorCode.AUTH_INVALID_CREDENTIALS,
@@ -135,6 +151,7 @@ export class AuthService {
     const refreshToken = await this.generateRefreshToken(user);
 
     this.logger.log(`Login successful for user: ${user.username} (${user.role})`);
+    await recordAuthEvent(this.auditLog, 'login', user);
 
     return {
       access_token: accessToken,
@@ -352,6 +369,7 @@ export class AuthService {
     // access token cannot be reused and the refresh token cannot rotate.
     if (accessToken) await this.blacklistToken(accessToken);
     if (refreshToken) await this.blacklistToken(refreshToken);
+    await recordAuthEvent(this.auditLog, 'logout', { id: userId });
   }
 
   /**

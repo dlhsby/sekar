@@ -11,6 +11,7 @@ import {
 import { ApiProperty } from '@nestjs/swagger';
 import { Location } from '../../locations/entities/location.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
+import { Auditable } from '../../audit/capture/auditable.decorator';
 
 export enum DayType {
   WEEKDAY = 'WEEKDAY',
@@ -34,6 +35,10 @@ export enum StaffRole {
  * Example: Taman Bungkul, Shift 1, Weekday needs 6 Satgas and 2 Linmas.
  */
 @Entity('location_staff_requirements')
+@Auditable<LocationStaffRequirement>({
+  type: 'staff_requirement',
+  label: (e) => `${e.role} × ${e.required_count}`,
+})
 export class LocationStaffRequirement {
   @ApiProperty({
     description: 'Unique identifier',

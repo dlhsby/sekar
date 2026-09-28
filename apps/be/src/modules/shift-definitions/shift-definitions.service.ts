@@ -149,7 +149,9 @@ export class ShiftDefinitionsService {
     if (!existing) {
       throw new NotFoundException(`Shift definition with ID ${id} not found`);
     }
-    await this.shiftDefinitionRepository.softDelete(id);
+    // softRemove (not softDelete) so deleted_by is stamped and the audit
+    // subscriber records the delete (ADR-061).
+    await this.shiftDefinitionRepository.softRemove(existing);
     this.logger.log(`Soft-deleted shift definition ${existing.name} (${id})`);
   }
 

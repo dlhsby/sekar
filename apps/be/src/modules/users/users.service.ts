@@ -177,22 +177,6 @@ export class UsersService {
       );
     }
 
-    this.audit({
-      entity_type: 'user',
-      entity_id: savedUser.id,
-      action: 'create',
-      actor_id: actor?.id ?? savedUser.id, // self-attributed for internal callers (e.g. CSV import w/o actor)
-      new_value: {
-        username,
-        full_name,
-        role,
-        district_id,
-        region_id,
-        shift_definition_id,
-        area_ids: locationIds,
-      },
-    });
-
     return tempPassword ? Object.assign(savedUser, { temp_password: tempPassword }) : savedUser;
   }
 
@@ -576,18 +560,6 @@ export class UsersService {
     const savedUser = await this.userRepository.save(savePayload as unknown as User);
     this.logger.log(`User updated successfully: ID ${id}`);
 
-    this.audit({
-      entity_type: 'user',
-      entity_id: id,
-      action: 'update',
-      actor_id: actor?.id ?? id,
-      old_value: previous,
-      new_value: {
-        ...updateData,
-        ...(area_ids ? { area_ids: [...new Set(area_ids)] } : {}),
-      },
-    });
-
     return savedUser;
   }
 
@@ -602,13 +574,6 @@ export class UsersService {
     const user = await this.findOne(id);
     await this.userRepository.softRemove(user);
     this.logger.log(`User soft deleted: ID ${id}`);
-
-    this.audit({
-      entity_type: 'user',
-      entity_id: id,
-      action: 'delete',
-      actor_id: actor?.id ?? id,
-    });
   }
 
   /**
@@ -620,14 +585,6 @@ export class UsersService {
     if (!user.is_active) return user;
     user.is_active = false;
     const saved = await this.userRepository.save(user);
-    this.audit({
-      entity_type: 'user',
-      entity_id: id,
-      action: 'deactivate',
-      actor_id: actor?.id ?? id,
-      old_value: { is_active: true },
-      new_value: { is_active: false },
-    });
     return saved;
   }
 
@@ -637,14 +594,6 @@ export class UsersService {
     if (user.is_active) return user;
     user.is_active = true;
     const saved = await this.userRepository.save(user);
-    this.audit({
-      entity_type: 'user',
-      entity_id: id,
-      action: 'activate',
-      actor_id: actor?.id ?? id,
-      old_value: { is_active: false },
-      new_value: { is_active: true },
-    });
     return saved;
   }
 
@@ -671,7 +620,8 @@ export class UsersService {
    * @throws BadRequestException if new password is same as current
    */
   async updateProfilePicture(id: string, url: string): Promise<void> {
-    await this.userRepository.update(id, { profile_picture_url: url });
+    // save (not update) so the audit subscriber sees before/after (ADR-061).
+    await this.userRepository.save({ id, profile_picture_url: url });
     this.logger.log(`Profile picture updated for user: ID ${id}`);
   }
 

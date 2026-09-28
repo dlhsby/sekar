@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
+import { Auditable } from '../../audit/capture/auditable.decorator';
 
 export enum SpecialDayType {
   WEEKEND = 'WEEKEND',
@@ -17,6 +18,10 @@ export enum SpecialDayType {
  * Example: 2026-08-17 is marked as HOLIDAY "Hari Kemerdekaan"
  */
 @Entity('special_day_overrides')
+@Auditable<SpecialDayOverride>({
+  type: 'special_day_override',
+  label: (e) => [String(e.date).slice(0, 10), e.name].filter(Boolean).join(' '),
+})
 export class SpecialDayOverride {
   @ApiProperty({
     description: 'Unique identifier',

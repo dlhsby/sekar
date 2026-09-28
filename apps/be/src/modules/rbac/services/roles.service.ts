@@ -74,11 +74,14 @@ export class RolesService {
       }
       throw err;
     }
-    await this.recordAudit('create', saved.id, actorId, null, {
-      code: saved.code,
-      name: saved.name,
-      permissionKeys: (permissions ?? []).map((p) => p.key).sort(),
-    });
+    // The role row itself is audited automatically (@Auditable); grants are a
+    // relation, so they are recorded as their own event.
+    await this.recordGrants(
+      saved,
+      actorId,
+      [],
+      (permissions ?? []).map((p) => p.key),
+    );
     return this.findOne(saved.id);
   }
 
@@ -92,11 +95,7 @@ export class RolesService {
       throw new BadRequestException('The superadmin role permissions cannot be modified');
     }
 
-    const oldValue = {
-      name: role.name,
-      monitoring_scope: role.monitoring_scope,
-      permissionKeys: (role.permissions ?? []).map((p) => p.key).sort(),
-    };
+    const oldKeys = (role.permissions ?? []).map((p) => p.key);
 
     if (dto.name !== undefined) role.name = dto.name.trim();
     if (dto.description !== undefined) role.description = dto.description;
@@ -110,11 +109,12 @@ export class RolesService {
 
     await this.roleRepo.save(role);
     await this.rolePermissions.invalidateRole(role.code);
-    await this.recordAudit('update', role.id, actorId, oldValue, {
-      name: role.name,
-      monitoring_scope: role.monitoring_scope,
-      permissionKeys: (role.permissions ?? []).map((p) => p.key).sort(),
-    });
+    await this.recordGrants(
+      role,
+      actorId,
+      oldKeys,
+      (role.permissions ?? []).map((p) => p.key),
+    );
     return this.findOne(role.id);
   }
 
@@ -135,26 +135,34 @@ export class RolesService {
     // the request actor — matching the codebase convention (see districts.service).
     await this.roleRepo.softRemove(role);
     await this.rolePermissions.invalidateRole(role.code);
-    await this.recordAudit('delete', role.id, actorId, { code: role.code, name: role.name }, null);
   }
 
-  /** Best-effort change audit (ADR-015) — a failed audit write never fails the mutation. */
-  private async recordAudit(
-    action: 'create' | 'update' | 'delete',
-    roleId: string,
+  /**
+   * Record a change to a role's permission grants (a ManyToMany relation, so the
+   * automatic entity capture cannot see it). No row when the grant set is equal.
+   * Best-effort (ADR-015): a failed audit write never fails the mutation.
+   */
+  private async recordGrants(
+    role: Role,
     actorId: string | undefined,
-    oldValue: Record<string, unknown> | null,
-    newValue: Record<string, unknown> | null,
+    before: string[],
+    after: string[],
   ): Promise<void> {
-    if (!actorId) return; // audit_logs.actor_id is a required FK
+    const oldKeys = [...new Set(before)].sort();
+    const newKeys = [...new Set(after)].sort();
+    if (oldKeys.join() === newKeys.join()) return;
     try {
       await this.auditLog.log({
         entity_type: 'role',
-        entity_id: roleId,
-        action,
-        actor_id: actorId,
-        old_value: oldValue,
-        new_value: newValue,
+        entity_id: role.id,
+        entity_label: role.name,
+        action: 'permissions_change',
+        actor_id: actorId ?? null,
+        changes: { permissions: [oldKeys, newKeys] },
+        metadata: {
+          added: newKeys.filter((k) => !oldKeys.includes(k)),
+          removed: oldKeys.filter((k) => !newKeys.includes(k)),
+        },
       });
     } catch {
       // Non-fatal: the mutation already succeeded.

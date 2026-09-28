@@ -124,7 +124,43 @@ describe('RolesService', () => {
       );
     });
 
-    it('records an audit entry on update when an actor is known', async () => {
+    it('records a permissions_change event with added/removed keys', async () => {
+      const role = {
+        id: 'r1',
+        code: 'korlap',
+        name: 'Korlap',
+        permissions: [{ key: 'monitoring:read' }, { key: 'team:read' }],
+      } as unknown as Role;
+      roleRepo.findOne.mockResolvedValueOnce(role).mockResolvedValueOnce({
+        ...role,
+        created_at: new Date(),
+        updated_at: new Date(),
+      });
+      permissionRepo.find.mockResolvedValue([
+        { key: 'monitoring:read' },
+        { key: 'task:read' },
+      ] as Permission[]);
+
+      await service.update('r1', { permissionKeys: ['monitoring:read', 'task:read'] }, 'actor-1');
+
+      expect(auditLog.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          entity_type: 'role',
+          entity_id: 'r1',
+          action: 'permissions_change',
+          actor_id: 'actor-1',
+          changes: {
+            permissions: [
+              ['monitoring:read', 'team:read'],
+              ['monitoring:read', 'task:read'],
+            ],
+          },
+          metadata: { added: ['task:read'], removed: ['team:read'] },
+        }),
+      );
+    });
+
+    it('does not double-log a field-only update (captured automatically, ADR-061)', async () => {
       const role = { id: 'r1', code: 'korlap', permissions: [] } as unknown as Role;
       roleRepo.findOne.mockResolvedValueOnce(role).mockResolvedValueOnce({
         id: 'r1',
@@ -137,9 +173,7 @@ describe('RolesService', () => {
         updated_at: new Date(),
       });
       await service.update('r1', { name: 'Korlap Baru' }, 'actor-1');
-      expect(auditLog.log).toHaveBeenCalledWith(
-        expect.objectContaining({ entity_type: 'role', action: 'update', actor_id: 'actor-1' }),
-      );
+      expect(auditLog.log).not.toHaveBeenCalled();
     });
   });
 

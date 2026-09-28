@@ -7,6 +7,7 @@ import {
   DeleteDateColumn,
 } from 'typeorm';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Auditable } from '../../audit/capture/auditable.decorator';
 
 /**
  * Region (Kawasan) — the level between District and Location (ADR-045). New master data
@@ -14,6 +15,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
  * per-level map styling (separate border/fill color + opacity) and marker.
  */
 @Entity('regions')
+@Auditable<Region>({ type: 'region', label: (e) => e.name })
 export class Region {
   @ApiProperty()
   @PrimaryGeneratedColumn('uuid')

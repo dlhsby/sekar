@@ -388,11 +388,11 @@ export class LocationStaffRequirementsService {
   async remove(id: string): Promise<void> {
     this.logger.log(`Deleting staff requirement with ID: ${id}`);
 
-    // First verify the requirement exists
-    await this.findOne(id);
+    const requirement = await this.findOne(id);
 
-    // Perform soft delete
-    await this.requirementRepository.softDelete(id);
+    // softRemove (not softDelete) so deleted_by is stamped and the audit
+    // subscriber records the delete (ADR-061).
+    await this.requirementRepository.softRemove(requirement);
     this.logger.log(`Staff requirement soft deleted with ID: ${id}`);
   }
 

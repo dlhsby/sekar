@@ -15,7 +15,7 @@ Complete PostgreSQL database schema for SEKAR system with production-ready optim
 - **Character Set:** UTF-8
 - **Primary Keys:** UUID (all tables)
 - **Soft Delete:** users, areas, shifts, reports (deleted_at column)
-- **Partitioning:** location_logs (by month), audit_logs (Phase 6)
+- **Partitioning:** location_logs (by month); audit_logs deferred (append-only + hash chain, ADR-061)
 
 ---
 
@@ -1420,70 +1420,56 @@ CREATE INDEX idx_maintenance_records_performer ON maintenance_records(performed_
 
 ## Phase 6 Tables - Web Dashboard & Audit
 
-### 1. audit_logs (Partitioned)
+### 1. audit_logs (append-only, hash-chained — ADR-015 + ADR-061)
 
-Comprehensive audit trail for compliance and security.
+The single audit table for everything. CRUD on `@Auditable` entities is captured automatically,
+in the same transaction as the change; domain events are written explicitly. Rows are immutable
+and chained. **Not partitioned** (deferred until ~5 M rows); location pings and tracking are
+never written here.
 
 ```sql
--- Parent table with monthly partitioning
 CREATE TABLE audit_logs (
-  id UUID NOT NULL DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES users(id) ON DELETE SET NULL,
-  action VARCHAR(50) NOT NULL,
-  entity_type VARCHAR(50) NOT NULL,
-  entity_id UUID,
-  entity_name VARCHAR(200),
-  old_value JSONB,
-  new_value JSONB,
-  changed_fields TEXT[],
-  ip_address INET,
-  user_agent TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-  CONSTRAINT chk_audit_action CHECK (action IN (
-    'create', 'update', 'delete', 'soft_delete', 'restore',
-    'login', 'logout', 'login_failed', 'password_change',
-    'export', 'import', 'bulk_update', 'bulk_delete'
-  )),
-  PRIMARY KEY (id, created_at)
-) PARTITION BY RANGE (created_at);
-
--- Create monthly partitions (automate in production)
-CREATE TABLE audit_logs_2026_01 PARTITION OF audit_logs
-  FOR VALUES FROM ('2026-01-01') TO ('2026-02-01');
-
-CREATE TABLE audit_logs_2026_02 PARTITION OF audit_logs
-  FOR VALUES FROM ('2026-02-01') TO ('2026-03-01');
-
--- CRITICAL Indexes (apply to each partition)
-CREATE INDEX idx_audit_logs_2026_01_user ON audit_logs_2026_01(user_id, created_at DESC);
-CREATE INDEX idx_audit_logs_2026_01_entity ON audit_logs_2026_01(entity_type, entity_id, created_at DESC);
-CREATE INDEX idx_audit_logs_2026_01_action ON audit_logs_2026_01(action, created_at DESC);
-
--- Partition management function
-CREATE OR REPLACE FUNCTION create_audit_logs_partition()
-RETURNS void AS $$
-DECLARE
-  next_month DATE := DATE_TRUNC('month', NOW() + INTERVAL '1 month');
-  month_after DATE := next_month + INTERVAL '1 month';
-  partition_name TEXT := 'audit_logs_' || TO_CHAR(next_month, 'YYYY_MM');
-BEGIN
-  EXECUTE format('CREATE TABLE IF NOT EXISTS %I PARTITION OF audit_logs FOR VALUES FROM (%L) TO (%L)',
-    partition_name, next_month, month_after);
-
-  EXECUTE format('CREATE INDEX idx_%I_user ON %I(user_id, created_at DESC)', partition_name, partition_name);
-  EXECUTE format('CREATE INDEX idx_%I_entity ON %I(entity_type, entity_id, created_at DESC)', partition_name, partition_name);
-  EXECUTE format('CREATE INDEX idx_%I_action ON %I(action, created_at DESC)', partition_name, partition_name);
-END;
-$$ LANGUAGE plpgsql;
+  id           uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  seq          bigint NOT NULL UNIQUE DEFAULT nextval('audit_logs_seq_seq'), -- insert order
+  created_at   timestamptz NOT NULL DEFAULT now(),                           -- UTC
+  entity_type  varchar(50) NOT NULL,       -- district, user, role, auth, http, audit_log, task…
+  entity_id    uuid,                        -- NULL for login/denied/export events
+  entity_label varchar(200),                -- snapshot (survives rename/delete)
+  action       varchar(50) NOT NULL,        -- create|update|delete|restore|purge|login|login_failed|
+                                            -- logout|denied_write|export|permissions_change|…
+  actor_id     uuid REFERENCES users(id) ON DELETE RESTRICT,  -- NULL = system/cron
+  actor_role   varchar(50),                 -- snapshot
+  actor_name   varchar(150),                -- snapshot
+  old_value    jsonb,                       -- last state (delete/purge) or legacy explicit value
+  new_value    jsonb,                       -- full row (create) or legacy explicit value
+  changes      jsonb,                       -- {"field": [old, new]} (update)
+  metadata     jsonb,
+  reason       text,                        -- operator justification (e.g. force delete)
+  outcome      varchar(10) NOT NULL DEFAULT 'success',  -- success|denied|failed
+  source       varchar(10) NOT NULL DEFAULT 'api',      -- api|system
+  ip           varchar(45),
+  user_agent   varchar(300),
+  request_id   varchar(64),                 -- correlates with application logs
+  parent_id    uuid,                        -- cascade root (e.g. children of a force delete)
+  chain_pos    bigint UNIQUE,               -- position in the hash chain (set when sealed)
+  prev_hash    char(64),
+  hash         char(64),                    -- sha256(prev_hash || audit_logs_canonical(row))
+  sealed_at    timestamptz
+);
+-- idx_audit_entity (entity_type, entity_id, created_at DESC) · idx_audit_actor (actor_id)
+-- idx_audit_action (entity_type, action) · idx_audit_logs_created_at (created_at DESC)
+-- idx_audit_logs_actor_time (actor_id, created_at DESC) · idx_audit_logs_parent (parent_id)
+-- idx_audit_logs_unsealed (seq) WHERE hash IS NULL
 ```
 
-**Retention Policy:**
-- Keep for 2 years (regulatory requirement)
-- Partition by month for performance
-- Drop partitions older than 2 years automatically
-
----
+**Integrity (migration `17544 AuditTrailV2`):**
+- `trg_audit_logs_guard_row` / `trg_audit_logs_guard_truncate` → `audit_logs_guard()` refuses
+  DELETE and TRUNCATE. UPDATE is allowed only as the one-time seal
+  (`chain_pos/prev_hash/hash/sealed_at` on an unsealed row). The session flag
+  `sekar.audit_maintenance='on'` bypasses the guard; only the dev seeder sets it.
+- `audit_seal(batch)`: chains unsealed rows. It is run every minute by the `audit-seal` cron
+  under an advisory lock, and the chain head is logged as an off-box anchor.
+- `audit_verify()` → `(sealed, unsealed, first_broken_seq, last_hash)`; exposed as `GET /audit/verify`.
 
 ### 2. system_settings
 

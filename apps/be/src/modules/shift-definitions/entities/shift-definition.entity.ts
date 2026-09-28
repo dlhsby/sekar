@@ -8,6 +8,7 @@ import {
   Index,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
+import { Auditable } from '../../audit/capture/auditable.decorator';
 
 /**
  * ShiftDefinition Entity
@@ -19,6 +20,7 @@ import { ApiProperty } from '@nestjs/swagger';
  * the app assumes exactly three.
  */
 @Entity('shift_definitions')
+@Auditable<ShiftDefinition>({ type: 'shift_definition', label: (e) => e.name })
 @Index('uq_shift_definitions_name_live', ['name'], { unique: true, where: 'deleted_at IS NULL' })
 export class ShiftDefinition {
   @ApiProperty({

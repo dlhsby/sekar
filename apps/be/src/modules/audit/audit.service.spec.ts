@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { AuditLogService } from './audit.service';
 import { AuditLog } from './entities/audit-log.entity';
+import { auditContext } from '../../common/context/audit-context';
 
 describe('AuditLogService', () => {
   let module: TestingModule;
@@ -15,11 +16,15 @@ describe('AuditLogService', () => {
   };
 
   const createMockQueryBuilder = (result: any[] = [], total = 0) => ({
-    leftJoinAndSelect: jest.fn().mockReturnThis(),
+    leftJoin: jest.fn().mockReturnThis(),
+    addSelect: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
     andWhere: jest.fn().mockReturnThis(),
     orderBy: jest.fn().mockReturnThis(),
+    addOrderBy: jest.fn().mockReturnThis(),
     skip: jest.fn().mockReturnThis(),
     take: jest.fn().mockReturnThis(),
+    getMany: jest.fn().mockResolvedValue(result),
     getManyAndCount: jest.fn().mockResolvedValue([result, total]),
   });
 
@@ -65,15 +70,19 @@ describe('AuditLogService', () => {
       const result = await service.log(params);
 
       expect(result).toEqual(mockEntry);
-      expect(mockAuditLogRepo.create).toHaveBeenCalledWith({
-        entity_type: 'task',
-        entity_id: 'task-uuid-1',
-        action: 'create',
-        actor_id: 'user-uuid-1',
-        old_value: null,
-        new_value: { status: 'pending' },
-        metadata: { ip: '127.0.0.1' },
-      });
+      expect(mockAuditLogRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          entity_type: 'task',
+          entity_id: 'task-uuid-1',
+          action: 'create',
+          actor_id: 'user-uuid-1',
+          old_value: null,
+          new_value: { status: 'pending' },
+          metadata: { ip: '127.0.0.1' },
+          outcome: 'success',
+          source: 'api',
+        }),
+      );
       expect(mockAuditLogRepo.save).toHaveBeenCalledWith(mockEntry);
     });
 
@@ -115,20 +124,24 @@ describe('AuditLogService', () => {
         { id: 'log-1', entity_type: 'task', entity_id: 'task-1', action: 'create' },
         { id: 'log-2', entity_type: 'task', entity_id: 'task-1', action: 'assign' },
       ];
-      mockAuditLogRepo.find.mockResolvedValue(mockLogs);
+      const qb = createMockQueryBuilder(mockLogs);
+      mockAuditLogRepo.createQueryBuilder.mockReturnValue(qb);
 
       const result = await service.getEntityHistory('task', 'task-1');
 
       expect(result).toEqual(mockLogs);
-      expect(mockAuditLogRepo.find).toHaveBeenCalledWith({
-        where: { entity_type: 'task', entity_id: 'task-1' },
-        relations: ['actor'],
-        order: { created_at: 'DESC' },
+      expect(qb.where).toHaveBeenCalledWith('audit.entity_type = :entityType', {
+        entityType: 'task',
       });
+      expect(qb.andWhere).toHaveBeenCalledWith('audit.entity_id = :entityId', {
+        entityId: 'task-1',
+      });
+      // Only the actor's id/name/role — never contact details.
+      expect(qb.addSelect).toHaveBeenCalledWith(['actor.id', 'actor.full_name', 'actor.role']);
     });
 
     it('should return empty array if no logs found', async () => {
-      mockAuditLogRepo.find.mockResolvedValue([]);
+      mockAuditLogRepo.createQueryBuilder.mockReturnValue(createMockQueryBuilder([]));
 
       const result = await service.getEntityHistory('task', 'nonexistent-id');
 
@@ -174,8 +187,8 @@ describe('AuditLogService', () => {
 
       await service.findAllPaginated({ entity_type: 'task' });
 
-      expect(qb.andWhere).toHaveBeenCalledWith('audit.entity_type = :entityType', {
-        entityType: 'task',
+      expect(qb.andWhere).toHaveBeenCalledWith('audit.entity_type = :entity_type', {
+        entity_type: 'task',
       });
     });
 
@@ -194,8 +207,8 @@ describe('AuditLogService', () => {
 
       await service.findAllPaginated({ actor_id: 'user-uuid-1' });
 
-      expect(qb.andWhere).toHaveBeenCalledWith('audit.actor_id = :actorId', {
-        actorId: 'user-uuid-1',
+      expect(qb.andWhere).toHaveBeenCalledWith('audit.actor_id = :actor_id', {
+        actor_id: 'user-uuid-1',
       });
     });
 
@@ -224,6 +237,55 @@ describe('AuditLogService', () => {
 
       expect(qb.skip).toHaveBeenCalledWith(20);
       expect(qb.take).toHaveBeenCalledWith(10);
+    });
+  });
+
+  describe('log — request context snapshot', () => {
+    beforeEach(() => mockAuditLogRepo.create.mockImplementation((v) => v));
+
+    it('fills actor + request fields from the audit context', async () => {
+      await auditContext.run(
+        { userId: 'u-1', role: 'management', name: 'M Satu', ip: '10.0.0.9', requestId: 'r-1' },
+        () => service.log({ entity_type: 'audit_log', action: 'export' }),
+      );
+      expect(mockAuditLogRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          actor_id: 'u-1',
+          actor_role: 'management',
+          actor_name: 'M Satu',
+          ip: '10.0.0.9',
+          request_id: 'r-1',
+          entity_id: null,
+        }),
+      );
+    });
+
+    it('does not label a different explicit actor with the context actor snapshot', async () => {
+      await auditContext.run({ userId: 'u-1', role: 'management', name: 'M Satu' }, () =>
+        service.log({ entity_type: 'task', action: 'verify', actor_id: 'u-2' }),
+      );
+      expect(mockAuditLogRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ actor_id: 'u-2', actor_role: null, actor_name: null }),
+      );
+    });
+
+    it('marks actor-less entries as system', async () => {
+      await service.log({ entity_type: 'shift', action: 'auto_close' });
+      expect(mockAuditLogRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ actor_id: null, source: 'system' }),
+      );
+    });
+  });
+
+  describe('findAllPaginated — search', () => {
+    it('escapes LIKE wildcards in free-text search', async () => {
+      const qb = createMockQueryBuilder([], 0);
+      mockAuditLogRepo.createQueryBuilder.mockReturnValue(qb);
+      await service.findAllPaginated({ q: '50%_off' });
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        '(audit.entity_label ILIKE :like OR audit.actor_name ILIKE :like)',
+        { like: '%50\\%\\_off%' },
+      );
     });
   });
 });
