@@ -11,8 +11,9 @@ const CACHE_TTL_SECONDS = 300;
 
 /**
  * Resolves a role's granted permission keys (including wildcards) with Redis
- * caching (ADR-044). Fail-open: any Redis error falls back to a DB query, so
- * auth never breaks when the cache is unavailable.
+ * caching (ADR-044). Fail-open: a disconnected client is skipped outright and
+ * any Redis error falls back to a DB query, so auth never breaks — or stalls —
+ * when the cache is unavailable.
  */
 @Injectable()
 export class RolePermissionsService {
@@ -68,6 +69,8 @@ export class RolePermissionsService {
   }
 
   private async readCache(roleCode: string): Promise<string[] | null> {
+    // Not connected: go straight to the DB rather than wait out ioredis retries.
+    if (!this.redis.isReady()) return null;
     try {
       const raw = await this.redis.getClient().get(this.cacheKey(roleCode));
       if (!raw) return null;
@@ -80,6 +83,7 @@ export class RolePermissionsService {
   }
 
   private async writeCache(roleCode: string, keys: string[]): Promise<void> {
+    if (!this.redis.isReady()) return;
     try {
       await this.redis
         .getClient()
