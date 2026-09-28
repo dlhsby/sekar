@@ -1,4 +1,7 @@
+import { HttpStatus } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
+import { ApiException } from '../../common/exceptions/api.exception';
+import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
 import { District } from '../districts/entities/district.entity';
 import { Region } from '../regions/entities/region.entity';
 import { Location } from '../locations/entities/location.entity';
@@ -72,6 +75,31 @@ async function count(m: EntityManager, sql: string, id: string): Promise<number>
 async function affected(m: EntityManager, sql: string, params: unknown[]): Promise<number> {
   const res = (await m.query(sql, params)) as [unknown, number];
   return res[1] ?? 0;
+}
+
+/**
+ * Re-read the replacement INSIDE the delete transaction and hold it with
+ * `FOR SHARE`, so it cannot be deleted between validation and the move — and
+ * a replacement that is already gone yields the clean 409, never a TypeError.
+ */
+async function liveReplacement<T>(
+  m: EntityManager,
+  table: 'roles' | 'location_types',
+  columns: string,
+  id: string,
+): Promise<T> {
+  const [row] = (await m.query(
+    `SELECT ${columns} FROM ${table} WHERE id = $1 AND deleted_at IS NULL FOR SHARE`,
+    [id],
+  )) as T[];
+  if (!row) {
+    throw new ApiException(
+      HttpStatus.CONFLICT,
+      ApiErrorCode.DELETE_REPLACEMENT_REQUIRED,
+      'The chosen replacement no longer exists; choose another',
+    );
+  }
+  return row;
 }
 
 async function softRemove(m: EntityManager, entity: new () => object, row: Row): Promise<void> {
@@ -298,9 +326,7 @@ async function deleteRole(ctx: PlanContext, row: Row): Promise<Impact> {
   const { manager: m } = ctx;
   let moved = 0;
   if (ctx.replacementId) {
-    const [target] = (await m.query(`SELECT code FROM roles WHERE id = $1 AND deleted_at IS NULL`, [
-      ctx.replacementId,
-    ])) as Array<{ code: string }>;
+    const target = await liveReplacement<{ code: string }>(m, 'roles', 'code', ctx.replacementId);
     moved = await affected(m, `UPDATE users SET role = $2 WHERE role = $1 AND deleted_at IS NULL`, [
       row.code,
       target.code,
@@ -326,12 +352,15 @@ async function locationTypeImpact(
 
 async function deleteLocationType(ctx: PlanContext, row: Row): Promise<Impact> {
   const { manager: m } = ctx;
-  const moved = ctx.replacementId
-    ? await affected(m, `UPDATE locations SET location_type_id = $2 WHERE location_type_id = $1`, [
-        row.id,
-        ctx.replacementId,
-      ])
-    : 0;
+  let moved = 0;
+  if (ctx.replacementId) {
+    await liveReplacement(m, 'location_types', 'id', ctx.replacementId);
+    moved = await affected(
+      m,
+      `UPDATE locations SET location_type_id = $2 WHERE location_type_id = $1`,
+      [row.id, ctx.replacementId],
+    );
+  }
   await softRemove(m, LocationType, row);
   return { locations_moved: moved };
 }
